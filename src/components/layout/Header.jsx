@@ -6,7 +6,7 @@ export default function Header({ onSignupClick }) {
             <div className="max-w-[1200px] mx-auto flex items-center justify-between gap-4 py-2 px-4 sm:px-6 lg:px-10 flex-wrap">
                 <div className="flex items-center gap-2">
                     <img
-                        src="/src/assets/navbar.png"
+                        src="/assets/navbar.png"
                         alt="Kufi Travel"
                         className="h-12 w-20 sm:h-[66px] sm:w-28 block"
                     />

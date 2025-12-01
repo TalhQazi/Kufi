@@ -5,31 +5,31 @@ export default function FeedbackSection() {
             text: '"Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor"',
             name: 'Liza',
             role: 'LIZA',
-            avatar: '/src/assets/feedback-A.jpeg',
+            avatar: '/assets/feedback-A.jpeg',
         },
         {
             id: 2,
             text: '"Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor"',
             name: 'Mr. John Doe',
             role: 'MR. JOHN DOE',
-            avatar: '/src/assets/feedback-B.jpeg',
+            avatar: '/assets/feedback-B.jpeg',
         },
         {
             id: 3,
             text: '"Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor"',
             name: 'Mr. John Doe',
             role: 'MR. JOHN DOE',
-            avatar: '/src/assets/feedback-C.jpeg',
+            avatar: '/assets/feedback-C.jpeg',
         },
     ]
 
     const bottomIcons = [
-        { id: 1, label: 'Different Constraints', icon: '/src/assets/constraints.jpeg' },
-        { id: 2, label: 'Food Tour', icon: '/src/assets/food-tour.jpeg' },
-        { id: 3, label: 'Ship Cruise', icon: '/src/assets/ship.jpeg' },
-        { id: 4, label: 'Mountains Tour', icon: '/src/assets/mountains.jpeg' },
-        { id: 5, label: 'Summer Rest', icon: '/src/assets/summer.jpeg' },
-        { id: 6, label: 'Bus Tour', icon: '/src/assets/bus.jpeg' },
+        { id: 1, label: 'Different Constraints', icon: '/assets/constraints.jpeg' },
+        { id: 2, label: 'Food Tour', icon: '/assets/food-tour.jpeg' },
+        { id: 3, label: 'Ship Cruise', icon: '/assets/ship.jpeg' },
+        { id: 4, label: 'Mountains Tour', icon: '/assets/mountains.jpeg' },
+        { id: 5, label: 'Summer Rest', icon: '/assets/summer.jpeg' },
+        { id: 6, label: 'Bus Tour', icon: '/assets/bus.jpeg' },
     ]
 
     return (

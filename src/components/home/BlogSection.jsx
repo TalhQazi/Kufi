@@ -1,9 +1,9 @@
 export default function BlogSection() {
     const blogs = [
-        { id: 1, title: 'Lorem Ipsum Amet Ipi', subtitle: 'Lorem ipsum ipi', image: '/src/assets/blog1.jpeg' },
-        { id: 2, title: 'Lorem Ipsum Amet Ipi', subtitle: 'Lorem ipsum ipi', image: '/src/assets/blog2.jpeg' },
-        { id: 3, title: 'Lorem Ipsum Amet Ipi', subtitle: 'Lorem ipsum ipi', image: '/src/assets/blog3.jpeg' },
-        { id: 4, title: 'Lorem Ipsum Amet Ipi', subtitle: 'Lorem ipsum ipi', image: '/src/assets/blog4.jpeg' },
+        { id: 1, title: 'Lorem Ipsum Amet Ipi', subtitle: 'Lorem ipsum ipi', image: '/assets/blog1.jpeg' },
+        { id: 2, title: 'Lorem Ipsum Amet Ipi', subtitle: 'Lorem ipsum ipi', image: '/assets/blog2.jpeg' },
+        { id: 3, title: 'Lorem Ipsum Amet Ipi', subtitle: 'Lorem ipsum ipi', image: '/assets/blog3.jpeg' },
+        { id: 4, title: 'Lorem Ipsum Amet Ipi', subtitle: 'Lorem ipsum ipi', image: '/assets/blog4.jpeg' },
     ]
 
     return (

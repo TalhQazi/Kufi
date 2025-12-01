@@ -68,7 +68,7 @@ export default function Login({ onRegisterClick, onLoginSuccess }) {
               <span className="w-[26px] h-[26px] rounded-full border border-slate-50/70 flex items-center justify-center text-[11px]">yt</span>
             </div>
             <div className="flex items-center gap-2.5">
-              <img src="/src/assets/navbar.png" alt="Kufi Travel" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+              <img src="/assets/navbar.png" alt="Kufi Travel" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
               <div className="leading-tight">
                 <p className="m-0 text-sm font-semibold">Kufi</p>
                 <p className="m-0 text-sm font-semibold">Travel</p>

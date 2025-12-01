@@ -4,25 +4,25 @@ export default function BookingSystemSection() {
             id: 1,
             title: 'Select Activities You Like',
             stepLabel: 'STEP 01',
-            image: '/src/assets/book1.jpeg',
+            image: '/assets/book1.jpeg',
         },
         {
             id: 2,
             title: 'Fill Out Request Form',
             stepLabel: 'STEP 02',
-            image: '/src/assets/book2.jpeg',
+            image: '/assets/book2.jpeg',
         },
         {
             id: 3,
             title: 'KufiTravel To Optimize Your Itinerary',
             stepLabel: 'STEP 03',
-            image: '/src/assets/book3.jpeg',
+            image: '/assets/book3.jpeg',
         },
         {
             id: 4,
             title: 'Review Itinerary & Book',
             stepLabel: 'STEP 04',
-            image: '/src/assets/book4.jpeg',
+            image: '/assets/book4.jpeg',
         },
     ]
 

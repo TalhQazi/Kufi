@@ -1,5 +1,4 @@
 import React from 'react'
-import footer from '../../assets/footer.jpeg'
 import '../../App.css'
 export default function Footer() {
   return (
@@ -7,7 +6,7 @@ export default function Footer() {
       <div className="footer-inner">
         <div className="footer-column footer-brand">
           <div className="footer-logo-row">
-            <img src={footer} alt="Kufi Travel" className="footer-logo-img" />
+            <img src="/assets/footer.jpeg" alt="Kufi Travel" className="footer-logo-img" />
             {/* <div className="footer-logo-text">
               <p className="footer-logo-name">Kufi</p>
               <p className="footer-logo-sub">Travel</p>

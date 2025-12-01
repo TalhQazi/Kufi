@@ -5,20 +5,20 @@ export default function TopActivitiesSection() {
             badge: 'International',
             title: 'Rajasthan Heritage Tour',
             subtitle: 'Find out why travelers like you are raving about Bali',
-            image: '/src/assets/activity1.jpeg',
+            image: '/assets/activity1.jpeg',
         },
         {
             id: 2,
             badge: '',
             title: 'Kerala Backwaters',
             subtitle: 'Find out why travelers like you are raving about Bali',
-            image: '/src/assets/activity2.jpeg',
+            image: '/assets/activity2.jpeg',
         },
     ]
 
     const rightCard = {
         title: 'Maldives Luxury Escape',
-        image: '/src/assets/activity3.jpeg',
+        image: '/assets/activity3.jpeg',
         available: '363 available',
         reviews: '4.7 (2,543 Reviews)',
     }

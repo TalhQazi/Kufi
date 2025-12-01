@@ -2,10 +2,10 @@ import Card from '../ui/Card'
 
 export default function DestinationsSection() {
     const destinations = [
-        { id: 1, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/src/assets/dest-1.jpeg' },
-        { id: 2, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/src/assets/dest-2.jpeg' },
-        { id: 3, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/src/assets/dest-3.jpeg' },
-        { id: 4, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/src/assets/dest-4.jpeg' },
+        { id: 1, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-1.jpeg' },
+        { id: 2, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-2.jpeg' },
+        { id: 3, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-3.jpeg' },
+        { id: 4, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-4.jpeg' },
     ]
 
     return (

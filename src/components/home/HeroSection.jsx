@@ -3,10 +3,10 @@ import Button from '../ui/Button'
 
 export default function HeroSection({ onSignupClick }) {
     const cards = [
-        '/src/assets/hero-card1.jpeg',
-        '/src/assets/hero-card2.jpeg',
-        '/src/assets/hero-card3.jpeg',
-        '/src/assets/hero-card4.jpeg'
+        '/assets/hero-card1.jpeg',
+        '/assets/hero-card2.jpeg',
+        '/assets/hero-card3.jpeg',
+        '/assets/hero-card4.jpeg'
     ]
     const [idx, setIdx] = useState(0)
     const [isPaused, setIsPaused] = useState(false)
@@ -39,7 +39,7 @@ export default function HeroSection({ onSignupClick }) {
     return (
         <div className="min-h-screen flex flex-col bg-cover bg-center text-white px-4 sm:px-8 lg:px-20 pb-12 box-border"
             style={{
-                backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url('/src/assets/hero.jpeg')`
+                backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url('/assets/hero.jpeg')`
             }}>
 
         <main className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-10 items-center mt-6">
