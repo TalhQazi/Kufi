@@ -24,14 +24,14 @@ export default function TopActivitiesSection() {
     }
 
     return (
-        <section className="py-16 px-20" style={{ background: 'radial-gradient(circle at top, #fdfaf5 0, #d1b693 60%, #a9753b 100%)' }}>
+        <section className="py-12 sm:py-16 px-4 sm:px-8 lg:px-20" style={{ background: 'radial-gradient(circle at top, #fdfaf5 0, #d1b693 60%, #a9753b 100%)' }}>
             <div className="max-w-[1200px] mx-auto">
                 <h2 className="text-lg tracking-[0.12em] font-bold text-slate-900 mb-6">TOP ACTIVITIES</h2>
 
-                <div className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1.2fr)] gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.2fr)] gap-6">
                     <div className="flex flex-col gap-4">
                         {leftCards.map((card) => (
-                            <article key={card.id} className="relative h-[210px] rounded-2xl overflow-hidden">
+                            <article key={card.id} className="relative h-56 sm:h-[210px] rounded-2xl overflow-hidden">
                                 <div
                                     className="absolute inset-0 w-full h-full bg-cover bg-top"
                                     style={{ backgroundImage: `url(${card.image})` }}
@@ -45,7 +45,7 @@ export default function TopActivitiesSection() {
                         ))}
                     </div>
 
-                    <article className="relative h-[430px] rounded-3xl overflow-hidden">
+                    <article className="relative h-[360px] md:h-[430px] rounded-3xl overflow-hidden">
                         <div
                             className="absolute inset-0 w-full h-full bg-cover bg-top"
                             style={{ backgroundImage: `url(${rightCard.image})` }}

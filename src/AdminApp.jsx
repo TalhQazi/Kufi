@@ -36,7 +36,7 @@ const AdminApp = ({ initialPage = 'Dashboard' }) => {
   }
 
   return (
-    <div className="app-root bg-[#f5f6fb] h-screen flex overflow-hidden">
+    <div className="app-root bg-[#f5f6fb] min-h-screen md:h-screen flex flex-col md:flex-row overflow-hidden">
       {activePage !== 'Supplier Dashboard' && (
         <Sidebar activePage={activePage} onSelect={setActivePage} />
       )}
@@ -51,8 +51,8 @@ const AdminApp = ({ initialPage = 'Dashboard' }) => {
         <main
           className={
             activePage === 'Supplier Dashboard'
-              ? 'flex-1'
-              : 'flex-1 px-6 md:px-8 py-6 overflow-y-auto'
+              ? 'flex-1 overflow-y-auto'
+              : 'flex-1 px-4 md:px-6 lg:px-8 py-4 md:py-6 overflow-y-auto'
           }
         >
           {renderPage()}

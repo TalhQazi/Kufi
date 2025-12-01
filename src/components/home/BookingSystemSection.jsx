@@ -27,17 +27,19 @@ export default function BookingSystemSection() {
     ]
 
     return (
-        <section className="bg-beige-light py-16 px-20">
+        <section className="bg-beige-light py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
             <div className="max-w-[1200px] mx-auto">
-                <h2 className="text-[26px] font-bold text-slate-900 mb-10 text-center">Booking System</h2>
+                <h2 className="text-2xl sm:text-[26px] font-bold text-slate-900 mb-8 sm:mb-10 text-center">
+                    Booking System
+                </h2>
 
-                <div className="flex justify-between items-start relative">
+                <div className="flex flex-col gap-10 sm:gap-12 md:flex-row md:justify-between md:items-start">
                     {steps.map((step, index) => (
                         <div
                             key={step.id}
-                            className="flex flex-col items-center relative z-10"
+                            className="flex flex-col items-center text-center md:text-left md:flex-1"
                         >
-                            <div className="w-40 h-40 rounded-full p-1 bg-gradient-to-br from-primary/30 to-primary-dark/20">
+                            <div className="w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full p-1 bg-gradient-to-br from-primary/30 to-primary-dark/20">
                                 <div className="w-full h-full rounded-full overflow-hidden">
                                     <div
                                         className="w-full h-full bg-cover bg-center"
@@ -46,11 +48,16 @@ export default function BookingSystemSection() {
                                 </div>
                             </div>
 
-                            <p className="mt-4 text-sm font-medium text-center max-w-[140px]">{step.title}</p>
-                            <span className="mt-1 text-xs text-slate-500 font-semibold">{step.stepLabel}</span>
+                            <p className="mt-4 text-sm sm:text-base font-medium max-w-[160px]">
+                                {step.title}
+                            </p>
+                            <span className="mt-1 text-xs text-slate-500 font-semibold">
+                                {step.stepLabel}
+                            </span>
 
+                            {/* Vertical connector for mobile/tablet */}
                             {index < steps.length - 1 && (
-                                <div className="absolute top-20 left-[calc(50%+80px)] w-[calc(100%+40px)] h-0.5 bg-primary/30 -z-10" />
+                                <div className="mt-4 h-8 w-px bg-primary/30 md:hidden" />
                             )}
                         </div>
                     ))}

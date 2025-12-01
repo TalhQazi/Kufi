@@ -1051,6 +1051,60 @@ h6 {
   }
 }
 
+@media (max-width: 640px) {
+  .hero-page {
+    padding: 0 16px 32px;
+  }
+
+  .hero-header {
+    margin: 0 -16px 24px;
+    padding: 8px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    row-gap: 12px;
+  }
+
+  .hero-main {
+    gap: 24px;
+  }
+
+  .hero-title {
+    font-size: 32px;
+  }
+
+  .hero-search-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .destinations,
+  .categories-section,
+  .top-locations-section,
+  .top-activities-section,
+  .booking-section,
+  .feedback-section,
+  .blog-section {
+    padding: 32px 16px 40px;
+  }
+
+  .destinations-grid,
+  .top-locations-grid,
+  .blog-cards-row {
+    grid-template-columns: 1fr;
+  }
+
+  .categories-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .feedback-icons-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .feedback-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Feedback section */
 .feedback-section {
   background-color: #fdfaf5;
@@ -1356,6 +1410,16 @@ h6 {
   }
 }
 
+@media (max-width: 640px) {
+  .blog-section {
+    padding: 32px 16px 40px;
+  }
+
+  .blog-cards-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Footer */
 .site-footer {
   background-color: #a66e32;
@@ -1521,6 +1585,20 @@ h6 {
   .footer-inner {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     row-gap: 32px;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-footer {
+    padding: 32px 16px 20px;
+  }
+
+  .footer-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-column-title {
+    margin-bottom: 10px;
   }
 }
 
@@ -1790,6 +1868,20 @@ h6 {
   .auth-right-content {
     margin-left: 0;
     border-radius: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-left {
+    padding: 24px 20px;
+  }
+
+  .auth-right {
+    padding: 24px 20px;
+  }
+
+  .auth-right-content {
+    padding: 24px 20px 28px;
   }
 }
 
@@ -2182,6 +2274,25 @@ h6 {
 
   .explore-cards-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .explore-page {
+    padding: 12px 12px 20px;
+  }
+
+  .explore-header {
+    flex-wrap: wrap;
+    row-gap: 12px;
+  }
+
+  .explore-header-actions {
+    margin-left: auto;
+  }
+
+  .explore-main {
+    padding: 24px 16px;
   }
 }
 

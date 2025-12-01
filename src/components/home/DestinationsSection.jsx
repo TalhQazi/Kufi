@@ -9,12 +9,12 @@ export default function DestinationsSection() {
     ]
 
     return (
-        <section className="bg-slate-50 py-16 px-20">
+        <section className="bg-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
             <div className="max-w-[1200px] mx-auto">
-                <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-[26px] font-bold text-slate-900 m-0">Explore Destinations</h2>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                    <h2 className="text-xl sm:text-[26px] font-bold text-slate-900 m-0">Explore Destinations</h2>
 
-                    <div className="flex gap-5">
+                    <div className="flex flex-wrap gap-3 sm:gap-5 text-xs">
                         <button className="bg-transparent border-none p-0 text-xs text-slate-400 cursor-pointer hover:text-slate-900 [&.active]:text-slate-900 active">
                             lorem Ipi
                         </button>
@@ -33,7 +33,7 @@ export default function DestinationsSection() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {destinations.map((item) => (
                         <Card
                             key={item.id}

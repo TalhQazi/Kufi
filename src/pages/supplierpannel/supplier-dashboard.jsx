@@ -82,7 +82,7 @@ const SupplierDashboard = () => {
   const [activeSection, setActiveSection] = useState("Dashboard");
 
   return (
-    <div className="h-screen flex bg-[#f5f5f7]">
+  <div className="min-h-screen md:h-screen flex flex-col md:flex-row bg-[#f5f5f7]">
       {/* Supplier sidebar (separate component) */}
       <SupplierSidebar
         activeSection={activeSection}
@@ -90,7 +90,7 @@ const SupplierDashboard = () => {
       />
 
       {/* Main content */}
-      <div className="flex-1 px-8 py-6 overflow-y-auto">
+      <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-y-auto">
         {activeSection === "Dashboard" && (
           <>
             {/* Full-width header bar with icons on the right */}

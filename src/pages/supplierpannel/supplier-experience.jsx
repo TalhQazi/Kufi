@@ -5,16 +5,16 @@ const SupplierExperience = () => {
   return (
     <>
       {/* Experience header card */}
-      <div className="mb-6 bg-white rounded-2xl border border-gray-100 px-6 py-4 flex items-center justify-between">
+      <div className="mb-6 bg-white rounded-2xl border border-gray-100 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">
+          <h1 className="text-lg sm:text-xl font-semibold text-slate-900">
             Create New Experience
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
             Add details about your travel experience, itinerary, and pricing.
           </p>
         </div>
-        <button className="rounded-full bg-[#f5f5f7] px-5 py-2 text-xs font-semibold text-gray-600">
+        <button className="self-start sm:self-auto rounded-full bg-[#f5f5f7] px-4 sm:px-5 py-2 text-xs font-semibold text-gray-600">
           Experience Details
         </button>
       </div>
@@ -47,7 +47,7 @@ const SupplierExperience = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-700">Days</label>
                   <input

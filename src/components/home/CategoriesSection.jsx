@@ -139,18 +139,18 @@ export default function CategoriesSection() {
     ]
 
     return (
-        <section className="bg-beige py-16 px-20">
+        <section className="bg-beige py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
             <div className="max-w-[1120px] mx-auto text-center">
-                <div className="mb-10">
+                <div className="mb-8 sm:mb-10">
                     <p className="text-xs font-normal text-primary-dark m-0 mb-1.5">Top Categories</p>
-                    <h2 className="text-[26px] font-bold text-[#1f2933] m-0 mb-2">Explore By Categories</h2>
-                    <p className="text-xs text-slate-500 max-w-[560px] m-0 mx-auto">
+                    <h2 className="text-xl sm:text-[26px] font-bold text-[#1f2933] m-0 mb-2">Explore By Categories</h2>
+                    <p className="text-xs sm:text-sm text-slate-500 max-w-[560px] m-0 mx-auto">
                         Lorem ipsum dolor sit amet consectetur. Porttitor montes mi tristique elit bibendum
                         elit libero egestas pellentesque.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-6 gap-y-6 gap-x-8">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-y-6 gap-x-6 sm:gap-x-8">
                     {categories.map(({ name, icon }) => (
                         <div key={name} className="flex flex-col items-center gap-2.5 cursor-pointer transition-transform duration-200 hover:-translate-y-1">
                             <div className="w-20 h-20 flex items-center justify-center">

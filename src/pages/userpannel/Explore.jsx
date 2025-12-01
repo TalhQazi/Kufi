@@ -164,14 +164,14 @@ export default function Explore() {
 
   return (
     <div className="bg-white min-h-screen">
-      <nav className="bg-white border-b border-slate-200 py-4 px-20 sticky top-0 z-50">
-        <div className="max-w-[1400px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-0">
-            <img src="/src/assets/navbar.png" alt="Kufi Travel" className="h-[66px] w-28" />
+      <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
+        <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-1">
+            <img src="/src/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
             <span className="text-sm font-medium leading-tight">Kufi<br />Travel</span>
           </div>
 
-          <div className="flex-1 max-w-md mx-12">
+          <div className="hidden sm:block flex-1 max-w-md mx-6 lg:mx-12">
             <div className="relative flex items-center">
               <svg className="absolute left-3" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
                 <circle cx="11" cy="11" r="8" />
@@ -185,7 +185,7 @@ export default function Explore() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -240,10 +240,10 @@ export default function Explore() {
         </div>
       </div>
 
-      <main className="px-20 py-8">
-        <div className="max-w-[1400px] mx-auto grid grid-cols-[1fr_320px] gap-8">
+      <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-8">
+        <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
           <section>
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {activities.map((activity) => (
                 <article key={activity.id} className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
                   <div className="relative">

@@ -16,7 +16,7 @@ export default function SearchBar() {
     return (
         <section className="relative z-10 -mt-10">
             <form
-                className="grid grid-cols-5 gap-6 bg-white rounded-2xl py-5 px-7 shadow-card-hover text-slate-950"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-4 sm:gap-6 bg-white rounded-2xl py-4 sm:py-5 px-4 sm:px-7 shadow-card-hover text-slate-950"
                 onSubmit={handleSubmit}
             >
                 <Input
@@ -71,7 +71,11 @@ export default function SearchBar() {
                     ]}
                 />
 
-                <Button variant="search" type="submit" className="self-center justify-self-end">
+                <Button
+                    variant="search"
+                    type="submit"
+                    className="w-full sm:w-auto self-end sm:self-center justify-self-stretch sm:justify-self-end"
+                >
                     Search
                 </Button>
             </form>
