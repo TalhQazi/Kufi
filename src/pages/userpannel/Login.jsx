@@ -128,7 +128,7 @@ export default function Login({ onRegisterClick, onLoginSuccess }) {
         </header>
 
         <div className="flex-1 flex items-center justify-center">
-          <div className="w-full max-w-md">
+          <div className="bg-white rounded-l-[28px] py-8 px-6 md:px-10 md:ml-10 shadow-lg w-full max-w-md">
             <h2 className="m-0 mb-2 text-[28px] font-bold text-slate-900">Hello!</h2>
             <p className="m-0 mb-8 text-sm text-slate-600">
               Sign in now to explore a world of curated information tailored to your interests!
