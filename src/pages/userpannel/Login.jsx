@@ -3,6 +3,10 @@ import { useState } from 'react'
 const ADMIN_EMAIL = 'admin@kufi.com'
 const ADMIN_PASSWORD = 'Admin@123'
 
+// Dummy user credentials for quick login
+const DUMMY_USERNAME = 'user'
+const DUMMY_PASSWORD = 'user123'
+
 export default function Login({ onRegisterClick, onLoginSuccess }) {
   const [emailOrUsername, setEmailOrUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -28,6 +32,16 @@ export default function Login({ onRegisterClick, onLoginSuccess }) {
       }
 
       if (onLoginSuccess) onLoginSuccess('admin')
+      return
+    }
+
+    // Check dummy user credentials first
+    const isDummyUser = 
+      (emailOrUsername === DUMMY_USERNAME || emailOrUsername === 'user@kufi.com') &&
+      password === DUMMY_PASSWORD
+
+    if (isDummyUser) {
+      if (onLoginSuccess) onLoginSuccess('user')
       return
     }
 
