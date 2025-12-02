@@ -54,30 +54,30 @@ export default function Login({ onRegisterClick, onLoginSuccess }) {
   <div className="min-h-screen grid grid-cols-1 md:grid-cols-[2fr_3fr] bg-white">
       {/* Left Side */}
       <div className="bg-[#B9B9B9] flex items-center justify-center py-10 px-6 md:px-12 rounded-tl-[28px] rounded-bl-[28px]">
-        <div className="max-w-[320px]">
+        <div className="max-w-[380px]">
           <h1 className="text-[38px] font-bold text-white m-0 mb-4">Seamless Booking Starts Here!</h1>
-          <p className="text-sm text-white m-0 mb-10">
+          <p className="text-sm text-white m-0 mb-12">
             Access your account to view upcoming stays, modify bookings, and enjoy a hassle-free
             experience.
           </p>
 
-          <div className="flex flex-col gap-3 text-[11px] text-white">
-            <div className="flex gap-2">
-              <span className="w-[26px] h-[26px] rounded-full bg-primary-brown text-white flex items-center justify-center text-xs font-bold">f</span>
-              <span className="w-[26px] h-[26px] rounded-full bg-primary-brown text-white flex items-center justify-center text-xs">🐦</span>
-              <span className="w-[26px] h-[26px] rounded-full bg-primary-brown text-white flex items-center justify-center text-xs">📷</span>
-              <span className="w-[26px] h-[26px] rounded-full bg-primary-brown text-white flex items-center justify-center text-xs">▶</span>
+          <div className="flex flex-col gap-5 text-sm text-white">
+            <div className="flex gap-3">
+              <span className="w-[36px] h-[36px] rounded-full bg-primary-brown text-white flex items-center justify-center text-sm font-bold">f</span>
+              <span className="w-[36px] h-[36px] rounded-full bg-primary-brown text-white flex items-center justify-center text-base">🐦</span>
+              <span className="w-[36px] h-[36px] rounded-full bg-primary-brown text-white flex items-center justify-center text-base">📷</span>
+              <span className="w-[36px] h-[36px] rounded-full bg-primary-brown text-white flex items-center justify-center text-base">▶</span>
             </div>
-            <div className="flex items-center gap-2.5">
-              <img src="/assets/navbar.png" alt="Kufi Travel" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+            <div className="flex items-center gap-3">
+              <img src="/assets/navbar.png" alt="Kufi Travel" className="w-12 h-12 md:w-14 md:h-14 object-contain" />
               <div className="leading-tight">
-                <p className="m-0 text-sm font-semibold">Kufi</p>
-                <p className="m-0 text-sm font-semibold">Travel</p>
+                <p className="m-0 text-lg font-semibold">Kufi</p>
+                <p className="m-0 text-lg font-semibold">Travel</p>
               </div>
             </div>
-            <div className="flex gap-4">
-              <span className="cursor-pointer hover:underline">Privacy Policy</span>
-              <span className="cursor-pointer hover:underline">Terms of Service</span>
+            <div className="flex gap-6">
+              <span className="cursor-pointer hover:underline text-sm">Privacy Policy</span>
+              <span className="cursor-pointer hover:underline text-sm">Terms of Service</span>
             </div>
           </div>
         </div>
