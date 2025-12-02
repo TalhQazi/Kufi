@@ -7,6 +7,10 @@ const ADMIN_PASSWORD = 'Admin@123'
 const DUMMY_USERNAME = 'user'
 const DUMMY_PASSWORD = 'user123'
 
+// Dummy supplier credentials for quick login
+const DUMMY_SUPPLIER_USERNAME = 'supplier'
+const DUMMY_SUPPLIER_PASSWORD = 'supplier123'
+
 export default function Login({ onRegisterClick, onLoginSuccess }) {
   const [emailOrUsername, setEmailOrUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -35,12 +39,24 @@ export default function Login({ onRegisterClick, onLoginSuccess }) {
       return
     }
 
-    // Check dummy user credentials first
+    // Check dummy supplier credentials
+    if (role === 'supplier') {
+      const isDummySupplier = 
+        (emailOrUsername === DUMMY_SUPPLIER_USERNAME || emailOrUsername === 'supplier@kufi.com') &&
+        password === DUMMY_SUPPLIER_PASSWORD
+
+      if (isDummySupplier) {
+        if (onLoginSuccess) onLoginSuccess('supplier')
+        return
+      }
+    }
+
+    // Check dummy user credentials
     const isDummyUser = 
       (emailOrUsername === DUMMY_USERNAME || emailOrUsername === 'user@kufi.com') &&
       password === DUMMY_PASSWORD
 
-    if (isDummyUser) {
+    if (isDummyUser && role === 'user') {
       if (onLoginSuccess) onLoginSuccess('user')
       return
     }
