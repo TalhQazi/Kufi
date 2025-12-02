@@ -10,10 +10,10 @@ import BlogSection from '../../components/home/BlogSection'
 import FeedbackSection from '../../components/home/FeedbackSection'
 import Footer from '../../components/layout/Footer'
 
-export default function HomePage({ onSignupClick }) {
+export default function HomePage({ onSignupClick, onSigninClick }) {
     return (
         <>
-            <Header onSignupClick={onSignupClick} />
+            <Header onSignupClick={onSignupClick} onSigninClick={onSigninClick} />
             <div className="relative">
                 <HeroSection onSignupClick={onSignupClick} />
                 <SearchBar />

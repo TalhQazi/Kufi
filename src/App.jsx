@@ -40,5 +40,5 @@ export default function App() {
 
   if (page === 'explore') return <Explore />
 
-  return <HomePage onSignupClick={() => setPage('login')} />
+  return <HomePage onSignupClick={() => setPage('register')} onSigninClick={() => setPage('login')} />
 }
