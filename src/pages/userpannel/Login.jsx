@@ -14,7 +14,6 @@ const DUMMY_SUPPLIER_PASSWORD = 'supplier123'
 export default function Login({ onRegisterClick, onLoginSuccess }) {
   const [emailOrUsername, setEmailOrUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState('user')
   const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = (event) => {
@@ -25,30 +24,24 @@ export default function Login({ onRegisterClick, onLoginSuccess }) {
       return
     }
 
-    if (role === 'admin') {
-      const isAdminMatch =
-        (emailOrUsername === ADMIN_EMAIL || emailOrUsername === 'admin') &&
-        password === ADMIN_PASSWORD
+    // Check admin credentials first
+    const isAdminMatch =
+      (emailOrUsername === ADMIN_EMAIL || emailOrUsername === 'admin') &&
+      password === ADMIN_PASSWORD
 
-      if (!isAdminMatch) {
-        alert('Invalid admin credentials.')
-        return
-      }
-
+    if (isAdminMatch) {
       if (onLoginSuccess) onLoginSuccess('admin')
       return
     }
 
     // Check dummy supplier credentials
-    if (role === 'supplier') {
-      const isDummySupplier = 
-        (emailOrUsername === DUMMY_SUPPLIER_USERNAME || emailOrUsername === 'supplier@kufi.com') &&
-        password === DUMMY_SUPPLIER_PASSWORD
+    const isDummySupplier = 
+      (emailOrUsername === DUMMY_SUPPLIER_USERNAME || emailOrUsername === 'supplier@kufi.com') &&
+      password === DUMMY_SUPPLIER_PASSWORD
 
-      if (isDummySupplier) {
-        if (onLoginSuccess) onLoginSuccess('supplier')
-        return
-      }
+    if (isDummySupplier) {
+      if (onLoginSuccess) onLoginSuccess('supplier')
+      return
     }
 
     // Check dummy user credentials
@@ -56,11 +49,12 @@ export default function Login({ onRegisterClick, onLoginSuccess }) {
       (emailOrUsername === DUMMY_USERNAME || emailOrUsername === 'user@kufi.com') &&
       password === DUMMY_PASSWORD
 
-    if (isDummyUser && role === 'user') {
+    if (isDummyUser) {
       if (onLoginSuccess) onLoginSuccess('user')
       return
     }
 
+    // Check registered users in localStorage
     const stored = localStorage.getItem('kufiUsers')
     const users = stored ? JSON.parse(stored) : []
 
@@ -68,16 +62,18 @@ export default function Login({ onRegisterClick, onLoginSuccess }) {
       const identifierMatch =
         u.email === emailOrUsername || u.name === emailOrUsername
       const passwordMatch = u.password === password
-      const roleMatch = (u.role || 'user') === role
-      return identifierMatch && passwordMatch && roleMatch
+      return identifierMatch && passwordMatch
     })
 
-    if (!match) {
-      alert('Invalid credentials for this role. Please check your details.')
+    if (match) {
+      // Use the role from the matched user, default to 'user' if not specified
+      const userRole = match.role || 'user'
+      if (onLoginSuccess) onLoginSuccess(userRole)
       return
     }
 
-    if (onLoginSuccess) onLoginSuccess(role)
+    // If no match found
+    alert('Invalid credentials. Please check your email/username and password.')
   }
 
   return (
@@ -171,48 +167,6 @@ export default function Login({ onRegisterClick, onLoginSuccess }) {
                 <button type="button" className="bg-transparent border-none text-primary-brown cursor-pointer hover:underline">
                   Forgot Password?
                 </button>
-              </div>
-
-              {/* Hidden role selector for functionality - can be shown via a toggle if needed */}
-              <div className="hidden">
-                <div className="mt-3 flex flex-col gap-2 text-xs text-slate-700">
-                  <span className="font-semibold">Login as</span>
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition ${
-                        role === 'admin'
-                          ? 'bg-primary-brown text-white border-primary-brown'
-                          : 'bg-slate-50 text-slate-700 border-slate-200'
-                      }`}
-                      onClick={() => setRole('admin')}
-                    >
-                      Admin
-                    </button>
-                    <button
-                      type="button"
-                      className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition ${
-                        role === 'supplier'
-                          ? 'bg-primary-brown text-white border-primary-brown'
-                          : 'bg-slate-50 text-slate-700 border-slate-200'
-                      }`}
-                      onClick={() => setRole('supplier')}
-                    >
-                      Supplier
-                    </button>
-                    <button
-                      type="button"
-                      className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition ${
-                        role === 'user'
-                          ? 'bg-primary-brown text-white border-primary-brown'
-                          : 'bg-slate-50 text-slate-700 border-slate-200'
-                      }`}
-                      onClick={() => setRole('user')}
-                    >
-                      User
-                    </button>
-                  </div>
-                </div>
               </div>
 
               <button type="submit" className="mt-2 py-3 rounded-lg bg-primary-brown text-white font-semibold text-sm hover:bg-primary-dark transition-colors w-full">
