@@ -19,38 +19,45 @@ export default function Login({ onRegisterClick, onLoginSuccess }) {
   const handleSubmit = (event) => {
     event.preventDefault()
 
-    if (!emailOrUsername || !password) {
+    // Trim whitespace from inputs
+    const trimmedEmail = emailOrUsername.trim()
+    const trimmedPassword = password.trim()
+
+    if (!trimmedEmail || !trimmedPassword) {
       alert('Please enter both email/username and password.')
       return
     }
 
     // Check admin credentials first
-    const isAdminMatch =
-      (emailOrUsername === ADMIN_EMAIL || emailOrUsername === 'admin') &&
-      password === ADMIN_PASSWORD
-
-    if (isAdminMatch) {
-      if (onLoginSuccess) onLoginSuccess('admin')
+    const adminEmailMatch = trimmedEmail.toLowerCase() === 'admin@kufi.com' || trimmedEmail.toLowerCase() === 'admin'
+    const adminPasswordMatch = trimmedPassword === 'Admin@123'
+    
+    if (adminEmailMatch && adminPasswordMatch) {
+      if (onLoginSuccess) {
+        onLoginSuccess('admin')
+      }
       return
     }
 
     // Check dummy supplier credentials
-    const isDummySupplier = 
-      (emailOrUsername === DUMMY_SUPPLIER_USERNAME || emailOrUsername === 'supplier@kufi.com') &&
-      password === DUMMY_SUPPLIER_PASSWORD
-
-    if (isDummySupplier) {
-      if (onLoginSuccess) onLoginSuccess('supplier')
+    const supplierEmailMatch = trimmedEmail.toLowerCase() === 'supplier' || trimmedEmail.toLowerCase() === 'supplier@kufi.com'
+    const supplierPasswordMatch = trimmedPassword === 'supplier123'
+    
+    if (supplierEmailMatch && supplierPasswordMatch) {
+      if (onLoginSuccess) {
+        onLoginSuccess('supplier')
+      }
       return
     }
 
     // Check dummy user credentials
-    const isDummyUser = 
-      (emailOrUsername === DUMMY_USERNAME || emailOrUsername === 'user@kufi.com') &&
-      password === DUMMY_PASSWORD
-
-    if (isDummyUser) {
-      if (onLoginSuccess) onLoginSuccess('user')
+    const userEmailMatch = trimmedEmail.toLowerCase() === 'user' || trimmedEmail.toLowerCase() === 'user@kufi.com'
+    const userPasswordMatch = trimmedPassword === 'user123'
+    
+    if (userEmailMatch && userPasswordMatch) {
+      if (onLoginSuccess) {
+        onLoginSuccess('user')
+      }
       return
     }
 
@@ -60,15 +67,18 @@ export default function Login({ onRegisterClick, onLoginSuccess }) {
 
     const match = users.find((u) => {
       const identifierMatch =
-        u.email === emailOrUsername || u.name === emailOrUsername
-      const passwordMatch = u.password === password
+        (u.email && u.email.toLowerCase() === trimmedEmail.toLowerCase()) ||
+        (u.name && u.name.toLowerCase() === trimmedEmail.toLowerCase())
+      const passwordMatch = u.password === trimmedPassword
       return identifierMatch && passwordMatch
     })
 
     if (match) {
       // Use the role from the matched user, default to 'user' if not specified
       const userRole = match.role || 'user'
-      if (onLoginSuccess) onLoginSuccess(userRole)
+      if (onLoginSuccess) {
+        onLoginSuccess(userRole)
+      }
       return
     }
 
