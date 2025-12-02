@@ -1,6 +1,6 @@
 import Button from '../ui/Button'
 
-export default function Header({ onSignupClick }) {
+export default function Header({ onSignupClick, onSigninClick }) {
     return (
         <header className="w-full bg-white shadow-header mb-10 rounded-none">
             <div className="max-w-[1200px] mx-auto flex items-center justify-between gap-4 py-2 px-4 sm:px-6 lg:px-10 flex-wrap">
@@ -38,9 +38,14 @@ export default function Header({ onSignupClick }) {
                         <span className="text-base">📞</span>
                         <span className="whitespace-nowrap">+0 123 456 789</span>
                     </div>
-                    <Button variant="signup" onClick={onSignupClick}>
-                        Sign up
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button variant="signup" onClick={onSigninClick}>
+                            Sign in
+                        </Button>
+                        <Button variant="signup" onClick={onSignupClick}>
+                            Sign up
+                        </Button>
+                    </div>
                 </div>
             </div>
         </header>
