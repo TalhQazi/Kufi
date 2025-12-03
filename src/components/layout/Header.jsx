@@ -1,48 +1,48 @@
 import Button from '../ui/Button'
+import { FiPhone } from 'react-icons/fi'
 
 export default function Header({ onSignupClick, onSigninClick }) {
     return (
-        <header className="w-full bg-white shadow-header mb-10 rounded-none">
-            <div className="max-w-[1200px] mx-auto flex items-center justify-between gap-4 py-2 px-4 sm:px-6 lg:px-10 flex-wrap">
-                <div className="flex items-center gap-2">
-                    <img
-                        src="/assets/navbar.png"
-                        alt="Kufi Travel"
-                        className="h-12 w-20 sm:h-[66px] sm:w-28 block"
-                    />
-                    <span className="text-sm font-medium leading-tight">
-                        Kufi <br /> Travel
-                    </span>
+        <header className="w-full bg-white mb-0">
+            <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4 py-4 px-4 sm:px-6 lg:px-12 flex-wrap">
+                <div className="flex items-center gap-3">
+                    <div className="w-16 h-16 border-2 border-[#A67C52] p-1.5 rounded">
+                        <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
+                    </div>
+                    <div className="leading-tight">
+                        <p className="m-0 text-2xl font-bold text-[#A67C52]">Kufi</p>
+                        <p className="m-0 text-2xl font-medium text-slate-400">Travel</p>
+                    </div>
                 </div>
 
-                <nav className="order-3 w-full md:order-2 md:w-auto flex justify-center md:justify-center gap-4 sm:gap-8 text-xs sm:text-sm mt-3 md:mt-0">
+                <nav className="order-3 w-full md:order-2 md:w-auto flex justify-center md:justify-center gap-6 sm:gap-10 text-sm font-medium mt-3 md:mt-0">
                     <a
                         href="#home"
-                        className="text-slate-600 no-underline relative hover:text-slate-900 [&.active]:text-slate-900 [&.active]:before:content-[''] [&.active]:before:absolute [&.active]:before:-left-2.5 [&.active]:before:top-1/2 [&.active]:before:-translate-y-1/2 [&.active]:before:w-1 [&.active]:before:h-1 [&.active]:before:rounded-full [&.active]:before:bg-gold active"
+                        className="text-[#A67C52] no-underline relative hover:text-[#8e6a45] flex items-center gap-1"
                     >
-                        Home
+                        <span className="text-xs">•</span> Home
                     </a>
-                    <a href="#destinations" className="text-slate-600 no-underline relative hover:text-slate-900">
+                    <a href="#destinations" className="text-slate-700 no-underline relative hover:text-[#A67C52] transition-colors">
                         Destinations
                     </a>
-                    <a href="#top-locations" className="text-slate-600 no-underline relative hover:text-slate-900">
+                    <a href="#top-locations" className="text-slate-700 no-underline relative hover:text-[#A67C52] transition-colors">
                         Top Locations
                     </a>
-                    <a href="#blog" className="text-slate-600 no-underline relative hover:text-slate-900">
+                    <a href="#blog" className="text-slate-700 no-underline relative hover:text-[#A67C52] transition-colors">
                         Blog
                     </a>
                 </nav>
 
-                <div className="order-2 md:order-3 flex items-center gap-4 sm:gap-6">
-                    <div className="hidden sm:flex items-center gap-2 text-slate-600 text-xs">
-                        <span className="text-base">📞</span>
+                <div className="order-2 md:order-3 flex items-center gap-4 sm:gap-8">
+                    <div className="hidden sm:flex items-center gap-2 text-slate-700 text-sm font-medium">
+                        <span className="text-[#A67C52]"><FiPhone /></span>
                         <span className="whitespace-nowrap">+0 123 456 789</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="signup" onClick={onSigninClick}>
-                            Sign in
+                    <div className="flex items-center gap-3">
+                        <Button variant="signup" onClick={onSigninClick} className="!rounded-md !px-6 !py-2 !text-sm !font-medium">
+                            Login
                         </Button>
-                        <Button variant="signup" onClick={onSignupClick}>
+                        <Button variant="signup" onClick={onSignupClick} className="!rounded-md !px-6 !py-2 !text-sm !font-medium">
                             Sign up
                         </Button>
                     </div>
