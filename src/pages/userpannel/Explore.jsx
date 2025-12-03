@@ -1,8 +1,26 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
-export default function Explore() {
+export default function Explore({ onLogout }) {
   const [selected, setSelected] = useState([])
   const [dropdown, setDropdown] = useState(false)
+  const dropdownRef = useRef(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdown(false)
+      }
+    }
+
+    if (dropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [dropdown])
 
   const brownColor = "#9B6F40"
 
@@ -199,7 +217,7 @@ export default function Explore() {
               </svg>
             </button>
 
-            <div className="relative">
+            <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdown(!dropdown)}
                 className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
@@ -213,11 +231,23 @@ export default function Explore() {
               </button>
 
               {dropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
                   <div className="px-4 py-2 text-xs font-semibold text-primary-brown hover:bg-slate-50 cursor-pointer">MY REQUESTS</div>
                   <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">NOTIFICATIONS</div>
                   <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">PAYMENTS</div>
                   <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">SETTINGS</div>
+                  <div className="border-t border-slate-200 my-1"></div>
+                  <div 
+                    className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                    onClick={() => {
+                      if (onLogout) {
+                        onLogout()
+                      }
+                      setDropdown(false)
+                    }}
+                  >
+                    LOGOUT
+                  </div>
                 </div>
               )}
             </div>

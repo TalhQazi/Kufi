@@ -10,7 +10,7 @@ import {
   LogOut,
 } from "lucide-react";
 
-const SupplierSidebar = ({ activeSection, onSelectSection }) => {
+const SupplierSidebar = ({ activeSection, onSelectSection, onLogout }) => {
   return (
     <>
       {/* Mobile top bar */}
@@ -84,7 +84,14 @@ const SupplierSidebar = ({ activeSection, onSelectSection }) => {
         </div>
 
         {/* Logout */}
-        <button className="mt-6 w-full rounded-2xl bg-[#f7f7f8] text-gray-600 text-sm py-2.5 flex items-center gap-2 justify-center">
+        <button 
+          onClick={() => {
+            if (onLogout) {
+              onLogout();
+            }
+          }}
+          className="mt-6 w-full rounded-2xl bg-[#f7f7f8] text-gray-600 text-sm py-2.5 flex items-center gap-2 justify-center hover:bg-[#e8e8e9] transition-colors"
+        >
           <LogOut className="w-4 h-4" />
           <span>Logout</span>
         </button>

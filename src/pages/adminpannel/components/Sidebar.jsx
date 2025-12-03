@@ -7,6 +7,7 @@ import {
   CreditCard,
   Bell,
   Menu,
+  LogOut,
 } from "lucide-react";
 
 const navItems = [
@@ -19,7 +20,7 @@ const navItems = [
   { label: "Supplier Dashboard", icon: LayoutDashboard },
 ];
 
-const Sidebar = ({ activePage, onSelect }) => {
+const Sidebar = ({ activePage, onSelect, onLogout }) => {
   return (
     <>
       {/* Mobile top nav */}
@@ -76,6 +77,21 @@ const Sidebar = ({ activePage, onSelect }) => {
             );
           })}
         </nav>
+
+        {/* Logout Button */}
+        <div className="px-4 pb-4">
+          <button
+            onClick={() => {
+              if (onLogout) {
+                onLogout();
+              }
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/10 rounded-2xl transition"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="ml-1">Logout</span>
+          </button>
+        </div>
       </aside>
     </>
   );

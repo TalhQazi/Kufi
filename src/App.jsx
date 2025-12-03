@@ -8,6 +8,14 @@ import AdminApp from './AdminApp'
 export default function App() {
   const [page, setPage] = useState('home')
 
+  const handleLogout = () => {
+    // Clear any stored session data
+    localStorage.removeItem('currentUser')
+    localStorage.removeItem('userRole')
+    // Reset to home page
+    setPage('home')
+  }
+
   // simple routing
   if (page === 'login') {
     return (
@@ -31,14 +39,14 @@ export default function App() {
   }
 
   if (page === 'admin') {
-    return <AdminApp initialPage="Dashboard" />
+    return <AdminApp initialPage="Dashboard" onLogout={handleLogout} />
   }
 
   if (page === 'supplier') {
-    return <AdminApp initialPage="Supplier Dashboard" />
+    return <AdminApp initialPage="Supplier Dashboard" onLogout={handleLogout} />
   }
 
-  if (page === 'explore') return <Explore />
+  if (page === 'explore') return <Explore onLogout={handleLogout} />
 
   return <HomePage onSignupClick={() => setPage('register')} onSigninClick={() => setPage('login')} />
 }

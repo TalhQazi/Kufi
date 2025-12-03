@@ -78,7 +78,7 @@ const travelerStats = [
   },
 ];
 
-const SupplierDashboard = () => {
+const SupplierDashboard = ({ onLogout }) => {
   const [activeSection, setActiveSection] = useState("Dashboard");
 
   return (
@@ -87,6 +87,7 @@ const SupplierDashboard = () => {
       <SupplierSidebar
         activeSection={activeSection}
         onSelectSection={setActiveSection}
+        onLogout={onLogout}
       />
 
       {/* Main content */}
