@@ -6,12 +6,8 @@ export default function Header({ onSignupClick, onSigninClick }) {
         <header className="w-full bg-white mb-0">
             <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4 py-4 px-4 sm:px-6 lg:px-12 flex-wrap">
                 <div className="flex items-center gap-3">
-                    <div className="w-16 h-16 border-2 border-[#A67C52] p-1.5 rounded">
+                    <div className="h-12 w-20 sm:h-[66px] sm:w-28 block">
                         <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
-                    </div>
-                    <div className="leading-tight">
-                        <p className="m-0 text-2xl font-bold text-[#A67C52]">Kufi</p>
-                        <p className="m-0 text-2xl font-medium text-slate-400">Travel</p>
                     </div>
                 </div>
 
