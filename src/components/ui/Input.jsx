@@ -5,7 +5,8 @@ export default function Input({
     value,
     onChange,
     options = [],
-    className = ''
+    className = '',
+    inputClassName = ''
 }) {
     return (
         <div className={className}>
@@ -22,7 +23,7 @@ export default function Input({
                     <select
                         value={value}
                         onChange={onChange}
-                        className={`w-full text-sm font-medium text-slate-950 py-2.5 px-3 ${icon ? 'pl-10' : ''} rounded-lg border border-slate-200 bg-slate-50 appearance-none focus:outline-none focus:border-primary-brown transition-colors`}
+                        className={`w-full text-sm font-medium text-slate-950 py-2.5 px-3 ${icon ? 'pl-10' : ''} rounded-lg border border-slate-200 bg-slate-50 appearance-none focus:outline-none focus:border-primary-brown transition-colors ${inputClassName}`}
                         style={{
                             backgroundImage: `linear-gradient(45deg, transparent 50%, #9ca3af 50%), linear-gradient(135deg, #9ca3af 50%, transparent 50%)`,
                             backgroundPosition: 'calc(100% - 16px) 50%, calc(100% - 11px) 50%',
@@ -41,7 +42,7 @@ export default function Input({
                         type={type}
                         value={value}
                         onChange={onChange}
-                        className={`w-full text-sm font-medium text-slate-950 py-2.5 px-3 ${icon ? 'pl-10' : ''} rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-primary-brown transition-colors`}
+                        className={`w-full text-sm font-medium text-slate-950 py-2.5 px-3 ${icon ? 'pl-10' : ''} rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-primary-brown transition-colors ${inputClassName}`}
                     />
                 )}
             </div>
