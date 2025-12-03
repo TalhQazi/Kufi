@@ -12,7 +12,7 @@ import SupplierDashboard from './pages/supplierpannel/supplier-dashboard'
 import NotificationsBooking from './pages/adminpannel/notifications-booking'
 import './App.css'
 
-const AdminApp = ({ initialPage = 'Dashboard' }) => {
+const AdminApp = ({ initialPage = 'Dashboard', onLogout }) => {
   const [activePage, setActivePage] = useState(initialPage)
 
   const renderPage = () => {
@@ -30,7 +30,7 @@ const AdminApp = ({ initialPage = 'Dashboard' }) => {
           onViewDetails={() => setActivePage('Booking Notifications')}
         />
       )
-    if (activePage === 'Supplier Dashboard') return <SupplierDashboard />
+    if (activePage === 'Supplier Dashboard') return <SupplierDashboard onLogout={onLogout} />
     if (activePage === 'Booking Notifications') return <NotificationsBooking />
     return <Dashboard />
   }
@@ -38,13 +38,14 @@ const AdminApp = ({ initialPage = 'Dashboard' }) => {
   return (
     <div className="app-root bg-[#f5f6fb] min-h-screen md:h-screen flex flex-col md:flex-row overflow-hidden">
       {activePage !== 'Supplier Dashboard' && (
-        <Sidebar activePage={activePage} onSelect={setActivePage} />
+        <Sidebar activePage={activePage} onSelect={setActivePage} onLogout={onLogout} />
       )}
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {activePage !== 'Supplier Dashboard' && (
           <Header
             onBellClick={() => setActivePage('Booking Notifications')}
+            onLogout={onLogout}
           />
         )}
 
