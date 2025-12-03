@@ -1,9 +1,46 @@
 import { useState, useEffect, useRef } from 'react'
+import Button from '../../components/ui/Button'
 
 export default function Explore({ onLogout }) {
   const [selected, setSelected] = useState([])
   const [dropdown, setDropdown] = useState(false)
   const dropdownRef = useRef(null)
+  
+  // Hero carousel state
+  const heroCards = [
+    '/assets/hero-card1.jpeg',
+    '/assets/hero-card2.jpeg',
+    '/assets/hero-card3.jpeg',
+    '/assets/hero-card4.jpeg'
+  ]
+  const [heroIdx, setHeroIdx] = useState(0)
+  const [isHeroPaused, setIsHeroPaused] = useState(false)
+
+  // Show only 3 cards at a time
+  const visibleHeroOrder = [0, 1, 2].map((offset) => (heroIdx + offset) % heroCards.length)
+
+  const prevHero = () => {
+    setIsHeroPaused(true)
+    setHeroIdx((p) => (p - 1 + heroCards.length) % heroCards.length)
+    setTimeout(() => setIsHeroPaused(false), 5000)
+  }
+
+  const nextHero = () => {
+    setIsHeroPaused(true)
+    setHeroIdx((p) => (p + 1) % heroCards.length)
+    setTimeout(() => setIsHeroPaused(false), 5000)
+  }
+
+  // Auto-rotate hero carousel every 4 seconds
+  useEffect(() => {
+    if (isHeroPaused) return
+
+    const interval = setInterval(() => {
+      setHeroIdx((p) => (p + 1) % heroCards.length)
+    }, 4000)
+
+    return () => clearInterval(interval)
+  }, [isHeroPaused, heroCards.length])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -254,6 +291,154 @@ export default function Explore({ onLogout }) {
           </div>
         </div>
       </nav>
+
+      {/* Hero Section */}
+      <div 
+        className="relative min-h-[600px] flex flex-col bg-cover bg-center text-white px-4 sm:px-8 lg:px-20 pb-12"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url('/assets/hero.jpeg')`
+        }}
+      >
+        <main className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-10 items-center mt-6 flex-1">
+          <section className="max-w-[520px]">
+            <p className="text-2xl sm:text-[25px] mb-4 font-sacramento">
+              <span className="font-sacramento">Lorem</span>
+              <span className="text-gold ml-1">Ipsum</span>
+              <span className="font-sacramento ml-1">Amet</span>
+            </p>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight m-0 mb-4">
+              Lorem Ipsum Dol <br />
+              Sit Amet Conse
+            </h1>
+            <p className="text-sm sm:text-base max-w-[420px] text-slate-200">
+              Lorem ipsum dolor sit amet consectetur. Ultricies varius praesent aliquam cum egestas tristique sit blandit tortor.
+            </p>
+
+            <div className="flex items-center gap-3 sm:gap-4 mt-7">
+              <Button variant="primary">Let's Explore</Button>
+              <Button variant="play">
+                <span className="text-slate-900 ml-0.5">▶</span>
+              </Button>
+            </div>
+          </section>
+
+          <section className="relative mt-6 lg:mt-0">
+            {/* Mobile/simple card */}
+            <div className="md:hidden">
+              <div className="rounded-3xl overflow-hidden shadow-2xl">
+                <img
+                  src={heroCards[heroIdx]}
+                  alt="Featured experience"
+                  className="w-full h-64 object-cover"
+                />
+              </div>
+            </div>
+
+            {/* Desktop cards with spacing - show 3 at a time */}
+            <div 
+              className="hidden md:flex gap-6"
+              onMouseEnter={() => setIsHeroPaused(true)}
+              onMouseLeave={() => setIsHeroPaused(false)}
+            >
+              {visibleHeroOrder.map((cardIdx) => (
+                <div
+                  key={`${cardIdx}-${heroIdx}`}
+                  className="w-60 h-[340px] rounded-3xl overflow-hidden shadow-2xl text-white flex-shrink-0 transition-opacity duration-500"
+                >
+                  <div
+                    className="w-full h-[75%] bg-cover bg-center"
+                    style={{ backgroundImage: `url(${heroCards[cardIdx]})` }}
+                  />
+                  <div className="p-4 bg-gradient-to-b from-slate-950/90 to-slate-950">
+                    <h3 className="m-0 mb-1.5 text-base">Lorem Ipsum</h3>
+                    <span className="text-sm">★ 4.4</span>
+                    <span className="ml-2">🔖</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden md:flex mt-6 gap-2">
+              <Button variant="slider" onClick={prevHero}>
+                Prev / Next
+              </Button>
+              <Button variant="sliderFilled" onClick={nextHero}>
+                →
+              </Button>
+            </div>
+          </section>
+        </main>
+
+        {/* Search Bar */}
+        <div className="relative z-10 -mb-12 mt-8">
+          <form className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-4 sm:gap-6 bg-white rounded-2xl py-4 sm:py-5 px-4 sm:px-7 shadow-card-hover">
+            <div className="flex flex-col">
+              <label className="text-xs text-slate-500 mb-1">Where do you want to stay?</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2">📍</span>
+                <input
+                  type="text"
+                  placeholder="Dubai"
+                  className="w-full py-2.5 pl-10 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-xs text-slate-500 mb-1">Duration</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2">📅</span>
+                <input
+                  type="text"
+                  placeholder="08 Days"
+                  className="w-full py-2.5 pl-10 pr-8 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
+                />
+                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-xs text-slate-500 mb-1">Travel Style</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2">🎒</span>
+                <input
+                  type="text"
+                  placeholder="Travelling"
+                  className="w-full py-2.5 pl-10 pr-8 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
+                />
+                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-xs text-slate-500 mb-1">Number of Travelers</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2">👥</span>
+                <input
+                  type="text"
+                  placeholder="Guest and rooms"
+                  className="w-full py-2.5 pl-10 pr-8 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
+                />
+                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            <Button
+              variant="search"
+              type="submit"
+              className="w-full sm:w-auto self-end sm:self-center justify-self-stretch sm:justify-self-end"
+            >
+              Search
+            </Button>
+          </form>
+        </div>
+      </div>
 
       <div className="bg-beige py-6 px-20 border-b border-slate-200">
         <div className="max-w-[1400px] mx-auto overflow-x-auto">
