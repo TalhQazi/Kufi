@@ -28,7 +28,7 @@ export default function Explore({ onLogout }) {
     {
       name: 'Trekking',
       icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <path d="M13 4.99961C13.5523 4.99961 14 4.55189 14 3.99961C14 3.44732 13.5523 2.99961 13 2.99961C12.4477 2.99961 12 3.44732 12 3.99961C12 4.55189 12.4477 4.99961 13 4.99961Z" />
           <path d="M5.5 21L10 11L8 9L11 7L13 9V6L15 8L17 13M9 19L11 13" />
           <path d="M7 10L9 8" />
@@ -38,7 +38,7 @@ export default function Explore({ onLogout }) {
     {
       name: 'Camping',
       icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <path d="M3 20L12 3L21 20H3Z" />
           <path d="M12 3V10" />
           <line x1="2" y1="20" x2="22" y2="20" />
@@ -48,7 +48,7 @@ export default function Explore({ onLogout }) {
     {
       name: 'Water Activities',
       icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <path d="M3 12C3 12 4.5 9 6 9C7.5 9 9 12 9 12C9 12 10.5 15 12 15C13.5 15 15 12 15 12C15 12 16.5 9 18 9C19.5 9 21 12 21 12" />
           <path d="M3 17C3 17 4.5 14 6 14C7.5 14 9 17 9 17C9 17 10.5 20 12 20C13.5 20 15 17 15 17C15 17 16.5 14 18 14C19.5 14 21 17 21 17" />
           <circle cx="12" cy="7" r="2" />
@@ -58,7 +58,7 @@ export default function Explore({ onLogout }) {
     {
       name: 'Bike Trips',
       icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <circle cx="5.5" cy="17.5" r="3.5" />
           <circle cx="18.5" cy="17.5" r="3.5" />
           <path d="M15 6L17 8L12 14L9 11L5.5 14" />
@@ -69,7 +69,7 @@ export default function Explore({ onLogout }) {
     {
       name: 'Paragliding',
       icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <path d="M12 4C6 4 3 8 3 10H21C21 8 18 4 12 4Z" />
           <path d="M12 10V14" />
           <path d="M10 14L9 20" />
@@ -81,7 +81,7 @@ export default function Explore({ onLogout }) {
     {
       name: 'Aerial Activities',
       icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <path d="M12 2L4 6L12 10L20 6L12 2Z" />
           <path d="M12 10V22" />
           <path d="M4 11V17L12 22" />
@@ -92,7 +92,7 @@ export default function Explore({ onLogout }) {
     {
       name: 'Religious Tours',
       icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <path d="M5 21V7L12 3L19 7V21" />
           <path d="M5 7H19" />
           <rect x="9" y="14" width="6" height="7" />
@@ -103,7 +103,7 @@ export default function Explore({ onLogout }) {
     {
       name: 'Walking Tours',
       icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <circle cx="12" cy="4" r="2" />
           <path d="M10 8L12 6L14 8V13L12 16" />
           <path d="M10 15L8 21" />
@@ -114,7 +114,7 @@ export default function Explore({ onLogout }) {
     {
       name: 'Safaris',
       icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <path d="M3 12C3 12 5 8 12 8C19 8 21 12 21 12" />
           <path d="M3 12C3 12 5 16 12 16C19 16 21 12 21 12" />
           <circle cx="9" cy="12" r="1" fill={brownColor} />
@@ -128,7 +128,7 @@ export default function Explore({ onLogout }) {
     {
       name: 'Casinos',
       icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <rect x="3" y="3" width="18" height="18" rx="2" />
           <circle cx="7.5" cy="7.5" r="1" fill={brownColor} />
           <circle cx="16.5" cy="7.5" r="1" fill={brownColor} />
@@ -141,7 +141,7 @@ export default function Explore({ onLogout }) {
     {
       name: 'Luxury',
       icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <path d="M5 9L12 2L19 9" />
           <path d="M5 9V20H19V9" />
           <rect x="9" y="14" width="6" height="6" />
@@ -152,7 +152,7 @@ export default function Explore({ onLogout }) {
     {
       name: 'Food Tour',
       icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <path d="M3 11H21L19 20H5L3 11Z" />
           <path d="M17 11C17 8 15 5 12 5C9 5 7 8 7 11" />
           <line x1="12" y1="15" x2="12" y2="17" />
