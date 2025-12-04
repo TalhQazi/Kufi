@@ -3,6 +3,7 @@ import HomePage from './pages/userpannel/HomePage.jsx'
 import Login from './pages/userpannel/Login.jsx'
 import Register from './pages/userpannel/Register.jsx'
 import Explore from './pages/userpannel/Explore.jsx'
+import UserDashboard from './pages/userpannel/UserDashboard.jsx'
 import AdminApp from './AdminApp.jsx'
 
 export default function App() {
@@ -41,6 +42,8 @@ export default function App() {
 
   if (page === 'explore') return <Explore onLogout={handleLogout} />
 
+  if (page === 'user-dashboard') return <UserDashboard onLogout={handleLogout} />
+
   return (
     <>
       <HomePage onSignupClick={handleOpenRegister} onSigninClick={handleOpenLogin} />
@@ -58,7 +61,7 @@ export default function App() {
                 } else if (role === 'supplier') {
                   setPage('supplier')
                 } else {
-                  setPage('explore')
+                  setPage('user-dashboard')
                 }
               }}
               onClose={handleCloseModal}
