@@ -4,11 +4,18 @@ import Login from './pages/userpannel/Login.jsx'
 import Register from './pages/userpannel/Register.jsx'
 import Explore from './pages/userpannel/Explore.jsx'
 import UserDashboard from './pages/userpannel/UserDashboard.jsx'
+import ActivityDetail from './pages/userpannel/ActivityDetail.jsx'
+import NotificationsModal from './pages/userpannel/NotificationsModal.jsx'
+import TravelBooking from './pages/userpannel/TravelBooking.jsx'
+import BookingConfirmation from './pages/userpannel/BookingConfirmation.jsx'
+import Payment from './pages/userpannel/Payment.jsx'
 import AdminApp from './AdminApp.jsx'
 
 export default function App() {
   const [page, setPage] = useState('home')
   const [showModal, setShowModal] = useState(null) // 'login' or 'register' or null
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [bookingData, setBookingData] = useState(null) // Store booking form data
 
   const handleLogout = () => {
     // Clear any stored session data
@@ -40,9 +47,55 @@ export default function App() {
     return <AdminApp initialPage="Supplier Dashboard" onLogout={handleLogout} />
   }
 
-  if (page === 'explore') return <Explore onLogout={handleLogout} />
+  if (page === 'explore') return (
+    <>
+      <Explore
+        onLogout={handleLogout}
+        onActivityClick={() => setPage('activity-detail')}
+        onNotificationClick={() => setShowNotifications(true)}
+        onAddToList={() => setPage('travel-booking')}
+      />
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
+    </>
+  )
 
-  if (page === 'user-dashboard') return <UserDashboard onLogout={handleLogout} />
+  if (page === 'activity-detail') return (
+    <>
+      <ActivityDetail
+        onLogout={handleLogout}
+        onBack={() => setPage('explore')}
+        onNotificationClick={() => setShowNotifications(true)}
+        onAddToList={() => setPage('travel-booking')}
+      />
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
+    </>
+  )
+
+  if (page === 'travel-booking') return (
+    <TravelBooking
+      onLogout={handleLogout}
+      onBack={() => setPage('explore')}
+      onSubmit={(data) => {
+        setBookingData(data)
+        setPage('booking-confirmation')
+      }}
+    />
+  )
+
+  if (page === 'booking-confirmation') return (
+    <BookingConfirmation
+      bookingData={bookingData}
+      onContinueBrowsing={() => setPage('explore')}
+      onGoToCart={() => setPage('payment')}
+    />
+  )
+
+  if (page === 'payment') return (
+    <Payment
+      bookingData={bookingData}
+      onBack={() => setPage('booking-confirmation')}
+    />
+  )
 
   return (
     <>
@@ -61,7 +114,7 @@ export default function App() {
                 } else if (role === 'supplier') {
                   setPage('supplier')
                 } else {
-                  setPage('user-dashboard')
+                  setPage('explore')
                 }
               }}
               onClose={handleCloseModal}
