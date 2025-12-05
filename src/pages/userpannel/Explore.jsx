@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-export default function Explore({ onLogout }) {
+export default function Explore({ onLogout, onActivityClick, onNotificationClick, onAddToList }) {
   const [selected, setSelected] = useState([])
   const [dropdown, setDropdown] = useState(false)
   const dropdownRef = useRef(null)
@@ -204,7 +204,10 @@ export default function Explore({ onLogout }) {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <button
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              onClick={() => onNotificationClick && onNotificationClick()}
+            >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
@@ -237,7 +240,7 @@ export default function Explore({ onLogout }) {
                   <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">PAYMENTS</div>
                   <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">SETTINGS</div>
                   <div className="border-t border-slate-200 my-1"></div>
-                  <div 
+                  <div
                     className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
                     onClick={() => {
                       if (onLogout) {
@@ -275,7 +278,11 @@ export default function Explore({ onLogout }) {
           <section>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {activities.map((activity) => (
-                <article key={activity.id} className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                <article
+                  key={activity.id}
+                  className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => onActivityClick && onActivityClick(activity.id)}
+                >
                   <div className="relative">
                     <img
                       src={activity.image}
@@ -308,10 +315,16 @@ export default function Explore({ onLogout }) {
 
                     <button
                       className={`w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors ${selected.includes(activity.id)
-                          ? 'bg-primary-dark text-white'
-                          : 'bg-beige text-primary-brown hover:bg-primary hover:text-white'
+                        ? 'bg-primary-dark text-white'
+                        : 'bg-beige text-primary-brown hover:bg-primary hover:text-white'
                         }`}
-                      onClick={() => toggleActivity(activity.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (!selected.includes(activity.id)) {
+                          toggleActivity(activity.id)
+                        }
+                        onAddToList && onAddToList()
+                      }}
                     >
                       {selected.includes(activity.id) ? 'ADDED TO LIST' : 'ADD TO LIST'}
                     </button>
@@ -354,8 +367,8 @@ export default function Explore({ onLogout }) {
 
               <button
                 className={`w-full py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors ${selected.length === 0
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                    : 'bg-primary-brown text-white hover:bg-primary-dark'
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-primary-brown text-white hover:bg-primary-dark'
                   }`}
                 disabled={selected.length === 0}
               >
