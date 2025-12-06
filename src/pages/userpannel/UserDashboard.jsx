@@ -2,7 +2,7 @@ import React from 'react'
 import { FiSearch, FiBell, FiMessageSquare, FiMapPin, FiCalendar, FiFilter, FiArrowUp, FiArrowDown } from 'react-icons/fi'
 import { FaCheckCircle, FaClock, FaCreditCard } from 'react-icons/fa'
 
-export default function UserDashboard({ onLogout }) {
+export default function UserDashboard({ onLogout, onBack }) {
     const tripRequests = [
         {
             id: 1,
@@ -91,7 +91,7 @@ export default function UserDashboard({ onLogout }) {
             {/* Header */}
             <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onBack}>
                         <div className="w-8 h-8 md:w-10 md:h-10 border-2 border-[#A67C52] p-1 rounded">
                             <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
                         </div>
