@@ -13,8 +13,8 @@ export default function HeroSection({ onSignupClick }) {
     const [idx, setIdx] = useState(0)
     const [isPaused, setIsPaused] = useState(false)
 
-    // Show only 3 cards at a time
-    const visibleOrder = [0, 1, 2].map((offset) => (idx + offset) % cards.length)
+    // Show only 4 cards at a time
+    const visibleOrder = [0, 1, 2, 3].map((offset) => (idx + offset) % cards.length)
 
     const prev = () => {
         setIsPaused(true)
@@ -91,31 +91,42 @@ export default function HeroSection({ onSignupClick }) {
                         </div>
                     </div>
 
-                    {/* Desktop cards with spacing - show 3 at a time */}
+                    {/* Desktop cards - show 4 at a time in horizontal layout */}
+                    {/* Desktop cards - show 4 at a time in horizontal layout */}
                     <div
-                        className="hidden md:flex gap-6 overflow-hidden pb-10 pl-4"
+                        className="hidden md:flex gap-6 overflow-visible pb-16 items-end pl-4"
                         onMouseEnter={() => setIsPaused(true)}
                         onMouseLeave={() => setIsPaused(false)}
                     >
                         {visibleOrder.map((cardIdx, index) => (
-                            <div
-                                key={`${cardIdx}-${idx}`}
-                                className={`relative rounded-3xl overflow-hidden shadow-2xl text-white flex-shrink-0 transition-all duration-500 ${index === 0 ? 'w-[280px] h-[420px] -mt-10' : 'w-[260px] h-[380px] mt-0 opacity-90'}`}
-                            >
+                            <div key={`${cardIdx}-${idx}`} className="relative group">
+                                {/* Background Number */}
+                                <div className="absolute -top-20 left-1/2 -translate-x-1/2 text-[180px] font-normal text-transparent font-outline-2 text-white/5 select-none z-0 pointer-events-none font-playfair leading-none opacity-50">
+                                    0{index + 1}
+                                </div>
+
                                 <div
-                                    className="w-full h-full bg-cover bg-center"
-                                    style={{ backgroundImage: `url(${cards[cardIdx]})` }}
-                                />
-                                <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                                    <div className="flex justify-between items-end">
-                                        <div>
-                                            <h3 className="m-0 mb-1 text-xl font-bold">Lorem Ipsum</h3>
-                                            <div className="flex items-center gap-1 text-sm text-[#F59E0B]">
-                                                <FaStar size={12} /> <span className="text-white font-medium">4.4</span>
+                                    className={`relative rounded-2xl overflow-hidden shadow-2xl text-white flex-shrink-0 transition-all duration-500 z-10 ${index === 0
+                                        ? 'w-[260px] h-[400px]'
+                                        : 'w-[240px] h-[280px] opacity-90'
+                                        }`}
+                                >
+                                    <div
+                                        className="w-full h-full bg-cover bg-center"
+                                        style={{ backgroundImage: `url(${cards[cardIdx]})` }}
+                                    />
+                                    <div className="absolute bottom-0 left-0 w-full p-5 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
+                                        <div className="flex justify-between items-end">
+                                            <div>
+                                                <h3 className="m-0 mb-1.5 text-lg font-semibold">Lorem Ipsum</h3>
+                                                <div className="flex items-center gap-1.5 text-sm">
+                                                    <FaStar size={13} className="text-[#F59E0B]" />
+                                                    <span className="text-white font-medium">4.4</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
-                                            <FaBookmark size={12} />
+                                            <button className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition-colors">
+                                                <FaBookmark size={13} />
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -123,14 +134,15 @@ export default function HeroSection({ onSignupClick }) {
                         ))}
                     </div>
 
-                    <div className="hidden md:flex items-center gap-4 absolute bottom-0 left-0">
-                        <span className="text-sm font-medium">Prev / Next</span>
-                        <button onClick={next} className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors backdrop-blur-sm">
-                            <FiChevronRight size={20} />
+                    {/* Navigation controls */}
+                    <div className="hidden md:flex items-center gap-3 absolute bottom-0 left-0">
+                        <span className="text-sm font-medium text-white/90">Prev / Next</span>
+                        <button
+                            onClick={next}
+                            className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all backdrop-blur-sm border border-white/20"
+                        >
+                            <FiChevronRight size={18} />
                         </button>
-                        <div className="w-32 h-0.5 bg-white/30 ml-4 relative">
-                            <div className="absolute top-0 left-0 w-1/3 h-full bg-white"></div>
-                        </div>
                     </div>
                 </section>
             </main>

@@ -1,16 +1,20 @@
 import React from 'react'
 import '../../App.css'
+
 export default function Footer() {
   return (
     <footer className="site-footer">
       <div className="footer-inner">
         <div className="footer-column footer-brand">
-          <div className="footer-logo-row">
-            <img src="/assets/footer.jpeg" alt="Kufi Travel" className="footer-logo-img" />
-            {/* <div className="footer-logo-text">
-              <p className="footer-logo-name">Kufi</p>
-              <p className="footer-logo-sub">Travel</p>
-            </div> */}
+          <div className="footer-logo-row mb-4">
+            <div className="h-12 w-20 sm:h-[66px] sm:w-28 block">
+              <img
+                src="/assets/navbar.png"
+                alt="Kufi Travel"
+                className="w-full h-full object-contain"
+                style={{ filter: 'brightness(0) invert(1)' }}
+              />
+            </div>
           </div>
           <p className="footer-description">
             Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem ipsum
@@ -74,10 +78,35 @@ export default function Footer() {
             />
             <button className="footer-email-btn">➤</button>
           </div>
-          <div className="footer-cards-row">
-            <span className="footer-card-pill">VISA</span>
-            <span className="footer-card-pill">Mastercard</span>
-            <span className="footer-card-pill">PayPal</span>
+
+          <div className="flex gap-3 mt-6 items-center">
+            {/* VISA - External Asset (White via filter) */}
+            <div className="h-3 w-auto">
+              <img
+                src="/assets/visa.svg"
+                alt="Visa"
+                className="h-full w-auto"
+                style={{ filter: 'brightness(0) invert(1)' }}
+              />
+            </div>
+
+            {/* Mastercard - External Asset */}
+            <div className="h-4 w-auto">
+              <img
+                src="/assets/mastercard.svg"
+                alt="Mastercard"
+                className="h-full w-auto"
+              />
+            </div>
+
+            {/* PayPal - External Asset */}
+            <div className="bg-white rounded px-1.5 py-0.5 flex items-center h-4">
+              <img
+                src="/assets/paypal.svg"
+                alt="PayPal"
+                className="h-2.5 w-auto"
+              />
+            </div>
           </div>
         </div>
       </div>

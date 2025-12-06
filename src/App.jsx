@@ -54,9 +54,17 @@ export default function App() {
         onActivityClick={() => setPage('activity-detail')}
         onNotificationClick={() => setShowNotifications(true)}
         onAddToList={() => setPage('travel-booking')}
+        onProfileClick={() => setPage('user-profile')}
       />
       {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
     </>
+  )
+
+  if (page === 'user-profile') return (
+    <UserDashboard
+      onLogout={handleLogout}
+      onBack={() => setPage('explore')}
+    />
   )
 
   if (page === 'activity-detail') return (

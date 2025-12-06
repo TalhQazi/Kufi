@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-export default function Explore({ onLogout, onActivityClick, onNotificationClick, onAddToList }) {
+export default function Explore({ onLogout, onActivityClick, onNotificationClick, onAddToList, onProfileClick }) {
   const [selected, setSelected] = useState([])
   const [dropdown, setDropdown] = useState(false)
   const dropdownRef = useRef(null)
@@ -235,7 +235,15 @@ export default function Explore({ onLogout, onActivityClick, onNotificationClick
 
               {dropdown && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
-                  <div className="px-4 py-2 text-xs font-semibold text-primary-brown hover:bg-slate-50 cursor-pointer">MY REQUESTS</div>
+                  <div
+                    className="px-4 py-2 text-xs font-semibold text-primary-brown hover:bg-slate-50 cursor-pointer"
+                    onClick={() => {
+                      onProfileClick && onProfileClick()
+                      setDropdown(false)
+                    }}
+                  >
+                    MY REQUESTS
+                  </div>
                   <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">NOTIFICATIONS</div>
                   <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">PAYMENTS</div>
                   <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">SETTINGS</div>

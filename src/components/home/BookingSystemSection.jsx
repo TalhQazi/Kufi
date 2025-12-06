@@ -27,40 +27,103 @@ export default function BookingSystemSection() {
     ]
 
     return (
-        <section className="bg-beige-light py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
-            <div className="max-w-[1200px] mx-auto">
-                <h2 className="text-2xl sm:text-[26px] font-bold text-slate-900 mb-8 sm:mb-10 text-center">
+        <section className="bg-white py-16 sm:py-24 px-4 sm:px-8 lg:px-20">
+            <div className="max-w-[1240px] mx-auto">
+                <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-20 text-center tracking-tight">
                     Booking System
                 </h2>
 
-                <div className="flex flex-col gap-10 sm:gap-12 md:flex-row md:justify-between md:items-start">
-                    {steps.map((step, index) => (
+                {/* Desktop layout - Zig-Zag flow */}
+                <div className="hidden lg:block relative py-10">
+                    {/* Connection Lines Layer - CSS Based */}
+                    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+                        {/* Line 1: Step 1 (top-left) to Step 2 (bottom-center-left) */}
                         <div
-                            key={step.id}
-                            className="flex flex-col items-center text-center md:text-left md:flex-1"
-                        >
-                            <div className="w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full p-1 bg-gradient-to-br from-primary/30 to-primary-dark/20">
-                                <div className="w-full h-full rounded-full overflow-hidden">
+                            className="absolute"
+                            style={{
+                                left: 'calc(12.5% + 88px)',
+                                top: 'calc(88px)',
+                                width: 'calc(25% - 176px)',
+                                transformOrigin: 'top left',
+                                borderBottom: '2px dashed #A67C52',
+                                transform: 'rotate(32deg)'
+                            }}
+                        />
+                        {/* Line 2: Step 2 (bottom-center-left) to Step 3 (top-center-right) */}
+                        <div
+                            className="absolute"
+                            style={{
+                                left: 'calc(37.5% + 88px)',
+                                top: 'calc(144px + 88px)',
+                                width: 'calc(25% - 176px)',
+                                transformOrigin: 'top left',
+                                borderBottom: '2px dashed #A67C52',
+                                transform: 'rotate(-32deg)'
+                            }}
+                        />
+                        {/* Line 3: Step 3 (top-center-right) to Step 4 (bottom-right) */}
+                        <div
+                            className="absolute"
+                            style={{
+                                left: 'calc(62.5% + 88px)',
+                                top: 'calc(88px)',
+                                width: 'calc(25% - 176px)',
+                                transformOrigin: 'top left',
+                                borderBottom: '2px dashed #A67C52',
+                                transform: 'rotate(32deg)'
+                            }}
+                        />
+                    </div>
+
+                    {/* Gap-0 grid for precise alignment, using padding for spacing */}
+                    <div className="grid grid-cols-4 gap-0 relative z-10 intro-step-grid">
+                        {steps.map((step, index) => (
+                            <div
+                                key={step.id}
+                                className={`flex flex-col items-center text-center px-4 ${index % 2 === 1 ? 'mt-36' : ''
+                                    }`}
+                            >
+                                <div className="w-44 h-44 rounded-full overflow-hidden shadow-xl border-[6px] border-slate-600/90 relative bg-white z-10 transition-transform duration-300 hover:scale-105">
                                     <div
                                         className="w-full h-full bg-cover bg-center"
                                         style={{ backgroundImage: `url(${step.image})` }}
                                     />
                                 </div>
+                                <h3 className="mt-8 text-lg font-medium text-[#A67C52] max-w-[200px] leading-tight">
+                                    {step.title}
+                                </h3>
+                                <div className="mt-4 px-4 py-1 rounded-full border border-[#D1B693] bg-[#fffbf6]">
+                                    <span className="text-[10px] font-bold text-[#A67C52] tracking-widest uppercase">
+                                        {step.stepLabel}
+                                    </span>
+                                </div>
                             </div>
+                        ))}
+                    </div>
+                </div>
 
-                            <p className="mt-4 text-sm sm:text-base font-medium max-w-[160px]">
-                                {step.title}
-                            </p>
-                            <span className="mt-1 text-xs text-slate-500 font-semibold">
-                                {step.stepLabel}
-                            </span>
-
-                            {/* Vertical connector for mobile/tablet */}
-                            {index < steps.length - 1 && (
-                                <div className="mt-4 h-8 w-px bg-primary/30 md:hidden" />
-                            )}
-                        </div>
-                    ))}
+                {/* Tablet/Mobile layout - Vertical or 2x2 */}
+                <div className="lg:hidden flex flex-col gap-12">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-16">
+                        {steps.map((step, index) => (
+                            <div key={step.id} className="flex flex-col items-center text-center">
+                                <div className="w-40 h-40 rounded-full overflow-hidden shadow-lg border-[6px] border-slate-600/90">
+                                    <div
+                                        className="w-full h-full bg-cover bg-center"
+                                        style={{ backgroundImage: `url(${step.image})` }}
+                                    />
+                                </div>
+                                <h3 className="mt-6 text-lg font-medium text-[#A67C52] max-w-[200px]">
+                                    {step.title}
+                                </h3>
+                                <div className="mt-3 px-4 py-1 rounded-full border border-[#D1B693] bg-white">
+                                    <span className="text-[10px] font-bold text-[#A67C52] tracking-widest uppercase">
+                                        {step.stepLabel}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         </section>

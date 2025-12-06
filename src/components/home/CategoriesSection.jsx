@@ -139,24 +139,23 @@ export default function CategoriesSection() {
     ]
 
     return (
-        <section className="bg-beige py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
-            <div className="max-w-[1120px] mx-auto text-center">
-                <div className="mb-8 sm:mb-10">
-                    <p className="text-xs font-normal text-primary-dark m-0 mb-1.5">Top Categories</p>
-                    <h2 className="text-xl sm:text-[26px] font-bold text-[#1f2933] m-0 mb-2">Explore By Categories</h2>
-                    <p className="text-xs sm:text-sm text-slate-500 max-w-[560px] m-0 mx-auto">
-                        Lorem ipsum dolor sit amet consectetur. Porttitor montes mi tristique elit bibendum
-                        elit libero egestas pellentesque.
+        <section className="bg-[#F5F1ED] py-16 sm:py-20 px-4 sm:px-8 lg:px-20">
+            <div className="max-w-[1200px] mx-auto text-center">
+                <div className="mb-12 sm:mb-14">
+                    <p className="text-2xl sm:text-3xl font-sacramento text-[#A67C52] m-0 mb-2">Top Categories</p>
+                    <h2 className="text-3xl sm:text-4xl font-bold text-[#1a1a1a] m-0 mb-4">Explore By Categories</h2>
+                    <p className="text-sm sm:text-base text-slate-600 max-w-[680px] m-0 mx-auto leading-relaxed">
+                        Lorem ipsum dolor sit amet consectetur. Porttitor montes mi tristique elit bibendum ut libero egestas pellentesque.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-y-6 gap-x-6 sm:gap-x-8">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-y-10 gap-x-8 sm:gap-x-10">
                     {categories.map(({ name, icon }) => (
-                        <div key={name} className="flex flex-col items-center gap-2.5 cursor-pointer transition-transform duration-200 hover:-translate-y-1">
-                            <div className="w-20 h-20 flex items-center justify-center">
+                        <div key={name} className="flex flex-col items-center gap-3 cursor-pointer transition-transform duration-300 hover:-translate-y-2">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
                                 {icon}
                             </div>
-                            <p className="m-0 text-sm font-medium text-[#1a1a1a] text-center">{name}</p>
+                            <p className="m-0 text-sm sm:text-base font-bold text-[#1a1a1a] text-center">{name}</p>
                         </div>
                     ))}
                 </div>
