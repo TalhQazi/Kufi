@@ -1,26 +1,7 @@
-import NavigationButtons from '../../components/navigation/NavigationButtons'
-
 export default function BookingConfirmation({ onContinueBrowsing, onGoToCart, onBack, onForward, canGoBack, canGoForward }) {
     return (
-        <div className="min-h-screen bg-slate-50 p-4">
-            {/* Navigation Header */}
-            <div className="max-w-2xl mx-auto mb-6">
-                <div className="flex items-center justify-between bg-white rounded-xl shadow-md p-4">
-                    <div className="flex items-center gap-2">
-                        <img src="/assets/navbar.png" alt="Kufi Travel" className="h-8 w-16 object-contain" />
-                        <span className="text-sm font-medium leading-tight">Kufi<br />Travel</span>
-                    </div>
-
-                    <NavigationButtons
-                        onBack={onBack}
-                        onForward={onForward}
-                        canGoBack={canGoBack}
-                        canGoForward={canGoForward}
-                    />
-                </div>
-            </div>
-
-            <div className="max-w-2xl w-full mx-auto">
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+            <div className="max-w-2xl w-full">
 
                 {/* Success Icon */}
                 <div className="flex justify-center mb-6">

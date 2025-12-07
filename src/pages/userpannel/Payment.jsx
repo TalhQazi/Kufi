@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import PaymentSuccessModal from './PaymentSuccessModal.jsx'
-import NavigationButtons from '../../components/navigation/NavigationButtons'
 
 export default function Payment({ bookingData, onBack, onForward, canGoBack, canGoForward }) {
     const [paymentMethod, setPaymentMethod] = useState('card')
@@ -25,21 +24,6 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-8 lg:px-20">
             <div className="max-w-6xl mx-auto">
-                {/* Navigation Header */}
-                <div className="flex items-center justify-between bg-white rounded-xl shadow-md p-4 mb-6">
-                    <div className="flex items-center gap-2">
-                        <img src="/assets/navbar.png" alt="Kufi Travel" className="h-8 w-16 object-contain" />
-                        <span className="text-sm font-medium leading-tight">Kufi<br />Travel</span>
-                    </div>
-
-                    <NavigationButtons
-                        onBack={onBack}
-                        onForward={onForward}
-                        canGoBack={canGoBack}
-                        canGoForward={canGoForward}
-                    />
-                </div>
-
                 {/* Header */}
                 <div className="text-center mb-6">
                     <h1 className="text-3xl font-bold text-slate-900 mb-2">Complete Your Payment</h1>
