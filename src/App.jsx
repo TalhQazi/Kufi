@@ -17,11 +17,17 @@ export default function App() {
   const [showNotifications, setShowNotifications] = useState(false)
   const [bookingData, setBookingData] = useState(null) // Store booking form data
 
+  // Navigation history state
+  const [history, setHistory] = useState(['home'])
+  const [currentIndex, setCurrentIndex] = useState(0)
+
   const handleLogout = () => {
     // Clear any stored session data
     localStorage.removeItem('currentUser')
     localStorage.removeItem('userRole')
-    // Reset to home page
+    // Reset to home page and clear history
+    setHistory(['home'])
+    setCurrentIndex(0)
     setPage('home')
     setShowModal(null)
   }
@@ -38,6 +44,36 @@ export default function App() {
     setShowModal('register')
   }
 
+  // Navigation functions
+  const navigateTo = (newPage) => {
+    // If we're not at the end of history, remove forward history
+    const newHistory = history.slice(0, currentIndex + 1)
+    newHistory.push(newPage)
+    setHistory(newHistory)
+    setCurrentIndex(newHistory.length - 1)
+    setPage(newPage)
+  }
+
+  const goBack = () => {
+    if (currentIndex > 0) {
+      const newIndex = currentIndex - 1
+      setCurrentIndex(newIndex)
+      setPage(history[newIndex])
+    }
+  }
+
+  const goForward = () => {
+    if (currentIndex < history.length - 1) {
+      const newIndex = currentIndex + 1
+      setCurrentIndex(newIndex)
+      setPage(history[newIndex])
+    }
+  }
+
+  const canGoBack = currentIndex > 0
+  const canGoForward = currentIndex < history.length - 1
+
+
   // simple routing
   if (page === 'admin') {
     return <AdminApp initialPage="Dashboard" onLogout={handleLogout} />
@@ -51,10 +87,14 @@ export default function App() {
     <>
       <Explore
         onLogout={handleLogout}
-        onActivityClick={() => setPage('activity-detail')}
+        onActivityClick={() => navigateTo('activity-detail')}
         onNotificationClick={() => setShowNotifications(true)}
-        onAddToList={() => setPage('travel-booking')}
-        onProfileClick={() => setPage('user-profile')}
+        onAddToList={() => navigateTo('travel-booking')}
+        onProfileClick={() => navigateTo('user-profile')}
+        onBack={goBack}
+        onForward={goForward}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
       />
       {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
     </>
@@ -63,7 +103,10 @@ export default function App() {
   if (page === 'user-profile') return (
     <UserDashboard
       onLogout={handleLogout}
-      onBack={() => setPage('explore')}
+      onBack={goBack}
+      onForward={goForward}
+      canGoBack={canGoBack}
+      canGoForward={canGoForward}
     />
   )
 
@@ -71,9 +114,12 @@ export default function App() {
     <>
       <ActivityDetail
         onLogout={handleLogout}
-        onBack={() => setPage('explore')}
+        onBack={goBack}
+        onForward={goForward}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
         onNotificationClick={() => setShowNotifications(true)}
-        onAddToList={() => setPage('travel-booking')}
+        onAddToList={() => navigateTo('travel-booking')}
       />
       {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
     </>
@@ -82,10 +128,13 @@ export default function App() {
   if (page === 'travel-booking') return (
     <TravelBooking
       onLogout={handleLogout}
-      onBack={() => setPage('explore')}
+      onBack={goBack}
+      onForward={goForward}
+      canGoBack={canGoBack}
+      canGoForward={canGoForward}
       onSubmit={(data) => {
         setBookingData(data)
-        setPage('booking-confirmation')
+        navigateTo('booking-confirmation')
       }}
     />
   )
@@ -93,15 +142,22 @@ export default function App() {
   if (page === 'booking-confirmation') return (
     <BookingConfirmation
       bookingData={bookingData}
-      onContinueBrowsing={() => setPage('explore')}
-      onGoToCart={() => setPage('payment')}
+      onContinueBrowsing={() => navigateTo('explore')}
+      onGoToCart={() => navigateTo('payment')}
+      onBack={goBack}
+      onForward={goForward}
+      canGoBack={canGoBack}
+      canGoForward={canGoForward}
     />
   )
 
   if (page === 'payment') return (
     <Payment
       bookingData={bookingData}
-      onBack={() => setPage('booking-confirmation')}
+      onBack={goBack}
+      onForward={goForward}
+      canGoBack={canGoBack}
+      canGoForward={canGoForward}
     />
   )
 
@@ -118,11 +174,11 @@ export default function App() {
               onLoginSuccess={(role) => {
                 setShowModal(null)
                 if (role === 'admin') {
-                  setPage('admin')
+                  navigateTo('admin')
                 } else if (role === 'supplier') {
-                  setPage('supplier')
+                  navigateTo('supplier')
                 } else {
-                  setPage('explore')
+                  navigateTo('explore')
                 }
               }}
               onClose={handleCloseModal}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import NavigationButtons from '../../components/navigation/NavigationButtons'
 
-export default function ActivityDetail({ onBack, onLogout, onNotificationClick, onAddToList }) {
+export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForward, onLogout, onNotificationClick, onAddToList }) {
     const [activeTab, setActiveTab] = useState('overview')
     const [travelers, setTravelers] = useState(2)
     const [addOns, setAddOns] = useState({
@@ -28,9 +29,19 @@ export default function ActivityDetail({ onBack, onLogout, onNotificationClick, 
             {/* Header */}
             <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
                 <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-1">
-                        <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
-                        <span className="text-sm font-medium leading-tight">Kufi<br />Travel</span>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                            <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
+                            <span className="text-sm font-medium leading-tight">Kufi<br />Travel</span>
+                        </div>
+
+                        {/* Navigation Buttons */}
+                        <NavigationButtons
+                            onBack={onBack}
+                            onForward={onForward}
+                            canGoBack={canGoBack}
+                            canGoForward={canGoForward}
+                        />
                     </div>
 
                     <div className="hidden sm:block flex-1 max-w-md mx-6 lg:mx-12">
