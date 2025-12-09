@@ -5,6 +5,8 @@ import Register from './pages/userpannel/Register.jsx'
 import Explore from './pages/userpannel/Explore.jsx'
 import UserDashboard from './pages/userpannel/UserDashboard.jsx'
 import ActivityDetail from './pages/userpannel/ActivityDetail.jsx'
+import CountryDetails from './pages/userpannel/CountryDetails.jsx'
+import CategoryPage from './pages/userpannel/CategoryPage.jsx'
 import NotificationsModal from './pages/userpannel/NotificationsModal.jsx'
 import TravelBooking from './pages/userpannel/TravelBooking.jsx'
 import BookingConfirmation from './pages/userpannel/BookingConfirmation.jsx'
@@ -141,6 +143,34 @@ export default function App() {
         onForward={goForward}
         canGoBack={canGoBack}
         canGoForward={canGoForward}
+      />
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
+    </>
+  )
+
+  if (page === 'country-details') return (
+    <>
+      <CountryDetails
+        countryName="Italy"
+        onLogout={handleLogout}
+        onNotificationClick={() => setShowNotifications(true)}
+        onProfileClick={() => navigateTo('user-profile')}
+        onActivityClick={() => navigateTo('activity-detail')}
+        onBack={goBack}
+      />
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
+    </>
+  )
+
+  if (page === 'category-page') return (
+    <>
+      <CategoryPage
+        categoryName="Camping Adventures"
+        onLogout={handleLogout}
+        onNotificationClick={() => setShowNotifications(true)}
+        onProfileClick={() => navigateTo('user-profile')}
+        onActivityClick={() => navigateTo('activity-detail')}
+        onBack={goBack}
       />
       {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
     </>
