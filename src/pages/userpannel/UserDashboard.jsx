@@ -95,10 +95,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                         <div className="w-8 h-8 md:w-10 md:h-10 border-2 border-[#A67C52] p-1 rounded">
                             <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
                         </div>
-                        <div className="leading-tight text-[#A67C52] hidden md:block">
-                            <p className="m-0 text-lg font-bold">Kufi</p>
-                            <p className="m-0 text-lg font-bold">Travel</p>
-                        </div>
+
                     </div>
 
                     <div className="flex-1 max-w-xl mx-4 md:mx-8 hidden md:block">
