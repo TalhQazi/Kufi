@@ -10,7 +10,7 @@ import {
   LogOut,
 } from "lucide-react";
 
-const SupplierSidebar = ({ activeSection, onSelectSection, onLogout }) => {
+const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, onToggleDarkMode }) => {
   return (
     <>
       {/* Mobile top bar */}
@@ -47,7 +47,7 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout }) => {
             { label: "Booking", icon: CalendarCheck },
             { label: "Analytics", icon: BarChart3 },
             { label: "Profile", icon: User },
-            { label: "Messages", icon: MessageSquare },
+            { label: "Requests", icon: MessageSquare },
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.label;
@@ -73,15 +73,27 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout }) => {
         </nav>
 
         {/* Dark mode toggle */}
-        <div className="mt-6 flex items-center justify-between rounded-full bg-[#f7f7f8] px-4 py-2 text-sm text-gray-600">
+        <button
+          type="button"
+          onClick={onToggleDarkMode}
+          className="mt-6 flex items-center justify-between rounded-full bg-[#f7f7f8] px-4 py-2 text-sm text-gray-600 hover:bg-[#efe9e0] transition-colors"
+        >
           <div className="inline-flex items-center gap-2 text-[#a26e35]">
             <Moon className="w-4 h-4" />
             <span>Dark Mode</span>
           </div>
-          <div className="relative inline-flex h-5 w-9 items-center rounded-full bg-gray-300">
-            <span className="inline-block h-4 w-4 transform rounded-full bg-white shadow translate-x-[2px]" />
+          <div
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+              darkMode ? "bg-[#a26e35]" : "bg-gray-300"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                darkMode ? "translate-x-[18px]" : "translate-x-[2px]"
+              }`}
+            />
           </div>
-        </div>
+        </button>
 
         {/* Logout */}
         <button 

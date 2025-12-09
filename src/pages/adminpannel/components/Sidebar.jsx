@@ -17,7 +17,6 @@ const navItems = [
   { label: "Analytics", icon: BarChart3 },
   { label: "Payments & Finance", icon: CreditCard },
   { label: "System Notification", icon: Bell },
-  { label: "Supplier Dashboard", icon: LayoutDashboard },
 ];
 
 const Sidebar = ({ activePage, onSelect, onLogout }) => {
