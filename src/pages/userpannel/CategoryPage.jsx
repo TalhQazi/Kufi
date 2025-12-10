@@ -110,7 +110,6 @@ export default function CategoryPage({
                 <div className="category-navbar-inner">
                     <div className="category-logo">
                         <img src="/assets/navbar.png" alt="Kufi Travel" className="category-logo-image" />
-                        <span className="category-logo-text">Kufi<br />Travel</span>
                     </div>
 
                     <div className="category-search-bar">

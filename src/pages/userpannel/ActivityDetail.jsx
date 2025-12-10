@@ -30,7 +30,6 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                 <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
                     <div className="flex items-center gap-1">
                         <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
-                        <span className="text-sm font-medium leading-tight">Kufi<br />Travel</span>
                     </div>
 
                     <div className="hidden sm:block flex-1 max-w-md mx-6 lg:mx-12">
