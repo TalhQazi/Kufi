@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function NotificationsModal({ onClose }) {
+export default function NotificationsModal({ onClose, onPaymentClick }) {
     const [activeTab, setActiveTab] = useState('all')
 
     const notifications = [
@@ -114,8 +114,8 @@ export default function NotificationsModal({ onClose }) {
                         <button
                             onClick={() => setActiveTab('all')}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'all'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                 }`}
                         >
                             All
@@ -123,8 +123,8 @@ export default function NotificationsModal({ onClose }) {
                         <button
                             onClick={() => setActiveTab('replied')}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'replied'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                 }`}
                         >
                             Inquiry Replied Back
@@ -132,8 +132,8 @@ export default function NotificationsModal({ onClose }) {
                         <button
                             onClick={() => setActiveTab('pending')}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'pending'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                 }`}
                         >
                             Pending
@@ -173,12 +173,18 @@ export default function NotificationsModal({ onClose }) {
                                                 <button
                                                     key={index}
                                                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${action === 'View Itinerary'
-                                                            ? 'bg-blue-500 text-white hover:bg-blue-600'
-                                                            : action === 'Proceed to Payment'
-                                                                ? 'bg-green-500 text-white hover:bg-green-600'
-                                                                : 'bg-slate-200 text-slate-600 cursor-not-allowed'
+                                                        ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                                        : action === 'Proceed to Payment'
+                                                            ? 'bg-green-500 text-white hover:bg-green-600'
+                                                            : 'bg-slate-200 text-slate-600 cursor-not-allowed'
                                                         }`}
                                                     disabled={action === 'Awaiting Response'}
+                                                    onClick={() => {
+                                                        if (action === 'Proceed to Payment') {
+                                                            onPaymentClick && onPaymentClick()
+                                                            onClose()
+                                                        }
+                                                    }}
                                                 >
                                                     {action}
                                                 </button>

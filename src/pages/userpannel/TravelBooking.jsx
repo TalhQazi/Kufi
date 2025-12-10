@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, canGoForward, onSubmit }) {
+    const [showSuccess, setShowSuccess] = useState(false)
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -24,9 +25,19 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
     const handleSubmit = (e) => {
         e.preventDefault()
         console.log('Booking submitted:', formData)
-        // Navigate to confirmation page with form data
-        onSubmit && onSubmit(formData)
+        // Show success message
+        setShowSuccess(true)
     }
+
+    // Auto-redirect after showing success message
+    useEffect(() => {
+        if (showSuccess) {
+            const timer = setTimeout(() => {
+                onSubmit && onSubmit(formData)
+            }, 3000) // Redirect after 3 seconds
+            return () => clearTimeout(timer)
+        }
+    }, [showSuccess, formData, onSubmit])
 
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }))
@@ -379,6 +390,53 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                     </div>
                 </div>
             </main>
+
+            {/* Success Modal */}
+            {showSuccess && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center transform animate-scaleIn">
+                        {/* Success Icon */}
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                <polyline points="22 4 12 14.01 9 11.01" />
+                            </svg>
+                        </div>
+
+                        {/* Success Message */}
+                        <h2 className="text-2xl font-bold text-slate-900 mb-3">Request Submitted!</h2>
+                        <p className="text-slate-600 mb-6">
+                            Your travel booking request has been successfully submitted.
+                            We'll get back to you shortly.
+                        </p>
+
+                        {/* Loading Indicator */}
+                        <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+                            <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                            </svg>
+                            <span>Redirecting to explore page...</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style jsx>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes scaleIn {
+                    from { transform: scale(0.9); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+                .animate-fadeIn {
+                    animation: fadeIn 0.2s ease-out;
+                }
+                .animate-scaleIn {
+                    animation: scaleIn 0.3s ease-out;
+                }
+            `}</style>
         </div>
     )
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-export default function Explore({ selectedActivities = [], onAddToList, onRemoveActivity, onLogout, onActivityClick, onNotificationClick, onProfileClick, onBack, onForward, canGoBack, canGoForward }) {
+export default function Explore({ selectedActivities = [], onAddToList, onRemoveActivity, onLogout, onActivityClick, onNotificationClick, onProfileClick, onSendRequest, onBack, onForward, canGoBack, canGoForward }) {
   const [dropdown, setDropdown] = useState(false)
   const dropdownRef = useRef(null)
 
@@ -381,10 +381,11 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
 
               <button
                 className={`w-full py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors ${selectedActivities.length === 0
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                    : 'bg-primary-brown text-white hover:bg-primary-dark'
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-primary-brown text-white hover:bg-primary-dark'
                   }`}
                 disabled={selectedActivities.length === 0}
+                onClick={() => onSendRequest && onSendRequest()}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />

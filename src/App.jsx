@@ -157,12 +157,13 @@ export default function App() {
         onActivityClick={() => navigateTo('activity-detail')}
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
+        onSendRequest={() => navigateTo('travel-booking')}
         onBack={goBack}
         onForward={goForward}
         canGoBack={canGoBack}
         canGoForward={canGoForward}
       />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} />}
     </>
   )
 
@@ -176,7 +177,7 @@ export default function App() {
         onActivityClick={() => navigateTo('activity-detail')}
         onBack={goBack}
       />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} />}
     </>
   )
 
@@ -190,7 +191,7 @@ export default function App() {
         onActivityClick={() => navigateTo('activity-detail')}
         onBack={goBack}
       />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} />}
     </>
   )
 
@@ -220,7 +221,7 @@ export default function App() {
           image: '/assets/dest-1.jpeg'
         })}
       />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} />}
     </>
   )
 
@@ -233,7 +234,7 @@ export default function App() {
       canGoForward={canGoForward}
       onSubmit={(data) => {
         setBookingData(data)
-        navigateTo('booking-confirmation')
+        navigateTo('explore')
       }}
     />
   )
