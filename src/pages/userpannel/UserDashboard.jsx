@@ -91,11 +91,8 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
             {/* Header */}
             <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={onBack}>
-                        <div className="w-8 h-8 md:w-10 md:h-10 border-2 border-[#A67C52] p-1 rounded">
-                            <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
-                        </div>
-
+                    <div className="flex items-center gap-1">
+                        <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
                     </div>
 
                     <div className="flex-1 max-w-xl mx-4 md:mx-8 hidden md:block">
