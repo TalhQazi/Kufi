@@ -186,7 +186,6 @@ export default function Explore({ onLogout, onActivityClick, onNotificationClick
         <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-1">
             <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
-            <span className="text-sm font-medium leading-tight">Kufi<br />Travel</span>
           </div>
 
           <div className="hidden sm:block flex-1 max-w-md mx-6 lg:mx-12">
@@ -364,8 +363,28 @@ export default function Explore({ onLogout, onActivityClick, onNotificationClick
                   </p>
                 </div>
               ) : (
-                <div className="mb-4">
-                  {/* TODO: list selected items here */}
+                <div className="mb-4 space-y-3">
+                  {activities
+                    .filter(activity => selected.includes(activity.id))
+                    .map(activity => (
+                      <div key={activity.id} className="flex items-center gap-3 pb-3 border-b border-slate-200 last:border-0">
+                        <img src={activity.image} alt={activity.title} className="w-16 h-16 rounded-lg object-cover" />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-slate-900 truncate">{activity.title}</h4>
+                          <p className="text-xs text-slate-500 truncate">{activity.location}</p>
+                        </div>
+                        <button
+                          onClick={() => toggleActivity(activity.id)}
+                          className="p-1 hover:bg-red-50 rounded transition-colors"
+                          title="Remove"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))
+                  }
                 </div>
               )}
 
