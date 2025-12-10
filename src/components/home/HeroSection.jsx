@@ -144,6 +144,30 @@ export default function HeroSection({ onSignupClick }) {
                             <FiChevronRight size={18} />
                         </button>
                     </div>
+
+                    {/* Pagination Indicators */}
+                    <div className="hidden md:flex items-center absolute bottom-0 right-0 h-6">
+                        {/* Background track */}
+                        <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-[2px] bg-[#D4AF37]/30 rounded-full" />
+
+                        {/* Individual indicators */}
+                        <div className="flex items-center gap-3 relative z-10">
+                            {cards.map((_, index) => (
+                                <div
+                                    key={index}
+                                    className={`transition-all duration-300 cursor-pointer rounded-full ${index === idx
+                                        ? 'w-12 h-[3px] bg-[#D4AF37] shadow-lg shadow-[#D4AF37]/50'
+                                        : 'w-8 h-[2px] bg-white/60 hover:bg-white/80'
+                                        }`}
+                                    onClick={() => {
+                                        setIsPaused(true)
+                                        setIdx(index)
+                                        setTimeout(() => setIsPaused(false), 5000)
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </div>
                 </section>
             </main>
         </div>
