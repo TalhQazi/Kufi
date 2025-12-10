@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-export default function Explore({ onLogout, onActivityClick, onNotificationClick, onAddToList, onProfileClick, onBack, onForward, canGoBack, canGoForward }) {
-  const [selected, setSelected] = useState([])
+export default function Explore({ selectedActivities = [], onAddToList, onRemoveActivity, onLogout, onActivityClick, onNotificationClick, onProfileClick, onBack, onForward, canGoBack, canGoForward }) {
   const [dropdown, setDropdown] = useState(false)
   const dropdownRef = useRef(null)
 
@@ -161,7 +160,6 @@ export default function Explore({ onLogout, onActivityClick, onNotificationClick
     },
   ]
 
-  // temp data - replace with API later
   const activities = Array.from({ length: 9 }, (_, i) => ({
     id: i + 1,
     title: 'Himalayan Trekking Expedition',
@@ -171,14 +169,6 @@ export default function Explore({ onLogout, onActivityClick, onNotificationClick
     reviews: 218,
     location: 'USA, India',
   }))
-
-  const toggleActivity = (id) => {
-    if (selected.includes(id)) {
-      setSelected(selected.filter(x => x !== id))
-    } else {
-      setSelected([...selected, id])
-    }
-  }
 
   return (
     <div className="bg-white min-h-screen">
@@ -321,19 +311,18 @@ export default function Explore({ onLogout, onActivityClick, onNotificationClick
                     </div>
 
                     <button
-                      className={`w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors ${selected.includes(activity.id)
+                      className={`w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors ${selectedActivities.some(a => a.id === activity.id)
                         ? 'bg-primary-dark text-white'
                         : 'bg-beige text-primary-brown hover:bg-primary hover:text-white'
                         }`}
                       onClick={(e) => {
                         e.stopPropagation()
-                        if (!selected.includes(activity.id)) {
-                          toggleActivity(activity.id)
+                        if (!selectedActivities.some(a => a.id === activity.id)) {
+                          onAddToList && onAddToList(activity)
                         }
-                        onAddToList && onAddToList()
                       }}
                     >
-                      {selected.includes(activity.id) ? 'ADDED TO LIST' : 'ADD TO LIST'}
+                      {selectedActivities.some(a => a.id === activity.id) ? 'ADDED TO LIST' : 'ADD TO LIST'}
                     </button>
                   </div>
                 </article>
@@ -345,11 +334,11 @@ export default function Explore({ onLogout, onActivityClick, onNotificationClick
             <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
               <h4 className="m-0 mb-2 text-lg font-bold text-slate-900">Your Selection</h4>
               <p className="m-0 mb-6 text-sm text-slate-600">
-                <span className="font-bold text-primary-brown">{selected.length}</span>
+                <span className="font-bold text-primary-brown">{selectedActivities.length}</span>
                 <span className="ml-1">activities selected</span>
               </p>
 
-              {selected.length === 0 ? (
+              {selectedActivities.length === 0 ? (
                 <div className="py-8 px-4 text-center">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-beige flex items-center justify-center">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="1.5">
@@ -364,26 +353,24 @@ export default function Explore({ onLogout, onActivityClick, onNotificationClick
                 </div>
               ) : (
                 <div className="mb-4 space-y-3">
-                  {activities
-                    .filter(activity => selected.includes(activity.id))
-                    .map(activity => (
-                      <div key={activity.id} className="flex items-center gap-3 pb-3 border-b border-slate-200 last:border-0">
-                        <img src={activity.image} alt={activity.title} className="w-16 h-16 rounded-lg object-cover" />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-semibold text-slate-900 truncate">{activity.title}</h4>
-                          <p className="text-xs text-slate-500 truncate">{activity.location}</p>
-                        </div>
-                        <button
-                          onClick={() => toggleActivity(activity.id)}
-                          className="p-1 hover:bg-red-50 rounded transition-colors"
-                          title="Remove"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                          </svg>
-                        </button>
+                  {selectedActivities.map(activity => (
+                    <div key={activity.id} className="flex items-center gap-3 pb-3 border-b border-slate-200 last:border-0">
+                      <img src={activity.image} alt={activity.title} className="w-16 h-16 rounded-lg object-cover" />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold text-slate-900 truncate">{activity.title}</h4>
+                        <p className="text-xs text-slate-500 truncate">{activity.location}</p>
                       </div>
-                    ))
+                      <button
+                        onClick={() => onRemoveActivity && onRemoveActivity(activity.id)}
+                        className="p-1 hover:bg-red-50 rounded transition-colors"
+                        title="Remove"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))
                   }
                 </div>
               )}
@@ -393,11 +380,11 @@ export default function Explore({ onLogout, onActivityClick, onNotificationClick
               </p>
 
               <button
-                className={`w-full py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors ${selected.length === 0
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  : 'bg-primary-brown text-white hover:bg-primary-dark'
+                className={`w-full py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors ${selectedActivities.length === 0
+                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    : 'bg-primary-brown text-white hover:bg-primary-dark'
                   }`}
-                disabled={selected.length === 0}
+                disabled={selectedActivities.length === 0}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />

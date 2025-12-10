@@ -86,8 +86,8 @@ export default function App() {
       if (exists) return prev
       return [...prev, activity]
     })
-    // Navigate to user profile to show the selection
-    navigateTo('user-profile')
+    // Navigate to explore page to show the selection
+    navigateTo('explore')
   }
 
   const handleRemoveFromList = (activityId) => {
@@ -150,10 +150,12 @@ export default function App() {
   if (page === 'explore') return (
     <>
       <Explore
+        selectedActivities={selectedActivities}
+        onAddToList={(activity) => handleAddToList(activity)}
+        onRemoveActivity={handleRemoveFromList}
         onLogout={handleLogout}
         onActivityClick={() => navigateTo('activity-detail')}
         onNotificationClick={() => setShowNotifications(true)}
-        onAddToList={() => navigateTo('travel-booking')}
         onProfileClick={() => navigateTo('user-profile')}
         onBack={goBack}
         onForward={goForward}
@@ -194,8 +196,6 @@ export default function App() {
 
   if (page === 'user-profile') return (
     <UserDashboard
-      selectedActivities={selectedActivities}
-      onRemoveActivity={handleRemoveFromList}
       onLogout={handleLogout}
       onBack={goBack}
       onForward={goForward}
