@@ -100,7 +100,6 @@ export default function CountryDetails({
                 <div className="country-navbar-inner">
                     <div className="country-logo">
                         <img src="/assets/navbar.png" alt="Kufi Travel" className="country-logo-image" />
-                        <span className="country-logo-text">Kufi<br />Travel</span>
                     </div>
 
                     <div className="country-search-bar">

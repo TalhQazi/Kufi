@@ -24,6 +24,7 @@ export default function App() {
   const [showModal, setShowModal] = useState(null) // 'login' or 'register' or null
   const [showNotifications, setShowNotifications] = useState(false)
   const [bookingData, setBookingData] = useState(null) // Store booking form data
+  const [selectedActivities, setSelectedActivities] = useState([]) // Store selected activities for user profile
 
   // Navigation history state (for custom buttons)
   const [history, setHistory] = useState([getInitialPage()])
@@ -76,6 +77,21 @@ export default function App() {
 
   const handleOpenRegister = () => {
     setShowModal('register')
+  }
+
+  const handleAddToList = (activity) => {
+    setSelectedActivities(prev => {
+      // Check if activity already exists
+      const exists = prev.find(a => a.id === activity.id)
+      if (exists) return prev
+      return [...prev, activity]
+    })
+    // Navigate to user profile to show the selection
+    navigateTo('user-profile')
+  }
+
+  const handleRemoveFromList = (activityId) => {
+    setSelectedActivities(prev => prev.filter(a => a.id !== activityId))
   }
 
   // Navigation functions
@@ -178,6 +194,8 @@ export default function App() {
 
   if (page === 'user-profile') return (
     <UserDashboard
+      selectedActivities={selectedActivities}
+      onRemoveActivity={handleRemoveFromList}
       onLogout={handleLogout}
       onBack={goBack}
       onForward={goForward}
@@ -195,7 +213,12 @@ export default function App() {
         canGoBack={canGoBack}
         canGoForward={canGoForward}
         onNotificationClick={() => setShowNotifications(true)}
-        onAddToList={() => navigateTo('travel-booking')}
+        onAddToList={() => handleAddToList({
+          id: 1, // This should be dynamic based on the selected activity
+          title: 'Dubai Desert Safari with BBQ Dinner & Camel Ride',
+          location: 'Dubai, UAE',
+          image: '/assets/dest-1.jpeg'
+        })}
       />
       {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
     </>

@@ -82,7 +82,6 @@ export default function Notifications({ onLogout, onBack }) {
                 <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
                     <div className="flex items-center gap-1">
                         <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
-                        <span className="text-sm font-medium leading-tight">Kufi<br />Travel</span>
                     </div>
 
                     <div className="hidden sm:block flex-1 max-w-md mx-6 lg:mx-12">
@@ -141,8 +140,8 @@ export default function Notifications({ onLogout, onBack }) {
                         <button
                             onClick={() => setActiveTab('all')}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'all'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                 }`}
                         >
                             All
@@ -150,8 +149,8 @@ export default function Notifications({ onLogout, onBack }) {
                         <button
                             onClick={() => setActiveTab('replied')}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'replied'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                 }`}
                         >
                             Inquiry Replied Back
@@ -159,8 +158,8 @@ export default function Notifications({ onLogout, onBack }) {
                         <button
                             onClick={() => setActiveTab('pending')}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'pending'
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                 }`}
                         >
                             Pending
@@ -200,10 +199,10 @@ export default function Notifications({ onLogout, onBack }) {
                                                 <button
                                                     key={index}
                                                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${action === 'View Itinerary'
-                                                            ? 'bg-blue-500 text-white hover:bg-blue-600'
-                                                            : action === 'Proceed to Payment'
-                                                                ? 'bg-green-500 text-white hover:bg-green-600'
-                                                                : 'bg-slate-200 text-slate-600 cursor-not-allowed'
+                                                        ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                                        : action === 'Proceed to Payment'
+                                                            ? 'bg-green-500 text-white hover:bg-green-600'
+                                                            : 'bg-slate-200 text-slate-600 cursor-not-allowed'
                                                         }`}
                                                     disabled={action === 'Awaiting Response'}
                                                 >

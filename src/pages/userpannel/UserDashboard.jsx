@@ -2,7 +2,7 @@ import React from 'react'
 import { FiSearch, FiBell, FiMessageSquare, FiMapPin, FiCalendar, FiFilter, FiArrowUp, FiArrowDown } from 'react-icons/fi'
 import { FaCheckCircle, FaClock, FaCreditCard } from 'react-icons/fa'
 
-export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, canGoForward }) {
+export default function UserDashboard({ selectedActivities = [], onRemoveActivity, onLogout, onBack, onForward, canGoBack, canGoForward }) {
     const tripRequests = [
         {
             id: 1,
@@ -156,6 +156,60 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                             Plan a New Trip
                         </button>
                     </div>
+                </div>
+
+                {/* Your Selection Section */}
+                <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 mb-8 shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">Your Selection</h2>
+                            <p className="text-sm text-gray-600">
+                                <span className="font-bold text-[#A67C52]">{selectedActivities.length}</span>
+                                <span className="ml-1">activities selected</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    {selectedActivities.length === 0 ? (
+                        <div className="py-12 text-center">
+                            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                                    <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+                                </svg>
+                            </div>
+                            <p className="text-base font-semibold text-gray-900 mb-2">Your selection is empty</p>
+                            <p className="text-sm text-gray-500">
+                                Add activities from explore page to create your custom request
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {selectedActivities.map((activity) => (
+                                <div key={activity.id} className="bg-gray-50 rounded-xl p-4 flex gap-4 items-start hover:bg-gray-100 transition-colors">
+                                    <img
+                                        src={activity.image}
+                                        alt={activity.title}
+                                        className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                                        onError={(e) => { e.target.src = '/assets/activity1.jpeg' }}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">{activity.title}</h3>
+                                        <p className="text-xs text-gray-500 mb-2">{activity.location}</p>
+                                        <button
+                                            onClick={() => onRemoveActivity && onRemoveActivity(activity.id)}
+                                            className="text-xs font-medium text-red-600 hover:text-red-700 flex items-center gap-1"
+                                        >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M18 6L6 18M6 6l12 12" />
+                                            </svg>
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
