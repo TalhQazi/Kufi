@@ -38,6 +38,16 @@ export default function HeroSection({ onSignupClick }) {
         return () => clearInterval(interval)
     }, [isPaused, cards.length])
 
+    // Mouse wheel scroll handler
+    const handleWheel = (e) => {
+        e.preventDefault()
+        if (e.deltaY > 0) {
+            next()
+        } else if (e.deltaY < 0) {
+            prev()
+        }
+    }
+
     return (
         <div className="min-h-[600px] lg:min-h-[700px] flex flex-col bg-cover bg-center text-white px-4 sm:px-8 lg:px-20 pb-20 box-border relative"
             style={{
@@ -97,6 +107,7 @@ export default function HeroSection({ onSignupClick }) {
                         className="hidden md:flex gap-6 overflow-visible pb-16 items-end pl-4"
                         onMouseEnter={() => setIsPaused(true)}
                         onMouseLeave={() => setIsPaused(false)}
+                        onWheel={handleWheel}
                     >
                         {visibleOrder.map((cardIdx, index) => (
                             <div key={`${cardIdx}-${idx}`} className="relative group">
@@ -106,14 +117,15 @@ export default function HeroSection({ onSignupClick }) {
                                 </div>
 
                                 <div
-                                    className={`relative rounded-2xl overflow-hidden shadow-2xl text-white flex-shrink-0 transition-all duration-500 z-10 ${index === 0
+                                    className={`relative rounded-2xl overflow-hidden shadow-lg shadow-black/50 bg-gray-900 text-white flex-shrink-0 transition-all duration-500 z-10 border-none ring-0 ${index === 0
                                         ? 'w-[260px] h-[400px]'
                                         : 'w-[240px] h-[280px] opacity-90'
                                         }`}
                                 >
-                                    <div
-                                        className="w-full h-full bg-cover bg-center"
-                                        style={{ backgroundImage: `url(${cards[cardIdx]})` }}
+                                    <img
+                                        src={cards[cardIdx]}
+                                        alt="Lorem Ipsum"
+                                        className="absolute inset-0 w-full h-full object-cover block m-0 p-0 border-none"
                                     />
                                     <div className="absolute bottom-0 left-0 w-full p-5 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
                                         <div className="flex justify-between items-end">
@@ -137,6 +149,12 @@ export default function HeroSection({ onSignupClick }) {
                     {/* Navigation controls */}
                     <div className="hidden md:flex items-center gap-3 absolute bottom-0 left-0">
                         <span className="text-sm font-medium text-white/90">Prev / Next</span>
+                        <button
+                            onClick={prev}
+                            className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all backdrop-blur-sm border border-white/20"
+                        >
+                            <FiChevronRight size={18} className="rotate-180" />
+                        </button>
                         <button
                             onClick={next}
                             className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all backdrop-blur-sm border border-white/20"

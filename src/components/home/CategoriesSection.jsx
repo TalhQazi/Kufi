@@ -1,4 +1,4 @@
-export default function CategoriesSection() {
+export default function CategoriesSection({ onCategoryClick }) {
     const iconColor = "#9B6F40"
 
     const categories = [
@@ -151,7 +151,11 @@ export default function CategoriesSection() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-y-10 gap-x-8 sm:gap-x-10">
                     {categories.map(({ name, icon }) => (
-                        <div key={name} className="flex flex-col items-center gap-3 cursor-pointer transition-transform duration-300 hover:-translate-y-2">
+                        <div
+                            key={name}
+                            className="flex flex-col items-center gap-3 cursor-pointer transition-transform duration-300 hover:-translate-y-2"
+                            onClick={() => onCategoryClick && onCategoryClick(name)}
+                        >
                             <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
                                 {icon}
                             </div>

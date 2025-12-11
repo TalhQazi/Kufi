@@ -1,34 +1,95 @@
+import { useState, useEffect } from 'react'
+
+const blogData = [
+    {
+        id: 1,
+        title: 'Lorem Ipsum Amet Ipi',
+        subtitle: 'Lorem Ipsum Ipi',
+        image: '/assets/blog1.jpeg',
+        hasButton: true
+    },
+    {
+        id: 2,
+        title: 'Finding Peace in the Mountains',
+        subtitle: 'ALPINE ADVENTURES',
+        image: '/assets/blog2.jpeg'
+    },
+    {
+        id: 3,
+        title: 'Top 10 Beaches to Visit',
+        subtitle: 'SUMMER VIBES',
+        image: '/assets/blog3.jpeg'
+    },
+    {
+        id: 4,
+        title: 'A Culinary Journey Through Italy',
+        subtitle: 'FOOD & CULTURE',
+        image: '/assets/blog4.jpeg'
+    },
+    {
+        id: 5,
+        title: 'Hidden Gems of Kyoto',
+        subtitle: 'CULTURAL HERITAGE',
+        image: '/assets/dest-1.jpeg'
+    },
+    {
+        id: 6,
+        title: 'Safari Guide: What to Expect',
+        subtitle: 'WILDLIFE EXPLORER',
+        image: '/assets/dest-2.jpeg'
+    },
+    {
+        id: 7,
+        title: 'Backpacking Through Europe',
+        subtitle: 'BUDGET TRAVEL',
+        image: '/assets/dest-3.jpeg'
+    },
+    {
+        id: 8,
+        title: 'Luxury Escapes in Maldives',
+        subtitle: 'ISLAND PARADISE',
+        image: '/assets/dest-4.jpeg'
+    }
+]
+
 export default function BlogSection() {
-    const blogs = [
-        {
-            id: 1,
-            title: 'Lorem Ipsum Amet Ipi',
-            subtitle: 'Lorem Ipsum Ipi',
-            image: '/assets/blog1.jpeg',
-            hasButton: true
-        },
-        {
-            id: 2,
-            title: 'Lorem Ipsum Amet Ipi',
-            subtitle: 'Lorem Ipsum Ipi',
-            image: '/assets/blog2.jpeg'
-        },
-        {
-            id: 3,
-            title: 'Lorem Ipsum Amet Ipi',
-            subtitle: 'Lorem Ipsum Ipi',
-            image: '/assets/blog3.jpeg'
-        },
-        {
-            id: 4,
-            title: 'Lorem Ipsum Amet Ipi',
-            subtitle: 'Lorem Ipsum Ipi',
-            image: '/assets/blog4.jpeg'
-        },
+    const [startIndex, setStartIndex] = useState(0)
+    const [isPaused, setIsPaused] = useState(false)
+
+    // Get the 4 visible blogs based on current start index
+    const visibleBlogs = [
+        blogData[startIndex % blogData.length],
+        blogData[(startIndex + 1) % blogData.length],
+        blogData[(startIndex + 2) % blogData.length],
+        blogData[(startIndex + 3) % blogData.length]
     ]
 
+    // Auto-rotate every 4 seconds
+    useEffect(() => {
+        if (isPaused) return
+
+        const interval = setInterval(() => {
+            setStartIndex((current) => (current + 1) % blogData.length)
+        }, 4000)
+
+        return () => clearInterval(interval)
+    }, [isPaused])
+
+    const handleNext = () => {
+        setStartIndex((current) => (current + 1) % blogData.length)
+    }
+
+    const handlePrev = () => {
+        setStartIndex((current) => (current - 1 + blogData.length) % blogData.length)
+    }
+
     return (
-        <section className="bg-white py-16 sm:py-24 px-4 sm:px-8 lg:px-20" id="blog">
+        <section
+            className="bg-white py-16 sm:py-24 px-4 sm:px-8 lg:px-20"
+            id="blog"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+        >
             <div className="max-w-[1240px] mx-auto">
                 <div className="text-center mb-12">
                     {/* Using font-['Sacramento'] to force the font family if utility class is missing */}
@@ -38,11 +99,11 @@ export default function BlogSection() {
                     </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {blogs.map((item) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 transition-all duration-500">
+                    {visibleBlogs.map((item, index) => (
                         <article
-                            key={item.id}
-                            className="relative rounded-2xl overflow-hidden h-80 sm:h-[420px] group cursor-pointer shadow-lg"
+                            key={`${item.id}-${index}-${startIndex}`}
+                            className="relative rounded-2xl overflow-hidden h-80 sm:h-[420px] group cursor-pointer shadow-lg animate-fadeIn"
                         >
                             <div
                                 className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
@@ -70,12 +131,20 @@ export default function BlogSection() {
 
                 {/* Navigation Arrows */}
                 <div className="flex justify-center items-center gap-4 mt-16">
-                    <button className="w-12 h-12 rounded-full border border-slate-300 text-slate-500 flex items-center justify-center hover:bg-slate-50 hover:border-slate-400 transition-colors shadow-sm">
+                    <button
+                        onClick={handlePrev}
+                        className="w-12 h-12 rounded-full border border-slate-300 text-slate-500 flex items-center justify-center hover:bg-slate-50 hover:border-slate-400 transition-colors shadow-sm"
+                        aria-label="Previous blog post"
+                    >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <path d="M15 18l-6-6 6-6" />
                         </svg>
                     </button>
-                    <button className="w-12 h-12 rounded-full bg-[#A67C52] text-white flex items-center justify-center hover:bg-[#8e6a45] shadow-lg transition-transform hover:scale-105 active:scale-95">
+                    <button
+                        onClick={handleNext}
+                        className="w-12 h-12 rounded-full bg-[#A67C52] text-white flex items-center justify-center hover:bg-[#8e6a45] shadow-lg transition-transform hover:scale-105 active:scale-95"
+                        aria-label="Next blog post"
+                    >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <path d="M9 18l6-6-6-6" />
                         </svg>

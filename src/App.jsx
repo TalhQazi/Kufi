@@ -155,6 +155,7 @@ export default function App() {
         onRemoveActivity={handleRemoveFromList}
         onLogout={handleLogout}
         onActivityClick={() => navigateTo('activity-detail')}
+        onCategoryClick={() => navigateTo('category-page')}
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
         onSendRequest={() => navigateTo('travel-booking')}
@@ -263,7 +264,11 @@ export default function App() {
 
   return (
     <>
-      <HomePage onSignupClick={handleOpenRegister} onSigninClick={handleOpenLogin} />
+      <HomePage
+        onSignupClick={handleOpenRegister}
+        onSigninClick={handleOpenLogin}
+        onCategoryClick={() => navigateTo('category-page')}
+      />
 
       {/* Login Modal */}
       {showModal === 'login' && (

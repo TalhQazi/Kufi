@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-export default function Explore({ selectedActivities = [], onAddToList, onRemoveActivity, onLogout, onActivityClick, onNotificationClick, onProfileClick, onSendRequest, onBack, onForward, canGoBack, canGoForward }) {
+export default function Explore({ selectedActivities = [], onAddToList, onRemoveActivity, onLogout, onActivityClick, onNotificationClick, onProfileClick, onSendRequest, onBack, onForward, canGoBack, canGoForward, onCategoryClick }) {
   const [dropdown, setDropdown] = useState(false)
   const dropdownRef = useRef(null)
 
@@ -259,7 +259,11 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
         <div className="max-w-[1400px] mx-auto overflow-x-auto">
           <div className="flex gap-8 min-w-max">
             {categories.map(({ name, icon }) => (
-              <div key={name} className="flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[80px]">
+              <div
+                key={name}
+                className="flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[80px]"
+                onClick={() => onCategoryClick && onCategoryClick(name)}
+              >
                 <div className="w-16 h-16 flex items-center justify-center">
                   {icon}
                 </div>
