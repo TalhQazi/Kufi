@@ -1,7 +1,99 @@
-import React from "react";
+import React, { useState } from "react";
 import { CalendarDays, MapPin, Users, DollarSign, Info } from "lucide-react";
 
 const SupplierGenerateItinerary = () => {
+  const [expandedDays, setExpandedDays] = useState([1, 2, 3]);
+
+  const toggleDay = (day) => {
+    setExpandedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
+
+  const DayCard = ({ day }) => {
+    const isExpanded = expandedDays.includes(day);
+    return (
+      <div className="rounded-2xl border border-amber-100 bg-amber-50/40 overflow-hidden">
+        <button
+          onClick={() => toggleDay(day)}
+          className="flex w-full items-center justify-between px-4 py-3 text-xs font-semibold text-gray-800"
+        >
+          <span>Day {day}</span>
+          <span className="text-lg text-gray-500">{isExpanded ? "⌃" : "⌄"}</span>
+        </button>
+        {isExpanded && (
+          <div className="border-t border-amber-100 px-4 py-4 space-y-4 text-xs">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <p className="font-medium text-gray-700">Select Activity</p>
+                <select className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#a26e35]">
+                  <option>Select an activity</option>
+                  <option>Museum visit</option>
+                  <option>Seine river cruise</option>
+                  <option>City walking tour</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <p className="font-medium text-gray-700">Select Location</p>
+                <select className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#a26e35]">
+                  <option>Select a location</option>
+                  <option>Louvre Museum</option>
+                  <option>Montmartre</option>
+                  <option>Notre-Dame Area</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="font-medium text-gray-700">Add Description</p>
+              <textarea
+                rows={3}
+                placeholder="Add notes or highlights about this activity..."
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
+              />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1">
+                <p className="font-medium text-gray-700">Add Estimated Cost</p>
+                <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                  <span className="mr-2 text-gray-400">$</span>
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    className="w-full bg-transparent outline-none text-sm"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="font-medium text-gray-700">Start Time</p>
+                <input
+                  type="time"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
+                />
+              </div>
+              <div className="space-y-1">
+                <p className="font-medium text-gray-700">End Time</p>
+                <input
+                  type="time"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="font-medium text-gray-700">Add Image</p>
+              <div className="flex h-24 w-full items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 text-[11px] text-gray-500">
+                <span className="mr-1 text-gray-400">📷</span>
+                Drag and drop an image, or <span className="ml-1 font-semibold text-[#a26e35]">browse</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -71,91 +163,10 @@ const SupplierGenerateItinerary = () => {
           <div className="rounded-2xl border border-gray-100 bg-white px-5 py-5 space-y-4">
             <h2 className="text-sm font-semibold text-slate-900">Itinerary Details</h2>
 
-            {/* Day 1 expanded card */}
-            <div className="rounded-2xl border border-amber-100 bg-amber-50/40 overflow-hidden">
-              <button className="flex w-full items-center justify-between px-4 py-3 text-xs font-semibold text-gray-800">
-                <span>Day 1</span>
-                <span className="text-lg text-gray-500">⌃</span>
-              </button>
-              <div className="border-t border-amber-100 px-4 py-4 space-y-4 text-xs">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <p className="font-medium text-gray-700">Select Activity</p>
-                    <select className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#a26e35]">
-                      <option>Select an activity</option>
-                      <option>Museum visit</option>
-                      <option>Seine river cruise</option>
-                      <option>City walking tour</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium text-gray-700">Select Location</p>
-                    <select className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#a26e35]">
-                      <option>Select a location</option>
-                      <option>Louvre Museum</option>
-                      <option>Montmartre</option>
-                      <option>Notre-Dame Area</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="font-medium text-gray-700">Add Description</p>
-                  <textarea
-                    rows={3}
-                    placeholder="Add notes or highlights about this activity..."
-                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
-                  />
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="space-y-1">
-                    <p className="font-medium text-gray-700">Add Estimated Cost</p>
-                    <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
-                      <span className="mr-2 text-gray-400">$</span>
-                      <input
-                        type="number"
-                        placeholder="0.00"
-                        className="w-full bg-transparent outline-none text-sm"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium text-gray-700">Start Time</p>
-                    <input
-                      type="time"
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium text-gray-700">End Time</p>
-                    <input
-                      type="time"
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="font-medium text-gray-700">Add Image</p>
-                  <div className="flex h-24 w-full items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 text-[11px] text-gray-500">
-                    <span className="mr-1 text-gray-400">📷</span>
-                    Drag and drop an image, or <span className="ml-1 font-semibold text-[#a26e35]">browse</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Other days collapsed */}
-            <div className="space-y-2 text-xs">
-              {[2, 3, 4, 5].map((day) => (
-                <button
-                  key={day}
-                  className="flex w-full items-center justify-between rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-left font-medium text-gray-700"
-                >
-                  <span>Day {day}</span>
-                  <span className="text-lg text-gray-400">⌄</span>
-                </button>
+            {/* Day cards */}
+            <div className="space-y-2">
+              {[1, 2, 3, 4, 5].map((day) => (
+                <DayCard key={day} day={day} />
               ))}
             </div>
           </div>

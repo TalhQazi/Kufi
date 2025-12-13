@@ -16,12 +16,8 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
       {/* Mobile top bar */}
       <aside className="md:hidden w-full bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded bg-[#704b24] flex items-center justify-center text-[10px] font-semibold tracking-[0.18em] text-white">
-            KUFI
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold text-gray-900">Kufi</span>
-            <span className="text-[11px] text-gray-500">Travel</span>
+          <div className="h-12 w-20 sm:h-[66px] sm:w-28 block">
+            <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
           </div>
         </div>
       </aside>
@@ -30,12 +26,8 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
       <aside className="hidden md:flex flex-col bg-white w-64 h-screen sticky top-0 border-r border-gray-100 py-6 px-6">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="h-10 w-10 rounded bg-[#704b24] flex items-center justify-center text-xs font-semibold tracking-[0.18em] text-white">
-            KUFI
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold text-gray-900">Kufi</span>
-            <span className="text-[11px] text-gray-500">Travel</span>
+          <div className="h-12 w-20 sm:h-[66px] sm:w-28 block">
+            <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
           </div>
         </div>
 

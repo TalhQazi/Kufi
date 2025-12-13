@@ -25,12 +25,8 @@ const Sidebar = ({ activePage, onSelect, onLogout }) => {
       {/* Mobile top nav */}
       <aside className="md:hidden w-full bg-[#704b24] text-white px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded bg-white/10 flex items-center justify-center text-[10px] font-semibold tracking-[0.18em]">
-            KUFI
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold">Kufi</span>
-            <span className="text-[11px] text-white/70">Travel</span>
+          <div className="h-12 w-20 sm:h-[66px] sm:w-28 block">
+            <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
           </div>
         </div>
         <Menu className="w-5 h-5 text-white/80" />
@@ -40,12 +36,8 @@ const Sidebar = ({ activePage, onSelect, onLogout }) => {
       <aside className="hidden md:flex flex-col bg-[#704b24] text-white w-64 h-screen sticky top-0 overflow-y-auto">
         {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-          <div className="h-9 w-9 rounded bg-white/10 flex items-center justify-center text-xs font-semibold tracking-[0.2em]">
-            KUFI
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold">Kufi</span>
-            <span className="text-[11px] text-white/70">Travel</span>
+          <div className="h-12 w-20 sm:h-[66px] sm:w-28 block">
+            <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
           </div>
         </div>
 
