@@ -324,7 +324,18 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                             {/* Add to List Button */}
                             <button
                                 className="w-full py-3 rounded-lg text-sm font-bold bg-primary-brown text-white hover:bg-primary-dark transition-colors"
-                                onClick={() => onAddToList && onAddToList()}
+                                onClick={() => {
+                                    if (onAddToList) {
+                                        onAddToList({
+                                            id: 1, // Activity ID
+                                            title: 'Dubai Desert Safari with BBQ Dinner & Camel Ride',
+                                            location: 'Dubai, United Arab Emirates',
+                                            image: '/assets/dest-1.jpeg',
+                                            travelers: travelers,
+                                            addOns: addOns
+                                        })
+                                    }
+                                }}
                             >
                                 ADD TO LIST
                             </button>

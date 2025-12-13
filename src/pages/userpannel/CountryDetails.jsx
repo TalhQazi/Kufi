@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import './CountryDetails.css'
 
 export default function CountryDetails({
+    onHomeClick,
     countryName = "Italy",
     onLogout,
     onNotificationClick,
@@ -11,6 +12,11 @@ export default function CountryDetails({
 }) {
     const [dropdown, setDropdown] = useState(false)
     const dropdownRef = useRef(null)
+
+    // Scroll to top when component mounts
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, [])
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -99,7 +105,17 @@ export default function CountryDetails({
             <nav className="country-navbar">
                 <div className="country-navbar-inner">
                     <div className="country-logo">
-                        <img src="/assets/navbar.png" alt="Kufi Travel" className="country-logo-image" />
+                        <button 
+                            onClick={() => {
+                                if (onHomeClick) {
+                                    onHomeClick()
+                                }
+                            }}
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                            style={{ background: 'none', border: 'none', padding: 0 }}
+                        >
+                            <img src="/assets/navbar.png" alt="Kufi Travel" className="country-logo-image" />
+                        </button>
                     </div>
 
                     <div className="country-search-bar">

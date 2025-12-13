@@ -11,7 +11,7 @@ import BlogSection from '../../components/home/BlogSection'
 import FeedbackSection from '../../components/home/FeedbackSection'
 import Footer from '../../components/layout/Footer'
 
-export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick }) {
+export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick, onCountryClick }) {
     return (
         <>
             <Header onSignupClick={onSignupClick} onSigninClick={onSigninClick} />
@@ -21,7 +21,7 @@ export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick
             </div>
             <DestinationsSection />
             <CategoriesSection onCategoryClick={onCategoryClick} />
-            <TopLocationsSection />
+            <TopLocationsSection onCountryClick={onCountryClick} />
             <TopActivitiesSection />
             <BookingSystemSection />
             <FeedbackSection />

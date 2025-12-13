@@ -7,7 +7,8 @@ export default function CategoryPage({
     onNotificationClick,
     onProfileClick,
     onActivityClick,
-    onBack
+    onBack,
+    onHomeClick
 }) {
     const [dropdown, setDropdown] = useState(false)
     const dropdownRef = useRef(null)
@@ -109,7 +110,17 @@ export default function CategoryPage({
             <nav className="category-navbar">
                 <div className="category-navbar-inner">
                     <div className="category-logo">
-                        <img src="/assets/navbar.png" alt="Kufi Travel" className="category-logo-image" />
+                        <button 
+                            onClick={() => {
+                                if (onHomeClick) {
+                                    onHomeClick()
+                                }
+                            }}
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                            style={{ background: 'none', border: 'none', padding: 0 }}
+                        >
+                            <img src="/assets/navbar.png" alt="Kufi Travel" className="category-logo-image" />
+                        </button>
                     </div>
 
                     <div className="category-search-bar">

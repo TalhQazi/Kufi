@@ -11,6 +11,8 @@ import NotificationsModal from './pages/userpannel/NotificationsModal.jsx'
 import TravelBooking from './pages/userpannel/TravelBooking.jsx'
 import BookingConfirmation from './pages/userpannel/BookingConfirmation.jsx'
 import Payment from './pages/userpannel/Payment.jsx'
+import ItineraryView from './pages/userpannel/ItineraryView.jsx'
+import TravelerProfile from './pages/userpannel/TravelerProfile.jsx'
 import AdminApp from './AdminApp.jsx'
 
 export default function App() {
@@ -108,6 +110,9 @@ export default function App() {
 
     // Update browser history
     window.history.pushState({ page: newPage }, '', `#${newPage}`)
+
+    // Scroll to top when navigating to a new page
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const goBack = () => {
@@ -158,13 +163,15 @@ export default function App() {
         onCategoryClick={() => navigateTo('category-page')}
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
-        onSendRequest={() => navigateTo('travel-booking')}
+        onSettingsClick={() => navigateTo('traveler-profile')}
+        onSendRequest={() => navigateTo('traveler-profile')}
         onBack={goBack}
         onForward={goForward}
         canGoBack={canGoBack}
         canGoForward={canGoForward}
+        onHomeClick={() => navigateTo('home')}
       />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} />}
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
     </>
   )
 
@@ -177,8 +184,9 @@ export default function App() {
         onProfileClick={() => navigateTo('user-profile')}
         onActivityClick={() => navigateTo('activity-detail')}
         onBack={goBack}
+        onHomeClick={() => navigateTo('home')}
       />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} />}
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
     </>
   )
 
@@ -191,8 +199,9 @@ export default function App() {
         onProfileClick={() => navigateTo('user-profile')}
         onActivityClick={() => navigateTo('activity-detail')}
         onBack={goBack}
+        onHomeClick={() => navigateTo('home')}
       />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} />}
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
     </>
   )
 
@@ -203,6 +212,9 @@ export default function App() {
       onForward={goForward}
       canGoBack={canGoBack}
       canGoForward={canGoForward}
+      onExploreClick={() => navigateTo('explore')}
+      onItineraryClick={() => navigateTo('itinerary-view')}
+      onHomeClick={() => navigateTo('home')}
     />
   )
 
@@ -215,14 +227,9 @@ export default function App() {
         canGoBack={canGoBack}
         canGoForward={canGoForward}
         onNotificationClick={() => setShowNotifications(true)}
-        onAddToList={() => handleAddToList({
-          id: 1, // This should be dynamic based on the selected activity
-          title: 'Dubai Desert Safari with BBQ Dinner & Camel Ride',
-          location: 'Dubai, UAE',
-          image: '/assets/dest-1.jpeg'
-        })}
+        onAddToList={(activityData) => handleAddToList(activityData)}
       />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} />}
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
     </>
   )
 
@@ -262,12 +269,41 @@ export default function App() {
     />
   )
 
+  if (page === 'itinerary-view') return (
+    <>
+      <ItineraryView
+        onBack={goBack}
+        onPaymentClick={() => navigateTo('payment')}
+        onRequestAdjustment={() => alert('Adjustment request sent!')}
+        onLogout={handleLogout}
+        onNotificationClick={() => setShowNotifications(true)}
+        onProfileClick={() => navigateTo('user-profile')}
+        onSettingsClick={() => navigateTo('traveler-profile')}
+        onHomeClick={() => navigateTo('home')}
+      />
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
+    </>
+  )
+
+  if (page === 'traveler-profile') return (
+    <>
+      <TravelerProfile
+        onBack={goBack}
+        onLogout={handleLogout}
+        onProfileClick={() => navigateTo('user-profile')}
+        onSettingsClick={() => navigateTo('traveler-profile')}
+        onHomeClick={() => navigateTo('home')}
+      />
+    </>
+  )
+
   return (
     <>
       <HomePage
         onSignupClick={handleOpenRegister}
         onSigninClick={handleOpenLogin}
         onCategoryClick={() => navigateTo('category-page')}
+        onCountryClick={() => navigateTo('country-details')}
       />
 
       {/* Login Modal */}

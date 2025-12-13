@@ -2,7 +2,7 @@ import React from 'react'
 import { FiSearch, FiBell, FiMessageSquare, FiMapPin, FiCalendar, FiFilter, FiArrowUp, FiArrowDown } from 'react-icons/fi'
 import { FaCheckCircle, FaClock, FaCreditCard } from 'react-icons/fa'
 
-export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, canGoForward }) {
+export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, canGoForward, onExploreClick, onItineraryClick, onHomeClick }) {
     const tripRequests = [
         {
             id: 1,
@@ -92,7 +92,16 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
             <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                        <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
+                        <button 
+                            onClick={() => {
+                                if (onHomeClick) {
+                                    onHomeClick()
+                                }
+                            }}
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                        >
+                            <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
+                        </button>
                     </div>
 
                     <div className="flex-1 max-w-xl mx-4 md:mx-8 hidden md:block">
@@ -148,7 +157,14 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                             Here's a quick look at your latest trip requests and upcoming tours. Let's <br />
                             make your next journey unforgettable!
                         </p>
-                        <button className="bg-[#22C55E] hover:bg-[#16A34A] text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-3 w-fit transition-all hover:scale-105 shadow-xl text-sm md:text-base">
+                        <button 
+                            onClick={() => {
+                                if (onExploreClick) {
+                                    onExploreClick()
+                                }
+                            }}
+                            className="bg-[#22C55E] hover:bg-[#16A34A] text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-3 w-fit transition-all hover:scale-105 shadow-xl text-sm md:text-base"
+                        >
                             <FaCheckCircle className="text-lg" />
                             Plan a New Trip
                         </button>
@@ -218,7 +234,14 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                         </div>
 
                                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-auto gap-4">
-                                            <button className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors w-full sm:w-auto text-center">
+                                            <button 
+                                                onClick={() => {
+                                                    if (onItineraryClick) {
+                                                        onItineraryClick()
+                                                    }
+                                                }}
+                                                className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors w-full sm:w-auto text-center"
+                                            >
                                                 View Request Details
                                             </button>
                                             <span className="text-lg font-bold text-gray-900">{trip.price}</span>
@@ -236,7 +259,15 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                             <h3 className="text-lg font-bold text-gray-900 mb-4">Upcoming Trips</h3>
                             <div className="flex flex-col gap-4">
                                 {upcomingTrips.map((trip) => (
-                                    <div key={trip.id} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
+                                    <div 
+                                        key={trip.id} 
+                                        onClick={() => {
+                                            if (onItineraryClick) {
+                                                onItineraryClick()
+                                            }
+                                        }}
+                                        className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+                                    >
                                         <div className="h-32 rounded-lg overflow-hidden mb-3">
                                             <img src={trip.image} alt={trip.location} className="w-full h-full object-cover" />
                                         </div>
