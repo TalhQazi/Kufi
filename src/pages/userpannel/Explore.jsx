@@ -242,10 +242,27 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
                   >
                     MY REQUESTS
                   </div>
-                  <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">NOTIFICATIONS</div>
-                  <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">PAYMENTS</div>
-                  <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">NOTIFICATIONS</div>
-                  <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">PAYMENTS</div>
+                  <div 
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    onClick={() => {
+                      onNotificationClick && onNotificationClick()
+                      setDropdown(false)
+                    }}
+                  >
+                    NOTIFICATIONS
+                  </div>
+                  <div 
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    onClick={() => {
+                      // Navigate to payments or traveler profile payments tab
+                      if (onSettingsClick) {
+                        onSettingsClick()
+                      }
+                      setDropdown(false)
+                    }}
+                  >
+                    PAYMENTS
+                  </div>
                   <div
                     className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                     onClick={() => {
@@ -281,7 +298,11 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
               <div
                 key={name}
                 className="flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[80px]"
-                onClick={() => onCategoryClick && onCategoryClick(name)}
+                onClick={() => {
+                  if (onCategoryClick) {
+                    onCategoryClick()
+                  }
+                }}
               >
                 <div className="w-16 h-16 flex items-center justify-center">
                   {icon}

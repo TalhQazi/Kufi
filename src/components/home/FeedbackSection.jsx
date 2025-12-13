@@ -54,6 +54,7 @@ const allFeedback = [
 export default function FeedbackSection() {
     const [startIndex, setStartIndex] = useState(0)
     const [isPaused, setIsPaused] = useState(false)
+    const [selectedCardId, setSelectedCardId] = useState(null)
 
     // Get the 3 visible cards based on current start index
     const visibleCards = [
@@ -73,28 +74,11 @@ export default function FeedbackSection() {
         return () => clearInterval(interval)
     }, [isPaused])
 
-    // Mouse wheel scroll handler
-    const handleWheel = (e) => {
-        // Prevent default only if we are scrolling comfortably within the section
-        // Adding a small threshold to avoid accidental triggers
-        if (Math.abs(e.deltaY) < 10) return
-
-        // Optional: Call preventDefault if we want to stop page scrolling while hovering this section
-        // e.preventDefault() 
-
-        if (e.deltaY > 0) {
-            setStartIndex((current) => (current + 1) % allFeedback.length)
-        } else if (e.deltaY < 0) {
-            setStartIndex((current) => (current - 1 + allFeedback.length) % allFeedback.length)
-        }
-    }
-
     return (
         <section
             className="bg-white py-16 sm:py-20 px-4 sm:px-8 lg:px-20 relative overflow-hidden"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
-            onWheel={handleWheel}
         >
             {/* Decorative blob background */}
             <div className="absolute right-0 bottom-0 w-[600px] h-[600px] bg-[#D1B693] rounded-tl-full opacity-40 -mr-32 -mb-32 hidden lg:block" />
@@ -111,7 +95,10 @@ export default function FeedbackSection() {
                     {visibleCards.map((card, index) => (
                         <article
                             key={`${card.id}-${index}-${startIndex}`}
-                            className={`rounded-2xl overflow-hidden shadow-lg transition-all duration-500 ${index === 0 ? 'md:row-span-2' : ''} hover:shadow-xl`}
+                            onClick={() => setSelectedCardId(card.id)}
+                            className={`rounded-2xl overflow-hidden shadow-lg transition-all duration-500 ${index === 0 ? 'md:row-span-2' : ''} hover:shadow-xl cursor-pointer ${
+                                selectedCardId === card.id ? 'ring-4 ring-[#A67C52] ring-offset-2' : ''
+                            }`}
                         >
                             {/* Featured Card Style (First Item) */}
                             {index === 0 ? (

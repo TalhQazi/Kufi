@@ -228,7 +228,7 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                                 className="text-[#A67C52] font-bold hover:underline"
                                 onClick={onRegisterClick}
                             >
-                                Register Now
+                                Signup
                             </button>
                         </div>
                     </div>

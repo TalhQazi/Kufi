@@ -85,7 +85,7 @@ export default function TopActivitiesSection() {
                 <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-6">
                     <div className="flex flex-col gap-4">
                         {leftCards.map((card) => (
-                            <article key={card.id} className="relative h-56 sm:h-[210px] rounded-2xl overflow-hidden shadow-lg">
+                            <article key={card.id} className="relative h-56 sm:h-[210px] rounded-2xl overflow-hidden shadow-lg cursor-pointer">
                                 <div
                                     className="absolute inset-0 w-full h-full bg-cover bg-center transition-transform hover:scale-105 duration-700"
                                     style={{ backgroundImage: `url(${card.image})` }}
@@ -99,7 +99,7 @@ export default function TopActivitiesSection() {
                         ))}
                     </div>
 
-                    <article className="relative h-[360px] md:h-[430px] rounded-2xl overflow-hidden shadow-lg group">
+                    <article className="relative h-[360px] md:h-[430px] rounded-2xl overflow-hidden shadow-lg group cursor-pointer">
                         {carouselItems.map((item, index) => (
                             <div
                                 key={item.id}

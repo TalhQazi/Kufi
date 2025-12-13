@@ -1,8 +1,27 @@
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { FiSearch, FiBell, FiMessageSquare, FiMapPin, FiCalendar, FiFilter, FiArrowUp, FiArrowDown } from 'react-icons/fi'
 import { FaCheckCircle, FaClock, FaCreditCard } from 'react-icons/fa'
 
-export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, canGoForward, onExploreClick, onItineraryClick, onHomeClick }) {
+export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, canGoForward, onExploreClick, onItineraryClick, onHomeClick, onNotificationClick, onProfileClick, onSettingsClick, onCountryClick }) {
+    const [dropdown, setDropdown] = useState(false)
+    const dropdownRef = useRef(null)
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setDropdown(false)
+            }
+        }
+
+        if (dropdown) {
+            document.addEventListener('mousedown', handleClickOutside)
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [dropdown])
     const tripRequests = [
         {
             id: 1,
@@ -123,12 +142,73 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                         <button className="text-gray-500 hover:text-gray-700 hidden md:block">
                             <FiMessageSquare size={22} />
                         </button>
-                        <div className="flex items-center gap-3 cursor-pointer" onClick={onLogout}>
-                            <img
-                                src="/assets/hero-card1.jpeg"
-                                alt="Profile"
-                                className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border-2 border-white shadow-sm"
-                            />
+                        <div className="relative" ref={dropdownRef}>
+                            <button
+                                onClick={() => setDropdown(!dropdown)}
+                                className="flex items-center gap-2 cursor-pointer"
+                            >
+                                <img
+                                    src="/assets/hero-card1.jpeg"
+                                    alt="Profile"
+                                    className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border-2 border-white shadow-sm"
+                                />
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6E4E" strokeWidth="2" className="hidden md:block">
+                                    <path d="M6 9l6 6 6-6" />
+                                </svg>
+                            </button>
+
+                            {dropdown && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onProfileClick) onProfileClick()
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        MY REQUESTS
+                                    </div>
+                                    <div 
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onNotificationClick) onNotificationClick()
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        NOTIFICATIONS
+                                    </div>
+                                    <div 
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onSettingsClick) onSettingsClick()
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        PAYMENTS
+                                    </div>
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onSettingsClick) onSettingsClick()
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        SETTINGS
+                                    </div>
+                                    <div className="border-t border-slate-200 my-1"></div>
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onLogout) {
+                                                onLogout()
+                                            }
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        LOGOUT
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -289,7 +369,15 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                             <h3 className="text-lg font-bold text-gray-900 mb-4">Suggested Destinations</h3>
                             <div className="flex flex-col gap-4">
                                 {suggestedDestinations.map((dest) => (
-                                    <div key={dest.id} className="relative rounded-xl overflow-hidden h-40 cursor-pointer group">
+                                    <div 
+                                        key={dest.id} 
+                                        onClick={() => {
+                                            if (onCountryClick) {
+                                                onCountryClick()
+                                            }
+                                        }}
+                                        className="relative rounded-xl overflow-hidden h-40 cursor-pointer group"
+                                    >
                                         <img
                                             src={dest.image}
                                             alt={dest.name}

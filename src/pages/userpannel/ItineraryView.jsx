@@ -228,8 +228,26 @@ export default function ItineraryView({ onBack, onPaymentClick, onRequestAdjustm
                                     >
                                         MY REQUESTS
                                     </div>
-                                    <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">NOTIFICATIONS</div>
-                                    <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">PAYMENTS</div>
+                                    <div 
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            onNotificationClick && onNotificationClick()
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        NOTIFICATIONS
+                                    </div>
+                                    <div 
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onSettingsClick) {
+                                                onSettingsClick()
+                                            }
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        PAYMENTS
+                                    </div>
                                     <div
                                         className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                                         onClick={() => {

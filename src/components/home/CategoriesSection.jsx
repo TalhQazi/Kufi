@@ -154,7 +154,11 @@ export default function CategoriesSection({ onCategoryClick }) {
                         <div
                             key={name}
                             className="flex flex-col items-center gap-3 cursor-pointer transition-transform duration-300 hover:-translate-y-2"
-                            onClick={() => onCategoryClick && onCategoryClick(name)}
+                            onClick={() => {
+                                if (onCategoryClick) {
+                                    onCategoryClick()
+                                }
+                            }}
                         >
                             <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
                                 {icon}

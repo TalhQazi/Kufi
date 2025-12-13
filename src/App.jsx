@@ -164,7 +164,7 @@ export default function App() {
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
         onSettingsClick={() => navigateTo('traveler-profile')}
-        onSendRequest={() => navigateTo('traveler-profile')}
+        onSendRequest={() => navigateTo('travel-booking')}
         onBack={goBack}
         onForward={goForward}
         canGoBack={canGoBack}
@@ -185,6 +185,7 @@ export default function App() {
         onActivityClick={() => navigateTo('activity-detail')}
         onBack={goBack}
         onHomeClick={() => navigateTo('home')}
+        onSettingsClick={() => navigateTo('traveler-profile')}
       />
       {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
     </>
@@ -200,22 +201,30 @@ export default function App() {
         onActivityClick={() => navigateTo('activity-detail')}
         onBack={goBack}
         onHomeClick={() => navigateTo('home')}
+        onSettingsClick={() => navigateTo('traveler-profile')}
       />
       {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
     </>
   )
 
   if (page === 'user-profile') return (
-    <UserDashboard
-      onLogout={handleLogout}
-      onBack={goBack}
-      onForward={goForward}
-      canGoBack={canGoBack}
-      canGoForward={canGoForward}
-      onExploreClick={() => navigateTo('explore')}
-      onItineraryClick={() => navigateTo('itinerary-view')}
-      onHomeClick={() => navigateTo('home')}
-    />
+    <>
+      <UserDashboard
+        onLogout={handleLogout}
+        onBack={goBack}
+        onForward={goForward}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        onExploreClick={() => navigateTo('explore')}
+        onItineraryClick={() => navigateTo('itinerary-view')}
+        onHomeClick={() => navigateTo('home')}
+        onNotificationClick={() => setShowNotifications(true)}
+        onProfileClick={() => navigateTo('user-profile')}
+        onSettingsClick={() => navigateTo('traveler-profile')}
+        onCountryClick={() => navigateTo('country-details')}
+      />
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
+    </>
   )
 
   if (page === 'activity-detail') return (
