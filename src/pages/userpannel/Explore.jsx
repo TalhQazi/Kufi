@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-export default function Explore({ selectedActivities = [], onAddToList, onRemoveActivity, onLogout, onActivityClick, onNotificationClick, onProfileClick, onSendRequest, onBack, onForward, canGoBack, canGoForward, onCategoryClick }) {
+export default function Explore({ selectedActivities = [], onAddToList, onRemoveActivity, onLogout, onActivityClick, onNotificationClick, onProfileClick, onSendRequest, onBack, onForward, canGoBack, canGoForward, onCategoryClick, onSettingsClick, onHomeClick }) {
   const [dropdown, setDropdown] = useState(false)
   const dropdownRef = useRef(null)
 
@@ -175,7 +175,16 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
       <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-1">
-            <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
+            <button 
+              onClick={() => {
+                if (onHomeClick) {
+                  onHomeClick()
+                }
+              }}
+              className="cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
+            </button>
           </div>
 
           <div className="hidden sm:block flex-1 max-w-md mx-6 lg:mx-12">
@@ -235,7 +244,17 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
                   </div>
                   <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">NOTIFICATIONS</div>
                   <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">PAYMENTS</div>
-                  <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">SETTINGS</div>
+                  <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">NOTIFICATIONS</div>
+                  <div className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">PAYMENTS</div>
+                  <div
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    onClick={() => {
+                      onSettingsClick && onSettingsClick()
+                      setDropdown(false)
+                    }}
+                  >
+                    SETTINGS
+                  </div>
                   <div className="border-t border-slate-200 my-1"></div>
                   <div
                     className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
@@ -358,21 +377,61 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
               ) : (
                 <div className="mb-4 space-y-3">
                   {selectedActivities.map(activity => (
-                    <div key={activity.id} className="flex items-center gap-3 pb-3 border-b border-slate-200 last:border-0">
-                      <img src={activity.image} alt={activity.title} className="w-16 h-16 rounded-lg object-cover" />
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-semibold text-slate-900 truncate">{activity.title}</h4>
-                        <p className="text-xs text-slate-500 truncate">{activity.location}</p>
+                    <div key={activity.id} className="pb-3 border-b border-slate-200 last:border-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <img src={activity.image} alt={activity.title} className="w-16 h-16 rounded-lg object-cover" />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-slate-900 truncate">{activity.title}</h4>
+                          <p className="text-xs text-slate-500 truncate">{activity.location}</p>
+                        </div>
+                        <button
+                          onClick={() => onRemoveActivity && onRemoveActivity(activity.id)}
+                          className="p-1 hover:bg-red-50 rounded transition-colors"
+                          title="Remove"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                          </svg>
+                        </button>
                       </div>
-                      <button
-                        onClick={() => onRemoveActivity && onRemoveActivity(activity.id)}
-                        className="p-1 hover:bg-red-50 rounded transition-colors"
-                        title="Remove"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
-                          <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
-                      </button>
+                      
+                      {/* Display Travelers and Add-ons if available */}
+                      {activity.travelers && (
+                        <div className="ml-20 mt-2 space-y-1">
+                          <div className="flex items-center gap-2 text-xs text-slate-600">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                              <circle cx="9" cy="7" r="4" />
+                              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                            <span className="font-medium">Travelers: {activity.travelers}</span>
+                          </div>
+                          
+                          {activity.addOns && (
+                            <div className="space-y-1">
+                              {activity.addOns.quadBiking && (
+                                <div className="text-xs text-slate-600">
+                                  <span className="font-medium">• Quad Biking</span>
+                                  <span className="text-slate-400 ml-1">($50/person)</span>
+                                </div>
+                              )}
+                              {activity.addOns.campingGear && (
+                                <div className="text-xs text-slate-600">
+                                  <span className="font-medium">• Camping Gear</span>
+                                  <span className="text-slate-400 ml-1">($30/person)</span>
+                                </div>
+                              )}
+                              {activity.addOns.photographyPackage && (
+                                <div className="text-xs text-slate-600">
+                                  <span className="font-medium">• Photography Package</span>
+                                  <span className="text-slate-400 ml-1">($100/group)</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))
                   }

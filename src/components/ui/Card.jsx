@@ -7,11 +7,15 @@ export default function Card({
     badge,
     className = '',
     imageClassName = '',
-    variant = 'destination'
+    variant = 'destination',
+    onClick
 }) {
     if (variant === 'destination') {
         return (
-            <article className={`relative rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-200 ${className}`}>
+            <article 
+                onClick={onClick}
+                className={`relative rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-200 cursor-pointer ${className}`}
+            >
                 <div
                     className={`w-full h-64 bg-cover bg-center ${imageClassName}`}
                     style={{ backgroundImage: `url(${image})` }}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function NotificationsModal({ onClose, onPaymentClick }) {
+export default function NotificationsModal({ onClose, onPaymentClick, onViewItinerary }) {
     const [activeTab, setActiveTab] = useState('all')
 
     const notifications = [
@@ -182,6 +182,9 @@ export default function NotificationsModal({ onClose, onPaymentClick }) {
                                                     onClick={() => {
                                                         if (action === 'Proceed to Payment') {
                                                             onPaymentClick && onPaymentClick()
+                                                            onClose()
+                                                        } else if (action === 'View Itinerary') {
+                                                            onViewItinerary && onViewItinerary()
                                                             onClose()
                                                         }
                                                     }}

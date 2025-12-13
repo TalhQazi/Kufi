@@ -1,6 +1,6 @@
 import Card from '../ui/Card'
 
-export default function TopLocationsSection() {
+export default function TopLocationsSection({ onCountryClick }) {
     const locations = [
         { id: 1, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-1.jpeg' },
         { id: 2, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-2.jpeg' },
@@ -31,6 +31,11 @@ export default function TopLocationsSection() {
                             rating="4.4"
                             className="rounded-[20px] shadow-card-hover"
                             imageClassName="h-64 sm:h-[280px]"
+                            onClick={() => {
+                                if (onCountryClick) {
+                                    onCountryClick()
+                                }
+                            }}
                         />
                     ))}
                 </div>
