@@ -24,12 +24,8 @@ const Sidebar = ({ activePage, onSelect }) => {
     <aside className="hidden md:flex flex-col bg-[#704b24] text-white w-64 h-screen sticky top-0 overflow-y-auto">
       {/* Logo + collapse icon */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-        <div className="h-9 w-9 rounded bg-white/10 flex items-center justify-center text-xs font-semibold tracking-[0.2em]">
-          KUFI
-        </div>
-        <div className="flex flex-col leading-tight">
-          <span className="text-sm font-semibold">Kufi</span>
-          <span className="text-[11px] text-white/70">Travel</span>
+        <div className="h-12 w-20 sm:h-[66px] sm:w-28 block">
+          <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
         </div>
       </div>
 
