@@ -8,7 +8,8 @@ export default function CountryDetails({
     onNotificationClick,
     onProfileClick,
     onActivityClick,
-    onBack
+    onBack,
+    onSettingsClick
 }) {
     const [dropdown, setDropdown] = useState(false)
     const dropdownRef = useRef(null)
@@ -153,9 +154,25 @@ export default function CountryDetails({
                                     <div className="country-dropdown-item" onClick={() => { onProfileClick && onProfileClick(); setDropdown(false); }}>
                                         MY REQUESTS
                                     </div>
-                                    <div className="country-dropdown-item">NOTIFICATIONS</div>
-                                    <div className="country-dropdown-item">PAYMENTS</div>
-                                    <div className="country-dropdown-item">SETTINGS</div>
+                                    <div className="country-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
+                                        NOTIFICATIONS
+                                    </div>
+                                    <div className="country-dropdown-item" onClick={() => { 
+                                        if (onSettingsClick) {
+                                            onSettingsClick()
+                                        }
+                                        setDropdown(false); 
+                                    }}>
+                                        PAYMENTS
+                                    </div>
+                                    <div className="country-dropdown-item" onClick={() => { 
+                                        if (onSettingsClick) {
+                                            onSettingsClick()
+                                        }
+                                        setDropdown(false); 
+                                    }}>
+                                        SETTINGS
+                                    </div>
                                     <div className="country-dropdown-divider"></div>
                                     <div className="country-dropdown-item logout" onClick={() => { onLogout && onLogout(); setDropdown(false); }}>
                                         LOGOUT

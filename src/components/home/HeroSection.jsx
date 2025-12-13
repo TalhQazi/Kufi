@@ -38,16 +38,6 @@ export default function HeroSection({ onSignupClick }) {
         return () => clearInterval(interval)
     }, [isPaused, cards.length])
 
-    // Mouse wheel scroll handler
-    const handleWheel = (e) => {
-        e.preventDefault()
-        if (e.deltaY > 0) {
-            next()
-        } else if (e.deltaY < 0) {
-            prev()
-        }
-    }
-
     return (
         <div className="min-h-[600px] lg:min-h-[700px] flex flex-col bg-cover bg-center text-white px-4 sm:px-8 lg:px-20 pb-20 box-border relative"
             style={{
@@ -86,7 +76,14 @@ export default function HeroSection({ onSignupClick }) {
                 <section className="relative mt-8 lg:mt-0">
                     {/* Mobile/simple card */}
                     <div className="md:hidden">
-                        <div className="rounded-3xl overflow-hidden shadow-2xl relative">
+                        <div 
+                            className="rounded-3xl overflow-hidden shadow-2xl relative cursor-pointer"
+                            onClick={() => {
+                                setIsPaused(true)
+                                setIdx((idx + 1) % cards.length)
+                                setTimeout(() => setIsPaused(false), 5000)
+                            }}
+                        >
                             <img
                                 src={cards[idx]}
                                 alt="Featured experience"
@@ -107,7 +104,6 @@ export default function HeroSection({ onSignupClick }) {
                         className="hidden md:flex gap-6 overflow-visible pb-16 items-end pl-4"
                         onMouseEnter={() => setIsPaused(true)}
                         onMouseLeave={() => setIsPaused(false)}
-                        onWheel={handleWheel}
                     >
                         {visibleOrder.map((cardIdx, index) => (
                             <div key={`${cardIdx}-${idx}`} className="relative group">
@@ -117,7 +113,12 @@ export default function HeroSection({ onSignupClick }) {
                                 </div>
 
                                 <div
-                                    className={`relative rounded-2xl overflow-hidden shadow-lg shadow-black/50 bg-gray-900 text-white flex-shrink-0 transition-all duration-500 z-10 border-none ring-0 ${index === 0
+                                    onClick={() => {
+                                        setIsPaused(true)
+                                        setIdx(cardIdx)
+                                        setTimeout(() => setIsPaused(false), 5000)
+                                    }}
+                                    className={`relative rounded-2xl overflow-hidden shadow-lg shadow-black/50 bg-gray-900 text-white flex-shrink-0 transition-all duration-500 z-10 border-none ring-0 cursor-pointer ${index === 0
                                         ? 'w-[260px] h-[400px]'
                                         : 'w-[240px] h-[280px] opacity-90'
                                         }`}

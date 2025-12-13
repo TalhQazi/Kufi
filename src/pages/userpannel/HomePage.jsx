@@ -19,7 +19,7 @@ export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick
                 <HeroSection onSignupClick={onSignupClick} />
                 <SearchBar />
             </div>
-            <DestinationsSection />
+            <DestinationsSection onCountryClick={onCountryClick} />
             <CategoriesSection onCategoryClick={onCategoryClick} />
             <TopLocationsSection onCountryClick={onCountryClick} />
             <TopActivitiesSection />

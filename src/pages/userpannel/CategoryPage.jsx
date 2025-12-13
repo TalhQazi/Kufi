@@ -8,7 +8,8 @@ export default function CategoryPage({
     onProfileClick,
     onActivityClick,
     onBack,
-    onHomeClick
+    onHomeClick,
+    onSettingsClick
 }) {
     const [dropdown, setDropdown] = useState(false)
     const dropdownRef = useRef(null)
@@ -158,9 +159,25 @@ export default function CategoryPage({
                                     <div className="category-dropdown-item" onClick={() => { onProfileClick && onProfileClick(); setDropdown(false); }}>
                                         MY REQUESTS
                                     </div>
-                                    <div className="category-dropdown-item">NOTIFICATIONS</div>
-                                    <div className="category-dropdown-item">PAYMENTS</div>
-                                    <div className="category-dropdown-item">SETTINGS</div>
+                                    <div className="category-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
+                                        NOTIFICATIONS
+                                    </div>
+                                    <div className="category-dropdown-item" onClick={() => { 
+                                        if (onSettingsClick) {
+                                            onSettingsClick()
+                                        }
+                                        setDropdown(false); 
+                                    }}>
+                                        PAYMENTS
+                                    </div>
+                                    <div className="category-dropdown-item" onClick={() => { 
+                                        if (onSettingsClick) {
+                                            onSettingsClick()
+                                        }
+                                        setDropdown(false); 
+                                    }}>
+                                        SETTINGS
+                                    </div>
                                     <div className="category-dropdown-divider"></div>
                                     <div className="category-dropdown-item logout" onClick={() => { onLogout && onLogout(); setDropdown(false); }}>
                                         LOGOUT
