@@ -298,7 +298,11 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
               <div
                 key={name}
                 className="flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[80px]"
-                onClick={() => onCategoryClick && onCategoryClick(name)}
+                onClick={() => {
+                  if (onCategoryClick) {
+                    onCategoryClick()
+                  }
+                }}
               >
                 <div className="w-16 h-16 flex items-center justify-center">
                   {icon}

@@ -6,7 +6,7 @@ import { FiMapPin, FiCalendar, FiBriefcase, FiUsers } from 'react-icons/fi'
 export default function SearchBar() {
     const [city, setCity] = useState('dubai')
     const [duration, setDuration] = useState('8')
-    const [style, setStyle] = useState('travelling')
+    const [style, setStyle] = useState('choose-preference')
     const [travelers, setTravelers] = useState('2')
 
     const handleSubmit = (event) => {
@@ -61,6 +61,7 @@ export default function SearchBar() {
                         value={style}
                         onChange={(e) => setStyle(e.target.value)}
                         options={[
+                            { value: 'choose-preference', label: 'Choose Your Preference' },
                             { value: 'travelling', label: 'Travelling' },
                             { value: 'adventure', label: 'Adventure' },
                             { value: 'luxury', label: 'Luxury' },
