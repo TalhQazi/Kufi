@@ -81,7 +81,7 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
             <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-8">
                 <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
                     {/* Left Column */}
-                    <div className="order-2 lg:order-1">
+                    <div>
                         {/* Hero Image */}
                         <div className="relative rounded-2xl overflow-hidden mb-6">
                             <img
@@ -246,7 +246,7 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                     </div>
 
                     {/* Right Sidebar */}
-                    <aside className="lg:sticky lg:top-24 h-fit order-1 lg:order-2">
+                    <aside className="lg:sticky lg:top-24 h-fit order-2 lg:order-2">
                         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
                             {/* Number of Travelers */}
                             <div className="mb-6">

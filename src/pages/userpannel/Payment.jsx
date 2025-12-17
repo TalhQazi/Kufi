@@ -64,7 +64,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                         className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 text-sm"
                                     />
                                 </div>
-                                <div className="md:col-span-2">
+                                <div className="col-span-2">
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Contact Number</label>
                                     <input
                                         type="tel"

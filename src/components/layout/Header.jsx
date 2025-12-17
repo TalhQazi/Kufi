@@ -1,10 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Button from '../ui/Button'
 import { FiPhone } from 'react-icons/fi'
 import { HiMenu, HiX } from 'react-icons/hi'
 
 export default function Header({ onSignupClick, onSigninClick }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+    // Prevent background scrolling when mobile menu is open
+    useEffect(() => {
+        if (mobileMenuOpen) {
+            document.body.style.overflow = 'hidden'
+        } else {
+            document.body.style.overflow = ''
+        }
+
+        return () => {
+            document.body.style.overflow = ''
+        }
+    }, [mobileMenuOpen])
 
     return (
         <header className="w-full bg-white mb-0 sticky top-0 z-50 shadow-sm">

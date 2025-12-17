@@ -374,7 +374,7 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
             </div>
           </section>
 
-          <aside className="lg:sticky lg:top-24 h-fit order-first lg:order-last">
+          <aside className="lg:sticky lg:top-24 h-fit lg:order-last">
             <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
               <h4 className="m-0 mb-2 text-lg font-bold text-slate-900">Your Selection</h4>
               <p className="m-0 mb-6 text-sm text-slate-600">
