@@ -79,9 +79,9 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
 
             {/* Main Content */}
             <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-8">
-                <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
+                <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
                     {/* Left Column */}
-                    <div>
+                    <div className="order-2 lg:order-1">
                         {/* Hero Image */}
                         <div className="relative rounded-2xl overflow-hidden mb-6">
                             <img
@@ -104,21 +104,21 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                         </h1>
 
                         {/* Meta Info */}
-                        <div className="flex flex-wrap items-center gap-4 mb-6 text-sm text-slate-600">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 text-xs sm:text-sm text-slate-600">
                             <div className="flex items-center gap-1.5">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <svg width="14" height="14" className="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                                     <circle cx="12" cy="10" r="3" />
                                 </svg>
-                                <span>Dubai, United Arab Emirates</span>
+                                <span className="whitespace-nowrap">Dubai, UAE</span>
                             </div>
                             <div className="flex items-center gap-1">
                                 <span className="text-gold">★</span>
                                 <span className="font-semibold text-slate-900">4.8</span>
-                                <span>(230 reviews)</span>
+                                <span className="hidden sm:inline">(230 reviews)</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <svg width="14" height="14" className="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <circle cx="12" cy="12" r="10" />
                                     <path d="M12 6v6l4 2" />
                                 </svg>
@@ -127,11 +127,11 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                         </div>
 
                         {/* Tabs */}
-                        <div className="border-b border-slate-200 mb-6">
-                            <div className="flex gap-8">
+                        <div className="border-b border-slate-200 mb-6 overflow-x-auto">
+                            <div className="flex gap-4 sm:gap-8 min-w-max">
                                 <button
                                     onClick={() => setActiveTab('overview')}
-                                    className={`pb-3 text-sm font-semibold transition-colors relative ${activeTab === 'overview'
+                                    className={`pb-3 text-xs sm:text-sm font-semibold transition-colors relative whitespace-nowrap ${activeTab === 'overview'
                                         ? 'text-green-600'
                                         : 'text-slate-600 hover:text-slate-900'
                                         }`}
@@ -143,7 +143,7 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('reviews')}
-                                    className={`pb-3 text-sm font-semibold transition-colors relative ${activeTab === 'reviews'
+                                    className={`pb-3 text-xs sm:text-sm font-semibold transition-colors relative whitespace-nowrap ${activeTab === 'reviews'
                                         ? 'text-green-600'
                                         : 'text-slate-600 hover:text-slate-900'
                                         }`}
@@ -155,7 +155,7 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('map')}
-                                    className={`pb-3 text-sm font-semibold transition-colors relative ${activeTab === 'map'
+                                    className={`pb-3 text-xs sm:text-sm font-semibold transition-colors relative whitespace-nowrap ${activeTab === 'map'
                                         ? 'text-green-600'
                                         : 'text-slate-600 hover:text-slate-900'
                                         }`}
@@ -246,8 +246,8 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                     </div>
 
                     {/* Right Sidebar */}
-                    <aside className="sticky top-24 h-fit">
-                        <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
+                    <aside className="lg:sticky lg:top-24 h-fit order-1 lg:order-2">
+                        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
                             {/* Number of Travelers */}
                             <div className="mb-6">
                                 <h3 className="text-sm font-bold text-slate-900 mb-3">Number of Travelers</h3>

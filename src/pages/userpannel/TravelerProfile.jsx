@@ -155,15 +155,15 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
             </header>
 
             {/* Container */}
-            <div className="max-w-[1400px] mx-auto px-8 py-12">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
 
                 {/* Header */}
-                <div className="mb-8 flex items-start justify-between">
+                <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-900 mb-1">Traveler Profile</h1>
-                        <p className="text-sm text-slate-500">View traveler details, preferences, and journey history in one place.</p>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">Traveler Profile</h1>
+                        <p className="text-xs sm:text-sm text-slate-500">View traveler details, preferences, and journey history in one place.</p>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
                         <button className="flex items-center gap-2 px-4 py-2.5 border border-slate-300 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -171,38 +171,40 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                             </svg>
                             Edit Profile
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2.5 border border-slate-300 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <button className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border border-slate-300 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                            <svg width="12" height="12" className="sm:w-3.5 sm:h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
-                            Send Message
+                            <span className="hidden sm:inline">Send Message</span>
+                            <span className="sm:hidden">Message</span>
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2.5 bg-[#8B6E4E] text-white rounded-lg text-xs font-semibold hover:bg-[#7a5d3f]">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <button className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-[#8B6E4E] text-white rounded-lg text-xs font-semibold hover:bg-[#7a5d3f]">
+                            <svg width="12" height="12" className="sm:w-3.5 sm:h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                 <polyline points="7 10 12 15 17 10" />
                                 <line x1="12" y1="15" x2="12" y2="3" />
                             </svg>
-                            Download Profile
+                            <span className="hidden sm:inline">Download Profile</span>
+                            <span className="sm:hidden">Download</span>
                         </button>
                     </div>
                 </div>
 
                 {/* Profile Card */}
-                <div className="bg-white rounded-2xl p-8 mb-6 shadow-sm">
-                    <div className="flex items-start justify-between">
+                <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 shadow-sm">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
                         {/* Left: Profile Info */}
-                        <div className="flex gap-6">
-                            <div className="flex flex-col items-center">
-                                <div className="w-24 h-24 rounded-full overflow-hidden mb-3">
+                        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full sm:w-auto">
+                            <div className="flex flex-col items-center sm:items-start">
+                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden mb-3">
                                     <img src="/assets/profile-avatar.jpeg" alt="Sarah Anderson" className="w-full h-full object-cover" />
                                 </div>
-                                <button className="px-4 py-1.5 rounded-lg bg-[#D4AF37] text-white text-xs font-semibold">
+                                <button className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg bg-[#D4AF37] text-white text-[10px] sm:text-xs font-semibold">
                                     Gold Member
                                 </button>
                             </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900 mb-2">Sarah Anderson</h2>
+                            <div className="flex-1 sm:flex-none">
+                                <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">Sarah Anderson</h2>
                                 <div className="space-y-1 text-sm text-slate-600">
                                     <div className="flex items-center gap-2">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -230,31 +232,31 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                         </div>
 
                         {/* Right: Stats */}
-                        <div className="flex flex-nowrap gap-8 sm:gap-12">
+                        <div className="flex flex-nowrap gap-4 sm:gap-6 lg:gap-8 xl:gap-12 w-full sm:w-auto justify-between sm:justify-start">
                             <div className="text-center">
-                                <div className="text-3xl font-bold text-slate-900">12</div>
-                                <div className="text-xs text-slate-500 mt-1">Total Trips</div>
+                                <div className="text-2xl sm:text-3xl font-bold text-slate-900">12</div>
+                                <div className="text-[10px] sm:text-xs text-slate-500 mt-1">Total Trips</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-3xl font-bold text-slate-900">2</div>
-                                <div className="text-xs text-slate-500 mt-1">In Progress</div>
+                                <div className="text-2xl sm:text-3xl font-bold text-slate-900">2</div>
+                                <div className="text-[10px] sm:text-xs text-slate-500 mt-1">In Progress</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-3xl font-bold text-slate-900">8</div>
-                                <div className="text-xs text-slate-500 mt-1">Wishlist</div>
+                                <div className="text-2xl sm:text-3xl font-bold text-slate-900">8</div>
+                                <div className="text-[10px] sm:text-xs text-slate-500 mt-1">Wishlist</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
+                <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm">
                     <div className="flex flex-nowrap gap-1 overflow-x-auto">
                         {tabs.map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap rounded-lg ${
+                                className={`px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap rounded-lg ${
                                     activeTab === tab
                                         ? 'bg-slate-100 text-slate-900'
                                         : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
@@ -267,7 +269,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                 </div>
 
                 {/* Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 sm:gap-6">
                     {/* Left: Tab Content */}
                     {activeTab === 'Personal Info' && (
                         <div className="bg-white rounded-2xl p-6 shadow-sm">

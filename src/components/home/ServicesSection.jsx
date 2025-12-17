@@ -99,13 +99,13 @@ export default function ServicesSection() {
     return (
         <section className="bg-white py-12 px-4 sm:px-8 lg:px-20 border-b border-[#f0f0f0]">
             <div className="max-w-[1240px] mx-auto">
-                <div className="flex flex-wrap justify-center sm:justify-between items-center gap-y-8 gap-x-4 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 sm:gap-8 text-center">
                     {services.map((service) => (
-                        <div key={service.id} className="flex flex-col items-center gap-3 group cursor-pointer w-[30%] sm:w-auto">
+                        <div key={service.id} className="flex flex-col items-center gap-3 group cursor-pointer">
                             <div className="transition-transform duration-300 group-hover:scale-110 mb-2">
                                 {service.icon}
                             </div>
-                            <h3 className="text-sm font-semibold text-slate-800 tracking-tight whitespace-nowrap">
+                            <h3 className="text-xs sm:text-sm font-semibold text-slate-800 tracking-tight">
                                 {service.label}
                             </h3>
                         </div>

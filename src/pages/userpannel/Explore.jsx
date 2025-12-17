@@ -291,23 +291,23 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
         </div>
       </nav>
 
-      <div className="bg-beige py-6 px-20 border-b border-slate-200">
+      <div className="bg-beige py-4 sm:py-6 px-4 sm:px-8 lg:px-20 border-b border-slate-200">
         <div className="max-w-[1400px] mx-auto overflow-x-auto">
-          <div className="flex gap-8 min-w-max">
+          <div className="flex gap-4 sm:gap-6 lg:gap-8 min-w-max">
             {categories.map(({ name, icon }) => (
               <div
                 key={name}
-                className="flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[80px]"
+                className="flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[70px] sm:min-w-[80px]"
                 onClick={() => {
                   if (onCategoryClick) {
                     onCategoryClick()
                   }
                 }}
               >
-                <div className="w-16 h-16 flex items-center justify-center">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
                   {icon}
                 </div>
-                <p className="m-0 text-xs font-medium text-slate-700 text-center whitespace-nowrap">{name}</p>
+                <p className="m-0 text-[10px] sm:text-xs font-medium text-slate-700 text-center whitespace-nowrap">{name}</p>
               </div>
             ))}
           </div>
@@ -315,9 +315,9 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
       </div>
 
       <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-8">
-        <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
+        <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
           <section>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {activities.map((activity) => (
                 <article
                   key={activity.id}
@@ -374,8 +374,8 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
             </div>
           </section>
 
-          <aside className="sticky top-24 h-fit">
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
+          <aside className="lg:sticky lg:top-24 h-fit order-first lg:order-last">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
               <h4 className="m-0 mb-2 text-lg font-bold text-slate-900">Your Selection</h4>
               <p className="m-0 mb-6 text-sm text-slate-600">
                 <span className="font-bold text-primary-brown">{selectedActivities.length}</span>

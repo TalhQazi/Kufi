@@ -110,47 +110,47 @@ const SupplierDashboard = ({ onLogout }) => {
         {activeSection === "Dashboard" && (
           <>
             {/* Top header bar with icons */}
-            <div className="mb-4 flex items-center justify-end gap-3 rounded-b-2xl bg-white px-4 py-3 shadow-sm">
-              <button className="relative flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500">
-                <Bell className="w-4 h-4" />
-                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-white" />
+            <div className="mb-4 flex items-center justify-end gap-2 sm:gap-3 rounded-b-2xl bg-white px-3 sm:px-4 py-2 sm:py-3 shadow-sm">
+              <button className="relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors">
+                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-red-500 border-2 border-white" />
               </button>
-              <button className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500">
+              <button className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors">
                 <Settings className="w-4 h-4" />
               </button>
-              <div className="h-9 w-9 rounded-full bg-gray-300" />
+              <div className="hidden sm:block h-9 w-9 rounded-full bg-gray-300" />
             </div>
 
             {/* Heading */}
-            <div className="mb-5">
-              <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
-              <p className="text-sm text-gray-500 mt-1">
+            <div className="mb-4 sm:mb-5">
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900">Dashboard</h1>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
                 Welcome back! Here is your overview.
               </p>
             </div>
 
             {/* Top stats */}
-            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mb-6 grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {statCards.map((card) => {
                 const Icon = card.icon;
                 return (
                   <div
                     key={card.label}
-                    className="flex min-h-[120px] flex-col justify-between rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-sm"
+                    className="flex min-h-[100px] sm:min-h-[120px] flex-col justify-between rounded-xl sm:rounded-2xl border border-gray-100 bg-white px-4 sm:px-5 py-3 sm:py-4 shadow-sm"
                   >
-                    <div className="mb-4 flex items-start justify-between text-xs">
+                    <div className="mb-3 sm:mb-4 flex items-start justify-between text-xs">
                       <div className="inline-flex items-center gap-2">
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[#eef4ff] text-[#a26e35]">
-                          <Icon className="h-4 w-4" />
+                        <span className="inline-flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl bg-[#eef4ff] text-[#a26e35]">
+                          <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </span>
                       </div>
-                      <span className="text-[11px] font-semibold text-emerald-500">
+                      <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-500">
                         {card.delta}
                       </span>
                     </div>
                     <div>
-                      <p className="mb-1 text-xs text-gray-500">{card.label}</p>
-                      <p className="text-2xl font-semibold text-slate-900">{card.value}</p>
+                      <p className="mb-1 text-[10px] sm:text-xs text-gray-500">{card.label}</p>
+                      <p className="text-xl sm:text-2xl font-semibold text-slate-900">{card.value}</p>
                     </div>
                   </div>
                 );
@@ -158,10 +158,10 @@ const SupplierDashboard = ({ onLogout }) => {
             </div>
 
             {/* Middle row: Recent bookings + Quick actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(260px,0.9fr)] gap-5 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(260px,0.9fr)] gap-4 sm:gap-5 mb-6">
               {/* Recent bookings */}
-              <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4">
-                <h2 className="text-sm font-semibold text-gray-900 mb-3">
+              <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 px-4 sm:px-5 py-3 sm:py-4">
+                <h2 className="text-xs sm:text-sm font-semibold text-gray-900 mb-3">
                   Recent Bookings
                 </h2>
                 <div className="space-y-2">
@@ -187,8 +187,8 @@ const SupplierDashboard = ({ onLogout }) => {
               </div>
 
               {/* Quick actions */}
-              <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 space-y-3">
-                <h2 className="text-sm font-semibold text-gray-900 mb-1">
+              <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 px-4 sm:px-5 py-3 sm:py-4 space-y-2 sm:space-y-3">
+                <h2 className="text-xs sm:text-sm font-semibold text-gray-900 mb-1">
                   Quick Actions
                 </h2>
                 <button className="w-full rounded-xl bg-[#a26e35] text-white text-sm font-semibold py-2.5">
@@ -217,7 +217,7 @@ const SupplierDashboard = ({ onLogout }) => {
               </div>
 
               {/* Stats row */}
-              <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="mb-4 grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
                 {travelerStats.map((item, idx) => {
                   const Icon = item.icon;
                   const bgColor =
@@ -230,16 +230,16 @@ const SupplierDashboard = ({ onLogout }) => {
                   return (
                     <div
                       key={item.label}
-                      className="flex min-h-[96px] items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-4 shadow-sm"
+                      className="flex min-h-[80px] sm:min-h-[96px] items-center justify-between rounded-xl sm:rounded-2xl border border-gray-100 bg-white px-3 sm:px-4 py-3 sm:py-4 shadow-sm"
                     >
                       <div>
-                        <p className="mb-1 text-[11px] text-gray-500">{item.label}</p>
-                        <p className="text-lg font-semibold text-slate-900">{item.value}</p>
+                        <p className="mb-1 text-[10px] sm:text-[11px] text-gray-500">{item.label}</p>
+                        <p className="text-base sm:text-lg font-semibold text-slate-900">{item.value}</p>
                       </div>
                       <div
-                        className={`flex h-9 w-9 items-center justify-center rounded-full text-white ${bgColor}`}
+                        className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-white ${bgColor}`}
                       >
-                        <Icon className="h-4 w-4" />
+                        <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </div>
                     </div>
                   );
@@ -247,15 +247,15 @@ const SupplierDashboard = ({ onLogout }) => {
               </div>
 
               {/* Select traveler request dropdown */}
-              <div className="mb-4 rounded-2xl bg-white px-3 py-2 shadow-sm">
-                <div className="flex items-center justify-between rounded-2xl bg-[#f7f1e7] px-4 py-3 text-sm text-gray-700">
+              <div className="mb-4 rounded-xl sm:rounded-2xl bg-white px-3 py-2 shadow-sm">
+                <div className="flex items-center justify-between rounded-xl sm:rounded-2xl bg-[#f7f1e7] px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-gray-700">
                   <span>Select Traveler Request</span>
-                  <ChevronDown className="h-4 w-4 text-amber-500" />
+                  <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
                 </div>
               </div>
 
               {/* Empty state box */}
-              <div className="rounded-2xl border border-gray-100 bg-white px-4 py-10 text-center text-xs text-gray-400">
+              <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white px-3 sm:px-4 py-8 sm:py-10 text-center text-[10px] sm:text-xs text-gray-400">
                 Please select a traveler request to view details
               </div>
             </div>
