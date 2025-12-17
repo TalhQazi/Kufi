@@ -15,3 +15,13 @@ body {
   width: 100%;
   min-height: 100vh;
 }
+
+/* Hide scrollbar for horizontal scroll containers */
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
