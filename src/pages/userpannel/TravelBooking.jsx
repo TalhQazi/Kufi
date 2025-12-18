@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, canGoForward, onSubmit }) {
+export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, canGoForward, onSubmit, onHomeClick }) {
     const [showSuccess, setShowSuccess] = useState(false)
     const [formData, setFormData] = useState({
         firstName: '',
@@ -51,7 +51,11 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => {
-                                window.location.hash = '#explore'
+                                if (onHomeClick) {
+                                    onHomeClick()
+                                } else {
+                                    window.location.hash = '#home'
+                                }
                             }}
                             className="cursor-pointer hover:opacity-80 transition-opacity"
                         >

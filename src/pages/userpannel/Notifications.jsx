@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function Notifications({ onLogout, onBack }) {
+export default function Notifications({ onLogout, onBack, onHomeClick }) {
     const [activeTab, setActiveTab] = useState('all')
 
     const notifications = [
@@ -83,7 +83,11 @@ export default function Notifications({ onLogout, onBack }) {
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => {
-                                window.location.hash = '#explore'
+                                if (onHomeClick) {
+                                    onHomeClick()
+                                } else {
+                                    window.location.hash = '#home'
+                                }
                             }}
                             className="cursor-pointer hover:opacity-80 transition-opacity"
                         >

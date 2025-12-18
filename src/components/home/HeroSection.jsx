@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Button from '../ui/Button'
 import { FaPlay, FaBookmark, FaStar } from 'react-icons/fa'
-import { FiChevronRight } from 'react-icons/fi'
+import { FiChevronRight, FiChevronLeft } from 'react-icons/fi'
 
 export default function HeroSection({ onSignupClick }) {
     const cards = [
@@ -12,31 +12,88 @@ export default function HeroSection({ onSignupClick }) {
     ]
     const [idx, setIdx] = useState(0)
     const [isPaused, setIsPaused] = useState(false)
+    const scrollRef = useRef(null)
+    const [isDragging, setIsDragging] = useState(false)
+    const startX = useRef(0)
+    const scrollLeft = useRef(0)
 
-    // Show only 4 cards at a time
-    const visibleOrder = [0, 1, 2, 3].map((offset) => (idx + offset) % cards.length)
+    // Triple the cards for infinite effect
+    const infiniteCards = [...cards, ...cards, ...cards]
+    const cardWidth = 260 + 24 // card width + gap
+
+    // Auto-scroll effect (one picture at a time)
+    useEffect(() => {
+        if (isPaused || isDragging) return
+
+        const autoScroll = setInterval(() => {
+            if (scrollRef.current) {
+                scrollRef.current.scrollBy({ left: cardWidth, behavior: 'smooth' })
+            }
+        }, 5000) // Slide every 5 seconds
+
+        return () => clearInterval(autoScroll)
+    }, [isPaused, isDragging, cardWidth])
+
+    // Center scroll on mount
+    useEffect(() => {
+        if (scrollRef.current) {
+            const initialScroll = cards.length * cardWidth
+            scrollRef.current.scrollLeft = initialScroll
+        }
+    }, [])
+
+    const handleScroll = () => {
+        if (!scrollRef.current) return
+
+        const sl = scrollRef.current.scrollLeft
+        const contentWidth = cards.length * cardWidth
+
+        // Reset to middle if we go too far left or right
+        if (sl <= 0) {
+            scrollRef.current.scrollLeft = contentWidth
+        } else if (sl >= contentWidth * 2) {
+            scrollRef.current.scrollLeft = contentWidth
+        }
+
+        // Update active index based on scroll position (focused card)
+        const currentActive = Math.round((sl % contentWidth) / cardWidth)
+        setIdx(currentActive % cards.length)
+    }
+
+    const handleMouseDown = (e) => {
+        setIsDragging(true)
+        startX.current = e.pageX - scrollRef.current.offsetLeft
+        scrollLeft.current = scrollRef.current.scrollLeft
+    }
+
+    const handleMouseLeave = () => {
+        setIsDragging(false)
+    }
+
+    const handleMouseUp = () => {
+        setIsDragging(false)
+    }
+
+    const handleMouseMove = (e) => {
+        if (!isDragging) return
+        e.preventDefault()
+        const x = e.pageX - scrollRef.current.offsetLeft
+        const walk = (x - startX.current) * 2
+        scrollRef.current.scrollLeft = scrollLeft.current - walk
+    }
 
     const prev = () => {
-        setIsPaused(true)
-        setIdx((p) => (p - 1 + cards.length) % cards.length)
-        setTimeout(() => setIsPaused(false), 5000) // Resume after 5 seconds
+        if (scrollRef.current) {
+            scrollRef.current.scrollBy({ left: -cardWidth, behavior: 'smooth' })
+        }
     }
     const next = () => {
-        setIsPaused(true)
-        setIdx((p) => (p + 1) % cards.length)
-        setTimeout(() => setIsPaused(false), 5000) // Resume after 5 seconds
+        if (scrollRef.current) {
+            scrollRef.current.scrollBy({ left: cardWidth, behavior: 'smooth' })
+        }
     }
 
-    // Auto-rotate every 4 seconds
-    useEffect(() => {
-        if (isPaused) return
 
-        const interval = setInterval(() => {
-            setIdx((p) => (p + 1) % cards.length)
-        }, 4000)
-
-        return () => clearInterval(interval)
-    }, [isPaused, cards.length])
 
     return (
         <div className="min-h-[600px] lg:min-h-[700px] flex flex-col bg-cover bg-center text-white px-4 sm:px-8 lg:px-20 pb-20 box-border relative"
@@ -76,7 +133,7 @@ export default function HeroSection({ onSignupClick }) {
                 <section className="relative mt-8 lg:mt-0">
                     {/* Mobile/simple card */}
                     <div className="md:hidden">
-                        <div 
+                        <div
                             className="rounded-3xl overflow-hidden shadow-2xl relative cursor-pointer"
                             onClick={() => {
                                 setIsPaused(true)
@@ -98,53 +155,55 @@ export default function HeroSection({ onSignupClick }) {
                         </div>
                     </div>
 
-                    {/* Desktop cards - show 4 at a time in horizontal layout */}
-                    {/* Desktop cards - show 4 at a time in horizontal layout */}
+                    {/* Desktop cards - Horizontal scroll with mouse drag */}
                     <div
-                        className="hidden md:flex gap-6 overflow-visible pb-16 items-end pl-4"
+                        ref={scrollRef}
+                        className={`hidden md:flex gap-6 overflow-x-auto pb-16 items-end px-20 hide-scrollbar cursor-grab active:cursor-grabbing select-none`}
+                        onScroll={handleScroll}
+                        onMouseDown={handleMouseDown}
+                        onMouseLeave={() => {
+                            setIsDragging(false)
+                            setIsPaused(false)
+                        }}
+                        onMouseUp={handleMouseUp}
+                        onMouseMove={handleMouseMove}
                         onMouseEnter={() => setIsPaused(true)}
-                        onMouseLeave={() => setIsPaused(false)}
                     >
-                        {visibleOrder.map((cardIdx, index) => (
-                            <div key={`${cardIdx}-${idx}`} className="relative group">
-                                {/* Background Number */}
-                                <div className="absolute -top-20 left-1/2 -translate-x-1/2 text-[180px] font-normal text-transparent font-outline-2 text-white/5 select-none z-0 pointer-events-none font-playfair leading-none opacity-50">
-                                    0{index + 1}
-                                </div>
+                        {infiniteCards.map((cardPath, index) => {
+                            const isActive = (index % cards.length) === idx
+                            return (
+                                <div key={index} className="relative group flex-shrink-0 flex items-center h-[420px] w-[260px] justify-center">
+                                    {/* Background Number */}
+                                    <div className={`absolute left-1/2 -translate-x-1/2 text-[180px] font-normal text-transparent font-outline-2 text-white/5 select-none z-0 pointer-events-none font-playfair leading-none transition-all duration-500 ${isActive ? '-top-10 opacity-50' : '-top-5 opacity-20'}`}>
+                                        0{(index % cards.length) + 1}
+                                    </div>
 
-                                <div
-                                    onClick={() => {
-                                        setIsPaused(true)
-                                        setIdx(cardIdx)
-                                        setTimeout(() => setIsPaused(false), 5000)
-                                    }}
-                                    className={`relative rounded-2xl overflow-hidden shadow-lg shadow-black/50 bg-gray-900 text-white flex-shrink-0 transition-all duration-500 z-10 border-none ring-0 cursor-pointer ${index === 0
-                                        ? 'w-[260px] h-[400px]'
-                                        : 'w-[240px] h-[280px] opacity-90'
-                                        }`}
-                                >
-                                    <img
-                                        src={cards[cardIdx]}
-                                        alt="Lorem Ipsum"
-                                        className="absolute inset-0 w-full h-full object-cover block m-0 p-0 border-none"
-                                    />
-                                    <div className="absolute bottom-0 left-0 w-full p-5 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
-                                        <div className="flex justify-between items-end">
-                                            <div>
-                                                <h3 className="m-0 mb-1.5 text-lg font-semibold">Lorem Ipsum</h3>
-                                                <div className="flex items-center gap-1.5 text-sm">
-                                                    <FaStar size={13} className="text-[#F59E0B]" />
-                                                    <span className="text-white font-medium">4.4</span>
+                                    <div
+                                        className={`relative rounded-2xl overflow-hidden shadow-lg shadow-black/50 bg-gray-900 text-white transition-all duration-500 z-10 border-none ring-0 ${isActive ? 'w-[260px] h-[400px] opacity-100 mb-0' : 'w-[240px] h-[300px] opacity-80 mb-[-20px]'}`}
+                                    >
+                                        <img
+                                            src={cardPath}
+                                            alt={`Experience ${index + 1}`}
+                                            className="absolute inset-0 w-full h-full object-cover block m-0 p-0 border-none pointer-events-none"
+                                        />
+                                        <div className="absolute bottom-0 left-0 w-full p-5 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
+                                            <div className="flex justify-between items-end">
+                                                <div>
+                                                    <h3 className="m-0 mb-1.5 text-lg font-semibold whitespace-nowrap">Lorem Ipsum</h3>
+                                                    <div className="flex items-center gap-1.5 text-sm">
+                                                        <FaStar size={13} className="text-[#F59E0B]" />
+                                                        <span className="text-white font-medium">4.4</span>
+                                                    </div>
                                                 </div>
+                                                <button className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition-colors">
+                                                    <FaBookmark size={13} />
+                                                </button>
                                             </div>
-                                            <button className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition-colors">
-                                                <FaBookmark size={13} />
-                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
 
                     {/* Navigation controls */}
@@ -154,7 +213,7 @@ export default function HeroSection({ onSignupClick }) {
                             onClick={prev}
                             className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all backdrop-blur-sm border border-white/20"
                         >
-                            <FiChevronRight size={18} className="rotate-180" />
+                            <FiChevronLeft size={18} />
                         </button>
                         <button
                             onClick={next}
@@ -179,9 +238,11 @@ export default function HeroSection({ onSignupClick }) {
                                         : 'w-8 h-[2px] bg-white/60 hover:bg-white/80'
                                         }`}
                                     onClick={() => {
-                                        setIsPaused(true)
-                                        setIdx(index)
-                                        setTimeout(() => setIsPaused(false), 5000)
+                                        if (scrollRef.current) {
+                                            const contentWidth = cards.length * cardWidth
+                                            const scrollAmount = contentWidth + (index * cardWidth)
+                                            scrollRef.current.scrollTo({ left: scrollAmount, behavior: 'smooth' })
+                                        }
                                     }}
                                 />
                             ))}

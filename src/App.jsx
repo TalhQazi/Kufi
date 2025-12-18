@@ -145,11 +145,11 @@ export default function App() {
 
   // simple routing
   if (page === 'admin') {
-    return <AdminApp initialPage="Dashboard" onLogout={handleLogout} />
+    return <AdminApp initialPage="Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('home')} />
   }
 
   if (page === 'supplier') {
-    return <AdminApp initialPage="Supplier Dashboard" onLogout={handleLogout} />
+    return <AdminApp initialPage="Supplier Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('home')} />
   }
 
   if (page === 'explore') return (
@@ -169,7 +169,7 @@ export default function App() {
         onForward={goForward}
         canGoBack={canGoBack}
         canGoForward={canGoForward}
-        onHomeClick={() => navigateTo('explore')}
+        onHomeClick={() => navigateTo('home')}
       />
       {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
     </>
@@ -184,7 +184,7 @@ export default function App() {
         onProfileClick={() => navigateTo('user-profile')}
         onActivityClick={() => navigateTo('activity-detail')}
         onBack={goBack}
-        onHomeClick={() => navigateTo('explore')}
+        onHomeClick={() => navigateTo('home')}
         onSettingsClick={() => navigateTo('traveler-profile')}
       />
       {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
@@ -200,7 +200,7 @@ export default function App() {
         onProfileClick={() => navigateTo('user-profile')}
         onActivityClick={() => navigateTo('activity-detail')}
         onBack={goBack}
-        onHomeClick={() => navigateTo('explore')}
+        onHomeClick={() => navigateTo('home')}
         onSettingsClick={() => navigateTo('traveler-profile')}
       />
       {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
@@ -217,7 +217,7 @@ export default function App() {
         canGoForward={canGoForward}
         onExploreClick={() => navigateTo('explore')}
         onItineraryClick={() => navigateTo('itinerary-view')}
-        onHomeClick={() => navigateTo('explore')}
+        onHomeClick={() => navigateTo('home')}
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
         onSettingsClick={() => navigateTo('traveler-profile')}
@@ -230,6 +230,7 @@ export default function App() {
   if (page === 'activity-detail') return (
     <>
       <ActivityDetail
+        onHomeClick={() => navigateTo('home')}
         onLogout={handleLogout}
         onBack={goBack}
         onForward={goForward}
@@ -244,6 +245,7 @@ export default function App() {
 
   if (page === 'travel-booking') return (
     <TravelBooking
+      onHomeClick={() => navigateTo('home')}
       onLogout={handleLogout}
       onBack={goBack}
       onForward={goForward}
@@ -258,6 +260,7 @@ export default function App() {
 
   if (page === 'booking-confirmation') return (
     <BookingConfirmation
+      onHomeClick={() => navigateTo('home')}
       bookingData={bookingData}
       onContinueBrowsing={() => navigateTo('explore')}
       onGoToCart={() => navigateTo('payment')}
@@ -270,6 +273,7 @@ export default function App() {
 
   if (page === 'payment') return (
     <Payment
+      onHomeClick={() => navigateTo('home')}
       bookingData={bookingData}
       onBack={goBack}
       onForward={goForward}
@@ -288,7 +292,7 @@ export default function App() {
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
         onSettingsClick={() => navigateTo('traveler-profile')}
-        onHomeClick={() => navigateTo('explore')}
+        onHomeClick={() => navigateTo('home')}
       />
       {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
     </>
@@ -301,7 +305,7 @@ export default function App() {
         onLogout={handleLogout}
         onProfileClick={() => navigateTo('user-profile')}
         onSettingsClick={() => navigateTo('traveler-profile')}
-        onHomeClick={() => navigateTo('explore')}
+        onHomeClick={() => navigateTo('home')}
       />
     </>
   )
@@ -309,6 +313,7 @@ export default function App() {
   return (
     <>
       <HomePage
+        onHomeClick={() => navigateTo('home')}
         onSignupClick={handleOpenRegister}
         onSigninClick={handleOpenLogin}
         onCategoryClick={() => navigateTo('category-page')}

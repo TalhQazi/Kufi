@@ -17,7 +17,7 @@ export default function SearchBar() {
     return (
         <section className="relative z-20 -mt-20 px-4 sm:px-8 lg:px-20 max-w-[1400px] mx-auto">
             <form
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.5fr_1.2fr_1.2fr_1.2fr_auto] gap-4 bg-white rounded-2xl p-4 shadow-2xl text-slate-950 items-center"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.5fr_1.2fr_1.5fr_1.2fr_auto] gap-4 bg-white rounded-2xl p-4 shadow-2xl text-slate-950 items-center"
                 onSubmit={handleSubmit}
             >
                 <div className="px-2 py-1">
@@ -44,7 +44,7 @@ export default function SearchBar() {
                         value={duration}
                         onChange={(e) => setDuration(e.target.value)}
                         options={[
-                            { value: '3', label: '08 Days' },
+                            { value: '3', label: '03 Days' },
                             { value: '5', label: '05 Days' },
                             { value: '8', label: '08 Days' },
                             { value: '10', label: '10 Days' },

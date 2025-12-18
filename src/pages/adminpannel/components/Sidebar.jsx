@@ -20,7 +20,7 @@ const navItems = [
   { label: "System Notification", icon: Bell },
 ];
 
-const Sidebar = ({ activePage, onSelect, onLogout }) => {
+const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -52,7 +52,11 @@ const Sidebar = ({ activePage, onSelect, onLogout }) => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
-              window.location.hash = '#explore'
+              if (onHomeClick) {
+                onHomeClick()
+              } else {
+                window.location.hash = '#home'
+              }
             }}
             className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
           >
@@ -76,16 +80,19 @@ const Sidebar = ({ activePage, onSelect, onLogout }) => {
       {/* Mobile Sidebar Drawer */}
       <aside
         ref={menuRef}
-        className={`md:hidden fixed top-0 left-0 h-full w-64 bg-[#704b24] text-white z-50 transform transition-transform duration-300 ease-in-out ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`md:hidden fixed top-0 left-0 h-full w-64 bg-[#704b24] text-white z-50 transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-white/10">
             <button
               onClick={() => {
-                window.location.hash = '#explore'
+                if (onHomeClick) {
+                  onHomeClick()
+                } else {
+                  window.location.hash = '#home'
+                }
                 setMobileMenuOpen(false)
               }}
               className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
@@ -111,20 +118,18 @@ const Sidebar = ({ activePage, onSelect, onLogout }) => {
               return (
                 <button
                   key={item.label}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition ${
-                    isActive
-                      ? "bg-white text-[#704b24] font-semibold rounded-2xl shadow-sm"
-                      : "text-white/80 hover:bg-white/10 rounded-2xl"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition ${isActive
+                    ? "bg-white text-[#704b24] font-semibold rounded-2xl shadow-sm"
+                    : "text-white/80 hover:bg-white/10 rounded-2xl"
+                    }`}
                   onClick={() => {
                     onSelect?.(item.label);
                     setMobileMenuOpen(false);
                   }}
                 >
                   <Icon
-                    className={`w-4 h-4 ${
-                      isActive ? "text-[#704b24]" : "text-white/80"
-                    }`}
+                    className={`w-4 h-4 ${isActive ? "text-[#704b24]" : "text-white/80"
+                      }`}
                   />
                   <span className="ml-1">{item.label}</span>
                 </button>
@@ -156,7 +161,11 @@ const Sidebar = ({ activePage, onSelect, onLogout }) => {
         <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
           <button
             onClick={() => {
-              window.location.hash = '#explore'
+              if (onHomeClick) {
+                onHomeClick()
+              } else {
+                window.location.hash = '#home'
+              }
             }}
             className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
           >
@@ -174,17 +183,15 @@ const Sidebar = ({ activePage, onSelect, onLogout }) => {
             return (
               <button
                 key={item.label}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition ${
-                  isActive
-                    ? "bg-white text-[#704b24] font-semibold rounded-2xl shadow-sm"
-                    : "text-white/80 hover:bg-white/10 rounded-2xl"
-                }`}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition ${isActive
+                  ? "bg-white text-[#704b24] font-semibold rounded-2xl shadow-sm"
+                  : "text-white/80 hover:bg-white/10 rounded-2xl"
+                  }`}
                 onClick={() => onSelect?.(item.label)}
               >
                 <Icon
-                  className={`w-4 h-4 ${
-                    isActive ? "text-[#704b24]" : "text-white/80"
-                  }`}
+                  className={`w-4 h-4 ${isActive ? "text-[#704b24]" : "text-white/80"
+                    }`}
                 />
                 <span className="ml-1">{item.label}</span>
               </button>
