@@ -51,9 +51,14 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
       {/* Mobile top bar */}
       <aside className="md:hidden w-full bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="h-12 w-20 sm:h-[66px] sm:w-28 block">
+          <button
+            onClick={() => {
+              window.location.hash = '#explore'
+            }}
+            className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
+          >
             <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
-          </div>
+          </button>
         </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -79,9 +84,15 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-gray-100">
-            <div className="h-12 w-20 sm:h-[66px] sm:w-28 block">
+            <button
+              onClick={() => {
+                window.location.hash = '#explore'
+                setMobileMenuOpen(false)
+              }}
+              className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
+            >
               <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
-            </div>
+            </button>
             <button
               onClick={() => setMobileMenuOpen(false)}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -167,9 +178,14 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
       <aside className="hidden md:flex flex-col bg-white w-64 h-screen sticky top-0 border-r border-gray-100 py-6 px-6">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="h-12 w-20 sm:h-[66px] sm:w-28 block">
+          <button
+            onClick={() => {
+              window.location.hash = '#explore'
+            }}
+            className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
+          >
             <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
-          </div>
+          </button>
         </div>
 
         {/* Nav items */}

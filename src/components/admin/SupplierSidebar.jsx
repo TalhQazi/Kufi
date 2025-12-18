@@ -15,9 +15,14 @@ const SupplierSidebar = ({ activeSection, onSelectSection }) => {
     <aside className="flex flex-col bg-white w-64 h-screen sticky top-0 border-r border-gray-100 py-6 px-6">
       {/* Logo */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="h-12 w-20 sm:h-[66px] sm:w-28 block">
+        <button
+          onClick={() => {
+            window.location.hash = '#explore'
+          }}
+          className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
-        </div>
+        </button>
       </div>
 
       {/* Nav items */}

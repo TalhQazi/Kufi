@@ -24,9 +24,14 @@ const Sidebar = ({ activePage, onSelect }) => {
     <aside className="hidden md:flex flex-col bg-[#704b24] text-white w-64 h-screen sticky top-0 overflow-y-auto">
       {/* Logo + collapse icon */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-        <div className="h-12 w-20 sm:h-[66px] sm:w-28 block">
+        <button
+          onClick={() => {
+            window.location.hash = '#explore'
+          }}
+          className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
-        </div>
+        </button>
       </div>
 
       {/* Navigation */}
