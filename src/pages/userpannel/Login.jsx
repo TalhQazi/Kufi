@@ -98,15 +98,14 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                     </div>
 
                     {/* Logo */}
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 border-2 border-[#A67C52] p-1 rounded">
-                            <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
-                        </div>
-                        <div className="leading-tight text-[#A67C52]">
-                            <p className="m-0 text-xl font-bold">Kufi</p>
-                            <p className="m-0 text-xl font-bold">Travel</p>
-                        </div>
-                    </div>
+                    <button
+                        onClick={() => {
+                            window.location.hash = '#explore'
+                        }}
+                        className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                        <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
+                    </button>
 
                     {/* Footer Links */}
                     <div className="flex gap-6 text-white/80 text-sm">

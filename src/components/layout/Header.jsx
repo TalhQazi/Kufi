@@ -23,9 +23,14 @@ export default function Header({ onSignupClick, onSigninClick }) {
         <header className="w-full bg-white mb-0 sticky top-0 z-50 shadow-sm">
             <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4 py-4 px-4 sm:px-6 lg:px-12">
                 <div className="flex items-center gap-3">
-                    <div className="h-12 w-20 sm:h-[66px] sm:w-28 block">
+                    <button
+                        onClick={() => {
+                            window.location.hash = '#explore'
+                        }}
+                        className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
+                    >
                         <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
-                    </div>
+                    </button>
                 </div>
 
                 <nav className="hidden md:flex items-center gap-6 lg:gap-10 text-sm font-medium">
