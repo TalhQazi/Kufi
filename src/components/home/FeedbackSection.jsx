@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const allFeedback = [
     {
@@ -52,102 +52,132 @@ const allFeedback = [
 ]
 
 export default function FeedbackSection() {
-    const [startIndex, setStartIndex] = useState(0)
+    const scrollRef = useRef(null)
+    const [isDragging, setIsDragging] = useState(false)
+    const [startX, setStartX] = useState(0)
+    const [scrollLeftState, setScrollLeftState] = useState(0)
     const [isPaused, setIsPaused] = useState(false)
-    const [selectedCardId, setSelectedCardId] = useState(null)
+    const cardWidth = 400 + 32 // card width + gap
 
-    // Get the 3 visible cards based on current start index
-    const visibleCards = [
-        allFeedback[startIndex % allFeedback.length],
-        allFeedback[(startIndex + 1) % allFeedback.length],
-        allFeedback[(startIndex + 2) % allFeedback.length]
-    ]
+    const infiniteFeedback = [...allFeedback, ...allFeedback, ...allFeedback]
 
-    // Auto-rotate every 3 seconds
+    // Initialize scroll position to center
     useEffect(() => {
-        if (isPaused) return
+        if (scrollRef.current) {
+            scrollRef.current.scrollLeft = allFeedback.length * cardWidth
+        }
+    }, [])
 
-        const interval = setInterval(() => {
-            setStartIndex((current) => (current + 1) % allFeedback.length)
-        }, 3000)
+    // Auto-scroll logic
+    useEffect(() => {
+        if (isPaused || isDragging) return
 
-        return () => clearInterval(interval)
-    }, [isPaused])
+        const autoScroll = setInterval(() => {
+            if (scrollRef.current) {
+                scrollRef.current.scrollBy({ left: cardWidth, behavior: 'smooth' })
+            }
+        }, 4000)
+
+        return () => clearInterval(autoScroll)
+    }, [isPaused, isDragging])
+
+    const handleMouseDown = (e) => {
+        setIsDragging(true)
+        setStartX(e.pageX - scrollRef.current.offsetLeft)
+        setScrollLeftState(scrollRef.current.scrollLeft)
+    }
+
+    const handleMouseUp = () => {
+        setIsDragging(false)
+    }
+
+    const handleMouseLeave = () => {
+        setIsDragging(false)
+        setIsPaused(false)
+    }
+
+    const handleMouseMove = (e) => {
+        if (!isDragging) return
+        e.preventDefault()
+        const x = e.pageX - scrollRef.current.offsetLeft
+        const walk = (x - startX) * 2
+        scrollRef.current.scrollLeft = scrollLeftState - walk
+    }
+
+    const handleScroll = () => {
+        if (!scrollRef.current) return
+        const sl = scrollRef.current.scrollLeft
+        const contentWidth = allFeedback.length * cardWidth
+
+        if (sl <= 0) {
+            scrollRef.current.scrollLeft = contentWidth
+        } else if (sl >= contentWidth * 2) {
+            scrollRef.current.scrollLeft = contentWidth
+        }
+    }
 
     return (
         <section
-            className="bg-white py-16 sm:py-20 px-4 sm:px-8 lg:px-20 relative overflow-hidden"
+            className="bg-[#F1F5F9] py-20 px-4 sm:px-8 lg:px-20 relative overflow-hidden"
             onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
+            onMouseLeave={handleMouseLeave}
         >
-            {/* Decorative blob background */}
-            <div className="absolute right-0 bottom-0 w-[600px] h-[600px] bg-[#D1B693] rounded-tl-full opacity-40 -mr-32 -mb-32 hidden lg:block" />
+            {/* Subtle small organic shape in the corner */}
+            <div className="absolute right-[-5%] bottom-[-5%] w-[40%] h-[50%] pointer-events-none z-0">
+                <svg
+                    viewBox="0 0 807 668"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-full h-full opacity-[0.4]"
+                    preserveAspectRatio="xMaxYMax meet"
+                >
+                    <path d="M508.87 15.6287C654.551 -44.9862 768.324 85.2638 807 157.966V628.272C753.641 655.693 649.062 701.953 574.941 628.272C500.821 554.591 400.181 567.297 348.792 577.94C276.811 605.361 116.52 643.751 51.1999 577.94C-30.4501 495.677 -30.4501 350.634 170.452 271.619C371.354 192.603 326.769 91.3974 508.87 15.6287Z" fill="#BFAE9F" />
+                </svg>
+            </div>
 
-            <div className="max-w-[1200px] mx-auto relative z-10">
-                <div className="mb-10 sm:mb-12">
-                    <p className="text-sm sm:text-base text-slate-500 mb-2 uppercase tracking-wide">WHAT THEY SAYS</p>
-                    <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 m-0">
+            <div className="max-w-[1240px] mx-auto relative z-10">
+                <div className="mb-14 relative z-10">
+                    <p className="text-sm font-bold text-slate-400 mb-2 uppercase tracking-[0.2em] leading-none">WHAT THEY SAYS</p>
+                    <h2 className="text-4xl sm:text-5xl font-extrabold text-[#1E293B] m-0 tracking-tight">
                         Best Feedback From Clients
                     </h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 transition-all duration-500">
-                    {visibleCards.map((card, index) => (
+                <div
+                    ref={scrollRef}
+                    onMouseDown={handleMouseDown}
+                    onMouseUp={handleMouseUp}
+                    onMouseMove={handleMouseMove}
+                    onScroll={handleScroll}
+                    className="flex gap-8 overflow-x-auto pb-10 hide-scrollbar cursor-grab active:cursor-grabbing select-none"
+                >
+                    {infiniteFeedback.map((card, index) => (
                         <article
-                            key={`${card.id}-${index}-${startIndex}`}
-                            onClick={() => setSelectedCardId(card.id)}
-                            className={`rounded-2xl overflow-hidden shadow-lg transition-all duration-500 ${index === 0 ? 'md:row-span-2' : ''} hover:shadow-xl cursor-pointer ${
-                                selectedCardId === card.id ? 'ring-4 ring-[#A67C52] ring-offset-2' : ''
-                            }`}
+                            key={`${card.id}-${index}`}
+                            className="flex-shrink-0 w-[400px] transition-all duration-500 rounded-[32px] overflow-hidden"
                         >
-                            {/* Featured Card Style (First Item) */}
-                            {index === 0 ? (
-                                <div className="relative h-full min-h-[400px] group">
+                            <div className="bg-white p-10 rounded-3xl h-full shadow-lg border border-slate-100 flex flex-col justify-between hover:shadow-xl transition-all duration-500 hover:-translate-y-2 group min-h-[420px]">
+                                <div>
+                                    <div className="flex gap-1.5 mb-5 text-[#F59E0B]">
+                                        {[...Array(5)].map((_, i) => <span key={i} className="text-xl">★</span>)}
+                                    </div>
+                                    <p className="text-base text-slate-600 mb-8 font-medium leading-relaxed italic">
+                                        {card.text}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-4">
                                     <div
-                                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                                        style={{ backgroundImage: `url(${card.image})` }}
+                                        className="w-14 h-14 rounded-full bg-cover bg-center border-4 border-white shadow-md"
+                                        style={{ backgroundImage: `url(${card.avatar})` }}
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                                    <div className="relative h-full p-6 flex flex-col justify-end">
-                                        <div className="bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg transform transition-transform duration-300 hover:-translate-y-1">
-                                            <div className="flex gap-1 mb-3 text-[#F59E0B]">
-                                                {[...Array(5)].map((_, i) => <span key={i}>★</span>)}
-                                            </div>
-                                            <p className="text-sm text-slate-700 mb-4 italic leading-relaxed">{card.text}</p>
-                                            <div className="flex items-center gap-3">
-                                                <div
-                                                    className="w-12 h-12 rounded-full bg-cover bg-center border-2 border-white shadow-md"
-                                                    style={{ backgroundImage: `url(${card.avatar})` }}
-                                                />
-                                                <div>
-                                                    <p className="m-0 text-sm font-bold text-slate-900">{card.name}</p>
-                                                    <p className="m-0 text-xs text-slate-500 font-medium tracking-wide">{card.role}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                /* Standard Card Style */
-                                <div className="bg-white p-6 h-full border border-slate-100 flex flex-col justify-between hover:bg-slate-50 transition-colors">
                                     <div>
-                                        <div className="flex gap-1 mb-3 text-[#F59E0B]">
-                                            {[...Array(5)].map((_, i) => <span key={i}>★</span>)}
-                                        </div>
-                                        <p className="text-sm text-slate-700 mb-4 italic leading-relaxed">{card.text}</p>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div
-                                            className="w-12 h-12 rounded-full bg-cover bg-center border border-slate-200"
-                                            style={{ backgroundImage: `url(${card.avatar})` }}
-                                        />
-                                        <div>
-                                            <p className="m-0 text-sm font-bold text-slate-900">{card.name}</p>
-                                            <p className="m-0 text-xs text-slate-500 font-medium tracking-wide">{card.role}</p>
-                                        </div>
+                                        <p className="m-0 text-lg font-bold text-slate-900 leading-tight">{card.name}</p>
+                                        <p className="m-0 text-xs text-slate-400 font-bold tracking-widest uppercase">
+                                            {card.name.split(' ')[0].toUpperCase()}
+                                        </p>
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </article>
                     ))}
                 </div>

@@ -82,7 +82,7 @@ const travelerStats = [
   },
 ];
 
-const SupplierDashboard = ({ onLogout }) => {
+const SupplierDashboard = ({ onLogout, onHomeClick }) => {
   const [activeSection, setActiveSection] = useState("Dashboard");
   const [darkMode, setDarkMode] = useState(false);
 
@@ -91,10 +91,9 @@ const SupplierDashboard = ({ onLogout }) => {
   };
 
   return (
-  <div
-      className={`min-h-screen md:h-screen flex flex-col md:flex-row transition-colors ${
-        darkMode ? "bg-slate-900" : "bg-white"
-      }`}
+    <div
+      className={`min-h-screen md:h-screen flex flex-col md:flex-row transition-colors ${darkMode ? "bg-slate-900" : "bg-white"
+        }`}
     >
       {/* Supplier sidebar (separate component) */}
       <SupplierSidebar
@@ -224,8 +223,8 @@ const SupplierDashboard = ({ onLogout }) => {
                     idx === 0
                       ? "bg-amber-400"
                       : idx === 1
-                      ? "bg-emerald-500"
-                      : "bg-rose-500";
+                        ? "bg-emerald-500"
+                        : "bg-rose-500";
 
                   return (
                     <div

@@ -6,12 +6,13 @@ export default function Input({
     onChange,
     options = [],
     className = '',
-    inputClassName = ''
+    inputClassName = '',
+    labelClassName = ''
 }) {
     return (
         <div className={className}>
             {label && (
-                <label className="block text-xs text-slate-400 mb-1.5">{label}</label>
+                <label className={labelClassName || "block text-xs text-slate-400 mb-1.5"}>{label}</label>
             )}
             <div className="relative">
                 {icon && (

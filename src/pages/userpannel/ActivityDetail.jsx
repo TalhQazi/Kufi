@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForward, onLogout, onNotificationClick, onAddToList }) {
+export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForward, onLogout, onNotificationClick, onAddToList, onHomeClick }) {
     const [activeTab, setActiveTab] = useState('overview')
     const [travelers, setTravelers] = useState(2)
     const [addOns, setAddOns] = useState({
@@ -31,7 +31,11 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => {
-                                window.location.hash = '#explore'
+                                if (onHomeClick) {
+                                    onHomeClick()
+                                } else {
+                                    window.location.hash = '#home'
+                                }
                             }}
                             className="cursor-pointer hover:opacity-80 transition-opacity"
                         >

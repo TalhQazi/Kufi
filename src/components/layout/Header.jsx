@@ -3,7 +3,7 @@ import Button from '../ui/Button'
 import { FiPhone } from 'react-icons/fi'
 import { HiMenu, HiX } from 'react-icons/hi'
 
-export default function Header({ onSignupClick, onSigninClick }) {
+export default function Header({ onSignupClick, onSigninClick, onHomeClick }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
     // Prevent background scrolling when mobile menu is open
@@ -25,7 +25,11 @@ export default function Header({ onSignupClick, onSigninClick }) {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => {
-                            window.location.hash = '#explore'
+                            if (onHomeClick) {
+                                onHomeClick()
+                            } else {
+                                window.location.hash = '#home'
+                            }
                         }}
                         className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
                     >

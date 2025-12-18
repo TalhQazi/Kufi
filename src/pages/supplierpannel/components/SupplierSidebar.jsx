@@ -12,7 +12,7 @@ import {
   LogOut,
 } from "lucide-react";
 
-const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, onToggleDarkMode }) => {
+const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, onToggleDarkMode, onHomeClick }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -53,7 +53,11 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
-              window.location.hash = '#explore'
+              if (onHomeClick) {
+                onHomeClick()
+              } else {
+                window.location.hash = '#home'
+              }
             }}
             className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
           >
@@ -77,16 +81,19 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
       {/* Mobile Sidebar Drawer */}
       <aside
         ref={menuRef}
-        className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out shadow-xl ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out shadow-xl ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-gray-100">
             <button
               onClick={() => {
-                window.location.hash = '#explore'
+                if (onHomeClick) {
+                  onHomeClick()
+                } else {
+                  window.location.hash = '#home'
+                }
                 setMobileMenuOpen(false)
               }}
               className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
@@ -110,20 +117,18 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
               return (
                 <button
                   key={item.label}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full text-sm transition ${
-                    isActive
-                      ? "bg-[#a26e35] text-white font-semibold shadow-sm"
-                      : "text-[#a26e35] hover:bg-[#f9f1e7]"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full text-sm transition ${isActive
+                    ? "bg-[#a26e35] text-white font-semibold shadow-sm"
+                    : "text-[#a26e35] hover:bg-[#f9f1e7]"
+                    }`}
                   onClick={() => {
                     onSelectSection?.(item.label);
                     setMobileMenuOpen(false);
                   }}
                 >
                   <Icon
-                    className={`w-4 h-4 ${
-                      isActive ? "text-white" : "text-[#a26e35]"
-                    }`}
+                    className={`w-4 h-4 ${isActive ? "text-white" : "text-[#a26e35]"
+                      }`}
                   />
                   <span>{item.label}</span>
                 </button>
@@ -143,14 +148,12 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
                 <span>Dark Mode</span>
               </div>
               <div
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                  darkMode ? "bg-[#a26e35]" : "bg-gray-300"
-                }`}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${darkMode ? "bg-[#a26e35]" : "bg-gray-300"
+                  }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                    darkMode ? "translate-x-[18px]" : "translate-x-[2px]"
-                  }`}
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${darkMode ? "translate-x-[18px]" : "translate-x-[2px]"
+                    }`}
                 />
               </div>
             </button>
@@ -158,7 +161,7 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
 
           {/* Logout */}
           <div className="px-4 pb-4">
-            <button 
+            <button
               onClick={() => {
                 if (onLogout) {
                   onLogout();
@@ -180,7 +183,11 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
         <div className="flex items-center gap-3 mb-8">
           <button
             onClick={() => {
-              window.location.hash = '#explore'
+              if (onHomeClick) {
+                onHomeClick()
+              } else {
+                window.location.hash = '#home'
+              }
             }}
             className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
           >
@@ -196,17 +203,15 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
             return (
               <button
                 key={item.label}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full text-sm transition ${
-                  isActive
-                    ? "bg-[#a26e35] text-white font-semibold shadow-sm"
-                    : "text-[#a26e35] hover:bg-[#f9f1e7]"
-                }`}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full text-sm transition ${isActive
+                  ? "bg-[#a26e35] text-white font-semibold shadow-sm"
+                  : "text-[#a26e35] hover:bg-[#f9f1e7]"
+                  }`}
                 onClick={() => onSelectSection?.(item.label)}
               >
                 <Icon
-                  className={`w-4 h-4 ${
-                    isActive ? "text-white" : "text-[#a26e35]"
-                  }`}
+                  className={`w-4 h-4 ${isActive ? "text-white" : "text-[#a26e35]"
+                    }`}
                 />
                 <span>{item.label}</span>
               </button>
@@ -225,20 +230,18 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
             <span>Dark Mode</span>
           </div>
           <div
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-              darkMode ? "bg-[#a26e35]" : "bg-gray-300"
-            }`}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${darkMode ? "bg-[#a26e35]" : "bg-gray-300"
+              }`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                darkMode ? "translate-x-[18px]" : "translate-x-[2px]"
-              }`}
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${darkMode ? "translate-x-[18px]" : "translate-x-[2px]"
+                }`}
             />
           </div>
         </button>
 
         {/* Logout */}
-        <button 
+        <button
           onClick={() => {
             if (onLogout) {
               onLogout();

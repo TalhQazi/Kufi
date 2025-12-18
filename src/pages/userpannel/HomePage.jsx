@@ -11,10 +11,10 @@ import BlogSection from '../../components/home/BlogSection'
 import FeedbackSection from '../../components/home/FeedbackSection'
 import Footer from '../../components/layout/Footer'
 
-export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick, onCountryClick }) {
+export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick, onCountryClick, onHomeClick }) {
     return (
         <>
-            <Header onSignupClick={onSignupClick} onSigninClick={onSigninClick} />
+            <Header onSignupClick={onSignupClick} onSigninClick={onSigninClick} onHomeClick={onHomeClick} />
             <div className="relative">
                 <HeroSection onSignupClick={onSignupClick} />
                 <SearchBar />

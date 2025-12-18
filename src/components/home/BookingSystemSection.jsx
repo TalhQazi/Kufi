@@ -34,66 +34,41 @@ export default function BookingSystemSection() {
                 </h2>
 
                 {/* Desktop layout - Zig-Zag flow */}
-                <div className="hidden lg:block relative py-10">
-                    {/* Connection Lines Layer - CSS Based */}
-                    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
-                        {/* Line 1: Step 1 (top-left) to Step 2 (bottom-center-left) */}
-                        <div
-                            className="absolute"
-                            style={{
-                                left: 'calc(12.5% + 88px)',
-                                top: 'calc(88px)',
-                                width: 'calc(25% - 176px)',
-                                transformOrigin: 'top left',
-                                borderBottom: '2px dashed #A67C52',
-                                transform: 'rotate(32deg)'
-                            }}
+                <div className="hidden lg:block relative py-10 mb-20 min-h-[500px]">
+                    {/* Connection Lines Layer - SVG Based with viewBox for reliability */}
+                    <svg
+                        className="absolute inset-0 w-full h-full pointer-events-none"
+                        viewBox="0 0 1000 500"
+                        preserveAspectRatio="none"
+                        style={{ zIndex: 1 }}
+                    >
+                        <path
+                            d="M 125,136 L 375,312 L 625,136 L 875,312"
+                            fill="none"
+                            stroke="#D1B693"
+                            strokeWidth="2"
+                            strokeDasharray="8,8"
                         />
-                        {/* Line 2: Step 2 (bottom-center-left) to Step 3 (top-center-right) */}
-                        <div
-                            className="absolute"
-                            style={{
-                                left: 'calc(37.5% + 88px)',
-                                top: 'calc(144px + 88px)',
-                                width: 'calc(25% - 176px)',
-                                transformOrigin: 'top left',
-                                borderBottom: '2px dashed #A67C52',
-                                transform: 'rotate(-32deg)'
-                            }}
-                        />
-                        {/* Line 3: Step 3 (top-center-right) to Step 4 (bottom-right) */}
-                        <div
-                            className="absolute"
-                            style={{
-                                left: 'calc(62.5% + 88px)',
-                                top: 'calc(88px)',
-                                width: 'calc(25% - 176px)',
-                                transformOrigin: 'top left',
-                                borderBottom: '2px dashed #A67C52',
-                                transform: 'rotate(32deg)'
-                            }}
-                        />
-                    </div>
+                    </svg>
 
-                    {/* Gap-0 grid for precise alignment, using padding for spacing */}
-                    <div className="grid grid-cols-4 gap-0 relative z-10 intro-step-grid">
+                    <div className="relative z-10 grid grid-cols-4 gap-0">
                         {steps.map((step, index) => (
                             <div
                                 key={step.id}
-                                className={`flex flex-col items-center text-center px-4 ${index % 2 === 1 ? 'mt-36' : ''
+                                className={`flex flex-col items-center text-center px-4 ${index % 2 === 1 ? 'mt-44' : ''
                                     }`}
                             >
-                                <div className="w-44 h-44 rounded-full overflow-hidden shadow-xl border-[6px] border-slate-600/90 relative bg-white z-10 transition-transform duration-300 hover:scale-105">
+                                <div className="w-48 h-48 rounded-full overflow-hidden shadow-2xl border-[8px] border-slate-700/80 relative bg-white transition-transform duration-300 hover:scale-105">
                                     <div
                                         className="w-full h-full bg-cover bg-center"
                                         style={{ backgroundImage: `url(${step.image})` }}
                                     />
                                 </div>
-                                <h3 className="mt-8 text-lg font-medium text-[#A67C52] max-w-[200px] leading-tight">
+                                <h3 className="mt-8 text-lg font-bold text-slate-800 max-w-[200px] leading-tight">
                                     {step.title}
                                 </h3>
-                                <div className="mt-4 px-4 py-1 rounded-full border border-[#D1B693] bg-[#fffbf6]">
-                                    <span className="text-[10px] font-bold text-[#A67C52] tracking-widest uppercase">
+                                <div className="mt-3 px-4 py-1 rounded-full border border-slate-200 bg-white shadow-sm">
+                                    <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
                                         {step.stepLabel}
                                     </span>
                                 </div>
