@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { FaFacebookF, FaTwitter, FaInstagram, FaYoutube, FaEye, FaEyeSlash, FaCheck } from 'react-icons/fa'
+import { FaFacebookF, FaTwitter, FaInstagram, FaYoutube, FaEye, FaEyeSlash, FaCheck, FaTimes } from 'react-icons/fa'
 import { FcGoogle } from 'react-icons/fc'
 import { FiMail, FiLock, FiGlobe } from 'react-icons/fi'
-import { HiMenu } from 'react-icons/hi'
 
 const ADMIN_EMAIL = 'admin@kufi.com'
 const ADMIN_PASSWORD = 'Admin@123'
@@ -126,11 +125,12 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                         <span className="text-xs">▼</span>
                     </div>
                     <button
-                        className="text-slate-800 hover:text-black transition-colors"
+                        className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 hover:text-slate-900 transition-all"
                         onClick={onClose}
                         aria-label="Close"
+                        title="Close"
                     >
-                        <HiMenu size={28} />
+                        <FaTimes size={18} />
                     </button>
                 </header>
 

@@ -278,9 +278,9 @@ export default function ItineraryView({ onBack, onPaymentClick, onRequestAdjustm
 
             {/* Main Content */}
             <main className="pb-24">
-                <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-20 pt-8">
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-20 pt-6 sm:pt-8">
                     {/* Hero Image */}
-                    <div className="w-full h-[320px] relative rounded-[32px] overflow-hidden">
+                    <div className="w-full h-[200px] sm:h-[280px] md:h-[320px] relative rounded-2xl sm:rounded-3xl overflow-hidden">
                         <img
                             src="/assets/itinerary-hero.png"
                             alt="Trip Cover"
@@ -290,26 +290,28 @@ export default function ItineraryView({ onBack, onPaymentClick, onRequestAdjustm
                 </div>
 
                 {/* Content Container */}
-                <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
                     {/* Trip Overview */}
-                    <section className="mb-10">
-                        <div className="flex items-start justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-slate-900">Trip Overview</h2>
-                            <div className="flex gap-3">
-                                <button className="px-5 py-2.5 bg-[#A67C52] text-white rounded-lg text-sm font-semibold hover:bg-[#8e6a45] transition-colors flex items-center gap-2">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <section className="mb-8 sm:mb-10">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4">
+                            <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Trip Overview</h2>
+                            <div className="flex flex-wrap gap-2 sm:gap-3">
+                                <button className="px-3 sm:px-5 py-2 sm:py-2.5 bg-[#A67C52] text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#8e6a45] transition-colors flex items-center gap-2">
+                                    <svg width="14" height="14" className="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                         <polyline points="7 10 12 15 17 10" />
                                         <line x1="12" y1="15" x2="12" y2="3" />
                                     </svg>
-                                    Download PDF
+                                    <span className="hidden sm:inline">Download PDF</span>
+                                    <span className="sm:hidden">PDF</span>
                                 </button>
                                 <button
                                     onClick={onRequestAdjustment}
-                                    className="px-5 py-2.5 border-2 border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors"
+                                    className="px-3 sm:px-5 py-2 sm:py-2.5 border-2 border-slate-300 text-slate-700 rounded-lg text-xs sm:text-sm font-semibold hover:bg-slate-50 transition-colors whitespace-nowrap"
                                 >
-                                    Request Adjustment
+                                    <span className="hidden sm:inline">Request Adjustment</span>
+                                    <span className="sm:hidden">Adjust</span>
                                 </button>
                             </div>
                         </div>
@@ -317,76 +319,76 @@ export default function ItineraryView({ onBack, onPaymentClick, onRequestAdjustm
                         <p className="text-slate-600 leading-relaxed mb-6 text-sm">{tripDetails.description}</p>
 
                         {/* Info Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                            <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-3">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                            <div className="flex items-center gap-2 sm:gap-3 bg-slate-50 rounded-lg p-2 sm:p-3">
+                                <svg width="16" height="16" className="sm:w-5 sm:h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2">
                                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                                     <circle cx="12" cy="10" r="3" />
                                 </svg>
-                                <span className="text-xs font-semibold text-slate-700">{tripDetails.location}</span>
+                                <span className="text-[10px] sm:text-xs font-semibold text-slate-700 truncate">{tripDetails.location}</span>
                             </div>
 
-                            <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-3">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2">
+                            <div className="flex items-center gap-2 sm:gap-3 bg-slate-50 rounded-lg p-2 sm:p-3">
+                                <svg width="16" height="16" className="sm:w-5 sm:h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2">
                                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                                 </svg>
-                                <span className="text-xs font-semibold text-slate-700">{tripDetails.adrenalineLevel}</span>
+                                <span className="text-[10px] sm:text-xs font-semibold text-slate-700 truncate">{tripDetails.adrenalineLevel}</span>
                             </div>
 
-                            <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-3">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2">
+                            <div className="flex items-center gap-2 sm:gap-3 bg-slate-50 rounded-lg p-2 sm:p-3">
+                                <svg width="16" height="16" className="sm:w-5 sm:h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2">
                                     <path d="M12 2L2 7l10 5 10-5-10-5z" />
                                     <path d="M2 17l10 5 10-5" />
                                     <path d="M2 12l10 5 10-5" />
                                 </svg>
-                                <span className="text-xs font-semibold text-slate-700">{tripDetails.category}</span>
+                                <span className="text-[10px] sm:text-xs font-semibold text-slate-700 truncate">{tripDetails.category}</span>
                             </div>
 
-                            <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-3">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2">
+                            <div className="flex items-center gap-2 sm:gap-3 bg-slate-50 rounded-lg p-2 sm:p-3">
+                                <svg width="16" height="16" className="sm:w-5 sm:h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2">
                                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                                     <circle cx="9" cy="7" r="4" />
                                     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                                 </svg>
-                                <span className="text-xs font-semibold text-slate-700">{tripDetails.groupSize}</span>
+                                <span className="text-[10px] sm:text-xs font-semibold text-slate-700 truncate">{tripDetails.groupSize}</span>
                             </div>
 
-                            <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-3">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2">
+                            <div className="flex items-center gap-2 sm:gap-3 bg-slate-50 rounded-lg p-2 sm:p-3">
+                                <svg width="16" height="16" className="sm:w-5 sm:h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2">
                                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                                     <line x1="16" y1="2" x2="16" y2="6" />
                                     <line x1="8" y1="2" x2="8" y2="6" />
                                     <line x1="3" y1="10" x2="21" y2="10" />
                                 </svg>
-                                <span className="text-xs font-semibold text-slate-700">{tripDetails.date}</span>
+                                <span className="text-[10px] sm:text-xs font-semibold text-slate-700 truncate">{tripDetails.date}</span>
                             </div>
                         </div>
                     </section>
 
                     {/* Day by Day Itinerary */}
-                    <section className="mb-12">
-                        <h2 className="text-2xl font-bold text-slate-900 mb-6">Day-by-Day Itinerary</h2>
+                    <section className="mb-8 sm:mb-12">
+                        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4 sm:mb-6">Day-by-Day Itinerary</h2>
 
-                        <div className="space-y-6">
+                        <div className="space-y-4 sm:space-y-6">
                             {days.map((day, index) => (
                                 <div key={index} className="bg-white border border-slate-200 rounded-lg overflow-hidden">
                                     <div className="flex flex-col md:flex-row">
                                         {/* Image */}
-                                        <div className="md:w-1/2 h-72 relative">
+                                        <div className="md:w-1/2 h-48 sm:h-64 md:h-72 relative">
                                             <img
                                                 src={day.image}
                                                 alt={day.title}
                                                 className="w-full h-full object-cover"
                                             />
-                                            <div className="absolute top-4 left-4 bg-[#A67C52] text-white px-3 py-1 rounded text-sm font-bold">
+                                            <div className="absolute top-3 sm:top-4 left-3 sm:left-4 bg-[#A67C52] text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-bold">
                                                 Day {day.day}
                                             </div>
                                         </div>
 
                                         {/* Content */}
-                                        <div className="md:w-1/2 p-6">
-                                            <h3 className="text-lg font-bold text-slate-900 mb-5">{day.title}</h3>
+                                        <div className="md:w-1/2 p-4 sm:p-6">
+                                            <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-4 sm:mb-5">{day.title}</h3>
 
                                             <div className="space-y-4">
                                                 {/* Morning */}

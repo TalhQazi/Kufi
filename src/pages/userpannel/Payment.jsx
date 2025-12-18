@@ -26,8 +26,8 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-6">
-                    <h1 className="text-3xl font-bold text-slate-900 mb-2">Complete Your Payment</h1>
-                    <p className="text-slate-600">Your travel adventure is just one step away.</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Complete Your Payment</h1>
+                    <p className="text-sm sm:text-base text-slate-600">Your travel adventure is just one step away.</p>
                 </div>
 
                 {/* Info Banner */}
@@ -43,9 +43,9 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                     {/* Left Column - Payment Form */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* Traveler Information */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h2 className="text-lg font-bold text-slate-900 mb-4">Traveler Information</h2>
-                            <div className="grid md:grid-cols-2 gap-4">
+                        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+                            <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-4">Traveler Information</h2>
+                            <div className="grid sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
                                     <input
@@ -64,7 +64,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                         className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 text-sm"
                                     />
                                 </div>
-                                <div className="md:col-span-2">
+                                <div className="col-span-2">
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Contact Number</label>
                                     <input
                                         type="tel"
@@ -77,8 +77,8 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                         </div>
 
                         {/* Payment Method */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <h2 className="text-lg font-bold text-slate-900 mb-4">Payment Method</h2>
+                        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+                            <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-4">Payment Method</h2>
 
                             <div className="space-y-3 mb-6">
                                 {/* Credit/Debit Card */}
@@ -214,16 +214,16 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                         </div>
 
                         {/* Wallet Balance */}
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="2">
+                        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <svg width="18" height="18" className="sm:w-5 sm:h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="2">
                                         <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
                                         <line x1="1" y1="10" x2="23" y2="10" />
                                     </svg>
-                                    <div>
-                                        <h3 className="text-sm font-semibold text-slate-900">Use Wallet Balance</h3>
-                                        <p className="text-xs text-slate-600">Available: $ 150</p>
+                                    <div className="min-w-0">
+                                        <h3 className="text-xs sm:text-sm font-semibold text-slate-900">Use Wallet Balance</h3>
+                                        <p className="text-[10px] sm:text-xs text-slate-600">Available: $ 150</p>
                                     </div>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
@@ -240,9 +240,9 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                     </div>
 
                     {/* Right Column - Trip Summary */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-8">
-                            <h2 className="text-lg font-bold text-slate-900 mb-4">Trip Summary</h2>
+                    <div className="lg:col-span-1 order-first lg:order-last">
+                        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:sticky lg:top-8">
+                            <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-4">Trip Summary</h2>
 
                             <div className="mb-4 pb-4 border-b border-slate-200">
                                 <h3 className="font-semibold text-slate-900 mb-1">Paradise Travel Co.</h3>
@@ -277,19 +277,19 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                 </div>
                             </div>
 
-                            <div className="flex justify-between items-center mb-6">
-                                <span className="text-lg font-bold text-slate-900">Total Amount</span>
-                                <span className="text-2xl font-bold text-green-600">$2450.00</span>
+                            <div className="flex justify-between items-center mb-4 sm:mb-6">
+                                <span className="text-base sm:text-lg font-bold text-slate-900">Total Amount</span>
+                                <span className="text-xl sm:text-2xl font-bold text-green-600">$2450.00</span>
                             </div>
 
                             <button
                                 onClick={handlePayment}
-                                className="w-full bg-primary-brown hover:bg-primary-dark text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors mb-3"
+                                className="w-full bg-primary-brown hover:bg-primary-dark text-white py-2.5 sm:py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors mb-3 text-sm sm:text-base"
                             >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <svg width="18" height="18" className="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                                 </svg>
-                                Confirm & Pay Now
+                                <span className="whitespace-nowrap">Confirm & Pay Now</span>
                             </button>
 
                             <button

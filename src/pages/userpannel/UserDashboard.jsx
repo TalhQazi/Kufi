@@ -216,25 +216,24 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
                 {/* Hero Section */}
-                {/* Hero Section */}
-                <div className="relative rounded-2xl md:rounded-3xl overflow-hidden mb-8 md:mb-12 h-[300px] md:h-[400px]">
+                <div className="relative rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden mb-6 sm:mb-8 md:mb-12 h-[250px] sm:h-[300px] md:h-[400px]">
                     <img
                         src="/assets/treking.jpeg"
                         alt="Hero"
                         className="absolute inset-0 w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent flex flex-col justify-center px-8 md:px-16">
-                        <div className="flex items-center gap-2 text-white/90 text-sm md:text-base mb-3 font-medium tracking-wide">
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent flex flex-col justify-center px-4 sm:px-8 md:px-16">
+                        <div className="flex items-center gap-2 text-white/90 text-xs sm:text-sm md:text-base mb-2 sm:mb-3 font-medium tracking-wide">
                             <FiMapPin />
                             <span>Dubai, UAE</span>
                         </div>
-                        <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 max-w-3xl leading-tight font-['Playfair_Display'] tracking-tight">
-                            Welcome Back, Levent! <span className="text-4xl md:text-6xl align-middle ml-2">🌍</span> <br />
-                            Ready For Your Next <br />
-                            Adventure?
+                        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 max-w-3xl leading-tight font-['Playfair_Display'] tracking-tight">
+                            Welcome Back, Levent! <span className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl align-middle ml-1 sm:ml-2">🌍</span> <br className="hidden sm:block" />
+                            <span className="hidden sm:inline">Ready For Your Next <br />Adventure?</span>
+                            <span className="sm:hidden">Ready For Your Next Adventure?</span>
                         </h1>
-                        <p className="text-white/90 max-w-lg mb-8 text-sm md:text-base font-light leading-relaxed hidden sm:block">
-                            Here's a quick look at your latest trip requests and upcoming tours. Let's <br />
+                        <p className="text-white/90 max-w-lg mb-4 sm:mb-8 text-xs sm:text-sm md:text-base font-light leading-relaxed hidden sm:block">
+                            Here's a quick look at your latest trip requests and upcoming tours. Let's <br className="hidden md:block" />
                             make your next journey unforgettable!
                         </p>
                         <button 
@@ -243,10 +242,10 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                     onExploreClick()
                                 }
                             }}
-                            className="bg-[#22C55E] hover:bg-[#16A34A] text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-3 w-fit transition-all hover:scale-105 shadow-xl text-sm md:text-base"
+                            className="bg-[#22C55E] hover:bg-[#16A34A] text-white px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3.5 rounded-full font-bold flex items-center gap-2 sm:gap-3 w-fit transition-all hover:scale-105 shadow-xl text-xs sm:text-sm md:text-base"
                         >
-                            <FaCheckCircle className="text-lg" />
-                            Plan a New Trip
+                            <FaCheckCircle className="text-sm sm:text-base md:text-lg" />
+                            <span className="whitespace-nowrap">Plan a New Trip</span>
                         </button>
                     </div>
                 </div>
@@ -274,8 +273,8 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
 
                         <div className="flex flex-col gap-4 md:gap-6">
                             {tripRequests.map((trip) => (
-                                <div key={trip.id} className="bg-white rounded-xl md:rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 md:gap-6 hover:shadow-md transition-shadow">
-                                    <div className="w-full md:w-48 h-48 md:h-auto shrink-0">
+                                <div key={trip.id} className="bg-white rounded-xl md:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-6 hover:shadow-md transition-shadow">
+                                    <div className="w-full md:w-48 h-40 sm:h-48 md:h-auto shrink-0">
                                         <img
                                             src={trip.image}
                                             alt={trip.title}
@@ -284,47 +283,47 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                     </div>
                                     <div className="flex-1 py-1 md:py-2">
                                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
-                                            <h3 className="text-lg md:text-xl font-bold text-gray-900">{trip.title}</h3>
-                                            <span className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 w-fit ${trip.statusColor}`}>
+                                            <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">{trip.title}</h3>
+                                            <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 w-fit ${trip.statusColor}`}>
                                                 {trip.statusIcon}
-                                                {trip.status}
+                                                <span className="whitespace-nowrap">{trip.status}</span>
                                             </span>
                                         </div>
 
-                                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
+                                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
                                             <div className="flex items-center gap-1">
-                                                <FiMapPin />
-                                                {trip.location}
+                                                <FiMapPin className="shrink-0" />
+                                                <span className="truncate">{trip.location}</span>
                                             </div>
                                             <div className="flex items-center gap-1">
-                                                <span className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-[10px]">👤</span>
-                                                {trip.supplier}
+                                                <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-gray-200 flex items-center justify-center text-[8px] sm:text-[10px] shrink-0">👤</span>
+                                                <span className="truncate">{trip.supplier}</span>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-sm text-gray-600 mb-6">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
                                             <div className="flex items-center gap-2">
-                                                <FiCalendar className="text-gray-400" />
+                                                <FiCalendar className="text-gray-400 shrink-0" />
                                                 <span>Requested: {trip.requestDate}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <FiCalendar className="text-gray-400" />
-                                                <span>Travel Dates: {trip.travelDates}</span>
+                                                <FiCalendar className="text-gray-400 shrink-0" />
+                                                <span>Travel: {trip.travelDates}</span>
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-auto gap-4">
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mt-auto gap-3 sm:gap-4">
                                             <button 
                                                 onClick={() => {
                                                     if (onItineraryClick) {
                                                         onItineraryClick()
                                                     }
                                                 }}
-                                                className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors w-full sm:w-auto text-center"
+                                                className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-colors w-full sm:w-auto text-center"
                                             >
                                                 View Request Details
                                             </button>
-                                            <span className="text-lg font-bold text-gray-900">{trip.price}</span>
+                                            <span className="text-base sm:text-lg font-bold text-gray-900 text-center sm:text-right">{trip.price}</span>
                                         </div>
                                     </div>
                                 </div>

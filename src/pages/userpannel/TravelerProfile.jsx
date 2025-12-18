@@ -27,7 +27,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
     const tabs = ['Personal Info', 'Preferences', 'Travel History', 'Wishlist', 'Payments']
 
     return (
-        <div className="min-h-screen bg-[#F5F1EB] font-sans">
+        <div className="min-h-screen bg-[#F5F1EB] font-sans overflow-x-hidden">
             {/* Header */}
             <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
                 <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
@@ -155,15 +155,15 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
             </header>
 
             {/* Container */}
-            <div className="max-w-[1400px] mx-auto px-8 py-12">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
 
                 {/* Header */}
-                <div className="mb-8 flex items-start justify-between">
+                <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-900 mb-1">Traveler Profile</h1>
-                        <p className="text-sm text-slate-500">View traveler details, preferences, and journey history in one place.</p>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">Traveler Profile</h1>
+                        <p className="text-xs sm:text-sm text-slate-500">View traveler details, preferences, and journey history in one place.</p>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
                         <button className="flex items-center gap-2 px-4 py-2.5 border border-slate-300 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -171,38 +171,40 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                             </svg>
                             Edit Profile
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2.5 border border-slate-300 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <button className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border border-slate-300 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                            <svg width="12" height="12" className="sm:w-3.5 sm:h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
-                            Send Message
+                            <span className="hidden sm:inline">Send Message</span>
+                            <span className="sm:hidden">Message</span>
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2.5 bg-[#8B6E4E] text-white rounded-lg text-xs font-semibold hover:bg-[#7a5d3f]">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <button className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-[#8B6E4E] text-white rounded-lg text-xs font-semibold hover:bg-[#7a5d3f]">
+                            <svg width="12" height="12" className="sm:w-3.5 sm:h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                 <polyline points="7 10 12 15 17 10" />
                                 <line x1="12" y1="15" x2="12" y2="3" />
                             </svg>
-                            Download Profile
+                            <span className="hidden sm:inline">Download Profile</span>
+                            <span className="sm:hidden">Download</span>
                         </button>
                     </div>
                 </div>
 
                 {/* Profile Card */}
-                <div className="bg-white rounded-2xl p-8 mb-6 shadow-sm">
-                    <div className="flex items-start justify-between">
+                <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 shadow-sm">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
                         {/* Left: Profile Info */}
-                        <div className="flex gap-6">
-                            <div className="flex flex-col items-center">
-                                <div className="w-24 h-24 rounded-full overflow-hidden mb-3">
+                        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full sm:w-auto">
+                            <div className="flex flex-col items-center sm:items-start">
+                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden mb-3">
                                     <img src="/assets/profile-avatar.jpeg" alt="Sarah Anderson" className="w-full h-full object-cover" />
                                 </div>
-                                <button className="px-4 py-1.5 rounded-lg bg-[#D4AF37] text-white text-xs font-semibold">
+                                <button className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg bg-[#D4AF37] text-white text-[10px] sm:text-xs font-semibold">
                                     Gold Member
                                 </button>
                             </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900 mb-2">Sarah Anderson</h2>
+                            <div className="flex-1 sm:flex-none">
+                                <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">Sarah Anderson</h2>
                                 <div className="space-y-1 text-sm text-slate-600">
                                     <div className="flex items-center gap-2">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -230,31 +232,31 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                         </div>
 
                         {/* Right: Stats */}
-                        <div className="flex flex-nowrap gap-8 sm:gap-12">
-                            <div className="text-center">
-                                <div className="text-3xl font-bold text-slate-900">12</div>
-                                <div className="text-xs text-slate-500 mt-1">Total Trips</div>
+                        <div className="flex flex-wrap sm:flex-nowrap gap-4 sm:gap-6 lg:gap-8 xl:gap-12 w-full sm:w-auto justify-between sm:justify-start">
+                            <div className="text-center flex-1 sm:flex-none">
+                                <div className="text-2xl sm:text-3xl font-bold text-slate-900">12</div>
+                                <div className="text-[10px] sm:text-xs text-slate-500 mt-1">Total Trips</div>
                             </div>
-                            <div className="text-center">
-                                <div className="text-3xl font-bold text-slate-900">2</div>
-                                <div className="text-xs text-slate-500 mt-1">In Progress</div>
+                            <div className="text-center flex-1 sm:flex-none">
+                                <div className="text-2xl sm:text-3xl font-bold text-slate-900">2</div>
+                                <div className="text-[10px] sm:text-xs text-slate-500 mt-1">In Progress</div>
                             </div>
-                            <div className="text-center">
-                                <div className="text-3xl font-bold text-slate-900">8</div>
-                                <div className="text-xs text-slate-500 mt-1">Wishlist</div>
+                            <div className="text-center flex-1 sm:flex-none">
+                                <div className="text-2xl sm:text-3xl font-bold text-slate-900">8</div>
+                                <div className="text-[10px] sm:text-xs text-slate-500 mt-1">Wishlist</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
-                    <div className="flex flex-nowrap gap-1 overflow-x-auto">
+                <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm">
+                    <div className="flex flex-nowrap gap-1 overflow-x-auto hide-scrollbar">
                         {tabs.map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap rounded-lg ${
+                                className={`px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap rounded-lg ${
                                     activeTab === tab
                                         ? 'bg-slate-100 text-slate-900'
                                         : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
@@ -267,13 +269,13 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                 </div>
 
                 {/* Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 sm:gap-6">
                     {/* Left: Tab Content */}
                     {activeTab === 'Personal Info' && (
                         <div className="bg-white rounded-2xl p-6 shadow-sm">
                             <h3 className="text-lg font-bold text-slate-900 mb-6">Personal Information</h3>
 
-                            <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-4 sm:gap-y-6">
                                 {/* Left Column */}
                                 <div>
                                     <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
@@ -499,17 +501,17 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                             
                             <div className="space-y-4">
                                 {/* Travel Entry 1: Greek Islands Explorer */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex items-center gap-4 p-4 hover:shadow-md transition-shadow">
-                                    <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
+                                    <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
                                         <img 
                                             src="https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=200&h=200&fit=crop" 
                                             alt="Santorini, Greece" 
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
-                                    <div className="flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 w-full sm:w-auto">
                                         <h4 className="font-bold text-slate-900 mb-2">Greek Islands Explorer</h4>
-                                        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
                                             <div className="flex items-center gap-1">
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -524,33 +526,34 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                                     <line x1="8" y1="2" x2="8" y2="6" />
                                                     <line x1="3" y1="10" x2="21" y2="10" />
                                                 </svg>
-                                                <span>Jun 15 - Jun 25, 2024</span>
+                                                <span className="hidden sm:inline">Jun 15 - Jun 25, 2024</span>
+                                                <span className="sm:hidden">Jun 15-25, 2024</span>
                                             </div>
                                             <span>• 10 days</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
                                         <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
                                             View Itinerary
                                         </button>
-                                        <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold whitespace-nowrap">
+                                        <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold whitespace-nowrap text-center">
                                             Completed
                                         </span>
                                     </div>
                                 </div>
 
                                 {/* Travel Entry 2: Tropical Paradise Retreat */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex items-center gap-4 p-4 hover:shadow-md transition-shadow">
-                                    <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
+                                    <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
                                         <img 
                                             src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=200&h=200&fit=crop" 
                                             alt="Bali, Indonesia" 
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
-                                    <div className="flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 w-full sm:w-auto">
                                         <h4 className="font-bold text-slate-900 mb-2">Tropical Paradise Retreat</h4>
-                                        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
                                             <div className="flex items-center gap-1">
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -565,33 +568,34 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                                     <line x1="8" y1="2" x2="8" y2="6" />
                                                     <line x1="3" y1="10" x2="21" y2="10" />
                                                 </svg>
-                                                <span>Dec 1 - Dec 15, 2024</span>
+                                                <span className="hidden sm:inline">Dec 1 - Dec 15, 2024</span>
+                                                <span className="sm:hidden">Dec 1-15, 2024</span>
                                             </div>
                                             <span>• 14 days</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
                                         <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
                                             View Itinerary
                                         </button>
-                                        <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold whitespace-nowrap">
+                                        <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold whitespace-nowrap text-center">
                                             In Progress
                                         </span>
                                     </div>
                                 </div>
 
                                 {/* Travel Entry 3: Romantic Paris Getaway */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex items-center gap-4 p-4 hover:shadow-md transition-shadow">
-                                    <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
+                                    <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
                                         <img 
                                             src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=200&h=200&fit=crop" 
                                             alt="Paris, France" 
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
-                                    <div className="flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 w-full sm:w-auto">
                                         <h4 className="font-bold text-slate-900 mb-2">Romantic Paris Getaway</h4>
-                                        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
                                             <div className="flex items-center gap-1">
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -606,16 +610,17 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                                     <line x1="8" y1="2" x2="8" y2="6" />
                                                     <line x1="3" y1="10" x2="21" y2="10" />
                                                 </svg>
-                                                <span>Apr 10 - Apr 17, 2024</span>
+                                                <span className="hidden sm:inline">Apr 10 - Apr 17, 2024</span>
+                                                <span className="sm:hidden">Apr 10-17, 2024</span>
                                             </div>
                                             <span>• 7 days</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
                                         <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
                                             View Itinerary
                                         </button>
-                                        <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold whitespace-nowrap">
+                                        <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold whitespace-nowrap text-center">
                                             Completed
                                         </span>
                                     </div>
@@ -633,7 +638,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 </svg>
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                 {/* Card 1: Machu Picchu Adventure */}
                                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                                     <div className="relative">

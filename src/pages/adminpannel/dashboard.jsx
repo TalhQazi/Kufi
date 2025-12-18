@@ -97,22 +97,22 @@ const StatCard = ({
   const arrow = positive ? "▲" : "▼";
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-4">
-      <div className="flex items-start justify-between">
-        <div
-          className={`w-12 h-12 rounded-2xl flex items-center justify-center ${iconBg}`}
-        >
-          <Icon className={`w-6 h-6 ${iconColor}`} />
-        </div>
-        <div className={`flex items-center text-xs font-semibold ${changeColor}`}>
-          {arrow}
-          <span className="ml-1">{change}</span>
-        </div>
-      </div>
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 px-4 sm:px-5 py-3 sm:py-4">
+          <div className="flex items-start justify-between">
+            <div
+              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center ${iconBg}`}
+            >
+              <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${iconColor}`} />
+            </div>
+            <div className={`flex items-center text-xs font-semibold ${changeColor}`}>
+              {arrow}
+              <span className="ml-1">{change}</span>
+            </div>
+          </div>
 
-      <p className="mt-5 text-sm font-medium text-gray-500">{title}</p>
-      <p className="text-2xl font-semibold text-slate-900 mt-1">{value}</p>
-    </div>
+          <p className="mt-4 sm:mt-5 text-xs sm:text-sm font-medium text-gray-500">{title}</p>
+          <p className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">{value}</p>
+        </div>
   );
 };
 
@@ -232,49 +232,49 @@ const Dashboard = () => {
     <div className="space-y-6">
       {/* Page heading */}
       <div>
-        <h1 className="text-xl md:text-2xl font-semibold text-slate-900">
+        <h1 className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-900">
           Dashboard Overview
         </h1>
-        <p className="mt-1 text-xs md:text-sm text-gray-500">
+        <p className="mt-1 text-xs sm:text-sm text-gray-500">
           Welcome back! Here&apos;s what&apos;s happening today.
         </p>
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {stats.map((item) => (
           <StatCard key={item.title} {...item} />
         ))}
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="bg-white rounded-xl card-shadow px-5 py-5 border border-gray-100">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+        <div className="bg-white rounded-xl card-shadow px-4 sm:px-5 py-4 sm:py-5 border border-gray-100">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-slate-900">
+            <h2 className="text-xs sm:text-sm font-semibold text-slate-900">
               Revenue Trend
             </h2>
           </div>
-          <div className="h-64">
+          <div className="h-48 sm:h-64">
             <Line data={revenueData} options={revenueOptions} />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl card-shadow px-5 py-5 border border-gray-100">
+        <div className="bg-white rounded-xl card-shadow px-4 sm:px-5 py-4 sm:py-5 border border-gray-100">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-slate-900">
+            <h2 className="text-xs sm:text-sm font-semibold text-slate-900">
               Weekly Bookings
             </h2>
           </div>
-          <div className="h-64">
+          <div className="h-48 sm:h-64">
             <Bar data={bookingsData} options={bookingsOptions} />
           </div>
         </div>
       </div>
 
       {/* Recent activity */}
-      <div className="bg-white rounded-xl card-shadow px-5 py-5 border border-gray-100">
-        <h2 className="text-sm font-semibold text-slate-900 mb-4">
+      <div className="bg-white rounded-xl card-shadow px-4 sm:px-5 py-4 sm:py-5 border border-gray-100">
+        <h2 className="text-xs sm:text-sm font-semibold text-slate-900 mb-4">
           Recent Activity
         </h2>
         <div>

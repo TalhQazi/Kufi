@@ -95,13 +95,13 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
             </nav>
 
             {/* Main Content */}
-            <main className="px-4 sm:px-8 lg:px-20 py-8">
+            <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-8">
                 <div className="max-w-xl mx-auto">
-                    <div className="bg-white rounded-2xl shadow-lg p-8">
+                    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8">
                         {/* Header */}
                         <div className="mb-6">
-                            <h1 className="text-2xl font-bold text-slate-900 mb-1">Travel Booking</h1>
-                            <p className="text-sm text-slate-600">Fill your details so we may assist you</p>
+                            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">Travel Booking</h1>
+                            <p className="text-xs sm:text-sm text-slate-600">Fill your details so we may assist you</p>
                         </div>
 
                         {/* My List */}
@@ -128,7 +128,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
 
                         <form onSubmit={handleSubmit}>
                             {/* Name Fields */}
-                            <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">
                                         First Name <span className="text-red-500">*</span>
