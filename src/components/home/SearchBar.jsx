@@ -4,10 +4,10 @@ import Button from '../ui/Button'
 import { FiMapPin, FiCalendar, FiBriefcase, FiUsers } from 'react-icons/fi'
 
 export default function SearchBar() {
-    const [city, setCity] = useState('dubai')
-    const [duration, setDuration] = useState('8')
-    const [style, setStyle] = useState('choose-preference')
-    const [travelers, setTravelers] = useState('2')
+    const [city, setCity] = useState('')
+    const [duration, setDuration] = useState('')
+    const [style, setStyle] = useState('')
+    const [travelers, setTravelers] = useState('')
 
     const handleSubmit = (event) => {
         event.preventDefault()
@@ -26,6 +26,7 @@ export default function SearchBar() {
                         icon={<FiMapPin className="text-slate-500 text-lg" />}
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
+                        placeholder="Dubai"
                         options={[
                             { value: 'dubai', label: 'Dubai' },
                             { value: 'bali', label: 'Bali' },
@@ -43,6 +44,7 @@ export default function SearchBar() {
                         icon={<FiCalendar className="text-slate-500 text-lg" />}
                         value={duration}
                         onChange={(e) => setDuration(e.target.value)}
+                        placeholder="08 Days"
                         options={[
                             { value: '3', label: '03 Days' },
                             { value: '5', label: '05 Days' },
@@ -60,8 +62,8 @@ export default function SearchBar() {
                         icon={<FiBriefcase className="text-slate-500 text-lg" />}
                         value={style}
                         onChange={(e) => setStyle(e.target.value)}
+                        placeholder="Choose Your Preference"
                         options={[
-                            { value: 'choose-preference', label: 'Choose Your Preference' },
                             { value: 'travelling', label: 'Travelling' },
                             { value: 'adventure', label: 'Adventure' },
                             { value: 'luxury', label: 'Luxury' },
@@ -78,9 +80,10 @@ export default function SearchBar() {
                         icon={<FiUsers className="text-slate-500 text-lg" />}
                         value={travelers}
                         onChange={(e) => setTravelers(e.target.value)}
+                        placeholder="Guest and rooms"
                         options={[
                             { value: '1', label: '1 Guest' },
-                            { value: '2', label: 'Guest and rooms' },
+                            { value: '2', label: '2 Guests' },
                             { value: '3', label: '3 Guests' },
                             { value: '4', label: '4 Guests' },
                         ]}

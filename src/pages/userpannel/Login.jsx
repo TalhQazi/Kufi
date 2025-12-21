@@ -67,9 +67,9 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-[45%_55%] bg-white font-inter">
-            {/* Left Side */}
-            <div className="bg-[#B9B9B9] relative flex flex-col justify-between px-8 md:px-16 lg:px-24 py-12 md:py-16 rounded-br-[50px] md:rounded-br-[0px] md:rounded-tr-[50px] lg:rounded-tr-[80px] z-10">
+        <div className="grid grid-cols-1 md:grid-cols-[45%_55%] bg-white font-inter min-h-screen">
+            {/* Left Side - Hidden on mobile */}
+            <div className="hidden md:flex bg-[#B9B9B9] relative flex-col justify-between px-8 md:px-16 lg:px-24 py-12 md:py-16 rounded-tr-[50px] lg:rounded-tr-[80px] z-10">
                 <div className="max-w-md">
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
                         Seamless<br />Booking Starts<br />Here!
@@ -117,7 +117,7 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
 
             {/* Right Side */}
             <div className="bg-white flex flex-col relative">
-                <header className="absolute top-0 right-0 p-6 md:p-8 flex items-center gap-6 z-20">
+                <header className="absolute top-0 right-0 p-4 md:p-6 lg:p-8 flex items-center gap-4 md:gap-6 z-20">
                     <div className="flex items-center gap-2 text-slate-600 cursor-pointer hover:text-slate-900">
                         <FiGlobe size={20} />
                         <span className="font-medium text-sm">EN</span>
@@ -133,14 +133,26 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                     </button>
                 </header>
 
-                <div className="flex-1 flex items-center justify-center px-6 md:px-12 lg:px-20 py-20">
+                {/* Mobile Logo - Only visible on mobile */}
+                <div className="md:hidden flex justify-center pt-6 pb-4">
+                    <button
+                        onClick={() => {
+                            window.location.hash = '#explore'
+                        }}
+                        className="h-12 w-20 cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                        <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
+                    </button>
+                </div>
+
+                <div className="flex-1 flex items-center justify-center px-4 sm:px-6 md:px-12 lg:px-20 py-12 md:py-20">
                     <div className="w-full max-w-md">
-                        <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">Welcome Back</h2>
-                        <p className="text-slate-500 mb-8">
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-2 md:mb-3">Welcome Back</h2>
+                        <p className="text-slate-500 mb-6 md:mb-8 text-sm md:text-base">
                             Log in to access your account and explore new adventures.
                         </p>
 
-                        <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+                        <form className="flex flex-col gap-4 md:gap-5" onSubmit={handleSubmit}>
                             <div className="relative group">
                                 <div className="absolute left-0 top-3 text-[#A67C52]">
                                     <FiMail size={20} />
@@ -148,7 +160,7 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                                 <input
                                     type="text"
                                     placeholder="Enter your email or username"
-                                    className="w-full py-3 pl-8 pr-0 border-0 border-b border-slate-300 bg-transparent focus:outline-none focus:border-[#A67C52] transition-colors text-slate-900 placeholder:text-slate-400"
+                                    className="w-full py-3 pl-8 pr-0 border-0 border-b border-slate-300 bg-transparent focus:outline-none focus:border-[#A67C52] transition-colors text-slate-900 placeholder:text-slate-400 text-sm md:text-base"
                                     value={emailOrUsername}
                                     onChange={(e) => setEmailOrUsername(e.target.value)}
                                     required
@@ -162,7 +174,7 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     placeholder="Enter your password"
-                                    className="w-full py-3 pl-8 pr-10 border-0 border-b border-slate-300 bg-transparent focus:outline-none focus:border-[#A67C52] transition-colors text-slate-900 placeholder:text-slate-400"
+                                    className="w-full py-3 pl-8 pr-10 border-0 border-b border-slate-300 bg-transparent focus:outline-none focus:border-[#A67C52] transition-colors text-slate-900 placeholder:text-slate-400 text-sm md:text-base"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
@@ -190,37 +202,37 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                                             {rememberMe && <FaCheck className="text-[#A67C52] text-xs" />}
                                         </div>
                                     </div>
-                                    <span className="text-sm text-slate-600 group-hover:text-slate-800 transition-colors">Remember Me</span>
+                                    <span className="text-xs md:text-sm text-slate-600 group-hover:text-slate-800 transition-colors">Remember Me</span>
                                 </label>
-                                <a href="#" className="text-sm text-[#A67C52] font-semibold hover:underline">
+                                <a href="#" className="text-xs md:text-sm text-[#A67C52] font-semibold hover:underline">
                                     Forgot Password?
                                 </a>
                             </div>
 
-                            <button type="submit" className="mt-4 py-3.5 rounded bg-[#A67C52] text-white font-bold text-lg hover:bg-[#8e6a45] transition-colors w-full shadow-md hover:shadow-lg">
+                            <button type="submit" className="mt-3 md:mt-4 py-3 md:py-3.5 rounded bg-[#A67C52] text-white font-bold text-base md:text-lg hover:bg-[#8e6a45] transition-colors w-full shadow-md hover:shadow-lg">
                                 Login
                             </button>
                         </form>
 
-                        <div className="relative my-8 text-center">
+                        <div className="relative my-6 md:my-8 text-center">
                             <div className="absolute inset-0 flex items-center">
                                 <div className="w-full border-t border-slate-200"></div>
                             </div>
-                            <span className="relative bg-white px-4 text-sm font-medium text-slate-500">Or continue with</span>
+                            <span className="relative bg-white px-4 text-xs md:text-sm font-medium text-slate-500">Or continue with</span>
                         </div>
 
-                        <div className="flex gap-4">
-                            <button type="button" className="flex-1 py-3 rounded border-2 border-[#A67C52] bg-white flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer group">
+                        <div className="flex gap-3 md:gap-4">
+                            <button type="button" className="flex-1 py-2.5 md:py-3 rounded border-2 border-[#A67C52] bg-white flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer group">
                                 <FcGoogle size={20} />
-                                <span className="font-semibold text-[#A67C52] group-hover:text-[#8e6a45]">Google</span>
+                                <span className="font-semibold text-sm md:text-base text-[#A67C52] group-hover:text-[#8e6a45]">Google</span>
                             </button>
-                            <button type="button" className="flex-1 py-3 rounded border-2 border-[#A67C52] bg-white flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer group">
+                            <button type="button" className="flex-1 py-2.5 md:py-3 rounded border-2 border-[#A67C52] bg-white flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer group">
                                 <FaFacebookF size={20} className="text-[#A67C52]" />
-                                <span className="font-semibold text-[#A67C52] group-hover:text-[#8e6a45]">Facebook</span>
+                                <span className="font-semibold text-sm md:text-base text-[#A67C52] group-hover:text-[#8e6a45]">Facebook</span>
                             </button>
                         </div>
 
-                        <div className="mt-8 text-center text-slate-600">
+                        <div className="mt-6 md:mt-8 text-center text-slate-600 text-sm md:text-base">
                             Don't have an account?{' '}
                             <button
                                 type="button"

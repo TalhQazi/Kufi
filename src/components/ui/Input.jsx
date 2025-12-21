@@ -5,6 +5,7 @@ export default function Input({
     value,
     onChange,
     options = [],
+    placeholder = '',
     className = '',
     inputClassName = '',
     labelClassName = ''
@@ -24,7 +25,7 @@ export default function Input({
                     <select
                         value={value}
                         onChange={onChange}
-                        className={`w-full text-sm font-medium text-slate-950 py-2.5 px-3 ${icon ? 'pl-10' : ''} rounded-lg border border-slate-200 bg-slate-50 appearance-none focus:outline-none focus:border-primary-brown transition-colors ${inputClassName}`}
+                        className={`w-full text-sm font-medium py-2.5 px-3 ${icon ? 'pl-10' : ''} rounded-lg border border-slate-200 bg-slate-50 appearance-none focus:outline-none focus:border-primary-brown transition-colors ${value === '' ? 'text-slate-400' : 'text-slate-950'} ${inputClassName}`}
                         style={{
                             backgroundImage: `linear-gradient(45deg, transparent 50%, #9ca3af 50%), linear-gradient(135deg, #9ca3af 50%, transparent 50%)`,
                             backgroundPosition: 'calc(100% - 16px) 50%, calc(100% - 11px) 50%',
@@ -32,6 +33,11 @@ export default function Input({
                             backgroundRepeat: 'no-repeat'
                         }}
                     >
+                        {placeholder && (
+                            <option value="" disabled hidden>
+                                {placeholder}
+                            </option>
+                        )}
                         {options.map((opt) => (
                             <option key={opt.value} value={opt.value}>
                                 {opt.label}
@@ -47,6 +53,6 @@ export default function Input({
                     />
                 )}
             </div>
-        </div>
+        </div >
     )
 }

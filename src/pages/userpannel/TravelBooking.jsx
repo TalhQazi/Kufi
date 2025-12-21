@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
-export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, canGoForward, onSubmit, onHomeClick }) {
+export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, canGoForward, onSubmit, onHomeClick, onNotificationClick, onProfileClick, onSettingsClick }) {
     const [showSuccess, setShowSuccess] = useState(false)
+    const [dropdown, setDropdown] = useState(false)
+    const dropdownRef = useRef(null)
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -21,6 +23,23 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         budget: '',
         additionalOptions: false
     })
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setDropdown(false)
+            }
+        }
+
+        if (dropdown) {
+            document.addEventListener('mousedown', handleClickOutside)
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [dropdown])
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -78,7 +97,10 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-4">
-                        <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                        <button
+                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                            onClick={() => onNotificationClick && onNotificationClick()}
+                        >
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
                                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
@@ -91,8 +113,11 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                             </svg>
                         </button>
 
-                        <div className="relative">
-                            <button className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                        <div className="relative" ref={dropdownRef}>
+                            <button
+                                onClick={() => setDropdown(!dropdown)}
+                                className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
                                 <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-semibold">
                                     U
                                 </div>
@@ -100,6 +125,61 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                     <path d="M6 9l6 6 6-6" />
                                 </svg>
                             </button>
+
+                            {dropdown && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-primary-brown hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            onProfileClick && onProfileClick()
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        MY REQUESTS
+                                    </div>
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            onNotificationClick && onNotificationClick()
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        NOTIFICATIONS
+                                    </div>
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onSettingsClick) {
+                                                onSettingsClick()
+                                            }
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        PAYMENTS
+                                    </div>
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            onSettingsClick && onSettingsClick()
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        SETTINGS
+                                    </div>
+                                    <div className="border-t border-slate-200 my-1"></div>
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onLogout) {
+                                                onLogout()
+                                            }
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        LOGOUT
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -218,50 +298,9 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                 </select>
                             </div>
 
-                            {/* Destination Country */}
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">
-                                    Which Country Do You Want to Travel? <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    value={formData.country}
-                                    onChange={(e) => handleChange('country', e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm text-slate-500"
-                                    required
-                                >
-                                    <option value="">Select destination country</option>
-                                    <option value="UAE">United Arab Emirates</option>
-                                    <option value="Maldives">Maldives</option>
-                                    <option value="Thailand">Thailand</option>
-                                    <option value="Japan">Japan</option>
-                                    <option value="France">France</option>
-                                </select>
-                            </div>
 
-                            {/* Additional Options Checkbox */}
-                            <div className="mb-4">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.additionalOptions}
-                                        onChange={(e) => handleChange('additionalOptions', e.target.checked)}
-                                        className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                    />
-                                    <span className="text-sm text-slate-700">I want to receive 3 pricing additional options</span>
-                                </label>
-                            </div>
 
-                            {/* Preferred Cities */}
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Preferred Cities</label>
-                                <input
-                                    type="text"
-                                    value={formData.cities}
-                                    onChange={(e) => handleChange('cities', e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
-                                    placeholder="e.g., Paris, Lyon, Nice"
-                                />
-                            </div>
+
 
                             {/* Dates */}
                             <div className="grid grid-cols-2 gap-4 mb-4">
