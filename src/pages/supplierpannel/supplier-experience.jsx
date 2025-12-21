@@ -58,7 +58,7 @@ const experiences = [
   },
 ];
 
-const ExperiencesListing = ({ onAddExperience }) => {
+const ExperiencesListing = ({ onAddExperience, onEditExperience }) => {
   return (
     <div className="space-y-6">
       {/* Top header */}
@@ -183,7 +183,10 @@ const ExperiencesListing = ({ onAddExperience }) => {
                     /person
                   </span>
                 </div>
-                <button className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-1.5 text-xs font-semibold text-gray-700">
+                <button
+                  onClick={() => onEditExperience?.(exp)}
+                  className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                >
                   Edit
                 </button>
               </div>
@@ -195,18 +198,29 @@ const ExperiencesListing = ({ onAddExperience }) => {
   );
 };
 
-const CreateExperienceForm = () => {
+const CreateExperienceForm = ({ onBack, experience }) => {
   return (
     <>
       {/* Experience header card */}
       <div className="mb-6 bg-white rounded-2xl border border-gray-100 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-lg sm:text-xl font-semibold text-slate-900">
-            Create New Experience
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Add details about your travel experience, itinerary, and pricing.
-          </p>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onBack}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Go back"
+          >
+            <ChevronDown className="h-5 w-5 rotate-90" />
+          </button>
+          <div>
+            <h1 className="text-lg sm:text-xl font-semibold text-slate-900">
+              {experience ? "Edit Experience" : "Create New Experience"}
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              {experience
+                ? `Editing: ${experience.title}`
+                : "Add details about your travel experience, itinerary, and pricing."}
+            </p>
+          </div>
         </div>
         <button className="self-start sm:self-auto rounded-full bg-[#f5f5f7] px-4 sm:px-5 py-2 text-xs font-semibold text-gray-600">
           Experience Details
@@ -227,6 +241,7 @@ const CreateExperienceForm = () => {
                 </label>
                 <input
                   type="text"
+                  defaultValue={experience?.title || ""}
                   placeholder="Enter a captivating title for your experience"
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
                 />
@@ -236,6 +251,7 @@ const CreateExperienceForm = () => {
                 <label className="text-xs font-medium text-gray-700">Destination</label>
                 <input
                   type="text"
+                  defaultValue={experience ? "Hawaii, USA" : ""}
                   placeholder="City, Country or Region"
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
                 />
@@ -246,7 +262,7 @@ const CreateExperienceForm = () => {
                   <label className="text-xs font-medium text-gray-700">Days</label>
                   <input
                     type="number"
-                    defaultValue={1}
+                    defaultValue={experience ? 3 : 1}
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
                   />
                 </div>
@@ -254,7 +270,7 @@ const CreateExperienceForm = () => {
                   <label className="text-xs font-medium text-gray-700">Nights</label>
                   <input
                     type="number"
-                    defaultValue={0}
+                    defaultValue={experience ? 2 : 0}
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
                   />
                 </div>
@@ -264,7 +280,7 @@ const CreateExperienceForm = () => {
                   </label>
                   <input
                     type="number"
-                    defaultValue={1}
+                    defaultValue={experience ? 12 : 1}
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
                   />
                 </div>
@@ -274,7 +290,7 @@ const CreateExperienceForm = () => {
                 <label className="text-xs font-medium text-gray-700">Category</label>
                 <div className="relative">
                   <select className="w-full appearance-none rounded-lg border border-gray-200 px-3 py-2 pr-8 text-sm text-gray-500 focus:outline-none focus:ring-1 focus:ring-[#a26e35]">
-                    <option value="">Select a category</option>
+                    <option value="">{experience ? "Adventure" : "Select a category"}</option>
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 </div>
@@ -283,15 +299,24 @@ const CreateExperienceForm = () => {
               {/* Cover image */}
               <div className="space-y-2">
                 <label className="text-xs font-medium text-gray-700">Cover Image</label>
-                <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-8 text-center text-xs text-gray-500">
-                  <p className="mb-3 font-medium">Upload Cover Photo</p>
-                  <p className="mb-4 text-[11px] text-gray-400">
-                    PNG, JPG or WEBP (max. 10MB)
-                  </p>
-                  <button className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-700">
-                    Browse Files
-                  </button>
-                </div>
+                {experience ? (
+                  <div className="relative h-40 w-full overflow-hidden rounded-2xl">
+                    <img src={experience.image} alt="" className="h-full w-full object-cover" />
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                      <button className="bg-white/90 text-gray-800 px-4 py-1.5 rounded-full text-xs font-bold shadow-xl">Change Photo</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-8 text-center text-xs text-gray-500">
+                    <p className="mb-3 font-medium">Upload Cover Photo</p>
+                    <p className="mb-4 text-[11px] text-gray-400">
+                      PNG, JPG or WEBP (max. 10MB)
+                    </p>
+                    <button className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-700">
+                      Browse Files
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -307,6 +332,7 @@ const CreateExperienceForm = () => {
                 <label className="text-xs font-medium text-gray-700">Description</label>
                 <textarea
                   rows={4}
+                  defaultValue={experience ? "Enjoy a beautiful sunset while kayaking through the calm waters of the bay. This experience includes all necessary equipment and a professional guide." : ""}
                   placeholder="Provide a detailed description of your experience..."
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
                 />
@@ -316,6 +342,7 @@ const CreateExperienceForm = () => {
                 <label className="text-xs font-medium text-gray-700">Highlights</label>
                 <textarea
                   rows={3}
+                  defaultValue={experience ? "Guided sunset tour\nAll equipment included\nComplimentary drinks" : ""}
                   placeholder="Key highlights of the experience (one per line)"
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
                 />
@@ -330,6 +357,7 @@ const CreateExperienceForm = () => {
                 </label>
                 <textarea
                   rows={3}
+                  defaultValue={experience ? "Included: Kayak, life jacket, guide, water\nExcluded: Transportation to the bay, tips" : ""}
                   placeholder="Specify what is included and excluded in your experience package..."
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#a26e35]"
                 />
@@ -337,11 +365,14 @@ const CreateExperienceForm = () => {
             </div>
 
             <div className="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:justify-end">
-              <button className="w-full sm:w-auto rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700">
-                Save as Draft
+              <button onClick={onBack} className="w-full sm:w-auto rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700">
+                Cancel
               </button>
-              <button className="w-full sm:w-auto rounded-full bg-[#a26e35] px-5 py-2 text-xs font-semibold text-white">
-                Publish Experience
+              <button
+                onClick={onBack}
+                className="w-full sm:w-auto rounded-full bg-[#a26e35] px-5 py-2 text-xs font-semibold text-white"
+              >
+                {experience ? "Update Experience" : "Publish Experience"}
               </button>
             </div>
           </div>
@@ -353,21 +384,23 @@ const CreateExperienceForm = () => {
             <h2 className="text-sm font-semibold text-gray-900">
               Experience Summary
             </h2>
-            <div className="h-32 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-[11px] text-gray-400">
-              No cover image
+            <div className="h-32 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-[11px] text-gray-400 overflow-hidden">
+              {experience ? (
+                <img src={experience.image} className="w-full h-full object-cover" alt="" />
+              ) : "No cover image"}
             </div>
 
             <div className="mt-2 space-y-1">
               <p className="text-sm font-semibold text-gray-900">
-                Untitled Experience
+                {experience?.title || "Untitled Experience"}
               </p>
-              <p className="text-xs text-gray-400">No destination set</p>
+              <p className="text-xs text-gray-400">{experience ? "Hawaii, USA" : "No destination set"}</p>
             </div>
 
             <div className="mt-3 space-y-1 text-xs text-gray-500">
-              <p>1 day / 0 nights</p>
-              <p>Up to 1 person</p>
-              <p>Uncategorized</p>
+              <p>{experience ? "3 days / 2 nights" : "1 day / 0 nights"}</p>
+              <p>Up to {experience ? "12 people" : "1 person"}</p>
+              <p>{experience ? "Adventure" : "Uncategorized"}</p>
             </div>
 
             <button className="mt-4 w-full rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-[#a26e35]">
@@ -380,14 +413,30 @@ const CreateExperienceForm = () => {
   );
 };
 
-const SupplierExperience = () => {
-  const [view, setView] = useState("list");
+const SupplierExperience = ({ view = 'list', onViewChange }) => {
+  const [editingExperience, setEditingExperience] = useState(null);
 
-  if (view === "create") {
-    return <CreateExperienceForm />;
+  if (view === "create" || (view === "edit")) {
+    return (
+      <CreateExperienceForm
+        experience={view === "edit" ? editingExperience : null}
+        onBack={() => {
+          setEditingExperience(null);
+          onViewChange?.("list");
+        }}
+      />
+    );
   }
 
-  return <ExperiencesListing onAddExperience={() => setView("create")} />;
+  return (
+    <ExperiencesListing
+      onAddExperience={() => onViewChange?.("create")}
+      onEditExperience={(exp) => {
+        setEditingExperience(exp);
+        onViewChange?.("edit");
+      }}
+    />
+  );
 };
 
 export default SupplierExperience;

@@ -1,187 +1,192 @@
-import { useState, useEffect, useRef } from 'react'
-
-const allFeedback = [
-    {
-        id: 1,
-        text: '"The trip was absolutely amazing! The desert safari exceeded all my expectations. The guide was knowledgeable and the sunset views were breathtaking. Highly recommended!"',
-        name: 'Sarah Jenkins',
-        role: 'TRAVEL ENTHUSIAST',
-        avatar: '/assets/feedback-A.jpeg',
-        image: '/assets/feedback-bg-1.jpeg',
-    },
-    {
-        id: 2,
-        text: '"Kufi Travel made our honeymoon magical. From the moment we landed in Bali until we left, everything was perfectly organized. The private pool villa was a dream come true."',
-        name: 'Michael Chen',
-        role: 'HONEYMOONER',
-        avatar: '/assets/feedback-B.jpeg',
-        image: '/assets/activity1.jpeg',
-    },
-    {
-        id: 3,
-        text: '"I\'ve traveled with many agencies, but the attention to detail here is unmatched. The customer support was available 24/7 and helped us with a last-minute itinerary change."',
-        name: 'Emma Wilson',
-        role: 'ADVENTURE SEEKER',
-        avatar: '/assets/feedback-C.jpeg',
-        image: '/assets/activity2.jpeg',
-    },
-    {
-        id: 4,
-        text: '"A truly unforgettable experience in the Swiss Alps. The hiking trails chosen for us were perfect for our skill level. Will definitely book again for our next adventure."',
-        name: 'David Thompson',
-        role: 'NATURE LOVER',
-        avatar: '/assets/hero-card1.jpeg',
-        image: '/assets/activity3.jpeg',
-    },
-    {
-        id: 5,
-        text: '"Great service and amazing value for money. We explored hidden gems in Kyoto that we would never have found on our own. Thank you for the authentic cultural experience!"',
-        name: 'Lisa Wong',
-        role: 'CULTURAL EXPLORER',
-        avatar: '/assets/hero-card2.jpeg',
-        image: '/assets/dest-1.jpeg',
-    },
-    {
-        id: 6,
-        text: '"Professional, reliable, and friendly. The booking process was smooth and the actual trip was even better than the descriptions. 5 stars all the way!"',
-        name: 'Robert Garcia',
-        role: 'FAMILY TRAVELER',
-        avatar: '/assets/hero-card3.jpeg',
-        image: '/assets/dest-2.jpeg',
-    }
-]
+import { useState, useRef, useEffect } from 'react';
 
 export default function FeedbackSection() {
-    const scrollRef = useRef(null)
-    const [isDragging, setIsDragging] = useState(false)
-    const [startX, setStartX] = useState(0)
-    const [scrollLeftState, setScrollLeftState] = useState(0)
-    const [isPaused, setIsPaused] = useState(false)
-    const cardWidth = 400 + 32 // card width + gap
-
-    const infiniteFeedback = [...allFeedback, ...allFeedback, ...allFeedback]
-
-    // Initialize scroll position to center
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollLeft = allFeedback.length * cardWidth
-        }
-    }, [])
-
-    // Auto-scroll logic
-    useEffect(() => {
-        if (isPaused || isDragging) return
-
-        const autoScroll = setInterval(() => {
-            if (scrollRef.current) {
-                scrollRef.current.scrollBy({ left: cardWidth, behavior: 'smooth' })
-            }
-        }, 4000)
-
-        return () => clearInterval(autoScroll)
-    }, [isPaused, isDragging])
+    const scrollRef = useRef(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeftState, setScrollLeftState] = useState(0);
 
     const handleMouseDown = (e) => {
-        setIsDragging(true)
-        setStartX(e.pageX - scrollRef.current.offsetLeft)
-        setScrollLeftState(scrollRef.current.scrollLeft)
-    }
+        setIsDragging(true);
+        setStartX(e.pageX - scrollRef.current.offsetLeft);
+        setScrollLeftState(scrollRef.current.scrollLeft);
+    };
 
     const handleMouseUp = () => {
-        setIsDragging(false)
-    }
+        setIsDragging(false);
+    };
 
     const handleMouseLeave = () => {
-        setIsDragging(false)
-        setIsPaused(false)
-    }
+        setIsDragging(false);
+    };
 
     const handleMouseMove = (e) => {
-        if (!isDragging) return
-        e.preventDefault()
-        const x = e.pageX - scrollRef.current.offsetLeft
-        const walk = (x - startX) * 2
-        scrollRef.current.scrollLeft = scrollLeftState - walk
-    }
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.pageX - scrollRef.current.offsetLeft;
+        const walk = (x - startX) * 2; // Scroll speed
+        scrollRef.current.scrollLeft = scrollLeftState - walk;
+    };
+
+    const feedbackItems = [
+        {
+            id: 1,
+            avatar: '/assets/feedback-A.jpeg',
+            name: 'Lisa',
+            nameLabel: 'LISA',
+            text: '" Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor "'
+        },
+        {
+            id: 2,
+            avatar: '/assets/feedback-B.jpeg',
+            name: 'Mr. John Doe',
+            nameLabel: 'MR. JOHN DOE',
+            text: '" Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor "'
+        },
+        {
+            id: 3,
+            avatar: '/assets/feedback-C.jpeg',
+            name: 'Mr. John Doe',
+            nameLabel: 'MR. JOHN DOE',
+            text: '" Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor "'
+        },
+        {
+            id: 4,
+            avatar: '/assets/feedback-A.jpeg',
+            name: 'Sarah Jenkins',
+            nameLabel: 'SARAH JENKINS',
+            text: '" Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor "'
+        },
+        {
+            id: 5,
+            avatar: '/assets/feedback-B.jpeg',
+            name: 'Michael Chen',
+            nameLabel: 'MICHAEL CHEN',
+            text: '" Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor "'
+        }
+    ];
+
+    // Triple the items for infinite loop logic
+    const loopedItems = [...feedbackItems, ...feedbackItems, ...feedbackItems];
+
+    // Handle Infinite Scroll Loop Positioning
+    useEffect(() => {
+        if (scrollRef.current) {
+            const container = scrollRef.current;
+            const singleSectionWidth = container.scrollWidth / 3;
+            // Shift to the middle section and add a slight offset to center the first card on the picture
+            const offset = 50; // Fine-tune this based on desired overlap
+            container.scrollLeft = singleSectionWidth - offset;
+        }
+    }, []);
 
     const handleScroll = () => {
-        if (!scrollRef.current) return
-        const sl = scrollRef.current.scrollLeft
-        const contentWidth = allFeedback.length * cardWidth
+        if (scrollRef.current) {
+            const container = scrollRef.current;
+            const singleSectionWidth = container.scrollWidth / 3;
 
-        if (sl <= 0) {
-            scrollRef.current.scrollLeft = contentWidth
-        } else if (sl >= contentWidth * 2) {
-            scrollRef.current.scrollLeft = contentWidth
+            if (container.scrollLeft <= 0) {
+                // Jump to the start of the second section
+                container.scrollLeft = singleSectionWidth;
+            } else if (container.scrollLeft >= singleSectionWidth * 2) {
+                // Jump back to the start of the second section
+                container.scrollLeft = singleSectionWidth;
+            }
         }
-    }
+    };
 
     return (
-        <section
-            className="bg-[#F1F5F9] py-20 px-4 sm:px-8 lg:px-20 relative overflow-hidden"
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={handleMouseLeave}
-        >
-            {/* Subtle small organic shape in the corner */}
-            <div className="absolute right-[-5%] bottom-[-5%] w-[40%] h-[50%] pointer-events-none z-0">
+        <section className="bg-white py-24 px-4 sm:px-8 lg:px-20 relative overflow-hidden">
+            {/* Background Organic Blob */}
+            <div className="absolute right-[-10%] top-[20%] w-[60%] h-[70%] pointer-events-none z-0">
                 <svg
                     viewBox="0 0 807 668"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
-                    className="w-full h-full opacity-[0.4]"
+                    className="w-full h-full opacity-[0.6]"
                     preserveAspectRatio="xMaxYMax meet"
                 >
-                    <path d="M508.87 15.6287C654.551 -44.9862 768.324 85.2638 807 157.966V628.272C753.641 655.693 649.062 701.953 574.941 628.272C500.821 554.591 400.181 567.297 348.792 577.94C276.811 605.361 116.52 643.751 51.1999 577.94C-30.4501 495.677 -30.4501 350.634 170.452 271.619C371.354 192.603 326.769 91.3974 508.87 15.6287Z" fill="#BFAE9F" />
+                    <path d="M508.87 15.6287C654.551 -44.9862 768.324 85.2638 807 157.966V628.272C753.641 655.693 649.062 701.953 574.941 628.272C500.821 554.591 400.181 567.297 348.792 577.94C276.811 605.361 116.52 643.751 51.1999 577.94C-30.4501 495.677 -30.4501 350.634 170.452 271.619C371.354 192.603 326.769 91.3974 508.87 15.6287Z" fill="#D3C7B9" />
                 </svg>
             </div>
 
-            <div className="max-w-[1240px] mx-auto relative z-10">
-                <div className="mb-14 relative z-10">
-                    <p className="text-sm font-bold text-slate-400 mb-2 uppercase tracking-[0.2em] leading-none">WHAT THEY SAYS</p>
-                    <h2 className="text-4xl sm:text-5xl font-extrabold text-[#1E293B] m-0 tracking-tight">
-                        Best Feedback From Clients
-                    </h2>
+            <div className="max-w-[1400px] mx-auto relative z-10">
+                {/* Header Section */}
+                <div className="mb-16 relative flex flex-col md:flex-row justify-between items-start md:items-center px-4">
+                    <div className="relative">
+                        <p className="text-[#9BB098] text-xs font-bold uppercase tracking-[0.3em] mb-3">WHAT THEY SAYS</p>
+                        <h2 className="text-4xl lg:text-5xl font-bold text-[#353935] m-0">
+                            Best Feedback From Clients
+                        </h2>
+
+                        <div className="hidden lg:block absolute -top-4 left-[60%] opacity-20 transform translate-x-12">
+                            <div className="grid grid-cols-6 gap-2">
+                                {[...Array(24)].map((_, i) => (
+                                    <div key={i} className="w-1 h-1 rounded-full bg-slate-400"></div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 md:mt-0">
+                        <div className="px-5 py-1.5 rounded-full border border-slate-200 bg-white shadow-sm flex items-center justify-center">
+                            <span className="text-[10px] font-bold text-slate-400 tracking-tighter uppercase">STEP 04</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div
-                    ref={scrollRef}
-                    onMouseDown={handleMouseDown}
-                    onMouseUp={handleMouseUp}
-                    onMouseMove={handleMouseMove}
-                    onScroll={handleScroll}
-                    className="flex gap-8 overflow-x-auto pb-10 hide-scrollbar cursor-grab active:cursor-grabbing select-none"
-                >
-                    {infiniteFeedback.map((card, index) => (
-                        <article
-                            key={`${card.id}-${index}`}
-                            className="flex-shrink-0 w-[400px] transition-all duration-500 rounded-[32px] overflow-hidden"
-                        >
-                            <div className="bg-white p-10 rounded-3xl h-full shadow-lg border border-slate-100 flex flex-col justify-between hover:shadow-xl transition-all duration-500 hover:-translate-y-2 group min-h-[420px]">
-                                <div>
-                                    <div className="flex gap-1.5 mb-5 text-[#F59E0B]">
-                                        {[...Array(5)].map((_, i) => <span key={i} className="text-xl">★</span>)}
-                                    </div>
-                                    <p className="text-base text-slate-600 mb-8 font-medium leading-relaxed italic">
-                                        {card.text}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div
-                                        className="w-14 h-14 rounded-full bg-cover bg-center border-4 border-white shadow-md"
-                                        style={{ backgroundImage: `url(${card.avatar})` }}
-                                    />
+                {/* Feedback Content with Constant Picture */}
+                <div className="flex flex-col lg:flex-row items-end lg:items-end gap-0">
+
+                    {/* Constant Image - Stays static on the left */}
+                    <div className="flex-shrink-0 relative z-0">
+                        <div className="w-full sm:min-w-[450px] sm:w-[500px] aspect-[4/3] rounded-tl-[120px] rounded-br-[120px] rounded-tr-[20px] rounded-bl-[20px] overflow-hidden shadow-xl">
+                            <img
+                                src="/assets/feedback.jpeg"
+                                alt="Featured feedback"
+                                className="w-full h-full object-cover"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Scrollable Comments - Overlaps the static image */}
+                    <div
+                        ref={scrollRef}
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseLeave}
+                        onScroll={handleScroll}
+                        className="flex flex-row items-end gap-12 overflow-x-auto pb-12 pt-8 hide-scrollbar cursor-grab active:cursor-grabbing select-none w-full mt-[-80px] lg:mt-0 lg:ml-[-420px] relative z-20 px-4 sm:px-10 lg:pl-[400px] snap-x snap-mandatory scroll-smooth"
+                    >
+                        {loopedItems.map((item, index) => (
+                            <div key={`${item.id}-${index}`} className="flex-shrink-0 snap-center">
+                                <div className="w-[300px] sm:w-[350px] lg:w-[400px] h-full bg-white rounded-[40px] p-8 shadow-2xl border border-slate-50 flex flex-col justify-between transition-transform duration-300 hover:scale-[1.02]">
                                     <div>
-                                        <p className="m-0 text-lg font-bold text-slate-900 leading-tight">{card.name}</p>
-                                        <p className="m-0 text-xs text-slate-400 font-bold tracking-widest uppercase">
-                                            {card.name.split(' ')[0].toUpperCase()}
+                                        <div className="flex gap-1 mb-5 text-[#FFB21E]">
+                                            {[...Array(5)].map((_, i) => <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>)}
+                                        </div>
+                                        <p className="text-slate-600 text-sm sm:text-base italic leading-relaxed mb-8">
+                                            {item.text}
                                         </p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <img
+                                            src={item.avatar}
+                                            alt={item.name}
+                                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-slate-100"
+                                        />
+                                        <div>
+                                            <h4 className="m-0 text-xs sm:text-sm font-bold text-slate-800">{item.name}</h4>
+                                            <p className="m-0 text-[10px] text-[#A8B9A6] font-extrabold uppercase tracking-widest leading-none mt-1">{item.nameLabel}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </article>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             </div>
         </section>
-    )
+    );
 }

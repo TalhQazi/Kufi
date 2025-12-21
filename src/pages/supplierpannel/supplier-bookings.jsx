@@ -111,7 +111,7 @@ const statusClass = (status) => {
   }
 };
 
-const SupplierBookings = () => {
+const SupplierBookings = ({ onResumeDraft, onRemoveDraft }) => {
   return (
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2.1fr)_minmax(280px,0.9fr)]">
       {/* Left: bookings table */}
@@ -276,10 +276,18 @@ const SupplierBookings = () => {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between">
-                  <button className="rounded-full bg-[#a26e35] px-4 py-1.5 text-[11px] font-semibold text-white">
+                  <button
+                    onClick={() => onResumeDraft?.(draft)}
+                    className="rounded-full bg-[#a26e35] px-4 py-1.5 text-[11px] font-semibold text-white hover:bg-[#8b5e2d] transition-colors"
+                  >
                     Resume
                   </button>
-                  <button className="text-[11px] text-gray-400">🗑</button>
+                  <button
+                    onClick={() => onRemoveDraft?.(draft.id)}
+                    className="text-[11px] text-gray-400 hover:text-rose-500 transition-colors"
+                  >
+                    🗑
+                  </button>
                 </div>
               </div>
             ))}

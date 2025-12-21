@@ -84,6 +84,7 @@ const travelerStats = [
 
 const SupplierDashboard = ({ onLogout, onHomeClick }) => {
   const [activeSection, setActiveSection] = useState("Dashboard");
+  const [experienceView, setExperienceView] = useState("list");
   const [darkMode, setDarkMode] = useState(false);
 
   const handleToggleDarkMode = () => {
@@ -98,7 +99,10 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
       {/* Supplier sidebar (separate component) */}
       <SupplierSidebar
         activeSection={activeSection}
-        onSelectSection={setActiveSection}
+        onSelectSection={(section) => {
+          setActiveSection(section);
+          if (section === "Experience") setExperienceView("list");
+        }}
         onLogout={onLogout}
         darkMode={darkMode}
         onToggleDarkMode={handleToggleDarkMode}
@@ -190,13 +194,25 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                 <h2 className="text-xs sm:text-sm font-semibold text-gray-900 mb-1">
                   Quick Actions
                 </h2>
-                <button className="w-full rounded-xl bg-[#a26e35] text-white text-sm font-semibold py-2.5">
+                <button
+                  onClick={() => {
+                    setActiveSection("Experience");
+                    setExperienceView("create");
+                  }}
+                  className="w-full rounded-xl bg-[#a26e35] text-white text-sm font-semibold py-2.5 hover:bg-[#8b5e2d] transition-colors"
+                >
                   Add New Experience
                 </button>
-                <button className="w-full rounded-xl border border-gray-200 text-sm text-gray-700 py-2.5">
+                <button
+                  onClick={() => setActiveSection("Booking")}
+                  className="w-full rounded-xl border border-gray-200 text-sm text-gray-700 py-2.5 hover:bg-gray-50 transition-colors"
+                >
                   View All Bookings
                 </button>
-                <button className="w-full rounded-xl border border-gray-200 text-sm text-gray-700 py-2.5">
+                <button
+                  onClick={() => setActiveSection("Profile")}
+                  className="w-full rounded-xl border border-gray-200 text-sm text-gray-700 py-2.5 hover:bg-gray-50 transition-colors"
+                >
                   Update Profile
                 </button>
               </div>
@@ -261,8 +277,23 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
           </>
         )}
 
-        {activeSection === "Experience" && <SupplierExperience />}
-        {activeSection === "Booking" && <SupplierBookings />}
+        {activeSection === "Experience" && (
+          <SupplierExperience
+            view={experienceView}
+            onViewChange={setExperienceView}
+          />
+        )}
+        {activeSection === "Booking" && (
+          <SupplierBookings
+            onResumeDraft={(draft) => {
+              setActiveSection("Experience");
+              setExperienceView("create");
+            }}
+            onRemoveDraft={(id) => {
+              console.log("Removing draft:", id);
+            }}
+          />
+        )}
         {activeSection === "Analytics" && <SupplierAnalytics />}
         {activeSection === "Profile" && <SupplierProfile />}
         {activeSection === "Requests" && <SupplierRequests />}

@@ -158,7 +158,7 @@ export default function HeroSection({ onSignupClick }) {
                     {/* Desktop cards - Horizontal scroll with mouse drag */}
                     <div
                         ref={scrollRef}
-                        className={`hidden md:flex gap-6 overflow-x-auto pb-16 items-end px-20 hide-scrollbar cursor-grab active:cursor-grabbing select-none`}
+                        className={`hidden md:flex gap-6 overflow-x-auto pb-16 items-end px-4 hide-scrollbar cursor-grab active:cursor-grabbing select-none`}
                         onScroll={handleScroll}
                         onMouseDown={handleMouseDown}
                         onMouseLeave={() => {

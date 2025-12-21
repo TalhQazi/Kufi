@@ -244,18 +244,24 @@ export default function App() {
   )
 
   if (page === 'travel-booking') return (
-    <TravelBooking
-      onHomeClick={() => navigateTo('home')}
-      onLogout={handleLogout}
-      onBack={goBack}
-      onForward={goForward}
-      canGoBack={canGoBack}
-      canGoForward={canGoForward}
-      onSubmit={(data) => {
-        setBookingData(data)
-        navigateTo('explore')
-      }}
-    />
+    <>
+      <TravelBooking
+        onHomeClick={() => navigateTo('home')}
+        onLogout={handleLogout}
+        onBack={goBack}
+        onForward={goForward}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        onNotificationClick={() => setShowNotifications(true)}
+        onProfileClick={() => navigateTo('user-profile')}
+        onSettingsClick={() => navigateTo('traveler-profile')}
+        onSubmit={(data) => {
+          setBookingData(data)
+          navigateTo('explore')
+        }}
+      />
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
+    </>
   )
 
   if (page === 'booking-confirmation') return (
