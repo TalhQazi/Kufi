@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import PaymentSuccessModal from './PaymentSuccessModal.jsx'
+import Footer from '../../components/layout/Footer'
 
 export default function Payment({ bookingData, onBack, onForward, canGoBack, canGoForward }) {
     const [paymentMethod, setPaymentMethod] = useState('card')
@@ -316,6 +317,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                     totalAmount="2450.00"
                 />
             )}
+            <Footer />
         </div>
     )
 }

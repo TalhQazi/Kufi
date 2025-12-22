@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import Footer from '../../components/layout/Footer'
 
 export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, canGoForward, onSubmit, onHomeClick, onNotificationClick, onProfileClick, onSettingsClick }) {
     const [showSuccess, setShowSuccess] = useState(false)
@@ -440,6 +441,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                     </div>
                 </div>
             </main>
+            <Footer />
 
             {/* Success Modal */}
             {showSuccess && (

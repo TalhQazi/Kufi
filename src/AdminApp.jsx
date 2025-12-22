@@ -11,6 +11,7 @@ import SystemNotification from './pages/adminpannel/system-notification'
 import SupplierDashboard from './pages/supplierpannel/supplier-dashboard'
 import NotificationsBooking from './pages/adminpannel/notifications-booking'
 import './App.css'
+import Footer from './components/layout/Footer'
 
 const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
   const [activePage, setActivePage] = useState(initialPage)
@@ -57,6 +58,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
           }
         >
           {renderPage()}
+          <Footer />
         </main>
       </div>
     </div>

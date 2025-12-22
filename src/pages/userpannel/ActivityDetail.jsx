@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Footer from '../../components/layout/Footer'
 
 export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForward, onLogout, onNotificationClick, onAddToList, onHomeClick }) {
     const [activeTab, setActiveTab] = useState('overview')
@@ -354,6 +355,7 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                     </aside>
                 </div>
             </main>
+            <Footer />
         </div>
     )
 }
