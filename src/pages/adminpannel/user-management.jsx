@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 
-const tabs = ["All Users", "Active", "Suspended"];
+const tabs = ["All Users", "All Suppliers", "Active", "Suspended"];
 
 const users = [
   {
@@ -34,11 +34,10 @@ const StatusBadge = ({ status }) => {
   const isActive = status === "active";
   return (
     <span
-      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-        isActive
+      className={`px-3 py-1 rounded-full text-xs font-semibold ${isActive
           ? "bg-emerald-100 text-emerald-600"
           : "bg-rose-100 text-rose-600"
-      }`}
+        }`}
     >
       {status}
     </span>
@@ -55,7 +54,11 @@ const UserManagement = () => {
     const normalizedQuery = query.toLowerCase().trim();
     return userList.filter((user) => {
       const matchesStatus =
-        activeTab === "All Users" ? true : user.status === activeTab.toLowerCase();
+        activeTab === "All Users"
+          ? true
+          : activeTab === "All Suppliers"
+            ? user.type === "Supplier"
+            : user.status === activeTab.toLowerCase();
       const matchesQuery =
         !normalizedQuery ||
         user.name.toLowerCase().includes(normalizedQuery) ||
@@ -116,11 +119,10 @@ const UserManagement = () => {
               {tabs.map((tab) => (
                 <button
                   key={tab}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
-                    tab === activeTab
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${tab === activeTab
                       ? "bg-[#a26e35] text-white"
                       : "border border-gray-200 text-gray-500"
-                  }`}
+                    }`}
                   onClick={() => setActiveTab(tab)}
                 >
                   {tab}

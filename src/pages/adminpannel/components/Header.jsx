@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Bell, ChevronDown, Settings, LogOut } from "lucide-react";
 
-const Header = ({ onBellClick, onLogout }) => {
+const Header = ({ onBellClick, onLogout, onMenuClick }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -25,7 +25,10 @@ const Header = ({ onBellClick, onLogout }) => {
   return (
     <header className="h-14 sm:h-16 bg-white flex items-center justify-between px-4 sm:px-6 md:px-10 border-b border-gray-100 sticky top-0 z-40">
       {/* Left: hamburger - hidden on mobile since sidebar has its own menu */}
-      <button className="hidden md:flex flex-col justify-center gap-1 p-2 rounded-md hover:bg-gray-100 text-gray-500">
+      <button
+        onClick={onMenuClick}
+        className="hidden md:flex flex-col justify-center gap-1 p-2 rounded-md hover:bg-gray-100 text-gray-500 transition-colors"
+      >
         <span className="block w-5 h-[2px] bg-current" />
         <span className="block w-5 h-[2px] bg-current" />
         <span className="block w-5 h-[2px] bg-current" />

@@ -20,7 +20,7 @@ const navItems = [
   { label: "System Notification", icon: Bell },
 ];
 
-const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick }) => {
+const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick, isVisible }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -156,62 +156,65 @@ const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick }) => {
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col bg-[#704b24] text-white w-64 h-screen sticky top-0 overflow-y-auto">
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-          <button
-            onClick={() => {
-              if (onHomeClick) {
-                onHomeClick()
-              } else {
-                window.location.hash = '#home'
-              }
-            }}
-            className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
-          >
-            <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
-          </button>
-        </div>
+      <aside className={`hidden md:flex flex-col bg-[#704b24] text-white h-screen sticky top-0 overflow-y-auto transition-all duration-300 ${isVisible ? "w-64 opacity-100" : "w-0 opacity-0 pointer-events-none"
+        }`}>
+        <div className="min-w-[256px]">
+          {/* Logo */}
+          <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
+            <button
+              onClick={() => {
+                if (onHomeClick) {
+                  onHomeClick()
+                } else {
+                  window.location.hash = '#home'
+                }
+              }}
+              className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
+            </button>
+          </div>
 
-        {/* Navigation */}
-        <nav className="mt-3 flex-1 px-4 space-y-2 pb-4">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              activePage === item.label ||
-              (item.label === "Activity" && activePage.startsWith("Activity"));
-            return (
-              <button
-                key={item.label}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition ${isActive
-                  ? "bg-white text-[#704b24] font-semibold rounded-2xl shadow-sm"
-                  : "text-white/80 hover:bg-white/10 rounded-2xl"
-                  }`}
-                onClick={() => onSelect?.(item.label)}
-              >
-                <Icon
-                  className={`w-4 h-4 ${isActive ? "text-[#704b24]" : "text-white/80"
+          {/* Navigation */}
+          <nav className="mt-3 flex-1 px-4 space-y-2 pb-4">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                activePage === item.label ||
+                (item.label === "Activity" && activePage.startsWith("Activity"));
+              return (
+                <button
+                  key={item.label}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition ${isActive
+                    ? "bg-white text-[#704b24] font-semibold rounded-2xl shadow-sm"
+                    : "text-white/80 hover:bg-white/10 rounded-2xl"
                     }`}
-                />
-                <span className="ml-1">{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+                  onClick={() => onSelect?.(item.label)}
+                >
+                  <Icon
+                    className={`w-4 h-4 ${isActive ? "text-[#704b24]" : "text-white/80"
+                      }`}
+                  />
+                  <span className="ml-1">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
 
-        {/* Logout Button */}
-        <div className="px-4 pb-4">
-          <button
-            onClick={() => {
-              if (onLogout) {
-                onLogout();
-              }
-            }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/10 rounded-2xl transition"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="ml-1">Logout</span>
-          </button>
+          {/* Logout Button */}
+          <div className="px-4 pb-4">
+            <button
+              onClick={() => {
+                if (onLogout) {
+                  onLogout();
+                }
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/10 rounded-2xl transition"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="ml-1">Logout</span>
+            </button>
+          </div>
         </div>
       </aside>
     </>
