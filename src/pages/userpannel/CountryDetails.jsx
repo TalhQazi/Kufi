@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import './CountryDetails.css'
+import Footer from '../../components/layout/Footer'
 
 export default function CountryDetails({
     onHomeClick,
@@ -106,7 +107,7 @@ export default function CountryDetails({
             <nav className="country-navbar">
                 <div className="country-navbar-inner">
                     <div className="country-logo">
-                        <button 
+                        <button
                             onClick={() => {
                                 if (onHomeClick) {
                                     onHomeClick()
@@ -157,19 +158,19 @@ export default function CountryDetails({
                                     <div className="country-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
                                         NOTIFICATIONS
                                     </div>
-                                    <div className="country-dropdown-item" onClick={() => { 
+                                    <div className="country-dropdown-item" onClick={() => {
                                         if (onSettingsClick) {
                                             onSettingsClick()
                                         }
-                                        setDropdown(false); 
+                                        setDropdown(false);
                                     }}>
                                         PAYMENTS
                                     </div>
-                                    <div className="country-dropdown-item" onClick={() => { 
+                                    <div className="country-dropdown-item" onClick={() => {
                                         if (onSettingsClick) {
                                             onSettingsClick()
                                         }
-                                        setDropdown(false); 
+                                        setDropdown(false);
                                     }}>
                                         SETTINGS
                                     </div>
@@ -303,18 +304,7 @@ export default function CountryDetails({
                 </section>
             </main>
 
-            {/* Footer */}
-            <footer className="country-footer">
-                <div className="country-footer-content">
-                    <div className="country-footer-logo">
-                        <img src="/assets/navbar.png" alt="Kufi Travel" />
-                        <span>Kufi Travel</span>
-                    </div>
-                    <p className="country-footer-text">
-                        © 2024 Kufi Travel. All rights reserved. Explore the world with confidence.
-                    </p>
-                </div>
-            </footer>
+            <Footer />
         </div>
     )
 }

@@ -1,3 +1,5 @@
+import Footer from '../../components/layout/Footer'
+
 export default function BookingConfirmation({ onContinueBrowsing, onGoToCart, onBack, onForward, canGoBack, canGoForward }) {
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -164,6 +166,7 @@ export default function BookingConfirmation({ onContinueBrowsing, onGoToCart, on
                     </button>
                 </div>
             </div>
+            <Footer />
         </div>
     )
 }

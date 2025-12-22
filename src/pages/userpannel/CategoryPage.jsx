@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import './CategoryPage.css'
+import Footer from '../../components/layout/Footer'
 
 export default function CategoryPage({
     categoryName = "Camping Adventures",
@@ -111,7 +112,7 @@ export default function CategoryPage({
             <nav className="category-navbar">
                 <div className="category-navbar-inner">
                     <div className="category-logo">
-                        <button 
+                        <button
                             onClick={() => {
                                 if (onHomeClick) {
                                     onHomeClick()
@@ -162,19 +163,19 @@ export default function CategoryPage({
                                     <div className="category-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
                                         NOTIFICATIONS
                                     </div>
-                                    <div className="category-dropdown-item" onClick={() => { 
+                                    <div className="category-dropdown-item" onClick={() => {
                                         if (onSettingsClick) {
                                             onSettingsClick()
                                         }
-                                        setDropdown(false); 
+                                        setDropdown(false);
                                     }}>
                                         PAYMENTS
                                     </div>
-                                    <div className="category-dropdown-item" onClick={() => { 
+                                    <div className="category-dropdown-item" onClick={() => {
                                         if (onSettingsClick) {
                                             onSettingsClick()
                                         }
-                                        setDropdown(false); 
+                                        setDropdown(false);
                                     }}>
                                         SETTINGS
                                     </div>
@@ -275,6 +276,7 @@ export default function CategoryPage({
                     </aside>
                 </div>
             </main>
+            <Footer />
         </div>
     )
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import Footer from '../../components/layout/Footer'
 
 export default function Explore({ selectedActivities = [], onAddToList, onRemoveActivity, onLogout, onActivityClick, onNotificationClick, onProfileClick, onSendRequest, onBack, onForward, canGoBack, canGoForward, onCategoryClick, onSettingsClick, onHomeClick }) {
   const [dropdown, setDropdown] = useState(false)
@@ -480,6 +481,7 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
           </aside>
         </div>
       </main>
+      <Footer />
     </div>
   )
 }

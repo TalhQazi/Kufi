@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import NotificationsModal from './NotificationsModal'
+import Footer from '../../components/layout/Footer'
 
 export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSettingsClick, onHomeClick }) {
     const [activeTab, setActiveTab] = useState('Personal Info')
@@ -33,7 +34,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                 <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
                     {/* Left: Logo */}
                     <div className="flex items-center gap-1">
-                        <button 
+                        <button
                             onClick={() => {
                                 if (onHomeClick) {
                                     onHomeClick()
@@ -48,7 +49,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                     {/* Right: Notifications, Messages, Profile */}
                     <div className="flex items-center gap-4 md:gap-6">
                         {/* Bell Icon with notification dot */}
-                        <button 
+                        <button
                             onClick={() => setShowNotifications(true)}
                             className="text-gray-500 hover:text-gray-700 relative"
                         >
@@ -69,7 +70,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
 
                         {/* Profile with dropdown */}
                         <div className="relative" ref={dropdownRef}>
-                            <button 
+                            <button
                                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                                 className="flex items-center gap-2 cursor-pointer"
                             >
@@ -78,12 +79,12 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                     alt="Profile"
                                     className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border-2 border-white shadow-sm"
                                 />
-                                <svg 
-                                    width="16" 
-                                    height="16" 
-                                    viewBox="0 0 24 24" 
-                                    fill="none" 
-                                    stroke="#8B6E4E" 
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="#8B6E4E"
                                     strokeWidth="2"
                                     className="hidden md:block"
                                 >
@@ -103,7 +104,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                     >
                                         MY REQUESTS
                                     </div>
-                                    <div 
+                                    <div
                                         className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                                         onClick={() => {
                                             setShowNotifications(true)
@@ -112,7 +113,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                     >
                                         NOTIFICATIONS
                                     </div>
-                                    <div 
+                                    <div
                                         className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                                         onClick={() => {
                                             setActiveTab('Payments')
@@ -256,11 +257,10 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap rounded-lg ${
-                                    activeTab === tab
-                                        ? 'bg-slate-100 text-slate-900'
-                                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                                }`}
+                                className={`px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap rounded-lg ${activeTab === tab
+                                    ? 'bg-slate-100 text-slate-900'
+                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                    }`}
                             >
                                 {tab}
                             </button>
@@ -498,14 +498,14 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                     {activeTab === 'Travel History' && (
                         <div className="bg-white rounded-2xl p-6 shadow-sm">
                             <h3 className="text-lg font-bold text-slate-900 mb-6">Travel History</h3>
-                            
+
                             <div className="space-y-4">
                                 {/* Travel Entry 1: Greek Islands Explorer */}
                                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
                                     <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
-                                        <img 
-                                            src="https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=200&h=200&fit=crop" 
-                                            alt="Santorini, Greece" 
+                                        <img
+                                            src="https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=200&h=200&fit=crop"
+                                            alt="Santorini, Greece"
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
@@ -545,9 +545,9 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 {/* Travel Entry 2: Tropical Paradise Retreat */}
                                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
                                     <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
-                                        <img 
-                                            src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=200&h=200&fit=crop" 
-                                            alt="Bali, Indonesia" 
+                                        <img
+                                            src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=200&h=200&fit=crop"
+                                            alt="Bali, Indonesia"
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
@@ -587,9 +587,9 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 {/* Travel Entry 3: Romantic Paris Getaway */}
                                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
                                     <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
-                                        <img 
-                                            src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=200&h=200&fit=crop" 
-                                            alt="Paris, France" 
+                                        <img
+                                            src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=200&h=200&fit=crop"
+                                            alt="Paris, France"
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
@@ -637,14 +637,14 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                                 </svg>
                             </div>
-                            
+
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                 {/* Card 1: Machu Picchu Adventure */}
                                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                                     <div className="relative">
-                                        <img 
-                                            src="https://images.unsplash.com/photo-1587595431973-160d0d94a8c0?w=400&h=250&fit=crop" 
-                                            alt="Machu Picchu, Peru" 
+                                        <img
+                                            src="https://images.unsplash.com/photo-1587595431973-160d0d94a8c0?w=400&h=250&fit=crop"
+                                            alt="Machu Picchu, Peru"
                                             className="w-full h-48 object-cover rounded-t-xl"
                                         />
                                         <div className="absolute top-3 right-3">
@@ -669,9 +669,9 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 {/* Card 2: Safari Experience */}
                                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                                     <div className="relative">
-                                        <img 
-                                            src="https://images.unsplash.com/photo-1516426122078-c23e76319801?w=400&h=250&fit=crop" 
-                                            alt="Safari, Tanzania" 
+                                        <img
+                                            src="https://images.unsplash.com/photo-1516426122078-c23e76319801?w=400&h=250&fit=crop"
+                                            alt="Safari, Tanzania"
                                             className="w-full h-48 object-cover rounded-t-xl"
                                         />
                                         <div className="absolute top-3 right-3">
@@ -696,9 +696,9 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 {/* Card 3: Northern Lights Tour */}
                                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                                     <div className="relative">
-                                        <img 
-                                            src="https://images.unsplash.com/photo-1531572753322-ad063cecc140?w=400&h=250&fit=crop" 
-                                            alt="Northern Lights, Iceland" 
+                                        <img
+                                            src="https://images.unsplash.com/photo-1531572753322-ad063cecc140?w=400&h=250&fit=crop"
+                                            alt="Northern Lights, Iceland"
                                             className="w-full h-48 object-cover rounded-t-xl"
                                         />
                                         <div className="absolute top-3 right-3">
@@ -802,18 +802,19 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
 
             {/* Notifications Modal */}
             {showNotifications && (
-                <NotificationsModal 
-                    onClose={() => setShowNotifications(false)} 
+                <NotificationsModal
+                    onClose={() => setShowNotifications(false)}
                     onPaymentClick={() => {
                         setShowNotifications(false)
                         setActiveTab('Payments')
-                    }} 
+                    }}
                     onViewItinerary={() => {
                         setShowNotifications(false)
                         // Could navigate to itinerary view if needed
-                    }} 
+                    }}
                 />
             )}
+            <Footer />
         </div>
     )
 }

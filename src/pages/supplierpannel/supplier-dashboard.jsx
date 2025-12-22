@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Footer from "../../components/layout/Footer";
 import {
   DollarSign,
   CalendarDays,
@@ -297,6 +298,7 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
         {activeSection === "Analytics" && <SupplierAnalytics />}
         {activeSection === "Profile" && <SupplierProfile />}
         {activeSection === "Requests" && <SupplierRequests />}
+        <Footer />
       </div>
     </div>
   );

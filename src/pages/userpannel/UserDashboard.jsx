@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { FiSearch, FiBell, FiMessageSquare, FiMapPin, FiCalendar, FiFilter, FiArrowUp, FiArrowDown } from 'react-icons/fi'
 import { FaCheckCircle, FaClock, FaCreditCard } from 'react-icons/fa'
+import Footer from '../../components/layout/Footer'
 
 export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, canGoForward, onExploreClick, onItineraryClick, onHomeClick, onNotificationClick, onProfileClick, onSettingsClick, onCountryClick }) {
     const [dropdown, setDropdown] = useState(false)
@@ -111,7 +112,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
             <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                        <button 
+                        <button
                             onClick={() => {
                                 if (onHomeClick) {
                                     onHomeClick()
@@ -168,7 +169,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                     >
                                         MY REQUESTS
                                     </div>
-                                    <div 
+                                    <div
                                         className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                                         onClick={() => {
                                             if (onNotificationClick) onNotificationClick()
@@ -177,7 +178,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                     >
                                         NOTIFICATIONS
                                     </div>
-                                    <div 
+                                    <div
                                         className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                                         onClick={() => {
                                             if (onSettingsClick) onSettingsClick()
@@ -236,7 +237,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                             Here's a quick look at your latest trip requests and upcoming tours. Let's <br className="hidden md:block" />
                             make your next journey unforgettable!
                         </p>
-                        <button 
+                        <button
                             onClick={() => {
                                 if (onExploreClick) {
                                     onExploreClick()
@@ -313,7 +314,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                         </div>
 
                                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mt-auto gap-3 sm:gap-4">
-                                            <button 
+                                            <button
                                                 onClick={() => {
                                                     if (onItineraryClick) {
                                                         onItineraryClick()
@@ -338,8 +339,8 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                             <h3 className="text-lg font-bold text-gray-900 mb-4">Upcoming Trips</h3>
                             <div className="flex flex-col gap-4">
                                 {upcomingTrips.map((trip) => (
-                                    <div 
-                                        key={trip.id} 
+                                    <div
+                                        key={trip.id}
                                         onClick={() => {
                                             if (onItineraryClick) {
                                                 onItineraryClick()
@@ -368,8 +369,8 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                             <h3 className="text-lg font-bold text-gray-900 mb-4">Suggested Destinations</h3>
                             <div className="flex flex-col gap-4">
                                 {suggestedDestinations.map((dest) => (
-                                    <div 
-                                        key={dest.id} 
+                                    <div
+                                        key={dest.id}
                                         onClick={() => {
                                             if (onCountryClick) {
                                                 onCountryClick()
@@ -392,6 +393,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                     </div>
                 </div>
             </main>
+            <Footer />
         </div>
     )
 }
