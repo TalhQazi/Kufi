@@ -6,6 +6,20 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
     const [activeTab, setActiveTab] = useState('Personal Info')
     const [showProfileDropdown, setShowProfileDropdown] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
+    const [isEditing, setIsEditing] = useState(false)
+    const [profileData, setProfileData] = useState({
+        fullName: 'Sarah Anderson',
+        email: 'sarah.anderson@email.com',
+        phone: '+1 (555) 123-4567',
+        country: 'United States',
+        dob: '1988-03-15',
+        gender: 'Female',
+        passportNumber: 'US123456789',
+        passportExpiry: '2028-06-01',
+        address: '123 Maple Street, Apt 4B',
+        city: 'San Francisco, CA',
+        nationality: 'American'
+    })
     const dropdownRef = useRef(null)
 
     // Close dropdown when clicking outside
@@ -165,13 +179,33 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                         <p className="text-xs sm:text-sm text-slate-500">View traveler details, preferences, and journey history in one place.</p>
                     </div>
                     <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
-                        <button className="flex items-center gap-2 px-4 py-2.5 border border-slate-300 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                            Edit Profile
-                        </button>
+                        {!isEditing ? (
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="flex items-center gap-2 px-4 py-2.5 border border-slate-300 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                                Edit Profile
+                            </button>
+                        ) : (
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <button
+                                    onClick={() => setIsEditing(false)}
+                                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-300 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => setIsEditing(false)}
+                                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-primary-brown text-white rounded-lg text-xs font-semibold hover:bg-primary-dark transition-colors"
+                                >
+                                    Save Changes
+                                </button>
+                            </div>
+                        )}
                         <button className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border border-slate-300 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
                             <svg width="12" height="12" className="sm:w-3.5 sm:h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -205,28 +239,64 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 </button>
                             </div>
                             <div className="flex-1 sm:flex-none">
-                                <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">Sarah Anderson</h2>
+                                {isEditing ? (
+                                    <input
+                                        type="text"
+                                        value={profileData.fullName}
+                                        onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
+                                        className="text-lg sm:text-xl font-bold text-slate-900 mb-2 bg-slate-50 border-b border-[#8B6E4E] focus:outline-none w-full"
+                                    />
+                                ) : (
+                                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">{profileData.fullName}</h2>
+                                )}
                                 <div className="space-y-1 text-sm text-slate-600">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 text-[10px] sm:text-xs">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                                             <polyline points="22,6 12,13 2,6" />
                                         </svg>
-                                        <span>sarah.anderson@email.com</span>
+                                        {isEditing ? (
+                                            <input
+                                                type="email"
+                                                value={profileData.email}
+                                                onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                                                className="bg-transparent border-b border-slate-200 focus:outline-none w-full py-0.5"
+                                            />
+                                        ) : (
+                                            <span>{profileData.email}</span>
+                                        )}
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 text-[10px] sm:text-xs">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                                         </svg>
-                                        <span>+1 (555) 123-4567</span>
+                                        {isEditing ? (
+                                            <input
+                                                type="tel"
+                                                value={profileData.phone}
+                                                onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                                                className="bg-transparent border-b border-slate-200 focus:outline-none w-full py-0.5"
+                                            />
+                                        ) : (
+                                            <span>{profileData.phone}</span>
+                                        )}
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 text-[10px] sm:text-xs">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                             <circle cx="12" cy="12" r="10" />
                                             <line x1="2" y1="12" x2="22" y2="12" />
                                             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                                         </svg>
-                                        <span>United States</span>
+                                        {isEditing ? (
+                                            <input
+                                                type="text"
+                                                value={profileData.country}
+                                                onChange={(e) => setProfileData({ ...profileData, country: e.target.value })}
+                                                className="bg-transparent border-b border-slate-200 focus:outline-none w-full py-0.5"
+                                            />
+                                        ) : (
+                                            <span>{profileData.country}</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -276,7 +346,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                             <h3 className="text-lg font-bold text-slate-900 mb-6">Personal Information</h3>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-4 sm:gap-y-6">
-                                {/* Left Column */}
+                                {/* Date of Birth */}
                                 <div>
                                     <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -287,10 +357,19 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         </svg>
                                         Date of Birth
                                     </div>
-                                    <div className="text-sm text-slate-900">March 15, 1988</div>
+                                    {isEditing ? (
+                                        <input
+                                            type="date"
+                                            value={profileData.dob}
+                                            onChange={(e) => setProfileData({ ...profileData, dob: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                        />
+                                    ) : (
+                                        <div className="text-sm text-slate-900">{new Date(profileData.dob).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                                    )}
                                 </div>
 
-                                {/* Right Column */}
+                                {/* Gender */}
                                 <div>
                                     <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -299,10 +378,22 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         </svg>
                                         Gender
                                     </div>
-                                    <div className="text-sm text-slate-900">Female</div>
+                                    {isEditing ? (
+                                        <select
+                                            value={profileData.gender}
+                                            onChange={(e) => setProfileData({ ...profileData, gender: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                        >
+                                            <option value="Female">Female</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    ) : (
+                                        <div className="text-sm text-slate-900">{profileData.gender}</div>
+                                    )}
                                 </div>
 
-                                {/* Left Column */}
+                                {/* Passport Number */}
                                 <div>
                                     <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -311,10 +402,19 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         </svg>
                                         Passport Number
                                     </div>
-                                    <div className="text-sm text-slate-900">US123456789</div>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={profileData.passportNumber}
+                                            onChange={(e) => setProfileData({ ...profileData, passportNumber: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                        />
+                                    ) : (
+                                        <div className="text-sm text-slate-900">{profileData.passportNumber}</div>
+                                    )}
                                 </div>
 
-                                {/* Right Column */}
+                                {/* Passport Expiry */}
                                 <div>
                                     <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -325,10 +425,19 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         </svg>
                                         Passport Expiry
                                     </div>
-                                    <div className="text-sm text-slate-900">June 2028</div>
+                                    {isEditing ? (
+                                        <input
+                                            type="date"
+                                            value={profileData.passportExpiry}
+                                            onChange={(e) => setProfileData({ ...profileData, passportExpiry: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                        />
+                                    ) : (
+                                        <div className="text-sm text-slate-900">{new Date(profileData.passportExpiry).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</div>
+                                    )}
                                 </div>
 
-                                {/* Left Column */}
+                                {/* Address */}
                                 <div>
                                     <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -337,10 +446,19 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         </svg>
                                         Address
                                     </div>
-                                    <div className="text-sm text-slate-900">123 Maple Street, Apt 4B</div>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={profileData.address}
+                                            onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                        />
+                                    ) : (
+                                        <div className="text-sm text-slate-900">{profileData.address}</div>
+                                    )}
                                 </div>
 
-                                {/* Right Column */}
+                                {/* City */}
                                 <div>
                                     <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -349,10 +467,19 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         </svg>
                                         City
                                     </div>
-                                    <div className="text-sm text-slate-900">San Francisco, CA</div>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={profileData.city}
+                                            onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                        />
+                                    ) : (
+                                        <div className="text-sm text-slate-900">{profileData.city}</div>
+                                    )}
                                 </div>
 
-                                {/* Left Column */}
+                                {/* Nationality */}
                                 <div>
                                     <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -362,7 +489,16 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         </svg>
                                         Nationality
                                     </div>
-                                    <div className="text-sm text-slate-900">American</div>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={profileData.nationality}
+                                            onChange={(e) => setProfileData({ ...profileData, nationality: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                        />
+                                    ) : (
+                                        <div className="text-sm text-slate-900">{profileData.nationality}</div>
+                                    )}
                                 </div>
                             </div>
                         </div>

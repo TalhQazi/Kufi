@@ -224,9 +224,11 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
                 onClick={() => setDropdown(!dropdown)}
                 className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
               >
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-semibold">
-                  U
-                </div>
+                <img
+                  src="/assets/profile-avatar.jpeg"
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
+                />
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
                   <path d="M6 9l6 6 6-6" />
                 </svg>

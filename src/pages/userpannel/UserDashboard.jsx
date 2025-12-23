@@ -152,7 +152,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                 className="flex items-center gap-2 cursor-pointer"
                             >
                                 <img
-                                    src="/assets/hero-card1.jpeg"
+                                    src="/assets/profile-avatar.jpeg"
                                     alt="Profile"
                                     className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border-2 border-white shadow-sm"
                                 />
