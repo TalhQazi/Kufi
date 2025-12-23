@@ -98,15 +98,18 @@ export default function FeedbackSection() {
     return (
         <section className="bg-white py-24 px-4 sm:px-8 lg:px-20 relative overflow-hidden">
             {/* Background Organic Blob */}
-            <div className="absolute right-[-10%] top-[20%] w-[60%] h-[70%] pointer-events-none z-0">
+            <div className="absolute right-[-5%] bottom-[-5%] w-[60%] h-[80%] pointer-events-none z-0">
                 <svg
-                    viewBox="0 0 807 668"
+                    viewBox="0 0 800 600"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
-                    className="w-full h-full opacity-[0.6]"
+                    className="w-full h-full opacity-[0.8]"
                     preserveAspectRatio="xMaxYMax meet"
                 >
-                    <path d="M508.87 15.6287C654.551 -44.9862 768.324 85.2638 807 157.966V628.272C753.641 655.693 649.062 701.953 574.941 628.272C500.821 554.591 400.181 567.297 348.792 577.94C276.811 605.361 116.52 643.751 51.1999 577.94C-30.4501 495.677 -30.4501 350.634 170.452 271.619C371.354 192.603 326.769 91.3974 508.87 15.6287Z" fill="#D3C7B9" />
+                    <path
+                        d="M740 400C740 510.457 650.457 600 540 600C429.543 600 200 600 100 500C0 400 0 300 100 200C200 100 300 0 450 0C600 0 740 289.543 740 400Z"
+                        fill="#D3C7B9"
+                    />
                 </svg>
             </div>
 
@@ -140,7 +143,7 @@ export default function FeedbackSection() {
 
                     {/* Constant Image - Stays static on the left */}
                     <div className="flex-shrink-0 relative z-0">
-                        <div className="w-full sm:min-w-[450px] sm:w-[500px] aspect-[4/3] rounded-tl-[120px] rounded-br-[120px] rounded-tr-[20px] rounded-bl-[20px] overflow-hidden shadow-xl">
+                        <div className="w-full sm:min-w-[450px] sm:w-[500px] aspect-[4/3] rounded-[32px] overflow-hidden shadow-lg">
                             <img
                                 src="/assets/feedback.jpeg"
                                 alt="Featured feedback"
@@ -161,24 +164,24 @@ export default function FeedbackSection() {
                     >
                         {loopedItems.map((item, index) => (
                             <div key={`${item.id}-${index}`} className="flex-shrink-0 snap-center">
-                                <div className="w-[300px] sm:w-[350px] lg:w-[400px] h-full bg-white rounded-[40px] p-8 shadow-2xl border border-slate-50 flex flex-col justify-between transition-transform duration-300 hover:scale-[1.02]">
+                                <div className="w-[300px] sm:w-[320px] lg:w-[350px] h-full bg-white rounded-[32px] p-6 shadow-xl border border-white flex flex-col justify-between transition-transform duration-300 hover:scale-[1.02]">
                                     <div>
-                                        <div className="flex gap-1 mb-5 text-[#FFB21E]">
-                                            {[...Array(5)].map((_, i) => <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>)}
+                                        <div className="flex gap-1 mb-4 text-[#FFB21E]">
+                                            {[...Array(5)].map((_, i) => <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>)}
                                         </div>
-                                        <p className="text-slate-600 text-sm sm:text-base italic leading-relaxed mb-8">
+                                        <p className="text-slate-500 text-xs sm:text-sm italic font-medium leading-relaxed mb-6">
                                             {item.text}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-3">
                                         <img
                                             src={item.avatar}
                                             alt={item.name}
-                                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-slate-100"
+                                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-[16px] object-cover"
                                         />
                                         <div>
-                                            <h4 className="m-0 text-xs sm:text-sm font-bold text-slate-800">{item.name}</h4>
-                                            <p className="m-0 text-[10px] text-[#A8B9A6] font-extrabold uppercase tracking-widest leading-none mt-1">{item.nameLabel}</p>
+                                            <h4 className="m-0 text-xs font-bold text-slate-800">{item.name}</h4>
+                                            <p className="m-0 text-[9px] text-[#A8B9A6] font-bold uppercase tracking-widest leading-none mt-1">{item.nameLabel}</p>
                                         </div>
                                     </div>
                                 </div>
