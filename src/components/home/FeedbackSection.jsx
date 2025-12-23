@@ -131,11 +131,7 @@ export default function FeedbackSection() {
                         </div>
                     </div>
 
-                    <div className="mt-6 md:mt-0">
-                        <div className="px-5 py-1.5 rounded-full border border-slate-200 bg-white shadow-sm flex items-center justify-center">
-                            <span className="text-[10px] font-bold text-slate-400 tracking-tighter uppercase">STEP 04</span>
-                        </div>
-                    </div>
+
                 </div>
 
                 {/* Feedback Content with Constant Picture */}
