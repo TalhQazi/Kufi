@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import Footer from "../../components/layout/Footer";
 import {
   DollarSign,
   CalendarDays,
@@ -361,7 +360,6 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
         {activeSection === "Analytics" && <SupplierAnalytics darkMode={darkMode} />}
         {activeSection === "Profile" && <SupplierProfile darkMode={darkMode} />}
         {activeSection === "Requests" && <SupplierRequests darkMode={darkMode} />}
-        <Footer />
       </div>
     </div>
   );
