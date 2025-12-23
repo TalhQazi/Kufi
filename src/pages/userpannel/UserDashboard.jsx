@@ -136,7 +136,10 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                     </div>
 
                     <div className="flex items-center gap-4 md:gap-6">
-                        <button className="text-gray-500 hover:text-gray-700 relative">
+                        <button
+                            className="text-gray-500 hover:text-gray-700 relative"
+                            onClick={() => onNotificationClick && onNotificationClick()}
+                        >
                             <FiBell size={22} />
                             <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
                         </button>
