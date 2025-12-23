@@ -16,8 +16,10 @@ import Footer from './components/layout/Footer'
 const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
   const [activePage, setActivePage] = useState(initialPage)
   const [sidebarVisible, setSidebarVisible] = useState(true)
+  const [isDarkMode, setIsDarkMode] = useState(false)
 
   const toggleSidebar = () => setSidebarVisible(!sidebarVisible)
+  const toggleDarkMode = () => setIsDarkMode(!isDarkMode)
 
   const renderPage = () => {
     if (activePage === 'Dashboard') return <Dashboard />
@@ -40,7 +42,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
   }
 
   return (
-    <div className="app-root bg-[#f5f6fb] min-h-screen md:h-screen flex flex-col md:flex-row overflow-hidden">
+    <div className={`app-root min-h-screen md:h-screen flex flex-col md:flex-row overflow-hidden transition-colors duration-300 ${isDarkMode ? 'dark bg-gray-950' : 'bg-[#f5f6fb]'}`}>
       {activePage !== 'Supplier Dashboard' && (
         <Sidebar
           activePage={activePage}
@@ -48,6 +50,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
           onLogout={onLogout}
           onHomeClick={onHomeClick}
           isVisible={sidebarVisible}
+          isDarkMode={isDarkMode}
         />
       )}
 
@@ -57,6 +60,8 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
             onBellClick={() => setActivePage('Booking Notifications')}
             onLogout={onLogout}
             onMenuClick={toggleSidebar}
+            isDarkMode={isDarkMode}
+            onThemeToggle={toggleDarkMode}
           />
         )}
 

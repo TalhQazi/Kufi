@@ -94,7 +94,7 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
 
   return (
     <div
-      className={`min-h-screen md:h-screen flex flex-col md:flex-row transition-colors ${darkMode ? "bg-slate-900" : "bg-white"
+      className={`min-h-screen md:h-screen flex flex-col md:flex-row transition-colors duration-300 ${darkMode ? "dark bg-slate-950" : "bg-white"
         }`}
     >
       {/* Supplier sidebar (separate component) */}
@@ -114,21 +114,32 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
         {activeSection === "Dashboard" && (
           <>
             {/* Top header bar with icons */}
-            <div className="mb-4 flex items-center justify-end gap-2 sm:gap-3 rounded-b-2xl bg-white px-3 sm:px-4 py-2 sm:py-3 shadow-sm">
-              <button className="relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors">
+            <div className={`mb-4 flex items-center justify-end gap-2 sm:gap-3 rounded-b-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900 border-b border-slate-800" : "bg-white"}`}>
+              <button
+                onClick={() => setActiveSection("Requests")}
+                className={`relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+              >
                 <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span className="absolute -top-0.5 -right-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-red-500 border-2 border-white" />
               </button>
-              <button className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors">
+              <button
+                onClick={() => setActiveSection("Profile")}
+                className={`hidden sm:flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+              >
                 <Settings className="w-4 h-4" />
               </button>
-              <div className="hidden sm:block h-9 w-9 rounded-full bg-gray-300" />
+              <button
+                onClick={() => setActiveSection("Profile")}
+                className={`hidden sm:block h-9 w-9 rounded-full overflow-hidden border-2 transition-colors ${darkMode ? "bg-slate-700 border-slate-800" : "bg-gray-300 border-white shadow-sm"}`}
+              >
+                <img src="/assets/hero-card1.jpeg" alt="Profile" className="w-full h-full object-cover" />
+              </button>
             </div>
 
             {/* Heading */}
             <div className="mb-4 sm:mb-5">
-              <h1 className="text-lg sm:text-xl font-semibold text-gray-900">Dashboard</h1>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              <h1 className={`text-lg sm:text-xl font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-gray-900"}`}>Dashboard</h1>
+              <p className={`text-xs sm:text-sm mt-1 transition-colors duration-300 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
                 Welcome back! Here is your overview.
               </p>
             </div>
@@ -140,11 +151,11 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                 return (
                   <div
                     key={card.label}
-                    className="flex min-h-[100px] sm:min-h-[120px] flex-col justify-between rounded-xl sm:rounded-2xl border border-gray-100 bg-white px-4 sm:px-5 py-3 sm:py-4 shadow-sm"
+                    className={`flex min-h-[100px] sm:min-h-[120px] flex-col justify-between rounded-xl sm:rounded-2xl border px-4 sm:px-5 py-3 sm:py-4 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}
                   >
                     <div className="mb-3 sm:mb-4 flex items-start justify-between text-xs">
                       <div className="inline-flex items-center gap-2">
-                        <span className="inline-flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl bg-[#eef4ff] text-[#a26e35]">
+                        <span className={`inline-flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl transition-colors duration-300 ${darkMode ? "bg-slate-800 text-amber-500" : "bg-[#eef4ff] text-[#a26e35]"}`}>
                           <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </span>
                       </div>
@@ -153,8 +164,8 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                       </span>
                     </div>
                     <div>
-                      <p className="mb-1 text-[10px] sm:text-xs text-gray-500">{card.label}</p>
-                      <p className="text-xl sm:text-2xl font-semibold text-slate-900">{card.value}</p>
+                      <p className={`mb-1 text-[10px] sm:text-xs transition-colors duration-300 ${darkMode ? "text-slate-500" : "text-gray-500"}`}>{card.label}</p>
+                      <p className={`text-xl sm:text-2xl font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-slate-900"}`}>{card.value}</p>
                     </div>
                   </div>
                 );
@@ -164,21 +175,21 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
             {/* Middle row: Recent bookings + Quick actions */}
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(260px,0.9fr)] gap-4 sm:gap-5 mb-6">
               {/* Recent bookings */}
-              <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 px-4 sm:px-5 py-3 sm:py-4">
-                <h2 className="text-xs sm:text-sm font-semibold text-gray-900 mb-3">
+              <div className={`rounded-xl sm:rounded-2xl border px-4 sm:px-5 py-3 sm:py-4 transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+                <h2 className={`text-xs sm:text-sm font-semibold mb-3 transition-colors duration-300 ${darkMode ? "text-white" : "text-gray-900"}`}>
                   Recent Bookings
                 </h2>
                 <div className="space-y-2">
                   {recentBookings.map((booking, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3"
+                      className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors duration-300 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100"}`}
                     >
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">
+                        <p className={`text-sm font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-slate-900"}`}>
                           {booking.title}
                         </p>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className={`mt-1 text-xs transition-colors duration-300 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
                           {booking.subtitle}
                         </p>
                       </div>
@@ -191,8 +202,8 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
               </div>
 
               {/* Quick actions */}
-              <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 px-4 sm:px-5 py-3 sm:py-4 space-y-2 sm:space-y-3">
-                <h2 className="text-xs sm:text-sm font-semibold text-gray-900 mb-1">
+              <div className={`rounded-xl sm:rounded-2xl border px-4 sm:px-5 py-3 sm:py-4 space-y-2 sm:space-y-3 transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+                <h2 className={`text-xs sm:text-sm font-semibold mb-1 transition-colors duration-300 ${darkMode ? "text-white" : "text-gray-900"}`}>
                   Quick Actions
                 </h2>
                 <button
@@ -206,13 +217,13 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                 </button>
                 <button
                   onClick={() => setActiveSection("Booking")}
-                  className="w-full rounded-xl border border-gray-200 text-sm text-gray-700 py-2.5 hover:bg-gray-50 transition-colors"
+                  className={`w-full rounded-xl border text-sm py-2.5 transition-colors duration-300 ${darkMode ? "border-slate-800 text-slate-300 hover:bg-slate-800" : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}
                 >
                   View All Bookings
                 </button>
                 <button
                   onClick={() => setActiveSection("Profile")}
-                  className="w-full rounded-xl border border-gray-200 text-sm text-gray-700 py-2.5 hover:bg-gray-50 transition-colors"
+                  className={`w-full rounded-xl border text-sm py-2.5 transition-colors duration-300 ${darkMode ? "border-slate-800 text-slate-300 hover:bg-slate-800" : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}
                 >
                   Update Profile
                 </button>
@@ -223,10 +234,10 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
             <div className="bg-transparent">
               <div className="mb-3 flex items-baseline justify-between">
                 <div>
-                  <h2 className="text-base font-semibold text-slate-900">
+                  <h2 className={`text-base font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-slate-900"}`}>
                     Traveler Requests
                   </h2>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className={`mt-1 text-xs transition-colors duration-300 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
                     Manage and respond to traveler trip requests
                   </p>
                 </div>
@@ -246,11 +257,11 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                   return (
                     <div
                       key={item.label}
-                      className="flex min-h-[80px] sm:min-h-[96px] items-center justify-between rounded-xl sm:rounded-2xl border border-gray-100 bg-white px-3 sm:px-4 py-3 sm:py-4 shadow-sm"
+                      className={`flex min-h-[80px] sm:min-h-[96px] items-center justify-between rounded-xl sm:rounded-2xl border px-3 sm:px-4 py-3 sm:py-4 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}
                     >
                       <div>
-                        <p className="mb-1 text-[10px] sm:text-[11px] text-gray-500">{item.label}</p>
-                        <p className="text-base sm:text-lg font-semibold text-slate-900">{item.value}</p>
+                        <p className={`mb-1 text-[10px] sm:text-[11px] transition-colors duration-300 ${darkMode ? "text-slate-500" : "text-gray-500"}`}>{item.label}</p>
+                        <p className={`text-base sm:text-lg font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-slate-900"}`}>{item.value}</p>
                       </div>
                       <div
                         className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-white ${bgColor}`}
@@ -263,15 +274,15 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
               </div>
 
               {/* Select traveler request dropdown */}
-              <div className="mb-4 rounded-xl sm:rounded-2xl bg-white px-3 py-2 shadow-sm">
-                <div className="flex items-center justify-between rounded-xl sm:rounded-2xl bg-[#f7f1e7] px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-gray-700">
+              <div className={`mb-4 rounded-xl sm:rounded-2xl px-3 py-2 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900" : "bg-white"}`}>
+                <div className={`flex items-center justify-between rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm transition-colors duration-300 ${darkMode ? "bg-slate-800 text-slate-300" : "bg-[#f7f1e7] text-gray-700"}`}>
                   <span>Select Traveler Request</span>
                   <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
                 </div>
               </div>
 
               {/* Empty state box */}
-              <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white px-3 sm:px-4 py-8 sm:py-10 text-center text-[10px] sm:text-xs text-gray-400">
+              <div className={`rounded-xl sm:rounded-2xl border px-3 sm:px-4 py-8 sm:py-10 text-center text-[10px] sm:text-xs transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800 text-slate-500" : "bg-white border-gray-100 text-gray-400"}`}>
                 Please select a traveler request to view details
               </div>
             </div>
@@ -280,12 +291,14 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
 
         {activeSection === "Experience" && (
           <SupplierExperience
+            darkMode={darkMode}
             view={experienceView}
             onViewChange={setExperienceView}
           />
         )}
         {activeSection === "Booking" && (
           <SupplierBookings
+            darkMode={darkMode}
             onResumeDraft={(draft) => {
               setActiveSection("Experience");
               setExperienceView("create");
@@ -295,9 +308,9 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
             }}
           />
         )}
-        {activeSection === "Analytics" && <SupplierAnalytics />}
-        {activeSection === "Profile" && <SupplierProfile />}
-        {activeSection === "Requests" && <SupplierRequests />}
+        {activeSection === "Analytics" && <SupplierAnalytics darkMode={darkMode} />}
+        {activeSection === "Profile" && <SupplierProfile darkMode={darkMode} />}
+        {activeSection === "Requests" && <SupplierRequests darkMode={darkMode} />}
         <Footer />
       </div>
     </div>
