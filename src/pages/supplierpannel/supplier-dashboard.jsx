@@ -11,6 +11,8 @@ import {
   Clock3,
   Check,
   X as XIcon,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 import SupplierSidebar from "./components/SupplierSidebar";
 import SupplierExperience from "./supplier-experience";
@@ -87,6 +89,37 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
   const [activeSection, setActiveSection] = useState("Dashboard");
   const [experienceView, setExperienceView] = useState("list");
   const [darkMode, setDarkMode] = useState(false);
+  const [history, setHistory] = useState(["Dashboard"]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  const navigateTo = (section, resetExperienceView = true) => {
+    if (section === activeSection && (!resetExperienceView || experienceView === "list")) return;
+
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(section);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+    setActiveSection(section);
+    if (resetExperienceView) setExperienceView("list");
+  };
+
+  const goBack = () => {
+    if (historyIndex > 0) {
+      const prevSection = history[historyIndex - 1];
+      setHistoryIndex(historyIndex - 1);
+      setActiveSection(prevSection);
+      if (prevSection === "Experience") setExperienceView("list");
+    }
+  };
+
+  const goForward = () => {
+    if (historyIndex < history.length - 1) {
+      const nextSection = history[historyIndex + 1];
+      setHistoryIndex(historyIndex + 1);
+      setActiveSection(nextSection);
+      if (nextSection === "Experience") setExperienceView("list");
+    }
+  };
 
   const handleToggleDarkMode = () => {
     setDarkMode((prev) => !prev);
@@ -100,10 +133,7 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
       {/* Supplier sidebar (separate component) */}
       <SupplierSidebar
         activeSection={activeSection}
-        onSelectSection={(section) => {
-          setActiveSection(section);
-          if (section === "Experience") setExperienceView("list");
-        }}
+        onSelectSection={navigateTo}
         onLogout={onLogout}
         darkMode={darkMode}
         onToggleDarkMode={handleToggleDarkMode}
@@ -114,26 +144,46 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
         {activeSection === "Dashboard" && (
           <>
             {/* Top header bar with icons */}
-            <div className={`mb-4 flex items-center justify-end gap-2 sm:gap-3 rounded-b-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900 border-b border-slate-800" : "bg-white"}`}>
-              <button
-                onClick={() => setActiveSection("Requests")}
-                className={`relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
-              >
-                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-red-500 border-2 border-white" />
-              </button>
-              <button
-                onClick={() => setActiveSection("Profile")}
-                className={`hidden sm:flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setActiveSection("Profile")}
-                className={`hidden sm:block h-9 w-9 rounded-full overflow-hidden border-2 transition-colors ${darkMode ? "bg-slate-700 border-slate-800" : "bg-gray-300 border-white shadow-sm"}`}
-              >
-                <img src="/assets/hero-card1.jpeg" alt="Profile" className="w-full h-full object-cover" />
-              </button>
+            <div className={`mb-4 flex items-center justify-between rounded-b-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900 border-b border-slate-800" : "bg-white"}`}>
+              {/* Navigation buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={goBack}
+                  disabled={historyIndex === 0}
+                  className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${historyIndex === 0 ? "opacity-50 cursor-not-allowed" : ""} ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+                <button
+                  onClick={goForward}
+                  disabled={historyIndex === history.length - 1}
+                  className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${historyIndex === history.length - 1 ? "opacity-50 cursor-not-allowed" : ""} ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+                >
+                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  onClick={() => navigateTo("Requests")}
+                  className={`relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+                >
+                  <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-red-500 border-2 border-white" />
+                </button>
+                <button
+                  onClick={() => navigateTo("Profile")}
+                  className={`hidden sm:flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => navigateTo("Profile")}
+                  className={`hidden sm:block h-9 w-9 rounded-full overflow-hidden border-2 transition-colors ${darkMode ? "bg-slate-700 border-slate-800" : "bg-gray-300 border-white shadow-sm"}`}
+                >
+                  <img src="/assets/hero-card1.jpeg" alt="Profile" className="w-full h-full object-cover" />
+                </button>
+              </div>
             </div>
 
             {/* Heading */}
@@ -208,7 +258,7 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                 </h2>
                 <button
                   onClick={() => {
-                    setActiveSection("Experience");
+                    navigateTo("Experience", false);
                     setExperienceView("create");
                   }}
                   className="w-full rounded-xl bg-[#a26e35] text-white text-sm font-semibold py-2.5 hover:bg-[#8b5e2d] transition-colors"
@@ -216,13 +266,13 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                   Add New Experience
                 </button>
                 <button
-                  onClick={() => setActiveSection("Booking")}
+                  onClick={() => navigateTo("Booking")}
                   className={`w-full rounded-xl border text-sm py-2.5 transition-colors duration-300 ${darkMode ? "border-slate-800 text-slate-300 hover:bg-slate-800" : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}
                 >
                   View All Bookings
                 </button>
                 <button
-                  onClick={() => setActiveSection("Profile")}
+                  onClick={() => navigateTo("Profile")}
                   className={`w-full rounded-xl border text-sm py-2.5 transition-colors duration-300 ${darkMode ? "border-slate-800 text-slate-300 hover:bg-slate-800" : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}
                 >
                   Update Profile
@@ -300,7 +350,7 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
           <SupplierBookings
             darkMode={darkMode}
             onResumeDraft={(draft) => {
-              setActiveSection("Experience");
+              navigateTo("Experience", false);
               setExperienceView("create");
             }}
             onRemoveDraft={(id) => {

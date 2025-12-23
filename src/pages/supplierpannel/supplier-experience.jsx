@@ -58,7 +58,109 @@ const experiences = [
   },
 ];
 
-const ExperiencesListing = ({ darkMode, onAddExperience, onEditExperience }) => {
+const ExperienceDetails = ({ darkMode, experience, onBack, onBookNow }) => {
+  return (
+    <div className={`space-y-6 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
+      {/* Header card */}
+      <div className={`rounded-2xl border px-4 sm:px-6 py-4 flex items-center justify-between gap-3 transition-colors ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onBack}
+            className={`p-2 rounded-lg transition-colors ${darkMode ? "hover:bg-slate-800 text-slate-400" : "hover:bg-gray-100 text-gray-600"}`}
+            title="Go back"
+          >
+            <ChevronDown className="h-5 w-5 rotate-90" />
+          </button>
+          <div>
+            <h1 className={`text-lg sm:text-xl font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+              {experience.title}
+            </h1>
+            <p className={`text-xs sm:text-sm mt-1 transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+              Detailed information about this package
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={onBookNow}
+          className="rounded-full bg-[#a26e35] px-6 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#8b5e2d] transition-colors"
+        >
+          Book Now
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: Image and Key Info */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="h-80 w-full overflow-hidden rounded-2xl shadow-sm">
+            <img src={experience.image} alt={experience.title} className="w-full h-full object-cover" />
+          </div>
+
+          <div className={`rounded-2xl border p-6 space-y-6 transition-colors ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+            <div>
+              <h2 className={`text-lg font-semibold mb-4 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Description</h2>
+              <p className={`text-sm leading-relaxed transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
+                Experience the magic of {experience.title}. This package offers a unique blend of adventure and relaxation.
+                Includes professional guides, all necessary equipment, and unforgettable memories.
+              </p>
+            </div>
+
+            <div className={`grid grid-cols-2 sm:grid-cols-4 gap-4 border-t pt-6 transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`}>
+              <div className="text-center">
+                <Clock className="w-5 h-5 mx-auto mb-2 text-[#a26e35]" />
+                <p className={`text-[10px] uppercase tracking-wider transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>Duration</p>
+                <p className={`text-xs font-semibold mt-1 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{experience.duration}</p>
+              </div>
+              <div className="text-center">
+                <Users className="w-5 h-5 mx-auto mb-2 text-[#a26e35]" />
+                <p className={`text-[10px] uppercase tracking-wider transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>Capacity</p>
+                <p className={`text-xs font-semibold mt-1 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>12 People</p>
+              </div>
+              <div className="text-center">
+                <Star className="w-5 h-5 mx-auto mb-2 text-amber-500 fill-amber-500" />
+                <p className={`text-[10px] uppercase tracking-wider transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>Rating</p>
+                <p className={`text-xs font-semibold mt-1 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{experience.rating}</p>
+              </div>
+              <div className="text-center">
+                <Bus className="w-5 h-5 mx-auto mb-2 text-[#a26e35]" />
+                <p className={`text-[10px] uppercase tracking-wider transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>Activities</p>
+                <p className={`text-xs font-semibold mt-1 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>4 Activities</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Booking Summary / Pricing */}
+        <div className="space-y-6">
+          <div className={`rounded-2xl border p-6 transition-colors ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+            <h3 className={`text-sm font-semibold mb-4 transition-colors ${darkMode ? "text-white" : "text-gray-900"}`}>Pricing Details</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className={darkMode ? "text-slate-400" : "text-gray-600"}>Base Price</span>
+                <span className={`font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>$299.00</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className={darkMode ? "text-slate-400" : "text-gray-600"}>Tax & Fees</span>
+                <span className={`font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>$0.00</span>
+              </div>
+              <div className={`border-t pt-3 flex justify-between items-center transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`}>
+                <span className={`font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>Total /person</span>
+                <span className="text-lg font-bold text-[#a26e35]">$299.00</span>
+              </div>
+            </div>
+            <button
+              onClick={onBookNow}
+              className="w-full mt-6 rounded-xl bg-[#a26e35] text-white py-3 font-semibold shadow-md hover:bg-[#8b5e2d] transition-colors"
+            >
+              Confirm Booking
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ExperiencesListing = ({ darkMode, onAddExperience, onEditExperience, onViewDetails, onBookNow }) => {
   return (
     <div className={`space-y-6 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
       {/* Top header */}
@@ -107,7 +209,9 @@ const ExperiencesListing = ({ darkMode, onAddExperience, onEditExperience }) => 
             Curated experiences and packages designed to give your guests
             unforgettable memories.
           </p>
-          <button className={`mt-2 inline-flex items-center justify-center rounded-full px-5 py-2 text-xs font-semibold shadow-sm transition-all ${darkMode ? "bg-[#a26e35] text-white hover:bg-[#8b5e2d]" : "bg-white text-[#0f9dbf] hover:bg-gray-100"}`}>
+          <button
+            onClick={onBookNow}
+            className={`mt-2 inline-flex items-center justify-center rounded-full px-5 py-2 text-xs font-semibold shadow-sm transition-all ${darkMode ? "bg-[#a26e35] text-white hover:bg-[#8b5e2d]" : "bg-white text-[#0f9dbf] hover:bg-gray-100"}`}>
             Book Now
           </button>
         </div>
@@ -126,7 +230,8 @@ const ExperiencesListing = ({ darkMode, onAddExperience, onEditExperience }) => 
         {experiences.map((exp) => (
           <div
             key={exp.id}
-            className={`flex flex-col overflow-hidden rounded-2xl border shadow-sm transition-colors ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}
+            onClick={() => onViewDetails?.(exp)}
+            className={`flex flex-col cursor-pointer overflow-hidden rounded-2xl border shadow-sm transition-all hover:shadow-md ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}
           >
             <div className="h-40 w-full overflow-hidden">
               <img
@@ -184,7 +289,10 @@ const ExperiencesListing = ({ darkMode, onAddExperience, onEditExperience }) => 
                   </span>
                 </div>
                 <button
-                  onClick={() => onEditExperience?.(exp)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditExperience?.(exp);
+                  }}
                   className={`inline-flex items-center justify-center rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors ${darkMode ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
                 >
                   Edit
@@ -413,17 +521,33 @@ const CreateExperienceForm = ({ darkMode, onBack, experience }) => {
   );
 };
 
-const SupplierExperience = ({ darkMode, view = 'list', onViewChange }) => {
-  const [editingExperience, setEditingExperience] = useState(null);
+const SupplierExperience = ({ darkMode, view = 'list', onViewChange, navigateTo }) => {
+  const [selectedExperience, setSelectedExperience] = useState(null);
 
-  if (view === "create" || (view === "edit")) {
+  if (view === "create" || view === "edit") {
     return (
       <CreateExperienceForm
         darkMode={darkMode}
-        experience={view === "edit" ? editingExperience : null}
+        experience={view === "edit" ? selectedExperience : null}
         onBack={() => {
-          setEditingExperience(null);
+          setSelectedExperience(null);
           onViewChange?.("list");
+        }}
+      />
+    );
+  }
+
+  if (view === "details" && selectedExperience) {
+    return (
+      <ExperienceDetails
+        darkMode={darkMode}
+        experience={selectedExperience}
+        onBack={() => {
+          setSelectedExperience(null);
+          onViewChange?.("list");
+        }}
+        onBookNow={() => {
+          navigateTo?.("Booking");
         }}
       />
     );
@@ -434,8 +558,15 @@ const SupplierExperience = ({ darkMode, view = 'list', onViewChange }) => {
       darkMode={darkMode}
       onAddExperience={() => onViewChange?.("create")}
       onEditExperience={(exp) => {
-        setEditingExperience(exp);
+        setSelectedExperience(exp);
         onViewChange?.("edit");
+      }}
+      onViewDetails={(exp) => {
+        setSelectedExperience(exp);
+        onViewChange?.("details");
+      }}
+      onBookNow={() => {
+        navigateTo?.("Booking");
       }}
     />
   );
