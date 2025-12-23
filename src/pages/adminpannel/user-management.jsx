@@ -120,8 +120,8 @@ const UserManagement = () => {
                 <button
                   key={tab}
                   className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition whitespace-nowrap ${tab === activeTab
-                      ? "bg-[#a26e35] text-white"
-                      : "border border-gray-200 text-gray-500"
+                    ? "bg-[#a26e35] text-white"
+                    : "border border-gray-200 text-gray-500"
                     }`}
                   onClick={() => setActiveTab(tab)}
                 >
@@ -158,50 +158,141 @@ const UserManagement = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {filteredUsers.map((user) => (
-                <tr key={user.email} className="hover:bg-gray-50/70">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-sm font-semibold shrink-0">
-                        {user.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
+                <React.Fragment key={user.email}>
+                  <tr className={`transition-colors ${selectedUser?.email === user.email ? "bg-gray-50/50" : "hover:bg-gray-50/70"}`}>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-sm font-semibold shrink-0">
+                          {user.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-900 leading-none">{user.name}</p>
+                          <p className="text-xs text-gray-500 mt-1">{user.email}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-slate-900 leading-none">{user.name}</p>
-                        <p className="text-xs text-gray-500 mt-1">{user.email}</p>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">{user.type}</td>
+                    <td className="px-6 py-4 text-gray-600">{user.joinDate}</td>
+                    <td className="px-6 py-4 text-gray-600">{user.activity}</td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={user.status} />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3 text-xs font-semibold">
+                        <button
+                          className={`hover:underline ${selectedUser?.email === user.email && selectedUser.mode === "view" ? "text-[#a26e35]" : "text-blue-500"}`}
+                          onClick={() => handleView(user)}
+                        >
+                          View
+                        </button>
+                        <button
+                          className={`hover:underline ${selectedUser?.email === user.email && selectedUser.mode === "edit" ? "text-[#a26e35]" : "text-orange-500"}`}
+                          onClick={() => handleEdit(user)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="text-red-500 hover:underline"
+                          onClick={() => handleSuspend(user)}
+                        >
+                          {user.status === "suspended" ? "Restore" : "Suspend"}
+                        </button>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">{user.type}</td>
-                  <td className="px-6 py-4 text-gray-600">{user.joinDate}</td>
-                  <td className="px-6 py-4 text-gray-600">{user.activity}</td>
-                  <td className="px-6 py-4">
-                    <StatusBadge status={user.status} />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3 text-xs font-semibold">
-                      <button
-                        className="text-blue-500 hover:underline"
-                        onClick={() => handleView(user)}
-                      >
-                        View
-                      </button>
-                      <button
-                        className="text-orange-500 hover:underline"
-                        onClick={() => handleEdit(user)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="text-red-500 hover:underline"
-                        onClick={() => handleSuspend(user)}
-                      >
-                        {user.status === "suspended" ? "Restore" : "Suspend"}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                    </td>
+                  </tr>
+                  {selectedUser?.email === user.email && (
+                    <tr className="bg-gray-50/50">
+                      <td colSpan={6} className="px-6 py-4">
+                        <div className="border border-gray-100 rounded-2xl p-6 bg-white shadow-sm space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-semibold text-slate-900">
+                              {selectedUser.mode === "view" ? "User Details" : "Edit User"}
+                            </h3>
+                            <button
+                              className="text-xs text-gray-400 hover:text-gray-600"
+                              onClick={() => setSelectedUser(null)}
+                            >
+                              Close
+                            </button>
+                          </div>
+                          {selectedUser.mode === "view" ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+                              <div>
+                                <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Name</p>
+                                <p className="font-semibold text-slate-700">{selectedUser.name}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Email</p>
+                                <p className="font-semibold text-slate-700">{selectedUser.email}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Member Since</p>
+                                <p className="font-semibold text-slate-700">{selectedUser.joinDate}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">User Type</p>
+                                <p className="font-semibold text-slate-700">{selectedUser.type}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Total Activity</p>
+                                <p className="font-semibold text-slate-700">{selectedUser.activity}</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500 mb-1 block">
+                                  Type
+                                </label>
+                                <input
+                                  type="text"
+                                  className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#a26e35] outline-none"
+                                  value={selectedUser.pendingType}
+                                  onChange={(e) =>
+                                    setSelectedUser((prev) => ({ ...prev, pendingType: e.target.value }))
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500 mb-1 block">
+                                  Activity
+                                </label>
+                                <input
+                                  type="text"
+                                  className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-[#a26e35] outline-none"
+                                  value={selectedUser.pendingActivity}
+                                  onChange={(e) =>
+                                    setSelectedUser((prev) => ({
+                                      ...prev,
+                                      pendingActivity: e.target.value,
+                                    }))
+                                  }
+                                />
+                              </div>
+                              <div className="sm:col-span-2 flex justify-end gap-3 mt-2">
+                                <button
+                                  className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-100"
+                                  onClick={() => setSelectedUser(null)}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#a26e35] text-white hover:bg-[#8c5c2c]"
+                                  onClick={handleSaveEdit}
+                                >
+                                  Save Changes
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
               {filteredUsers.length === 0 && (
                 <tr>
@@ -268,14 +359,76 @@ const UserManagement = () => {
                 </button>
                 <button
                   className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${user.status === "suspended"
-                      ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                      : "bg-rose-50 text-rose-600 hover:bg-rose-100"
+                    ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                    : "bg-rose-50 text-rose-600 hover:bg-rose-100"
                     }`}
                   onClick={() => handleSuspend(user)}
                 >
                   {user.status === "suspended" ? "Restore" : "Suspend"}
                 </button>
               </div>
+
+              {/* Mobile Inline Details/Edit */}
+              {selectedUser?.email === user.email && (
+                <div className="mt-4 pt-4 border-t border-gray-50 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      {selectedUser.mode === "view" ? "User Details" : "Edit User"}
+                    </h3>
+                  </div>
+                  {selectedUser.mode === "view" ? (
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <p className="text-gray-400 font-bold mb-0.5">Type</p>
+                        <p className="text-slate-700">{selectedUser.type}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 font-bold mb-0.5">Joined</p>
+                        <p className="text-slate-700">{selectedUser.joinDate}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-gray-400 font-bold mb-0.5">Total Activity</p>
+                        <p className="text-slate-700">{selectedUser.activity}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Type</label>
+                        <input
+                          type="text"
+                          className="w-full border border-gray-100 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-[#a26e35] outline-none"
+                          value={selectedUser.pendingType}
+                          onChange={(e) => setSelectedUser(prev => ({ ...prev, pendingType: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Activity</label>
+                        <input
+                          type="text"
+                          className="w-full border border-gray-100 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-[#a26e35] outline-none"
+                          value={selectedUser.pendingActivity}
+                          onChange={(e) => setSelectedUser(prev => ({ ...prev, pendingActivity: e.target.value }))}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          className="flex-1 py-2 rounded-lg bg-[#a26e35] text-white text-xs font-bold"
+                          onClick={handleSaveEdit}
+                        >
+                          Save
+                        </button>
+                        <button
+                          className="flex-1 py-2 rounded-lg bg-gray-100 text-gray-600 text-xs font-bold"
+                          onClick={() => setSelectedUser(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
           {filteredUsers.length === 0 && (
@@ -285,88 +438,7 @@ const UserManagement = () => {
           )}
         </div>
 
-        {selectedUser && (
-          <div className="border border-gray-100 rounded-2xl p-6 bg-gray-50 mt-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900">
-                {selectedUser.mode === "view" ? "User Details" : "Edit User"}
-              </h3>
-              <button
-                className="text-xs text-gray-500 hover:text-gray-700"
-                onClick={() => setSelectedUser(null)}
-              >
-                Close
-              </button>
-            </div>
-            {selectedUser.mode === "view" ? (
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>
-                  <span className="font-semibold">Name:</span> {selectedUser.name}
-                </p>
-                <p>
-                  <span className="font-semibold">Email:</span> {selectedUser.email}
-                </p>
-                <p>
-                  <span className="font-semibold">Type:</span> {selectedUser.type}
-                </p>
-                <p>
-                  <span className="font-semibold">Join Date:</span>{" "}
-                  {selectedUser.joinDate}
-                </p>
-                <p>
-                  <span className="font-semibold">Activity:</span>{" "}
-                  {selectedUser.activity}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">
-                    Type
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2"
-                    value={selectedUser.pendingType}
-                    onChange={(e) =>
-                      setSelectedUser((prev) => ({ ...prev, pendingType: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">
-                    Activity
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2"
-                    value={selectedUser.pendingActivity}
-                    onChange={(e) =>
-                      setSelectedUser((prev) => ({
-                        ...prev,
-                        pendingActivity: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="sm:col-span-2 flex justify-end gap-3 mt-2">
-                  <button
-                    className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-200"
-                    onClick={() => setSelectedUser(null)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#a26e35] text-white hover:bg-[#8c5c2c]"
-                    onClick={handleSaveEdit}
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+
       </div>
     </div>
   );
