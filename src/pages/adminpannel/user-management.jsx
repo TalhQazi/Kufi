@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 
-const tabs = ["All Users", "Active", "Suspended"];
+const tabs = ["All Users", "All Suppliers", "Active", "Suspended"];
 
 const users = [
   {
@@ -34,11 +34,10 @@ const StatusBadge = ({ status }) => {
   const isActive = status === "active";
   return (
     <span
-      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-        isActive
-          ? "bg-emerald-100 text-emerald-600"
-          : "bg-rose-100 text-rose-600"
-      }`}
+      className={`px-3 py-1 rounded-full text-xs font-semibold ${isActive
+        ? "bg-emerald-100 text-emerald-600"
+        : "bg-rose-100 text-rose-600"
+        }`}
     >
       {status}
     </span>
@@ -55,7 +54,11 @@ const UserManagement = () => {
     const normalizedQuery = query.toLowerCase().trim();
     return userList.filter((user) => {
       const matchesStatus =
-        activeTab === "All Users" ? true : user.status === activeTab.toLowerCase();
+        activeTab === "All Users"
+          ? true
+          : activeTab === "All Suppliers"
+            ? user.type === "Supplier"
+            : user.status === activeTab.toLowerCase();
       const matchesQuery =
         !normalizedQuery ||
         user.name.toLowerCase().includes(normalizedQuery) ||
@@ -108,19 +111,18 @@ const UserManagement = () => {
 
       <div className="bg-white rounded-2xl card-shadow border border-gray-100 p-6 space-y-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
+          <div className="w-full">
             <p className="text-xs uppercase tracking-[0.2em] text-[#b88a4a] font-semibold">
               Travelers
             </p>
-            <div className="mt-4 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-2 sm:gap-3">
               {tabs.map((tab) => (
                 <button
                   key={tab}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
-                    tab === activeTab
+                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition whitespace-nowrap ${tab === activeTab
                       ? "bg-[#a26e35] text-white"
                       : "border border-gray-200 text-gray-500"
-                  }`}
+                    }`}
                   onClick={() => setActiveTab(tab)}
                 >
                   {tab}
@@ -130,18 +132,19 @@ const UserManagement = () => {
           </div>
 
           <div className="flex items-center bg-gray-50 border border-gray-100 rounded-2xl px-3 py-2 text-sm text-gray-500 w-full lg:w-64">
-            <Search className="w-4 h-4 mr-2 text-gray-400" />
+            <Search className="w-4 h-4 mr-2 text-gray-400 shrink-0" />
             <input
               type="text"
               placeholder="Search users..."
-              className="flex-1 bg-transparent outline-none"
+              className="flex-1 bg-transparent outline-none w-full"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-gray-100">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-hidden rounded-2xl border border-gray-100">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
               <tr>
@@ -158,15 +161,15 @@ const UserManagement = () => {
                 <tr key={user.email} className="hover:bg-gray-50/70">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-sm font-semibold">
+                      <div className="h-10 w-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-sm font-semibold shrink-0">
                         {user.name
                           .split(" ")
                           .map((n) => n[0])
                           .join("")}
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-900">{user.name}</p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
+                        <p className="font-semibold text-slate-900 leading-none">{user.name}</p>
+                        <p className="text-xs text-gray-500 mt-1">{user.email}</p>
                       </div>
                     </div>
                   </td>
@@ -212,6 +215,74 @@ const UserManagement = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-4">
+          {filteredUsers.map((user) => (
+            <div key={user.email} className="bg-white border border-gray-100 rounded-2xl p-4 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-sm font-semibold shrink-0">
+                  {user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-slate-900 truncate">{user.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs border-y border-gray-50 py-3">
+                <div>
+                  <p className="text-gray-400 font-medium mb-1">Type</p>
+                  <p className="text-slate-700 font-semibold">{user.type}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-medium mb-1">Status</p>
+                  <StatusBadge status={user.status} />
+                </div>
+                <div>
+                  <p className="text-gray-400 font-medium mb-1">Join Date</p>
+                  <p className="text-slate-700 font-semibold">{user.joinDate}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-medium mb-1">Activity</p>
+                  <p className="text-slate-700 font-semibold">{user.activity}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <button
+                  className="flex-1 py-2 rounded-xl bg-blue-50 text-blue-600 text-xs font-bold hover:bg-blue-100 transition"
+                  onClick={() => handleView(user)}
+                >
+                  View Detail
+                </button>
+                <button
+                  className="flex-1 py-2 rounded-xl bg-orange-50 text-orange-600 text-xs font-bold hover:bg-orange-100 transition"
+                  onClick={() => handleEdit(user)}
+                >
+                  Edit
+                </button>
+                <button
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${user.status === "suspended"
+                      ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                      : "bg-rose-50 text-rose-600 hover:bg-rose-100"
+                    }`}
+                  onClick={() => handleSuspend(user)}
+                >
+                  {user.status === "suspended" ? "Restore" : "Suspend"}
+                </button>
+              </div>
+            </div>
+          ))}
+          {filteredUsers.length === 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center text-sm text-gray-500">
+              No users found.
+            </div>
+          )}
         </div>
 
         {selectedUser && (

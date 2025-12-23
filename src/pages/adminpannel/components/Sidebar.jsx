@@ -20,7 +20,7 @@ const navItems = [
   { label: "System Notification", icon: Bell },
 ];
 
-const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick }) => {
+const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick, isVisible, isDarkMode }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -48,7 +48,7 @@ const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick }) => {
   return (
     <>
       {/* Mobile top nav */}
-      <aside className="md:hidden w-full bg-[#704b24] text-white px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+      <aside className={`md:hidden w-full px-4 py-3 flex items-center justify-between sticky top-0 z-50 transition-colors duration-300 ${isDarkMode ? "bg-gray-900 border-b border-gray-800" : "bg-[#704b24] text-white"}`}>
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
@@ -80,8 +80,7 @@ const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick }) => {
       {/* Mobile Sidebar Drawer */}
       <aside
         ref={menuRef}
-        className={`md:hidden fixed top-0 left-0 h-full w-64 bg-[#704b24] text-white z-50 transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
+        className={`md:hidden fixed top-0 left-0 h-full w-64 z-50 transform transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} ${isDarkMode ? "bg-gray-900 text-white border-r border-gray-800" : "bg-[#704b24] text-white"}`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -119,8 +118,8 @@ const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick }) => {
                 <button
                   key={item.label}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition ${isActive
-                    ? "bg-white text-[#704b24] font-semibold rounded-2xl shadow-sm"
-                    : "text-white/80 hover:bg-white/10 rounded-2xl"
+                    ? (isDarkMode ? "bg-white text-gray-950 font-semibold rounded-2xl shadow-sm" : "bg-white text-[#704b24] font-semibold rounded-2xl shadow-sm")
+                    : (isDarkMode ? "text-gray-400 hover:bg-white/10 rounded-2xl" : "text-white/80 hover:bg-white/10 rounded-2xl")
                     }`}
                   onClick={() => {
                     onSelect?.(item.label);
@@ -128,7 +127,9 @@ const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick }) => {
                   }}
                 >
                   <Icon
-                    className={`w-4 h-4 ${isActive ? "text-[#704b24]" : "text-white/80"
+                    className={`w-4 h-4 ${isActive
+                      ? (isDarkMode ? "text-gray-950" : "text-[#704b24]")
+                      : (isDarkMode ? "text-gray-400" : "text-white/80")
                       }`}
                   />
                   <span className="ml-1">{item.label}</span>
@@ -156,62 +157,66 @@ const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick }) => {
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col bg-[#704b24] text-white w-64 h-screen sticky top-0 overflow-y-auto">
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-          <button
-            onClick={() => {
-              if (onHomeClick) {
-                onHomeClick()
-              } else {
-                window.location.hash = '#home'
-              }
-            }}
-            className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
-          >
-            <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
-          </button>
-        </div>
+      <aside className={`hidden md:flex flex-col h-screen sticky top-0 overflow-y-auto transition-all duration-300 ${isVisible ? "w-64 opacity-100" : "w-0 opacity-0 pointer-events-none"} ${isDarkMode ? "bg-gray-900 border-r border-gray-800" : "bg-[#704b24] text-white"}`}>
+        <div className="min-w-[256px]">
+          {/* Logo */}
+          <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
+            <button
+              onClick={() => {
+                if (onHomeClick) {
+                  onHomeClick()
+                } else {
+                  window.location.hash = '#home'
+                }
+              }}
+              className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
+            </button>
+          </div>
 
-        {/* Navigation */}
-        <nav className="mt-3 flex-1 px-4 space-y-2 pb-4">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              activePage === item.label ||
-              (item.label === "Activity" && activePage.startsWith("Activity"));
-            return (
-              <button
-                key={item.label}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition ${isActive
-                  ? "bg-white text-[#704b24] font-semibold rounded-2xl shadow-sm"
-                  : "text-white/80 hover:bg-white/10 rounded-2xl"
-                  }`}
-                onClick={() => onSelect?.(item.label)}
-              >
-                <Icon
-                  className={`w-4 h-4 ${isActive ? "text-[#704b24]" : "text-white/80"
+          {/* Navigation */}
+          <nav className="mt-3 flex-1 px-4 space-y-2 pb-4">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                activePage === item.label ||
+                (item.label === "Activity" && activePage.startsWith("Activity"));
+              return (
+                <button
+                  key={item.label}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition ${isActive
+                    ? (isDarkMode ? "bg-white text-gray-950 font-semibold rounded-2xl shadow-sm" : "bg-white text-[#704b24] font-semibold rounded-2xl shadow-sm")
+                    : (isDarkMode ? "text-gray-400 hover:bg-white/10 rounded-2xl" : "text-white/80 hover:bg-white/10 rounded-2xl")
                     }`}
-                />
-                <span className="ml-1">{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+                  onClick={() => onSelect?.(item.label)}
+                >
+                  <Icon
+                    className={`w-4 h-4 ${isActive
+                      ? (isDarkMode ? "text-gray-950" : "text-[#704b24]")
+                      : (isDarkMode ? "text-gray-400" : "text-white/80")
+                      }`}
+                  />
+                  <span className="ml-1">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
 
-        {/* Logout Button */}
-        <div className="px-4 pb-4">
-          <button
-            onClick={() => {
-              if (onLogout) {
-                onLogout();
-              }
-            }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white/80 hover:bg-white/10 rounded-2xl transition"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="ml-1">Logout</span>
-          </button>
+          {/* Logout Button */}
+          <div className="px-4 pb-4">
+            <button
+              onClick={() => {
+                if (onLogout) {
+                  onLogout();
+                }
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition rounded-2xl ${isDarkMode ? "text-gray-400 hover:bg-white/10" : "text-white/80 hover:bg-white/10"}`}
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="ml-1">Logout</span>
+            </button>
+          </div>
         </div>
       </aside>
     </>
