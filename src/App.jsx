@@ -278,14 +278,18 @@ export default function App() {
   )
 
   if (page === 'payment') return (
-    <Payment
-      onHomeClick={() => navigateTo('home')}
-      bookingData={bookingData}
-      onBack={goBack}
-      onForward={goForward}
-      canGoBack={canGoBack}
-      canGoForward={canGoForward}
-    />
+    <>
+      <Payment
+        onHomeClick={() => navigateTo('home')}
+        bookingData={bookingData}
+        onBack={goBack}
+        onForward={goForward}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        onNotificationClick={() => setShowNotifications(true)}
+      />
+      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
+    </>
   )
 
   if (page === 'itinerary-view') return (

@@ -149,7 +149,11 @@ export default function CategoryPage({
 
                         <div className="category-profile-dropdown" ref={dropdownRef}>
                             <button onClick={() => setDropdown(!dropdown)} className="category-profile-btn">
-                                <div className="category-profile-avatar">U</div>
+                                <img
+                                    src="/assets/profile-avatar.jpeg"
+                                    alt="Profile"
+                                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
+                                />
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
                                     <path d="M6 9l6 6 6-6" />
                                 </svg>
