@@ -62,24 +62,22 @@ const SupplierRequests = ({ darkMode }) => {
     return (
       <div className={`space-y-6 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
         {/* Hero banner */}
-        <div className="overflow-hidden rounded-3xl bg-gradient-to-tr from-[#1f2933] via-[#4b5563] to-[#9ca3af] relative h-48 flex items-end">
+        <div className="overflow-hidden rounded-3xl bg-gradient-to-tr from-[#1f2933] via-[#4b5563] to-[#9ca3af] relative h-40 sm:h-48 flex items-end">
           <img
             src="https://images.pexels.com/photos/5700446/pexels-photo-5700446.jpeg?auto=compress&cs=tinysrgb&w=1200"
             alt="City skyline"
             className="absolute inset-0 h-full w-full object-cover opacity-60"
           />
-          <div className="relative w-full px-6 pb-6 text-white flex flex-col gap-2">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-gray-200 flex items-center gap-1">
+          <div className="relative w-full px-4 sm:px-6 pb-4 sm:pb-6 text-white flex flex-col gap-1 sm:gap-2">
+            <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-gray-200 flex items-center gap-1">
               <span className="opacity-80">Dashboard</span>
               <span className="opacity-60">/</span>
               <span className="opacity-80">Requests</span>
-              <span className="opacity-60">/</span>
-              <span className="font-semibold">Create Itinerary</span>
             </p>
-            <h1 className="text-2xl font-semibold drop-shadow-sm">
+            <h1 className="text-xl sm:text-2xl font-semibold drop-shadow-sm">
               Proceed to Create Itinerary
             </h1>
-            <p className="text-xs text-gray-100 max-w-xl">
+            <p className="text-[10px] sm:text-xs text-gray-100 max-w-xl line-clamp-2 sm:line-clamp-none">
               Review traveler preferences and choose a personalized itinerary plan.
             </p>
           </div>
@@ -318,7 +316,7 @@ const SupplierRequests = ({ darkMode }) => {
               </div>
 
               {/* Bottom row: actions */}
-              <div className="mt-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between border-t transition-colors pt-4" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
+              <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t transition-colors pt-4" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
                 <button
                   type="button"
                   disabled={acceptedRequestId !== req.id}
@@ -329,28 +327,26 @@ const SupplierRequests = ({ darkMode }) => {
                       setView("itinerary");
                     }
                   }}
-                  className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-all ${acceptedRequestId === req.id
-                      ? "bg-[#a26e35] text-white shadow-sm hover:bg-[#8b5e2d]"
-                      : (darkMode ? "bg-slate-800 text-slate-600 cursor-not-allowed" : "bg-gray-100 text-gray-400 cursor-not-allowed")
+                  className={`inline-flex w-full lg:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${acceptedRequestId === req.id
+                    ? "bg-[#a26e35] text-white shadow-sm hover:bg-[#8b5e2d]"
+                    : (darkMode ? "bg-slate-800 text-slate-600 cursor-not-allowed" : "bg-gray-100 text-gray-400 cursor-not-allowed")
                     }`}
                 >
-                  <span className="text-sm">★</span>
+                  <Sparkles className="h-3.5 w-3.5" />
                   <span>Proceed To Create Itinerary</span>
                 </button>
-                <div className="flex w-full items-center justify-end gap-2 md:w-auto">
+                <div className="flex items-center justify-end gap-2 w-full lg:w-auto">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setAcceptedRequestId(req.id);
                     }}
-                    className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors"
+                    className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors"
                   >
-                    <span className="text-sm leading-none">✔</span>
                     <span>Accept</span>
                   </button>
-                  <button className="inline-flex items-center gap-2 rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-rose-600 transition-colors">
-                    <span className="text-sm leading-none">✕</span>
+                  <button className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-rose-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-600 transition-colors">
                     <span>Reject</span>
                   </button>
                 </div>

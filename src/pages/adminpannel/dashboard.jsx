@@ -97,22 +97,22 @@ const StatCard = ({
   const arrow = positive ? "▲" : "▼";
 
   return (
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 px-4 sm:px-5 py-3 sm:py-4">
-          <div className="flex items-start justify-between">
-            <div
-              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center ${iconBg}`}
-            >
-              <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${iconColor}`} />
-            </div>
-            <div className={`flex items-center text-xs font-semibold ${changeColor}`}>
-              {arrow}
-              <span className="ml-1">{change}</span>
-            </div>
-          </div>
-
-          <p className="mt-4 sm:mt-5 text-xs sm:text-sm font-medium text-gray-500">{title}</p>
-          <p className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">{value}</p>
+    <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 px-4 sm:px-5 py-3 sm:py-4">
+      <div className="flex items-start justify-between">
+        <div
+          className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center ${iconBg}`}
+        >
+          <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${iconColor}`} />
         </div>
+        <div className={`flex items-center text-xs font-semibold ${changeColor}`}>
+          {arrow}
+          <span className="ml-1">{change}</span>
+        </div>
+      </div>
+
+      <p className="mt-4 sm:mt-5 text-xs sm:text-sm font-medium text-gray-500">{title}</p>
+      <p className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">{value}</p>
+    </div>
   );
 };
 
@@ -215,9 +215,8 @@ const bookingsOptions = {
 
 const ActivityItem = ({ action, user, time, isLast }) => (
   <div
-    className={`flex items-center justify-between py-3 ${
-      isLast ? "" : "border-b border-gray-100"
-    }`}
+    className={`flex items-center justify-between py-3 ${isLast ? "" : "border-b border-gray-100"
+      }`}
   >
     <div>
       <p className="text-sm font-medium text-slate-800">{action}</p>
@@ -241,7 +240,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
         {stats.map((item) => (
           <StatCard key={item.title} {...item} />
         ))}
@@ -273,11 +272,11 @@ const Dashboard = () => {
       </div>
 
       {/* Recent activity */}
-      <div className="bg-white rounded-xl card-shadow px-4 sm:px-5 py-4 sm:py-5 border border-gray-100">
-        <h2 className="text-xs sm:text-sm font-semibold text-slate-900 mb-4">
+      <div className="bg-white rounded-xl card-shadow px-4 sm:px-6 py-4 sm:py-5 border border-gray-100">
+        <h2 className="text-sm font-semibold text-slate-900 mb-4 uppercase tracking-wider text-[11px]">
           Recent Activity
         </h2>
-        <div>
+        <div className="divide-y divide-gray-50">
           {recentActivity.map((item, index) => (
             <ActivityItem
               key={item.action}
