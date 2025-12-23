@@ -62,7 +62,7 @@ const ExperienceDetails = ({ darkMode, experience, onBack, onBookNow }) => {
   return (
     <div className={`space-y-6 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
       {/* Header card */}
-      <div className={`rounded-2xl border px-4 sm:px-6 py-4 flex items-center justify-between gap-3 transition-colors ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+      <div className={`rounded-2xl border px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-colors ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
@@ -71,18 +71,18 @@ const ExperienceDetails = ({ darkMode, experience, onBack, onBookNow }) => {
           >
             <ChevronDown className="h-5 w-5 rotate-90" />
           </button>
-          <div>
-            <h1 className={`text-lg sm:text-xl font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+          <div className="min-w-0">
+            <h1 className={`text-base sm:text-xl font-semibold transition-colors truncate ${darkMode ? "text-white" : "text-slate-900"}`}>
               {experience.title}
             </h1>
-            <p className={`text-xs sm:text-sm mt-1 transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+            <p className={`text-[10px] sm:text-sm mt-0.5 transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
               Detailed information about this package
             </p>
           </div>
         </div>
         <button
           onClick={onBookNow}
-          className="rounded-full bg-[#a26e35] px-6 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#8b5e2d] transition-colors"
+          className="w-full sm:w-auto rounded-full bg-[#a26e35] px-6 py-2.5 sm:py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#8b5e2d] transition-colors"
         >
           Book Now
         </button>
@@ -91,14 +91,14 @@ const ExperienceDetails = ({ darkMode, experience, onBack, onBookNow }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Image and Key Info */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="h-80 w-full overflow-hidden rounded-2xl shadow-sm">
+          <div className="aspect-video sm:h-80 w-full overflow-hidden rounded-2xl shadow-sm">
             <img src={experience.image} alt={experience.title} className="w-full h-full object-cover" />
           </div>
 
-          <div className={`rounded-2xl border p-6 space-y-6 transition-colors ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+          <div className={`rounded-2xl border p-4 sm:p-6 space-y-6 transition-colors ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
             <div>
-              <h2 className={`text-lg font-semibold mb-4 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Description</h2>
-              <p className={`text-sm leading-relaxed transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
+              <h2 className={`text-base sm:text-lg font-semibold mb-3 sm:mb-4 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Description</h2>
+              <p className={`text-xs sm:text-sm leading-relaxed transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
                 Experience the magic of {experience.title}. This package offers a unique blend of adventure and relaxation.
                 Includes professional guides, all necessary equipment, and unforgettable memories.
               </p>
@@ -108,22 +108,22 @@ const ExperienceDetails = ({ darkMode, experience, onBack, onBookNow }) => {
               <div className="text-center">
                 <Clock className="w-5 h-5 mx-auto mb-2 text-[#a26e35]" />
                 <p className={`text-[10px] uppercase tracking-wider transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>Duration</p>
-                <p className={`text-xs font-semibold mt-1 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{experience.duration}</p>
+                <p className={`text-[11px] sm:text-xs font-semibold mt-1 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{experience.duration}</p>
               </div>
               <div className="text-center">
                 <Users className="w-5 h-5 mx-auto mb-2 text-[#a26e35]" />
                 <p className={`text-[10px] uppercase tracking-wider transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>Capacity</p>
-                <p className={`text-xs font-semibold mt-1 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>12 People</p>
+                <p className={`text-[11px] sm:text-xs font-semibold mt-1 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>12 People</p>
               </div>
               <div className="text-center">
                 <Star className="w-5 h-5 mx-auto mb-2 text-amber-500 fill-amber-500" />
                 <p className={`text-[10px] uppercase tracking-wider transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>Rating</p>
-                <p className={`text-xs font-semibold mt-1 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{experience.rating}</p>
+                <p className={`text-[11px] sm:text-xs font-semibold mt-1 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{experience.rating}</p>
               </div>
               <div className="text-center">
                 <Bus className="w-5 h-5 mx-auto mb-2 text-[#a26e35]" />
                 <p className={`text-[10px] uppercase tracking-wider transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>Activities</p>
-                <p className={`text-xs font-semibold mt-1 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>4 Activities</p>
+                <p className={`text-[11px] sm:text-xs font-semibold mt-1 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>4 Activities</p>
               </div>
             </div>
           </div>
@@ -226,7 +226,7 @@ const ExperiencesListing = ({ darkMode, onAddExperience, onEditExperience, onVie
       </div>
 
       {/* Experiences grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
         {experiences.map((exp) => (
           <div
             key={exp.id}

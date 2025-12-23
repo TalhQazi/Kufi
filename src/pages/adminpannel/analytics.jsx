@@ -125,22 +125,22 @@ const Analytics = () => (
       </p>
     </div>
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {statCards.map((card) => (
         <div
           key={card.label}
-          className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center justify-between card-shadow"
+          className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 flex items-center justify-between card-shadow"
         >
           <div className="flex items-center gap-4">
-            <div className={`h-12 w-12 rounded-2xl flex items-center justify-center text-white ${card.color}`}>
+            <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl flex items-center justify-center text-white shrink-0 ${card.color}`}>
               <card.icon className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">
-              {card.label}
+              <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">
+                {card.label}
               </p>
-              <p className="text-2xl font-semibold text-slate-900 mt-2">{card.value}</p>
-              <p className="text-xs text-green-600 mt-1">{card.change}</p>
+              <p className="text-xl sm:text-2xl font-semibold text-slate-900 mt-1">{card.value}</p>
+              <p className="text-xs text-green-600 mt-0.5">{card.change}</p>
             </div>
           </div>
         </div>
@@ -171,19 +171,25 @@ const Analytics = () => (
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 card-shadow">
-        <h2 className="text-sm font-semibold text-slate-900 mb-2">
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 card-shadow">
+        <h2 className="text-sm font-semibold text-slate-900 mb-4 uppercase tracking-wider text-[11px]">
           Bookings by Category
         </h2>
-        <div className="h-64 flex items-center justify-center">
+        <div className="h-64 sm:h-72 flex items-center justify-center">
           <Doughnut
             data={bookingsData}
             options={{
+              maintainAspectRatio: false,
               plugins: {
                 legend: {
                   display: true,
-                  position: "right",
-                  labels: { usePointStyle: true, color: "#1f2937", padding: 20 },
+                  position: "bottom",
+                  labels: {
+                    usePointStyle: true,
+                    color: "#1f2937",
+                    padding: 15,
+                    font: { size: 10 }
+                  },
                 },
               },
             }}
@@ -208,11 +214,40 @@ const Analytics = () => (
       </div>
     </div>
 
-    <div className="bg-white rounded-3xl border border-gray-100 card-shadow p-6">
+    <div className="bg-white rounded-3xl border border-gray-100 card-shadow p-5 sm:p-6">
       <h2 className="text-lg font-semibold text-slate-900 mb-4">
         Top Performing Listings
       </h2>
-      <div className="overflow-x-auto">
+
+      {/* Mobile: Card View */}
+      <div className="md:hidden space-y-4">
+        {topListings.map((listing) => (
+          <div key={listing.listing} className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-2">
+            <p className="font-semibold text-slate-900 text-sm">{listing.listing}</p>
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div>
+                <p className="text-gray-400 text-[10px] uppercase tracking-wider">Views</p>
+                <p className="text-slate-700 font-medium text-xs">{listing.views}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-[10px] uppercase tracking-wider">Bookings</p>
+                <p className="text-slate-700 font-medium text-xs">{listing.bookings}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-[10px] uppercase tracking-wider">Revenue</p>
+                <p className="text-[#a26e35] font-bold text-xs">{listing.revenue}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-[10px] uppercase tracking-wider">Conversion</p>
+                <p className="text-emerald-600 font-bold text-xs">{listing.conversion}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: Table View */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-xs uppercase text-gray-400 border-t border-b border-gray-100">
             <tr>

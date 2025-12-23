@@ -62,17 +62,17 @@ const SupplierProfile = ({ darkMode }) => {
   return (
     <div className={`space-y-6 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
       {/* Top bar: title + button */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className={`text-xl font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-slate-900"}`}>Profile & Verification</h1>
-          <p className={`mt-1 text-sm transition-colors duration-300 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+          <h1 className={`text-xl sm:text-2xl font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-slate-900"}`}>Profile & Verification</h1>
+          <p className={`mt-1 text-xs sm:text-sm transition-colors duration-300 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
             Manage your supplier profile and documents
           </p>
         </div>
 
         <button
           onClick={() => setIsEditing(!isEditing)}
-          className={`self-start rounded-full px-5 py-2 text-xs font-semibold shadow-sm transition-all ${isEditing
+          className={`w-full sm:w-auto rounded-full px-6 py-2.5 text-xs font-semibold shadow-sm transition-all ${isEditing
             ? "bg-emerald-600 text-white hover:bg-emerald-700"
             : "bg-[#a26e35] text-white hover:bg-[#8b5e2d]"
             }`}
@@ -162,14 +162,14 @@ const SupplierProfile = ({ darkMode }) => {
           </div>
 
           {/* Verification documents card */}
-          <div className={`rounded-2xl border transition-colors duration-300 px-5 py-5 space-y-4 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+          <div className={`rounded-2xl border transition-colors duration-300 px-4 sm:px-5 py-5 space-y-4 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
             <h2 className={`text-sm font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-slate-900"}`}>Verification Documents</h2>
 
             {/* Upload area */}
             <button
               type="button"
               onClick={handleUploadClick}
-              className={`w-full rounded-2xl border border-dashed px-6 py-8 text-center text-xs transition-all ${darkMode
+              className={`w-full rounded-2xl border border-dashed px-4 sm:px-6 py-6 sm:py-8 text-center text-xs transition-all ${darkMode
                 ? "bg-slate-800 border-slate-700 text-slate-400 hover:border-amber-500/60 hover:bg-slate-700"
                 : "bg-gray-50 border-gray-300 text-gray-500 hover:border-[#a26e35]/60 hover:bg-gray-100"
                 }`}
@@ -177,9 +177,9 @@ const SupplierProfile = ({ darkMode }) => {
               <div className={`mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${darkMode ? "bg-slate-700 text-slate-400 border-slate-600" : "bg-white text-gray-400 border-gray-200"}`}>
                 <span className="text-lg">↑</span>
               </div>
-              <p className={`mb-1 text-sm font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Click to upload</p>
-              <p className={`mb-2 text-[11px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>or drag and drop</p>
-              <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
+              <p className={`mb-1 text-xs sm:text-sm font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Click to upload</p>
+              <p className={`mb-2 text-[10px] sm:text-[11px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>or drag and drop</p>
+              <p className={`text-[10px] sm:text-[11px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
                 Business License (PDF, PNG, JPG up to 10MB)
               </p>
             </button>
@@ -201,9 +201,9 @@ const SupplierProfile = ({ darkMode }) => {
                     : (darkMode ? "bg-amber-900/20" : "bg-amber-50")
                     }`}
                 >
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p
-                      className={`text-sm font-semibold transition-colors ${doc.status === "Verified"
+                      className={`text-sm font-semibold transition-colors truncate ${doc.status === "Verified"
                         ? (darkMode ? "text-emerald-400" : "text-emerald-800")
                         : (darkMode ? "text-amber-400" : "text-amber-800")
                         }`}
@@ -211,7 +211,7 @@ const SupplierProfile = ({ darkMode }) => {
                       {doc.name}
                     </p>
                     <p
-                      className={`mt-0.5 text-[11px] transition-colors ${doc.status === "Verified"
+                      className={`mt-0.5 text-[10px] sm:text-[11px] transition-colors ${doc.status === "Verified"
                         ? (darkMode ? "text-emerald-500/80" : "text-emerald-700")
                         : (darkMode ? "text-amber-500/80" : "text-amber-700")
                         }`}
@@ -219,7 +219,7 @@ const SupplierProfile = ({ darkMode }) => {
                       {doc.meta}
                     </p>
                   </div>
-                  <button className="text-xs font-semibold text-[#a26e35] underline">
+                  <button className="ml-4 text-xs font-semibold text-[#a26e35] underline shrink-0">
                     View
                   </button>
                 </div>

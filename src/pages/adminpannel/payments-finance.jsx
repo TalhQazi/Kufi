@@ -83,9 +83,8 @@ const StatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`px-3 py-1 text-[11px] font-semibold rounded-full capitalize ${
-        map[status] || "bg-gray-100 text-gray-600"
-      }`}
+      className={`px-3 py-1 text-[11px] font-semibold rounded-full capitalize ${map[status] || "bg-gray-100 text-gray-600"
+        }`}
     >
       {status}
     </span>
@@ -155,7 +154,7 @@ const PaymentsFinance = () => {
           return (
             <div
               key={card.label}
-              className="bg-white rounded-2xl border border-gray-100 px-10 py-6 card-shadow flex flex-col items-start justify-between min-h-[168px]"
+              className="bg-white rounded-2xl border border-gray-100 px-6 sm:px-10 py-5 sm:py-6 card-shadow flex flex-col items-start justify-between min-h-[140px] sm:min-h-[168px]"
             >
               <div
                 className={`w-12 h-12 rounded-2xl flex items-center justify-center ${card.bg}`}
@@ -175,8 +174,8 @@ const PaymentsFinance = () => {
         })}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 card-shadow p-5 space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="bg-white rounded-2xl border border-gray-100 card-shadow p-4 sm:p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-wide text-[#c18c4d] font-semibold">
               Transactions
@@ -184,7 +183,7 @@ const PaymentsFinance = () => {
           </div>
           <button
             onClick={handleExport}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors w-full sm:w-auto"
           >
             <span>Export</span>
           </button>
@@ -197,18 +196,50 @@ const PaymentsFinance = () => {
               onClick={() => setActiveTab(tab.value)}
               className={`px-4 py-2 rounded-xl text-xs md:text-sm font-medium transition ${{
                 true: "",
-              }} ${
-                activeTab === tab.value
-                  ? "bg-[#a26e35] text-white shadow-sm"
-                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-              }`}
+              }} ${activeTab === tab.value
+                ? "bg-[#a26e35] text-white shadow-sm"
+                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                }`}
             >
               {tab.label}
             </button>
           ))}
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-gray-100 mt-2">
+        {/* Mobile: Card View */}
+        <div className="md:hidden space-y-4">
+          {filteredTransactions.map((tx) => (
+            <div key={tx.id} className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-3">
+              <div className="flex justify-between items-start text-xs">
+                <span className="text-gray-400 font-medium">#{tx.id}</span>
+                <StatusBadge status={tx.status} />
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-slate-800">{tx.user}</p>
+                <p className="text-xs text-gray-500 mt-0.5 truncate">{tx.listing}</p>
+              </div>
+
+              <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Amount</p>
+                  <p className="text-sm font-bold text-slate-900">{tx.amount}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Commission</p>
+                  <p className="text-sm font-bold text-emerald-600">{tx.commission}</p>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-gray-400 text-right">
+                {tx.date}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop: Table View */}
+        <div className="hidden md:block overflow-hidden rounded-2xl border border-gray-100 mt-2">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
               <tr>
@@ -216,26 +247,26 @@ const PaymentsFinance = () => {
                   Transaction ID
                 </th>
                 <th className="text-left px-6 py-3 font-semibold">User</th>
-                <th className="text-left px-6 py-3 font-semibold">Listing</th>
+                <th className="text-left px-6 py-3 font-semibold hidden lg:table-cell">Listing</th>
                 <th className="text-left px-6 py-3 font-semibold">Amount</th>
                 <th className="text-left px-6 py-3 font-semibold">Commission</th>
-                <th className="text-left px-6 py-3 font-semibold">Date</th>
+                <th className="text-left px-6 py-3 font-semibold hidden xl:table-cell">Date</th>
                 <th className="text-left px-6 py-3 font-semibold">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {filteredTransactions.map((tx) => (
                 <tr key={tx.id} className="hover:bg-gray-50/80">
-                  <td className="px-6 py-4 text-gray-700 font-medium">
+                  <td className="px-6 py-4 text-gray-700 font-medium text-xs whitespace-nowrap">
                     {tx.id}
                   </td>
                   <td className="px-6 py-4 text-gray-700">{tx.user}</td>
-                  <td className="px-6 py-4 text-gray-700">{tx.listing}</td>
-                  <td className="px-6 py-4 text-gray-700">{tx.amount}</td>
-                  <td className="px-6 py-4 text-emerald-600 font-semibold">
+                  <td className="px-6 py-4 text-gray-700 max-w-[200px] truncate hidden lg:table-cell">{tx.listing}</td>
+                  <td className="px-6 py-4 text-gray-700 font-semibold">{tx.amount}</td>
+                  <td className="px-6 py-4 text-emerald-600 font-bold">
                     {tx.commission}
                   </td>
-                  <td className="px-6 py-4 text-gray-600">{tx.date}</td>
+                  <td className="px-6 py-4 text-gray-500 text-xs hidden xl:table-cell">{tx.date}</td>
                   <td className="px-6 py-4">
                     <StatusBadge status={tx.status} />
                   </td>
@@ -243,12 +274,13 @@ const PaymentsFinance = () => {
               ))}
             </tbody>
           </table>
-          {filteredTransactions.length === 0 && (
-            <div className="py-10 text-center text-sm text-gray-500">
-              No transactions in this state.
-            </div>
-          )}
         </div>
+
+        {filteredTransactions.length === 0 && (
+          <div className="py-10 text-center text-sm text-gray-500 bg-gray-50/30 rounded-2xl border border-dashed border-gray-200">
+            No transactions match the selected filter.
+          </div>
+        )}
       </div>
     </div>
   );

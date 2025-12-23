@@ -166,15 +166,48 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
             </button>
           </div>
 
-          <div className="w-full overflow-x-auto">
+          {/* Mobile: Card View */}
+          <div className="md:hidden divide-y divide-gray-100">
+            {bookings.map((row) => (
+              <div key={row.id} className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className={`h-8 w-8 rounded-full transition-colors ${darkMode ? "bg-slate-800" : "bg-gray-200"}`} />
+                    <div>
+                      <p className={`font-semibold text-xs transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{row.name}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">#{row.code}</p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors ${statusClass(row.status)}`}>
+                    {row.status}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-end">
+                  <div className="space-y-1">
+                    <p className={`text-[10px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
+                      {row.experience} • {row.guests} Guests
+                    </p>
+                    <p className={`text-[10px] transition-colors ${darkMode ? "text-slate-600" : "text-gray-400"}`}>
+                      {row.date}
+                    </p>
+                  </div>
+                  <p className="text-sm font-bold text-[#a26e35]">{row.amount}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: Table View */}
+          <div className="hidden md:block w-full overflow-x-auto">
             <table className={`min-w-full border-separate border-spacing-0 text-left text-xs transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
               <thead>
                 <tr className={`${darkMode ? "bg-slate-900/50 text-slate-500" : "bg-gray-50 text-gray-400"} text-[11px] uppercase tracking-wide`}>
                   <th className="px-6 py-3 font-medium">Name</th>
-                  <th className="px-4 py-3 font-medium">Code</th>
+                  <th className="px-4 py-3 font-medium hidden lg:table-cell">Code</th>
                   <th className="px-4 py-3 font-medium">Guests</th>
                   <th className="px-4 py-3 font-medium">Experience</th>
-                  <th className="px-4 py-3 font-medium">Date</th>
+                  <th className="px-4 py-3 font-medium hidden xl:table-cell">Date</th>
                   <th className="px-4 py-3 font-medium">Amount</th>
                   <th className="px-6 py-3 font-medium text-right">Status</th>
                 </tr>
@@ -191,11 +224,11 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                         <span className={`transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{row.name}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-xs">{row.code}</td>
+                    <td className="px-4 py-3 text-xs hidden lg:table-cell">{row.code}</td>
                     <td className="px-4 py-3 text-xs">{row.guests}</td>
-                    <td className="px-4 py-3 text-xs">{row.experience}</td>
-                    <td className="px-4 py-3 text-xs">{row.date}</td>
-                    <td className="px-4 py-3 text-xs">{row.amount}</td>
+                    <td className="px-4 py-3 text-xs max-w-[150px] truncate">{row.experience}</td>
+                    <td className="px-4 py-3 text-xs hidden xl:table-cell">{row.date}</td>
+                    <td className="px-4 py-3 text-xs font-semibold">{row.amount}</td>
                     <td className="px-6 py-3 text-right">
                       <span
                         className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${statusClass(
