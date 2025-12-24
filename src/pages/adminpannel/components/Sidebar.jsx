@@ -60,7 +60,7 @@ const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick, isVisible, isDar
             }}
             className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
           >
-            <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
+            <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain brightness-0 invert" />
           </button>
         </div>
         <button
@@ -96,7 +96,7 @@ const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick, isVisible, isDar
               }}
               className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
             >
-              <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
+              <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain brightness-0 invert" />
             </button>
             <button
               onClick={() => setMobileMenuOpen(false)}
@@ -171,7 +171,7 @@ const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick, isVisible, isDar
               }}
               className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
             >
-              <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
+              <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain brightness-0 invert" />
             </button>
           </div>
 

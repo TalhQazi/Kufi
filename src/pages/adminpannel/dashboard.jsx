@@ -238,7 +238,7 @@ const QuickActionButton = ({ icon: Icon, label, bgColor, onClick }) => (
   </button>
 );
 
-const Dashboard = () => {
+const Dashboard = ({ onNavigate }) => {
   return (
     <div className="space-y-6">
       {/* Page heading */}
@@ -305,25 +305,25 @@ const Dashboard = () => {
           icon={Check}
           label="Approve/Reject Supplier Registration"
           bgColor="bg-[#0D9488]"
-          onClick={() => console.log("Approve/Reject clicked")}
+          onClick={() => onNavigate?.("User Management")}
         />
         <QuickActionButton
           icon={RefreshCw}
           label="Manage Refunds"
           bgColor="bg-[#2563EB]"
-          onClick={() => console.log("Manage Refunds clicked")}
+          onClick={() => onNavigate?.("Payments & Finance")}
         />
         <QuickActionButton
           icon={Eye}
           label="View Disputes"
           bgColor="bg-[#EA580C]"
-          onClick={() => console.log("View Disputes clicked")}
+          onClick={() => onNavigate?.("User Management")}
         />
         <QuickActionButton
           icon={Send}
           label="Send Notifications"
           bgColor="bg-[#0F766E]"
-          onClick={() => console.log("Send Notifications clicked")}
+          onClick={() => onNavigate?.("System Notification")}
         />
       </div>
     </div>
