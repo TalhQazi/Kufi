@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, Trello, DollarSign, BookOpen } from "lucide-react";
+import { Users, Trello, DollarSign, BookOpen, Check, RefreshCw, Eye, Send } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -226,7 +226,19 @@ const ActivityItem = ({ action, user, time, isLast }) => (
   </div>
 );
 
-const Dashboard = () => {
+const QuickActionButton = ({ icon: Icon, label, bgColor, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`${bgColor} hover:opacity-90 transition-all flex items-center gap-3 px-4 sm:px-6 py-4 rounded-xl text-white font-medium w-full shadow-md active:scale-[0.98] group`}
+  >
+    <div className="bg-white/20 p-2 rounded-lg group-hover:bg-white/30 transition-colors">
+      <Icon className="w-5 h-5" />
+    </div>
+    <span className="text-sm sm:text-base leading-tight text-left">{label}</span>
+  </button>
+);
+
+const Dashboard = ({ onNavigate }) => {
   return (
     <div className="space-y-6">
       {/* Page heading */}
@@ -285,6 +297,34 @@ const Dashboard = () => {
             />
           ))}
         </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <QuickActionButton
+          icon={Check}
+          label="Approve/Reject Supplier Registration"
+          bgColor="bg-[#0D9488]"
+          onClick={() => onNavigate?.("User Management")}
+        />
+        <QuickActionButton
+          icon={RefreshCw}
+          label="Manage Refunds"
+          bgColor="bg-[#2563EB]"
+          onClick={() => onNavigate?.("Payments & Finance")}
+        />
+        <QuickActionButton
+          icon={Eye}
+          label="View Disputes"
+          bgColor="bg-[#EA580C]"
+          onClick={() => onNavigate?.("User Management")}
+        />
+        <QuickActionButton
+          icon={Send}
+          label="Send Notifications"
+          bgColor="bg-[#0F766E]"
+          onClick={() => onNavigate?.("System Notification")}
+        />
       </div>
     </div>
   );

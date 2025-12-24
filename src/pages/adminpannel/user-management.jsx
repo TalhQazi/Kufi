@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 
-const tabs = ["All Users", "All Suppliers", "Active", "Suspended"];
+const tabs = ["All Users", "All Suppliers", "Active", "Suspended", "Disputes", "Reviews"];
 
 const users = [
   {

@@ -21,7 +21,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode)
 
   const renderPage = () => {
-    if (activePage === 'Dashboard') return <Dashboard />
+    if (activePage === 'Dashboard') return <Dashboard onNavigate={setActivePage} />
     if (activePage.startsWith('Activity')) {
       if (activePage === 'Activity/Add') return <AddActivity />
       return <Activity onAddNew={() => setActivePage('Activity/Add')} />
