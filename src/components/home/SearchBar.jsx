@@ -22,7 +22,7 @@ export default function SearchBar() {
             >
                 <div className="px-2 py-1">
                     <Input
-                        label="Where do you want to stay?"
+                        label="Where do you want to visit ?"
                         icon={<FiMapPin className="text-slate-500 text-lg" />}
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
@@ -44,12 +44,16 @@ export default function SearchBar() {
                         icon={<FiCalendar className="text-slate-500 text-lg" />}
                         value={duration}
                         onChange={(e) => setDuration(e.target.value)}
-                        placeholder="08 Days"
+                        placeholder="Select Days"
                         options={[
-                            { value: '3', label: '03 Days' },
-                            { value: '5', label: '05 Days' },
-                            { value: '8', label: '08 Days' },
-                            { value: '10', label: '10 Days' },
+                            { value: '3', label: '01 Day' },
+                            { value: '5', label: '02 Days' },
+                            { value: '8', label: '03 Days' },
+                            { value: '10', label: '04 Days' },
+                            { value: '3', label: '05 Days' },
+                            { value: '5', label: '06 Days' },
+                            { value: '8', label: '07 Days' },
+                            { value: '10', label: '08 Days' },
                         ]}
                         inputClassName="!bg-slate-50 !border-slate-300 !text-base !font-medium !text-slate-700 !h-[48px] !rounded-lg"
                         labelClassName="!text-sm !text-slate-700 !mb-2 !font-normal"
@@ -80,12 +84,12 @@ export default function SearchBar() {
                         icon={<FiUsers className="text-slate-500 text-lg" />}
                         value={travelers}
                         onChange={(e) => setTravelers(e.target.value)}
-                        placeholder="Guest and rooms"
+                        placeholder="Guest "
                         options={[
                             { value: '1', label: '1 Guest' },
-                            { value: '2', label: '2 Guests' },
-                            { value: '3', label: '3 Guests' },
-                            { value: '4', label: '4 Guests' },
+                            { value: '2', label: '2 Guest' },
+                            { value: '3', label: '3 Guest' },
+                            { value: '4', label: '4 Guest' },
                         ]}
                         inputClassName="!bg-slate-50 !border-slate-300 !text-base !font-medium !text-slate-700 !h-[48px] !rounded-lg"
                         labelClassName="!text-sm !text-slate-700 !mb-2 !font-normal"

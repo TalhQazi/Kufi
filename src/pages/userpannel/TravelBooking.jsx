@@ -16,12 +16,13 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         arrivalDate: '',
         departureDate: '',
         includeHotel: false,
-        hotelAllGood: false,
-        foodOwn: false,
+        includeHotel: false,
+        hotelOwn: false,
+        foodAllGood: false,
         vegetarian: false,
-        includeInsurance: false,
-        travelOwn: false,
-        withTransport: false,
+        insuranceOwn: false,
+        travelOwn: true,
+        withTransport: true,
         budget: '',
         additionalOptions: false
     })
@@ -350,11 +351,11 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"
-                                            checked={formData.hotelAllGood}
-                                            onChange={(e) => handleChange('hotelAllGood', e.target.checked)}
+                                            checked={formData.hotelOwn}
+                                            onChange={(e) => handleChange('hotelOwn', e.target.checked)}
                                             className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
                                         />
-                                        <span className="text-sm text-slate-700">All is good</span>
+                                        <span className="text-sm text-slate-700">I will choose my own</span>
                                     </label>
                                 </div>
                             </div>
@@ -366,11 +367,11 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"
-                                            checked={formData.foodOwn}
-                                            onChange={(e) => handleChange('foodOwn', e.target.checked)}
+                                            checked={formData.foodAllGood}
+                                            onChange={(e) => handleChange('foodAllGood', e.target.checked)}
                                             className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
                                         />
-                                        <span className="text-sm text-slate-700">I will choose my own</span>
+                                        <span className="text-sm text-slate-700">All is good</span>
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
@@ -384,9 +385,27 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                 </div>
                             </div>
 
-                            {/* Travel Must Haves/Wants */}
+                            {/* Transportation */}
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-slate-700 mb-3">Travel Must Haves/Wants</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-3">Transportation</label>
+                                <div className="grid grid-cols-1 mb-4 gap-3 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                                    <label className="flex items-center gap-2 cursor-not-allowed opacity-80">
+                                        <div className="w-5 h-5 rounded bg-primary-brown flex items-center justify-center">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                        </div>
+                                        <span className="text-sm font-semibold text-slate-800 tracking-tight">Included in Itinerary</span>
+                                    </label>
+                                    <p className="text-[11px] text-slate-500 ml-7 leading-tight italic">
+                                        Ground transportation for all scheduled itinerary activities is provided.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Travel Health Insurance */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-slate-700 mb-3">Travel Health Insurance</label>
                                 <div className="grid grid-cols-2 gap-3">
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
@@ -400,20 +419,11 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"
-                                            checked={formData.travelOwn}
-                                            onChange={(e) => handleChange('travelOwn', e.target.checked)}
+                                            checked={formData.insuranceOwn}
+                                            onChange={(e) => handleChange('insuranceOwn', e.target.checked)}
                                             className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
                                         />
                                         <span className="text-sm text-slate-700">I will choose my own</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.withTransport}
-                                            onChange={(e) => handleChange('withTransport', e.target.checked)}
-                                            className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                        />
-                                        <span className="text-sm text-slate-700">With Transport</span>
                                     </label>
                                 </div>
                             </div>

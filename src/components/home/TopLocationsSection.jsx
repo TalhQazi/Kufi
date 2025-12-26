@@ -14,32 +14,18 @@ export default function TopLocationsSection({ onCountryClick }) {
         { id: 4, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-4.jpeg' },
     ]
 
-    // Triple the items for seamless infinite scroll
-    const locations = [...baseLocations, ...baseLocations, ...baseLocations]
-
     useEffect(() => {
         const slider = scrollRef.current
         if (!slider) return
 
-        // Set initial scroll to the middle section
-        const itemWidth = slider.scrollWidth / 3
-        slider.scrollLeft = itemWidth
-
-        const handleScroll = () => {
-            const currentScroll = slider.scrollLeft
-            const maxScroll = slider.scrollWidth
-            const sectionWidth = maxScroll / 3
-
-            if (currentScroll <= 0) {
-                slider.scrollLeft = sectionWidth
-            } else if (currentScroll >= sectionWidth * 2) {
-                slider.scrollLeft = sectionWidth
-            }
-        }
+        let hasMoved = false
 
         const handleMouseDown = (e) => {
+            // Don't interfere with button clicks
+            if (e.target.closest('button')) return
+
             isDown.current = true
-            slider.classList.add('active-scroll')
+            hasMoved = false
             startX.current = e.pageX - slider.offsetLeft
             scrollLeftAtStart.current = slider.scrollLeft
         }
@@ -56,20 +42,29 @@ export default function TopLocationsSection({ onCountryClick }) {
 
         const handleMouseMove = (e) => {
             if (!isDown.current) return
-            e.preventDefault()
+
             const x = e.pageX - slider.offsetLeft
-            const walk = (x - startX.current) * 2 // Scroll speed
-            slider.scrollLeft = scrollLeftAtStart.current - walk
+            const distance = Math.abs(x - startX.current)
+
+            // Only start dragging if moved more than 5px
+            if (distance > 5 && !hasMoved) {
+                hasMoved = true
+                slider.classList.add('active-scroll')
+            }
+
+            if (hasMoved) {
+                e.preventDefault()
+                const walk = (x - startX.current) * 2 // Scroll speed
+                slider.scrollLeft = scrollLeftAtStart.current - walk
+            }
         }
 
-        slider.addEventListener('scroll', handleScroll)
         slider.addEventListener('mousedown', handleMouseDown)
         slider.addEventListener('mouseleave', handleMouseLeave)
         slider.addEventListener('mouseup', handleMouseUp)
         slider.addEventListener('mousemove', handleMouseMove)
 
         return () => {
-            slider.removeEventListener('scroll', handleScroll)
             slider.removeEventListener('mousedown', handleMouseDown)
             slider.removeEventListener('mouseleave', handleMouseLeave)
             slider.removeEventListener('mouseup', handleMouseUp)
@@ -79,11 +74,11 @@ export default function TopLocationsSection({ onCountryClick }) {
 
     return (
         <section className="bg-gradient-to-b from-white to-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
-            <div className="max-w-[1200px] mx-auto">
-                <div className="text-center mb-8">
-                    <p className="text-lg font-normal text-black m-0 mb-1 font-sacramento">Top Locations</p>
-                    <h2 className="text-[26px] font-bold text-slate-900 m-0 mb-2">Top Locations We Are Currently Serving</h2>
-                    <p className="text-xs text-slate-500 max-w-[560px] m-0 mx-auto">
+            <div className="max-w-[1240px] mx-auto">
+                <div className="text-center mb-10">
+                    <p className="text-lg font-normal text-[#a67c52] m-0 mb-1 font-sacramento">Top Locations</p>
+                    <h2 className="text-xl sm:text-3xl font-bold text-slate-900 m-0 mb-4">Top Locations We Are Currently Serving</h2>
+                    <p className="text-sm text-slate-500 max-w-[560px] m-0 mx-auto">
                         Lorem ipsum dolor sit amet consectetur. Porttitor montes mi tristique elit bibendum
                         elit libero egestas pellentesque.
                     </p>
@@ -91,10 +86,10 @@ export default function TopLocationsSection({ onCountryClick }) {
 
                 <div
                     ref={scrollRef}
-                    className="flex overflow-x-auto gap-6 mt-8 hide-scrollbar cursor-grab active:cursor-grabbing select-none pb-4"
+                    className="flex overflow-x-auto gap-6 hide-scrollbar pb-6 snap-x snap-mandatory cursor-grab active:cursor-grabbing select-none"
                 >
-                    {locations.map((item, index) => (
-                        <div key={`${item.id}-${index}`} className="min-w-[280px] sm:min-w-[300px] flex-shrink-0">
+                    {baseLocations.map((item, index) => (
+                        <div key={`${item.id}-${index}`} className="min-w-[280px] sm:min-w-[320px] flex-shrink-0 snap-start">
                             <Card
                                 variant="destination"
                                 image={item.image}

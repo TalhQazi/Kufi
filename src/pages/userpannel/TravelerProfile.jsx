@@ -14,8 +14,6 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
         country: 'United States',
         dob: '1988-03-15',
         gender: 'Female',
-        passportNumber: 'US123456789',
-        passportExpiry: '2028-06-01',
         address: '123 Maple Street, Apt 4B',
         city: 'San Francisco, CA',
         nationality: 'American'
@@ -393,49 +391,6 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                     )}
                                 </div>
 
-                                {/* Passport Number */}
-                                <div>
-                                    <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                                            <line x1="1" y1="10" x2="23" y2="10" />
-                                        </svg>
-                                        Passport Number
-                                    </div>
-                                    {isEditing ? (
-                                        <input
-                                            type="text"
-                                            value={profileData.passportNumber}
-                                            onChange={(e) => setProfileData({ ...profileData, passportNumber: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
-                                        />
-                                    ) : (
-                                        <div className="text-sm text-slate-900">{profileData.passportNumber}</div>
-                                    )}
-                                </div>
-
-                                {/* Passport Expiry */}
-                                <div>
-                                    <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                            <line x1="16" y1="2" x2="16" y2="6" />
-                                            <line x1="8" y1="2" x2="8" y2="6" />
-                                            <line x1="3" y1="10" x2="21" y2="10" />
-                                        </svg>
-                                        Passport Expiry
-                                    </div>
-                                    {isEditing ? (
-                                        <input
-                                            type="date"
-                                            value={profileData.passportExpiry}
-                                            onChange={(e) => setProfileData({ ...profileData, passportExpiry: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
-                                        />
-                                    ) : (
-                                        <div className="text-sm text-slate-900">{new Date(profileData.passportExpiry).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</div>
-                                    )}
-                                </div>
 
                                 {/* Address */}
                                 <div>
