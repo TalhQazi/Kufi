@@ -72,13 +72,6 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                             <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
                         </button>
 
-                        {/* Message Icon with notification dot */}
-                        <button className="text-gray-500 hover:text-gray-700 relative hidden md:block">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                            </svg>
-                            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                        </button>
 
                         {/* Profile with dropdown */}
                         <div className="relative" ref={dropdownRef}>
@@ -204,13 +197,6 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 </button>
                             </div>
                         )}
-                        <button className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border border-slate-300 bg-white rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                            <svg width="12" height="12" className="sm:w-3.5 sm:h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                            </svg>
-                            <span className="hidden sm:inline">Send Message</span>
-                            <span className="sm:hidden">Message</span>
-                        </button>
                         <button className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-[#8B6E4E] text-white rounded-lg text-xs font-semibold hover:bg-[#7a5d3f]">
                             <svg width="12" height="12" className="sm:w-3.5 sm:h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -855,18 +841,6 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 </div>
                             </div>
 
-                            {/* Last Message */}
-                            <div>
-                                <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-2">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                                    </svg>
-                                    Last Message
-                                </div>
-                                <div className="bg-[#F5F1EB] p-3 rounded-lg text-xs text-slate-600 border border-[#E8DCC8]">
-                                    Looking forward to the Bali trip! Can we add a cooking class?
-                                </div>
-                            </div>
 
                             {/* Reminders */}
                             <div>
