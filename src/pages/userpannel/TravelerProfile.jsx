@@ -305,15 +305,15 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                 </div>
 
                 {/* Tabs */}
-                <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm">
-                    <div className="flex flex-nowrap gap-1 overflow-x-auto hide-scrollbar">
+                <div className="bg-white rounded-2xl p-2 sm:p-3 mb-6 sm:mb-8 shadow-sm">
+                    <div className="flex flex-nowrap gap-2 overflow-x-auto hide-scrollbar">
                         {tabs.map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap rounded-lg ${activeTab === tab
-                                    ? 'bg-slate-100 text-slate-900'
-                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                className={`px-6 py-2.5 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap rounded-lg ${activeTab === tab
+                                    ? 'bg-[#F0F4F8] text-slate-900'
+                                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                                     }`}
                             >
                                 {tab}
@@ -322,564 +322,516 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                     </div>
                 </div>
 
-                {/* Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 sm:gap-6">
-                    {/* Left: Tab Content */}
-                    {activeTab === 'Personal Info' && (
-                        <div className="bg-white rounded-2xl p-6 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-900 mb-6">Personal Information</h3>
+                {/* Tab Content */}
+                {activeTab === 'Personal Info' && (
+                    <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-sm min-h-[500px]">
+                        <h3 className="text-xl font-bold text-slate-900 mb-10">Personal Information</h3>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-8 gap-y-4 sm:gap-y-6">
-                                {/* Date of Birth */}
-                                <div>
-                                    <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                            <line x1="16" y1="2" x2="16" y2="6" />
-                                            <line x1="8" y1="2" x2="8" y2="6" />
-                                            <line x1="3" y1="10" x2="21" y2="10" />
-                                        </svg>
-                                        Date of Birth
-                                    </div>
-                                    {isEditing ? (
-                                        <input
-                                            type="date"
-                                            value={profileData.dob}
-                                            onChange={(e) => setProfileData({ ...profileData, dob: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
-                                        />
-                                    ) : (
-                                        <div className="text-sm text-slate-900">{new Date(profileData.dob).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
-                                    )}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10 max-w-[800px]">
+                            {/* Date of Birth */}
+                            <div>
+                                <div className="flex items-center gap-2 text-[11px] text-[#C4A574] font-medium mb-1.5 uppercase tracking-wider">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                        <line x1="16" y1="2" x2="16" y2="6" />
+                                        <line x1="8" y1="2" x2="8" y2="6" />
+                                        <line x1="3" y1="10" x2="21" y2="10" />
+                                    </svg>
+                                    Date of Birth
                                 </div>
-
-                                {/* Gender */}
-                                <div>
-                                    <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                            <circle cx="12" cy="7" r="4" />
-                                        </svg>
-                                        Gender
+                                {isEditing ? (
+                                    <input
+                                        type="date"
+                                        value={profileData.dob}
+                                        onChange={(e) => setProfileData({ ...profileData, dob: e.target.value })}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                    />
+                                ) : (
+                                    <div className="text-sm sm:text-base text-slate-900 font-medium">
+                                        {new Date(profileData.dob).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                                     </div>
-                                    {isEditing ? (
-                                        <select
-                                            value={profileData.gender}
-                                            onChange={(e) => setProfileData({ ...profileData, gender: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                )}
+                            </div>
+
+                            {/* Gender */}
+                            <div>
+                                <div className="flex items-center gap-2 text-[11px] text-[#C4A574] font-medium mb-1.5 uppercase tracking-wider">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                        <circle cx="12" cy="7" r="4" />
+                                    </svg>
+                                    Gender
+                                </div>
+                                {isEditing ? (
+                                    <select
+                                        value={profileData.gender}
+                                        onChange={(e) => setProfileData({ ...profileData, gender: e.target.value })}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                    >
+                                        <option value="Female">Female</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                ) : (
+                                    <div className="text-sm sm:text-base text-slate-900 font-medium">{profileData.gender}</div>
+                                )}
+                            </div>
+
+
+                            {/* Address */}
+                            <div>
+                                <div className="flex items-center gap-2 text-[11px] text-[#C4A574] font-medium mb-1.5 uppercase tracking-wider">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                        <circle cx="12" cy="10" r="3" />
+                                    </svg>
+                                    Address
+                                </div>
+                                {isEditing ? (
+                                    <input
+                                        type="text"
+                                        value={profileData.address}
+                                        onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                    />
+                                ) : (
+                                    <div className="text-sm sm:text-base text-slate-900 font-medium">{profileData.address}</div>
+                                )}
+                            </div>
+
+                            {/* City */}
+                            <div>
+                                <div className="flex items-center gap-2 text-[11px] text-[#C4A574] font-medium mb-1.5 uppercase tracking-wider">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                        <circle cx="12" cy="10" r="3" />
+                                    </svg>
+                                    City
+                                </div>
+                                {isEditing ? (
+                                    <input
+                                        type="text"
+                                        value={profileData.city}
+                                        onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                    />
+                                ) : (
+                                    <div className="text-sm sm:text-base text-slate-900 font-medium">{profileData.city}</div>
+                                )}
+                            </div>
+
+                            {/* Nationality */}
+                            <div>
+                                <div className="flex items-center gap-2 text-[11px] text-[#C4A574] font-medium mb-1.5 uppercase tracking-wider">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="2" y1="12" x2="22" y2="12" />
+                                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                    </svg>
+                                    Nationality
+                                </div>
+                                {isEditing ? (
+                                    <input
+                                        type="text"
+                                        value={profileData.nationality}
+                                        onChange={(e) => setProfileData({ ...profileData, nationality: e.target.value })}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                    />
+                                ) : (
+                                    <div className="text-sm sm:text-base text-slate-900 font-medium">{profileData.nationality}</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'Preferences' && (
+                    <div className="bg-white rounded-2xl p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-900 mb-6">Traveler Preferences</h3>
+
+                        <div className="space-y-6">
+                            {/* Preferred Destinations */}
+                            <div>
+                                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 mb-3">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
+                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                                        <line x1="1" y1="10" x2="23" y2="10" />
+                                    </svg>
+                                    Preferred Destinations
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {['Europe', 'Southeast Asia', 'South America', 'Mediterranean'].map((dest) => (
+                                        <button
+                                            key={dest}
+                                            className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]"
                                         >
-                                            <option value="Female">Female</option>
-                                            <option value="Male">Male</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    ) : (
-                                        <div className="text-sm text-slate-900">{profileData.gender}</div>
-                                    )}
+                                            {dest}
+                                        </button>
+                                    ))}
                                 </div>
+                            </div>
 
+                            {/* Preferred Trip Types */}
+                            <div>
+                                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 mb-3">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
+                                        <path d="M3 12h18M3 6h18M3 18h18" />
+                                        <path d="M6 3v6M6 15v6M18 3v6M18 15v6" />
+                                    </svg>
+                                    Preferred Trip Types
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {['Cultural', 'Adventure', 'Relaxation', 'Food & Wine'].map((type) => (
+                                        <button
+                                            key={type}
+                                            className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]"
+                                        >
+                                            {type}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
-                                {/* Address */}
-                                <div>
-                                    <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            {/* Budget Range */}
+                            <div>
+                                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 mb-3">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
+                                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                                        <line x1="7" y1="7" x2="7.01" y2="7" />
+                                    </svg>
+                                    Budget Range
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <button className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]">
+                                        $3,000 - $5,000 per trip
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Food Preferences */}
+                            <div>
+                                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 mb-3">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
+                                        <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+                                        <path d="M7 2v20" />
+                                        <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3v0" />
+                                        <path d="M21 15c0 1.1-.9 2-2 2h-5v2a2 2 0 0 0 2 2h3a2 2 0 0 0 2-2v-4z" />
+                                    </svg>
+                                    Food Preferences
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {['Local Cuisine', 'Vegetarian Options', 'Fine Dining'].map((food) => (
+                                        <button
+                                            key={food}
+                                            className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]"
+                                        >
+                                            {food}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Accommodation Preferences */}
+                            <div>
+                                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 mb-3">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
+                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                        <polyline points="9 22 9 12 15 12 15 22" />
+                                    </svg>
+                                    Accommodation Preferences
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {['Boutique Hotels', '4-5 Star', 'Unique Stays'].map((accom) => (
+                                        <button
+                                            key={accom}
+                                            className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]"
+                                        >
+                                            {accom}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Travel Style */}
+                            <div>
+                                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 mb-3">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="2" y1="12" x2="22" y2="12" />
+                                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                    </svg>
+                                    Travel Style
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <button className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]">
+                                        Luxury
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'Travel History' && (
+                    <div className="bg-white rounded-2xl p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-900 mb-6">Travel History</h3>
+
+                        <div className="space-y-4">
+                            {/* Travel Entry 1: Greek Islands Explorer */}
+                            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
+                                <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=200&h=200&fit=crop"
+                                        alt="Santorini, Greece"
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0 w-full sm:w-auto">
+                                    <h4 className="font-bold text-slate-900 mb-2">Greek Islands Explorer</h4>
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
+                                        <div className="flex items-center gap-1">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                <circle cx="12" cy="10" r="3" />
+                                            </svg>
+                                            <span>Santorini, Greece</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                                <line x1="16" y1="2" x2="16" y2="6" />
+                                                <line x1="8" y1="2" x2="8" y2="6" />
+                                                <line x1="3" y1="10" x2="21" y2="10" />
+                                            </svg>
+                                            <span className="hidden sm:inline">Jun 15 - Jun 25, 2024</span>
+                                            <span className="sm:hidden">Jun 15-25, 2024</span>
+                                        </div>
+                                        <span>• 10 days</span>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
+                                    <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
+                                        View Itinerary
+                                    </button>
+                                    <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold whitespace-nowrap text-center">
+                                        Completed
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Travel Entry 2: Tropical Paradise Retreat */}
+                            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
+                                <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=200&h=200&fit=crop"
+                                        alt="Bali, Indonesia"
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0 w-full sm:w-auto">
+                                    <h4 className="font-bold text-slate-900 mb-2">Tropical Paradise Retreat</h4>
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
+                                        <div className="flex items-center gap-1">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                <circle cx="12" cy="10" r="3" />
+                                            </svg>
+                                            <span>Bali, Indonesia</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                                <line x1="16" y1="2" x2="16" y2="6" />
+                                                <line x1="8" y1="2" x2="8" y2="6" />
+                                                <line x1="3" y1="10" x2="21" y2="10" />
+                                            </svg>
+                                            <span className="hidden sm:inline">Dec 1 - Dec 15, 2024</span>
+                                            <span className="sm:hidden">Dec 1-15, 2024</span>
+                                        </div>
+                                        <span>• 14 days</span>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
+                                    <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
+                                        View Itinerary
+                                    </button>
+                                    <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold whitespace-nowrap text-center">
+                                        In Progress
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Travel Entry 3: Romantic Paris Getaway */}
+                            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
+                                <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=200&h=200&fit=crop"
+                                        alt="Paris, France"
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0 w-full sm:w-auto">
+                                    <h4 className="font-bold text-slate-900 mb-2">Romantic Paris Getaway</h4>
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
+                                        <div className="flex items-center gap-1">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                <circle cx="12" cy="10" r="3" />
+                                            </svg>
+                                            <span>Paris, France</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                                <line x1="16" y1="2" x2="16" y2="6" />
+                                                <line x1="8" y1="2" x2="8" y2="6" />
+                                                <line x1="3" y1="10" x2="21" y2="10" />
+                                            </svg>
+                                            <span className="hidden sm:inline">Apr 10 - Apr 17, 2024</span>
+                                            <span className="sm:hidden">Apr 10-17, 2024</span>
+                                        </div>
+                                        <span>• 7 days</span>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
+                                    <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
+                                        View Itinerary
+                                    </button>
+                                    <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold whitespace-nowrap text-center">
+                                        Completed
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'Wishlist' && (
+                    <div className="bg-white rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center gap-2 mb-6">
+                            <h3 className="text-lg font-bold text-slate-900">Saved Itineraries & Wishlist</h3>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#D4AF37" stroke="#D4AF37" strokeWidth="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                            </svg>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                            {/* Card 1: Machu Picchu Adventure */}
+                            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                <div className="relative">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1587595431973-160d0d94a8c0?w=400&h=250&fit=crop"
+                                        alt="Machu Picchu, Peru"
+                                        className="w-full h-48 object-cover rounded-t-xl"
+                                    />
+                                    <div className="absolute top-3 right-3">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#D4AF37" stroke="#D4AF37" strokeWidth="2">
+                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="p-4">
+                                    <div className="text-xs text-slate-400 font-medium mb-1">Adventure</div>
+                                    <h4 className="font-bold text-slate-900 mb-2">Machu Picchu Adventure</h4>
+                                    <div className="flex items-center gap-1 text-sm text-slate-600">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
                                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                                             <circle cx="12" cy="10" r="3" />
                                         </svg>
-                                        Address
+                                        <span>Peru</span>
                                     </div>
-                                    {isEditing ? (
-                                        <input
-                                            type="text"
-                                            value={profileData.address}
-                                            onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
-                                        />
-                                    ) : (
-                                        <div className="text-sm text-slate-900">{profileData.address}</div>
-                                    )}
                                 </div>
+                            </div>
 
-                                {/* City */}
-                                <div>
-                                    <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            {/* Card 2: Safari Experience */}
+                            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                <div className="relative">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1516426122078-c23e76319801?w=400&h=250&fit=crop"
+                                        alt="Safari, Tanzania"
+                                        className="w-full h-48 object-cover rounded-t-xl"
+                                    />
+                                    <div className="absolute top-3 right-3">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#D4AF37" stroke="#D4AF37" strokeWidth="2">
+                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="p-4">
+                                    <div className="text-xs text-slate-400 font-medium mb-1">Wildlife</div>
+                                    <h4 className="font-bold text-slate-900 mb-2">Safari Experience</h4>
+                                    <div className="flex items-center gap-1 text-sm text-slate-600">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
                                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                                             <circle cx="12" cy="10" r="3" />
                                         </svg>
-                                        City
-                                    </div>
-                                    {isEditing ? (
-                                        <input
-                                            type="text"
-                                            value={profileData.city}
-                                            onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
-                                        />
-                                    ) : (
-                                        <div className="text-sm text-slate-900">{profileData.city}</div>
-                                    )}
-                                </div>
-
-                                {/* Nationality */}
-                                <div>
-                                    <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-1">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <circle cx="12" cy="12" r="10" />
-                                            <line x1="2" y1="12" x2="22" y2="12" />
-                                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                                        </svg>
-                                        Nationality
-                                    </div>
-                                    {isEditing ? (
-                                        <input
-                                            type="text"
-                                            value={profileData.nationality}
-                                            onChange={(e) => setProfileData({ ...profileData, nationality: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
-                                        />
-                                    ) : (
-                                        <div className="text-sm text-slate-900">{profileData.nationality}</div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'Preferences' && (
-                        <div className="bg-white rounded-2xl p-6 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-900 mb-6">Traveler Preferences</h3>
-
-                            <div className="space-y-6">
-                                {/* Preferred Destinations */}
-                                <div>
-                                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 mb-3">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
-                                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                                            <line x1="1" y1="10" x2="23" y2="10" />
-                                        </svg>
-                                        Preferred Destinations
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['Europe', 'Southeast Asia', 'South America', 'Mediterranean'].map((dest) => (
-                                            <button
-                                                key={dest}
-                                                className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]"
-                                            >
-                                                {dest}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Preferred Trip Types */}
-                                <div>
-                                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 mb-3">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
-                                            <path d="M3 12h18M3 6h18M3 18h18" />
-                                            <path d="M6 3v6M6 15v6M18 3v6M18 15v6" />
-                                        </svg>
-                                        Preferred Trip Types
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['Cultural', 'Adventure', 'Relaxation', 'Food & Wine'].map((type) => (
-                                            <button
-                                                key={type}
-                                                className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]"
-                                            >
-                                                {type}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Budget Range */}
-                                <div>
-                                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 mb-3">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
-                                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                                            <line x1="7" y1="7" x2="7.01" y2="7" />
-                                        </svg>
-                                        Budget Range
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        <button className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]">
-                                            $3,000 - $5,000 per trip
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Food Preferences */}
-                                <div>
-                                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 mb-3">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
-                                            <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
-                                            <path d="M7 2v20" />
-                                            <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3v0" />
-                                            <path d="M21 15c0 1.1-.9 2-2 2h-5v2a2 2 0 0 0 2 2h3a2 2 0 0 0 2-2v-4z" />
-                                        </svg>
-                                        Food Preferences
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['Local Cuisine', 'Vegetarian Options', 'Fine Dining'].map((food) => (
-                                            <button
-                                                key={food}
-                                                className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]"
-                                            >
-                                                {food}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Accommodation Preferences */}
-                                <div>
-                                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 mb-3">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
-                                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                                            <polyline points="9 22 9 12 15 12 15 22" />
-                                        </svg>
-                                        Accommodation Preferences
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['Boutique Hotels', '4-5 Star', 'Unique Stays'].map((accom) => (
-                                            <button
-                                                key={accom}
-                                                className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]"
-                                            >
-                                                {accom}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Travel Style */}
-                                <div>
-                                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 mb-3">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
-                                            <circle cx="12" cy="12" r="10" />
-                                            <line x1="2" y1="12" x2="22" y2="12" />
-                                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                                        </svg>
-                                        Travel Style
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        <button className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]">
-                                            Luxury
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'Travel History' && (
-                        <div className="bg-white rounded-2xl p-6 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-900 mb-6">Travel History</h3>
-
-                            <div className="space-y-4">
-                                {/* Travel Entry 1: Greek Islands Explorer */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
-                                    <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=200&h=200&fit=crop"
-                                            alt="Santorini, Greece"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                    <div className="flex-1 min-w-0 w-full sm:w-auto">
-                                        <h4 className="font-bold text-slate-900 mb-2">Greek Islands Explorer</h4>
-                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
-                                            <div className="flex items-center gap-1">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                    <circle cx="12" cy="10" r="3" />
-                                                </svg>
-                                                <span>Santorini, Greece</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                                    <line x1="16" y1="2" x2="16" y2="6" />
-                                                    <line x1="8" y1="2" x2="8" y2="6" />
-                                                    <line x1="3" y1="10" x2="21" y2="10" />
-                                                </svg>
-                                                <span className="hidden sm:inline">Jun 15 - Jun 25, 2024</span>
-                                                <span className="sm:hidden">Jun 15-25, 2024</span>
-                                            </div>
-                                            <span>• 10 days</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
-                                        <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
-                                            View Itinerary
-                                        </button>
-                                        <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold whitespace-nowrap text-center">
-                                            Completed
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Travel Entry 2: Tropical Paradise Retreat */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
-                                    <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=200&h=200&fit=crop"
-                                            alt="Bali, Indonesia"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                    <div className="flex-1 min-w-0 w-full sm:w-auto">
-                                        <h4 className="font-bold text-slate-900 mb-2">Tropical Paradise Retreat</h4>
-                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
-                                            <div className="flex items-center gap-1">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                    <circle cx="12" cy="10" r="3" />
-                                                </svg>
-                                                <span>Bali, Indonesia</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                                    <line x1="16" y1="2" x2="16" y2="6" />
-                                                    <line x1="8" y1="2" x2="8" y2="6" />
-                                                    <line x1="3" y1="10" x2="21" y2="10" />
-                                                </svg>
-                                                <span className="hidden sm:inline">Dec 1 - Dec 15, 2024</span>
-                                                <span className="sm:hidden">Dec 1-15, 2024</span>
-                                            </div>
-                                            <span>• 14 days</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
-                                        <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
-                                            View Itinerary
-                                        </button>
-                                        <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold whitespace-nowrap text-center">
-                                            In Progress
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Travel Entry 3: Romantic Paris Getaway */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
-                                    <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=200&h=200&fit=crop"
-                                            alt="Paris, France"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                    <div className="flex-1 min-w-0 w-full sm:w-auto">
-                                        <h4 className="font-bold text-slate-900 mb-2">Romantic Paris Getaway</h4>
-                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
-                                            <div className="flex items-center gap-1">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                    <circle cx="12" cy="10" r="3" />
-                                                </svg>
-                                                <span>Paris, France</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                                    <line x1="16" y1="2" x2="16" y2="6" />
-                                                    <line x1="8" y1="2" x2="8" y2="6" />
-                                                    <line x1="3" y1="10" x2="21" y2="10" />
-                                                </svg>
-                                                <span className="hidden sm:inline">Apr 10 - Apr 17, 2024</span>
-                                                <span className="sm:hidden">Apr 10-17, 2024</span>
-                                            </div>
-                                            <span>• 7 days</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
-                                        <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
-                                            View Itinerary
-                                        </button>
-                                        <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold whitespace-nowrap text-center">
-                                            Completed
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'Wishlist' && (
-                        <div className="bg-white rounded-2xl p-6 shadow-sm">
-                            <div className="flex items-center gap-2 mb-6">
-                                <h3 className="text-lg font-bold text-slate-900">Saved Itineraries & Wishlist</h3>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="#D4AF37" stroke="#D4AF37" strokeWidth="2">
-                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                                </svg>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                                {/* Card 1: Machu Picchu Adventure */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="relative">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1587595431973-160d0d94a8c0?w=400&h=250&fit=crop"
-                                            alt="Machu Picchu, Peru"
-                                            className="w-full h-48 object-cover rounded-t-xl"
-                                        />
-                                        <div className="absolute top-3 right-3">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#D4AF37" stroke="#D4AF37" strokeWidth="2">
-                                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div className="p-4">
-                                        <div className="text-xs text-slate-400 font-medium mb-1">Adventure</div>
-                                        <h4 className="font-bold text-slate-900 mb-2">Machu Picchu Adventure</h4>
-                                        <div className="flex items-center gap-1 text-sm text-slate-600">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
-                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                <circle cx="12" cy="10" r="3" />
-                                            </svg>
-                                            <span>Peru</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Card 2: Safari Experience */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="relative">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1516426122078-c23e76319801?w=400&h=250&fit=crop"
-                                            alt="Safari, Tanzania"
-                                            className="w-full h-48 object-cover rounded-t-xl"
-                                        />
-                                        <div className="absolute top-3 right-3">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#D4AF37" stroke="#D4AF37" strokeWidth="2">
-                                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div className="p-4">
-                                        <div className="text-xs text-slate-400 font-medium mb-1">Wildlife</div>
-                                        <h4 className="font-bold text-slate-900 mb-2">Safari Experience</h4>
-                                        <div className="flex items-center gap-1 text-sm text-slate-600">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
-                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                <circle cx="12" cy="10" r="3" />
-                                            </svg>
-                                            <span>Tanzania</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Card 3: Northern Lights Tour */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="relative">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1531572753322-ad063cecc140?w=400&h=250&fit=crop"
-                                            alt="Northern Lights, Iceland"
-                                            className="w-full h-48 object-cover rounded-t-xl"
-                                        />
-                                        <div className="absolute top-3 right-3">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#D4AF37" stroke="#D4AF37" strokeWidth="2">
-                                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div className="p-4">
-                                        <div className="text-xs text-slate-400 font-medium mb-1">Nature</div>
-                                        <h4 className="font-bold text-slate-900 mb-2">Northern Lights Tour</h4>
-                                        <div className="flex items-center gap-1 text-sm text-slate-600">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
-                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                <circle cx="12" cy="10" r="3" />
-                                            </svg>
-                                            <span>Iceland</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'Payments' && (
-                        <div className="bg-white rounded-2xl p-6 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-900 mb-6">Payments</h3>
-                            <div className="flex flex-col items-center justify-center py-12">
-                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="1.5" className="mb-4">
-                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                                    <line x1="1" y1="10" x2="23" y2="10" />
-                                </svg>
-                                <p className="text-lg font-semibold text-slate-900 mb-2">Payment System</p>
-                                <p className="text-sm text-slate-500">Coming Soon</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Right: Communication & Notes */}
-                    <div className="bg-[#F5F1EB] rounded-2xl p-6 shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-900 mb-6">Communication & Notes</h3>
-
-                        <div className="space-y-5">
-                            {/* Internal Notes */}
-                            <div>
-                                <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-2">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                        <polyline points="14 2 14 8 20 8" />
-                                        <line x1="16" y1="13" x2="8" y2="13" />
-                                        <line x1="16" y1="17" x2="8" y2="17" />
-                                        <polyline points="10 9 9 9 8 9" />
-                                    </svg>
-                                    Internal Notes
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="bg-[#F5F1EB] p-3 rounded-lg text-xs text-slate-600 border border-[#E8DCC8]">
-                                        Allergic to shellfish - important for meal planning
-                                    </div>
-                                    <div className="bg-[#F5F1EB] p-3 rounded-lg text-xs text-slate-600 border border-[#E8DCC8]">
-                                        Celebrating anniversary - arrange special touches
+                                        <span>Tanzania</span>
                                     </div>
                                 </div>
                             </div>
 
-
-                            {/* Reminders */}
-                            <div>
-                                <div className="flex items-center gap-2 text-xs text-[#C4A574] font-semibold mb-2">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                                    </svg>
-                                    Reminders
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="bg-[#F5F1EB] p-3 rounded-lg text-xs text-slate-600 border border-[#E8DCC8]">
-                                        Follow up on Bali hotel upgrade request
+                            {/* Card 3: Northern Lights Tour */}
+                            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                <div className="relative">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1531572753322-ad063cecc140?w=400&h=250&fit=crop"
+                                        alt="Northern Lights, Iceland"
+                                        className="w-full h-48 object-cover rounded-t-xl"
+                                    />
+                                    <div className="absolute top-3 right-3">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#D4AF37" stroke="#D4AF37" strokeWidth="2">
+                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                        </svg>
                                     </div>
-                                    <div className="bg-[#F5F1EB] p-3 rounded-lg text-xs text-slate-600 border border-[#E8DCC8]">
-                                        Send pre-trip checklist by Nov 25
+                                </div>
+                                <div className="p-4">
+                                    <div className="text-xs text-slate-400 font-medium mb-1">Nature</div>
+                                    <h4 className="font-bold text-slate-900 mb-2">Northern Lights Tour</h4>
+                                    <div className="flex items-center gap-1 text-sm text-slate-600">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                            <circle cx="12" cy="10" r="3" />
+                                        </svg>
+                                        <span>Iceland</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
+                )}
 
-            {/* Notifications Modal */}
-            {showNotifications && (
-                <NotificationsModal
-                    onClose={() => setShowNotifications(false)}
-                    onPaymentClick={() => {
-                        setShowNotifications(false)
-                        setActiveTab('Payments')
-                    }}
-                    onViewItinerary={() => {
-                        setShowNotifications(false)
-                        // Could navigate to itinerary view if needed
-                    }}
-                />
-            )}
-            <Footer />
+                {activeTab === 'Payments' && (
+                    <div className="bg-white rounded-2xl p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-900 mb-6">Payments</h3>
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="1.5" className="mb-4">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                                <line x1="1" y1="10" x2="23" y2="10" />
+                            </svg>
+                            <p className="text-lg font-semibold text-slate-900 mb-2">Payment System</p>
+                            <p className="text-sm text-slate-500">Coming Soon</p>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
-    )
+
+        {/* Notifications Modal */ }
+    {
+        showNotifications && (
+            <NotificationsModal
+                onClose={() => setShowNotifications(false)}
+                onPaymentClick={() => {
+                    setShowNotifications(false)
+                    setActiveTab('Payments')
+                }}
+                onViewItinerary={() => {
+                    setShowNotifications(false)
+                }}
+            />
+        )
+    }
+    <Footer />
+    </div >
+)
 }
