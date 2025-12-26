@@ -1,92 +1,111 @@
 import React from 'react'
+import { Facebook, Instagram, Linkedin, MessageCircle, MapPin, Phone, Mail, SendHorizonal } from 'lucide-react'
 
 export default function Footer() {
   return (
-    <footer className="bg-[#a66e32] text-[#f9fafb]">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-20 py-10 sm:py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 sm:gap-8 lg:gap-12">
+    <footer className="bg-[#a67c52] text-[#f9fafb] font-sans">
+      <div className="max-w-[1240px] mx-auto px-6 pt-10 pb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-6">
+
           {/* Brand Section */}
-          <div className="sm:col-span-2 lg:col-span-2 flex flex-col items-center sm:items-start text-center sm:text-left">
-            <div className="mb-6">
-              <div className="h-14 w-24 sm:h-[66px] sm:w-28 block">
+          <div className="lg:col-span-1 flex flex-col items-start">
+            <div className="mb-4">
+              <div className="h-12 w-20 sm:h-[60px] sm:w-28 block">
                 <img
                   src="/assets/navbar.png"
                   alt="Kufi Travel"
-                  className="w-full h-full object-contain"
-                  style={{ filter: 'brightness(0) invert(1)' }}
+                  className="w-full h-full object-contain brightness-0 invert"
                 />
               </div>
             </div>
-            <p className="text-sm sm:text-base text-[#f9fafb]/90 mb-6 leading-relaxed max-w-sm">
-              Discover extraordinary travel experiences with Kufi Travel. We provide premium tours and accommodations tailored to your unique journey.
+            <p className="text-[14px] text-white/90 mb-6 leading-relaxed max-w-[280px]">
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever.
             </p>
-            <div className="text-xs font-bold mb-4 uppercase tracking-[0.1em] opacity-80">Connect with us</div>
-            <div className="flex gap-4">
-              {['f', 'in', 'ig', 'tw'].map((social) => (
-                <span key={social} className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center text-sm font-medium cursor-pointer transition-all hover:-translate-y-1">
-                  {social}
-                </span>
-              ))}
+            <div>
+              <p className="text-[14px] font-medium mb-3">Connect with us</p>
+              <div className="flex gap-2.5">
+                {[
+                  { icon: Facebook, label: 'Facebook' },
+                  { icon: MessageCircle, label: 'WhatsApp' },
+                  { icon: Instagram, label: 'Instagram' },
+                  { icon: Linkedin, label: 'LinkedIn' }
+                ].map((social, idx) => (
+                  <a key={idx} href="#" className="w-7 h-7 rounded-full bg-white text-[#a67c52] flex items-center justify-center hover:bg-white/90 transition-all hover:scale-110">
+                    <social.icon size={14} fill={social.label === 'Facebook' ? 'currentColor' : 'none'} />
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Services Section */}
-          <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
-            <h4 className="text-sm font-bold mb-6 uppercase tracking-wider">Our Services</h4>
-            <ul className="space-y-3 text-sm text-[#f9fafb]/80">
+          {/* Our Services */}
+          <div className="lg:pl-8">
+            <h4 className="text-base font-bold mb-6">Our Services</h4>
+            <ul className="space-y-2.5 text-[14px] text-white/90">
               {['Home', 'About', 'Destination', 'Book Tour', 'Blog'].map((item) => (
-                <li key={item} className="cursor-pointer hover:text-white transition-colors">{item}</li>
+                <li key={item}>
+                  <a href="#" className="hover:text-white transition-colors">{item}</a>
+                </li>
               ))}
             </ul>
           </div>
 
-          {/* Quick Links Section */}
-          <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
-            <h4 className="text-sm font-bold mb-6 uppercase tracking-wider">Quick Links</h4>
-            <ul className="space-y-3 text-sm text-[#f9fafb]/80">
+          {/* Quick Link */}
+          <div className="lg:pl-4">
+            <h4 className="text-base font-bold mb-6">Quick Link</h4>
+            <ul className="space-y-2.5 text-[14px] text-white/90">
               {["FAQ's", 'Privacy Policy', 'Term & Conditions', 'Support'].map((item) => (
-                <li key={item} className="cursor-pointer hover:text-white transition-colors">{item}</li>
+                <li key={item}>
+                  <a href="#" className="hover:text-white transition-colors">{item}</a>
+                </li>
               ))}
             </ul>
           </div>
 
-          {/* Contact & Newsletter Section */}
-          <div className="sm:col-span-2 lg:col-span-2 flex flex-col items-center sm:items-start text-center sm:text-left lg:mt-0 sm:mt-4">
-            <h4 className="text-sm font-bold mb-6 uppercase tracking-wider">Newsletter</h4>
-            <div className="w-full max-w-sm">
-              <p className="text-xs text-[#f9fafb]/70 mb-4 italic">Subscribe to get the latest travel updates.</p>
-              <div className="flex gap-2 group">
-                <input
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
-                  type="email"
-                  placeholder="Enter your email"
-                />
-                <button className="px-5 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 active:scale-95 transition-all text-white font-bold">
-                  ➤
-                </button>
-              </div>
-            </div>
+          {/* Quick contact */}
+          <div>
+            <h4 className="text-base font-bold mb-6">Quick contact</h4>
+            <ul className="space-y-4 text-[14px] text-white/90">
+              <li className="flex items-start gap-2.5">
+                <MapPin size={18} className="mt-0.5 shrink-0 opacity-80" />
+                <span>Lorem ipsum dolor sit amet consectetur.</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Phone size={18} className="shrink-0 opacity-80" />
+                <span>123 456 7890</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Mail size={18} className="shrink-0 opacity-80" />
+                <span>info@loremipsum.com</span>
+              </li>
+            </ul>
+          </div>
 
-            <div className="mt-8 flex flex-col items-center sm:items-start">
-              <h4 className="text-sm font-bold mb-4 uppercase tracking-wider">Payment Methods</h4>
-              <div className="flex gap-4 items-center flex-wrap justify-center sm:justify-start">
-                <div className="h-4 w-auto brightness-0 invert opacity-80">
-                  <img src="/assets/visa.svg" alt="Visa" className="h-full w-auto" />
-                </div>
-                <div className="h-5 w-auto opacity-90">
-                  <img src="/assets/mastercard.svg" alt="Mastercard" className="h-full w-auto" />
-                </div>
-                <div className="bg-white/90 rounded px-2 py-1 flex items-center h-5">
-                  <img src="/assets/paypal.svg" alt="PayPal" className="h-3 w-auto" />
-                </div>
-              </div>
+          {/* Become a member */}
+          <div className="lg:pl-4">
+            <h4 className="text-base font-bold mb-6">Become a member</h4>
+            <div className="relative mb-6">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="w-full bg-white rounded-full py-2.5 px-5 text-gray-800 text-[14px] placeholder:text-gray-400 focus:outline-none pr-12 shadow-sm"
+              />
+              <button className="absolute right-1 top-1 bottom-1 w-9 h-9 bg-[#a67c52] rounded-full flex items-center justify-center text-white hover:bg-[#8f643e] transition-colors shadow-sm">
+                <SendHorizonal size={16} />
+              </button>
+            </div>
+            <div className="flex gap-3 items-center pl-1">
+              <img src="/assets/visa.svg" alt="Visa" className="h-3 brightness-0 invert opacity-90" />
+              <img src="/assets/mastercard.svg" alt="Mastercard" className="h-6" />
+              <img src="/assets/paypal.svg" alt="PayPal" className="h-4 bg-white px-1 py-0.5 rounded shadow-sm" />
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="border-t border-white/10 px-4 sm:px-6 lg:px-20 py-6 text-center text-xs sm:text-sm text-[#f9fafb]/60">
-        <p>© {new Date().getFullYear()} Kufi Travel. All Rights Reserved. Designed with passion for travel.</p>
+        </div>
+
+        <div className="mt-10 pt-6 border-t border-white/20 text-center text-[13px] text-white/70">
+          <p>© Copyright lorem ipsum amet dolor All Rights Reserved.</p>
+        </div>
       </div>
     </footer>
   )

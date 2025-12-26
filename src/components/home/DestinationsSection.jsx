@@ -1,12 +1,7 @@
-import { useRef, useEffect } from 'react'
+import { useState } from 'react'
 import Card from '../ui/Card'
 
 export default function DestinationsSection({ onCountryClick }) {
-    const scrollRef = useRef(null)
-    const isDown = useRef(false)
-    const startX = useRef(0)
-    const scrollLeftAtStart = useRef(0)
-
     const baseDestinations = [
         { id: 1, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-1.jpeg' },
         { id: 2, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-2.jpeg' },
@@ -16,82 +11,29 @@ export default function DestinationsSection({ onCountryClick }) {
         { id: 6, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-2.jpeg' },
     ]
 
-    // Triple the items for seamless infinite scroll
-    const destinations = [...baseDestinations, ...baseDestinations, ...baseDestinations]
+    const [destinations, setDestinations] = useState(baseDestinations.slice(0, 4))
 
-    useEffect(() => {
-        const slider = scrollRef.current
-        if (!slider) return
-
-        // Set initial scroll to the middle section
-        const itemWidth = slider.scrollWidth / 3
-        slider.scrollLeft = itemWidth
-
-        const handleScroll = () => {
-            const currentScroll = slider.scrollLeft
-            const maxScroll = slider.scrollWidth
-            const sectionWidth = maxScroll / 3
-
-            if (currentScroll <= 0) {
-                slider.scrollLeft = sectionWidth
-            } else if (currentScroll >= sectionWidth * 2) {
-                slider.scrollLeft = sectionWidth
-            }
+    const handleShowMore = () => {
+        const currentCount = destinations.length
+        const nextItems = []
+        const timestamp = Date.now()
+        for (let i = 0; i < 4; i++) {
+            const baseItem = baseDestinations[(currentCount + i) % baseDestinations.length]
+            nextItems.push({ ...baseItem, id: `dest-${timestamp}-${currentCount + i}` })
         }
-
-        const handleMouseDown = (e) => {
-            isDown.current = true
-            slider.classList.add('active-scroll')
-            startX.current = e.pageX - slider.offsetLeft
-            scrollLeftAtStart.current = slider.scrollLeft
-        }
-
-        const handleMouseLeave = () => {
-            isDown.current = false
-            slider.classList.remove('active-scroll')
-        }
-
-        const handleMouseUp = () => {
-            isDown.current = false
-            slider.classList.remove('active-scroll')
-        }
-
-        const handleMouseMove = (e) => {
-            if (!isDown.current) return
-            e.preventDefault()
-            const x = e.pageX - slider.offsetLeft
-            const walk = (x - startX.current) * 2 // Scroll speed
-            slider.scrollLeft = scrollLeftAtStart.current - walk
-        }
-
-        slider.addEventListener('scroll', handleScroll)
-        slider.addEventListener('mousedown', handleMouseDown)
-        slider.addEventListener('mouseleave', handleMouseLeave)
-        slider.addEventListener('mouseup', handleMouseUp)
-        slider.addEventListener('mousemove', handleMouseMove)
-
-        return () => {
-            slider.removeEventListener('scroll', handleScroll)
-            slider.removeEventListener('mousedown', handleMouseDown)
-            slider.removeEventListener('mouseleave', handleMouseLeave)
-            slider.removeEventListener('mouseup', handleMouseUp)
-            slider.removeEventListener('mousemove', handleMouseMove)
-        }
-    }, [])
+        setDestinations(prev => [...prev, ...nextItems])
+    }
 
     return (
         <section className="bg-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
-            <div className="max-w-[1200px] mx-auto">
-                <div className="mb-8 flex items-center justify-between">
-                    <h2 className="text-xl sm:text-[26px] font-bold text-slate-900 m-0">Explore Destinations</h2>
+            <div className="max-w-[1240px] mx-auto">
+                <div className="mb-10">
+                    <h2 className="text-xl sm:text-3xl font-bold text-slate-900">Explore Destinations</h2>
                 </div>
 
-                <div
-                    ref={scrollRef}
-                    className="flex overflow-x-auto gap-6 hide-scrollbar cursor-grab active:cursor-grabbing select-none pb-4"
-                >
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {destinations.map((item, index) => (
-                        <div key={`${item.id}-${index}`} className="min-w-[280px] sm:min-w-[300px] flex-shrink-0">
+                        <div key={`${item.id}-${index}`} className="w-full">
                             <Card
                                 variant="destination"
                                 image={item.image}
@@ -106,6 +48,16 @@ export default function DestinationsSection({ onCountryClick }) {
                             />
                         </div>
                     ))}
+                </div>
+
+                <div className="mt-8 flex justify-center">
+                    <button
+                        type="button"
+                        onClick={handleShowMore}
+                        className="bg-[#a67c52] text-white px-10 py-3.5 rounded-full font-semibold hover:bg-[#8f643e] transition-all shadow-md active:scale-95 text-lg"
+                    >
+                        Show More
+                    </button>
                 </div>
             </div>
         </section>
