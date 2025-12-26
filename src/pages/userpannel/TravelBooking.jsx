@@ -85,19 +85,6 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                         </button>
                     </div>
 
-                    <div className="hidden sm:block flex-1 max-w-md mx-6 lg:mx-12">
-                        <div className="relative flex items-center">
-                            <svg className="absolute left-3" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
-                                <circle cx="11" cy="11" r="8" />
-                                <path d="M21 21L16.65 16.65" />
-                            </svg>
-                            <input
-                                type="text"
-                                placeholder="Search something"
-                                className="w-full py-2.5 pl-10 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
-                            />
-                        </div>
-                    </div>
 
                     <div className="flex items-center gap-2 sm:gap-4">
                         <button

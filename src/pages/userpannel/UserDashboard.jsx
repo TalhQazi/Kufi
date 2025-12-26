@@ -32,7 +32,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
             requestDate: '1/15/2025',
             travelDates: 'Mar 20-23, 2025',
             price: '$2,450',
-            status: 'Accepted by Supplier',
+            status: 'supplier replied back',
             statusColor: 'bg-green-100 text-green-700',
             statusIcon: <FaCheckCircle />,
             image: '/assets/dest-1.jpeg'
@@ -71,7 +71,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
             requestDate: '1/15/2025',
             travelDates: 'Mar 20-23, 2025',
             price: '$2,450',
-            status: 'Accepted by Supplier',
+            status: 'supplier replied back',
             statusColor: 'bg-green-100 text-green-700',
             statusIcon: <FaCheckCircle />,
             image: '/assets/dest-4.jpeg'
@@ -122,17 +122,6 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                         >
                             <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
                         </button>
-                    </div>
-
-                    <div className="flex-1 max-w-xl mx-4 md:mx-8 hidden md:block">
-                        <div className="relative">
-                            <input
-                                type="text"
-                                placeholder="Search something"
-                                className="w-full bg-gray-100 border-none rounded-lg py-2.5 pl-4 pr-10 text-sm focus:ring-2 focus:ring-[#A67C52]/20"
-                            />
-                            <FiSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                        </div>
                     </div>
 
                     <div className="flex items-center gap-4 md:gap-6">
@@ -314,17 +303,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                         </div>
 
                                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mt-auto gap-3 sm:gap-4">
-                                            <button
-                                                onClick={() => {
-                                                    if (onItineraryClick) {
-                                                        onItineraryClick()
-                                                    }
-                                                }}
-                                                className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-colors w-full sm:w-auto text-center"
-                                            >
-                                                View Request Details
-                                            </button>
-                                            <span className="text-base sm:text-lg font-bold text-gray-900 text-center sm:text-right">{trip.price}</span>
+                                            {/* Button and price removed as requested */}
                                         </div>
                                     </div>
                                 </div>

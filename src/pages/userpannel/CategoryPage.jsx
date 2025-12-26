@@ -125,13 +125,6 @@ export default function CategoryPage({
                         </button>
                     </div>
 
-                    <div className="category-search-bar">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
-                            <circle cx="11" cy="11" r="8" />
-                            <path d="M21 21L16.65 16.65" />
-                        </svg>
-                        <input type="text" placeholder="Search something" />
-                    </div>
 
                     <div className="category-navbar-right">
                         <button className="category-icon-btn" onClick={onNotificationClick}>
