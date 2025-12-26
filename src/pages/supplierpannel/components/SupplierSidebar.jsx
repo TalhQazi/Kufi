@@ -5,7 +5,7 @@ import {
   CalendarCheck,
   BarChart3,
   User,
-  MessageSquare,
+  ClipboardList,
   Moon,
   Menu,
   X,
@@ -43,7 +43,7 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
     { label: "Booking", icon: CalendarCheck },
     { label: "Analytics", icon: BarChart3 },
     { label: "Profile", icon: User },
-    { label: "Requests", icon: MessageSquare },
+    { label: "Requests", icon: ClipboardList },
   ];
 
   return (

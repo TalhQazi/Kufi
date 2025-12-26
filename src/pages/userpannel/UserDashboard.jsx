@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { FiSearch, FiBell, FiMessageSquare, FiMapPin, FiCalendar, FiFilter, FiArrowUp, FiArrowDown } from 'react-icons/fi'
+import { FiSearch, FiBell, FiMapPin, FiCalendar, FiFilter, FiArrowUp, FiArrowDown } from 'react-icons/fi'
 import { FaCheckCircle, FaClock, FaCreditCard } from 'react-icons/fa'
 import Footer from '../../components/layout/Footer'
 
@@ -142,9 +142,6 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                         >
                             <FiBell size={22} />
                             <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                        </button>
-                        <button className="text-gray-500 hover:text-gray-700 hidden md:block">
-                            <FiMessageSquare size={22} />
                         </button>
                         <div className="relative" ref={dropdownRef}>
                             <button

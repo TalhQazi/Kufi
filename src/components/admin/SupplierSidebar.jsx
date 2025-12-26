@@ -5,7 +5,7 @@ import {
   CalendarCheck,
   BarChart3,
   User,
-  MessageSquare,
+  ClipboardList,
   Moon,
   LogOut,
 } from "lucide-react";
@@ -33,24 +33,22 @@ const SupplierSidebar = ({ activeSection, onSelectSection }) => {
           { label: "Booking", icon: CalendarCheck },
           { label: "Analytics", icon: BarChart3 },
           { label: "Profile", icon: User },
-          { label: "Messages", icon: MessageSquare },
+          { label: "Requests", icon: ClipboardList },
         ].map((item) => {
           const Icon = item.icon;
           const isActive = activeSection === item.label;
           return (
             <button
               key={item.label}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full text-sm transition ${
-                isActive
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-full text-sm transition ${isActive
                   ? "bg-[#a26e35] text-white font-semibold shadow-sm"
                   : "text-[#a26e35] hover:bg-[#f9f1e7]"
-              }`}
+                }`}
               onClick={() => onSelectSection?.(item.label)}
             >
               <Icon
-                className={`w-4 h-4 ${
-                  isActive ? "text-white" : "text-[#a26e35]"
-                }`}
+                className={`w-4 h-4 ${isActive ? "text-white" : "text-[#a26e35]"
+                  }`}
               />
               <span>{item.label}</span>
             </button>
