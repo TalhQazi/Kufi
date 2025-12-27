@@ -11,7 +11,8 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         email: '',
         phone: '',
         travelers: '',
-        country: '',
+        country: 'Dubai',
+        hasSpecificCountry: true,
         cities: '',
         arrivalDate: '',
         departureDate: '',
@@ -205,6 +206,35 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                         </div>
 
                         <form onSubmit={handleSubmit}>
+                            {/* Country Preference */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-slate-700 mb-3">Country Preference</label>
+                                <div className="space-y-3">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.hasSpecificCountry}
+                                            onChange={(e) => handleChange('hasSpecificCountry', e.target.checked)}
+                                            className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
+                                        />
+                                        <span className="text-sm text-slate-700">I have a specific country in mind</span>
+                                    </label>
+
+                                    {formData.hasSpecificCountry && (
+                                        <div className="animate-fadeIn">
+                                            <input
+                                                type="text"
+                                                value={formData.country}
+                                                onChange={(e) => handleChange('country', e.target.value)}
+                                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
+                                                placeholder="Enter country name (e.g. Italy, Japan)"
+                                                required={formData.hasSpecificCountry}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                             {/* Name Fields */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                 <div>
@@ -284,9 +314,6 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                     <option value="5+">5+ Travelers</option>
                                 </select>
                             </div>
-
-
-
 
 
                             {/* Dates */}
@@ -443,8 +470,8 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                             </button>
                         </form>
                     </div>
-                </div>
-            </main>
+                </div >
+            </main >
             <Footer />
 
             {/* Success Modal */}
