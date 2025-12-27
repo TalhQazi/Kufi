@@ -2,7 +2,7 @@ import { useState } from 'react'
 import PaymentSuccessModal from './PaymentSuccessModal.jsx'
 import Footer from '../../components/layout/Footer'
 
-export default function Payment({ bookingData, onBack, onForward, canGoBack, canGoForward, onNotificationClick }) {
+export default function Payment({ bookingData, onBack, onForward, canGoBack, canGoForward, onNotificationClick, onHomeClick }) {
     const [paymentMethod, setPaymentMethod] = useState('card')
     const [cardData, setCardData] = useState({
         cardholderName: '',
@@ -11,9 +11,25 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         cvv: '',
         saveCard: false
     })
-    const [couponCode, setCouponCode] = useState('')
+    const [billingAddress, setBillingAddress] = useState({
+        street: '',
+        city: '',
+        state: '',
+        zip: '',
+        country: 'United States'
+    })
     const [useWallet, setUseWallet] = useState(false)
     const [showSuccessModal, setShowSuccessModal] = useState(false)
+
+    const handleBack = () => {
+        if (onBack) {
+            onBack();
+        } else if (onHomeClick) {
+            onHomeClick();
+        } else {
+            window.location.hash = '#home';
+        }
+    };
 
     const handlePayment = (e) => {
         e.preventDefault()
@@ -52,15 +68,6 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                             </svg>
                         </button>
-                        <button
-                            onClick={onBack}
-                            className="text-xs sm:text-sm font-semibold text-slate-600 hover:text-primary-brown transition-colors flex items-center gap-1"
-                        >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M19 12H5M12 19l-7-7 7-7" />
-                            </svg>
-                            Back
-                        </button>
                     </div>
                 </div>
             </nav>
@@ -68,9 +75,20 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
             <main className="py-6 sm:py-10 px-4 sm:px-8 lg:px-20">
                 <div className="max-w-6xl mx-auto">
                     {/* Page Title */}
-                    <div className="text-center mb-8">
-                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-2">Complete Your Payment</h1>
-                        <p className="text-sm sm:text-base text-slate-600">Your travel adventure is just one step away.</p>
+                    <div className="relative mb-8 flex items-center">
+                        <button
+                            onClick={handleBack}
+                            className="absolute left-0 flex items-center gap-1.5 text-slate-500 hover:text-slate-900 font-semibold transition-all group"
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="transition-transform group-hover:-translate-x-1">
+                                <path d="M19 12H5M12 19l-7-7 7-7" />
+                            </svg>
+                            Back
+                        </button>
+                        <div className="w-full text-center px-20">
+                            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-2">Complete Your Payment</h1>
+                            <p className="text-sm sm:text-base text-slate-600">Your travel adventure is just one step away.</p>
+                        </div>
                     </div>
 
                     {/* Info Banner */}
@@ -225,36 +243,77 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                             />
                                             <span className="text-sm text-slate-700">Save card for future bookings</span>
                                         </label>
+
+                                        {/* Billing Address Section */}
+                                        <div className="pt-6 mt-6 border-t border-slate-100">
+                                            <h3 className="text-sm font-bold text-slate-900 mb-4">Billing Address</h3>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Street Address</label>
+                                                    <input
+                                                        type="text"
+                                                        value={billingAddress.street}
+                                                        onChange={(e) => setBillingAddress({ ...billingAddress, street: e.target.value })}
+                                                        placeholder="123 Travel Lane"
+                                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">City</label>
+                                                        <input
+                                                            type="text"
+                                                            value={billingAddress.city}
+                                                            onChange={(e) => setBillingAddress({ ...billingAddress, city: e.target.value })}
+                                                            placeholder="San Francisco"
+                                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">State / Province</label>
+                                                        <input
+                                                            type="text"
+                                                            value={billingAddress.state}
+                                                            onChange={(e) => setBillingAddress({ ...billingAddress, state: e.target.value })}
+                                                            placeholder="CA"
+                                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">ZIP / Postal Code</label>
+                                                        <input
+                                                            type="text"
+                                                            value={billingAddress.zip}
+                                                            onChange={(e) => setBillingAddress({ ...billingAddress, zip: e.target.value })}
+                                                            placeholder="94105"
+                                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Country</label>
+                                                        <select
+                                                            value={billingAddress.country}
+                                                            onChange={(e) => setBillingAddress({ ...billingAddress, country: e.target.value })}
+                                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm bg-white"
+                                                        >
+                                                            <option value="United States">United States</option>
+                                                            <option value="United Kingdom">United Kingdom</option>
+                                                            <option value="Canada">Canada</option>
+                                                            <option value="Australia">Australia</option>
+                                                            <option value="Germany">Germany</option>
+                                                            <option value="France">France</option>
+                                                            <option value="UAE">UAE</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Coupon Code */}
-                            <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="2">
-                                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                                        <polyline points="7.5 4.21 12 6.81 16.5 4.21" />
-                                        <polyline points="7.5 19.79 7.5 14.6 3 12" />
-                                        <polyline points="21 12 16.5 14.6 16.5 19.79" />
-                                        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                                        <line x1="12" y1="22.08" x2="12" y2="12" />
-                                    </svg>
-                                    <h2 className="text-base sm:text-lg font-bold text-slate-900">Coupon Code</h2>
-                                </div>
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <input
-                                        type="text"
-                                        value={couponCode}
-                                        onChange={(e) => setCouponCode(e.target.value)}
-                                        placeholder="Enter coupon code"
-                                        className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
-                                    />
-                                    <button className="w-full sm:w-auto px-6 py-2.5 bg-primary-brown text-white rounded-lg font-semibold hover:bg-primary-dark transition-colors text-sm">
-                                        Apply
-                                    </button>
-                                </div>
-                            </div>
 
                             {/* Wallet Balance */}
                             <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
@@ -332,10 +391,10 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                 </button>
 
                                 <button
-                                    onClick={onBack}
+                                    onClick={handleBack}
                                     className="w-full py-2 text-slate-500 hover:text-slate-700 font-semibold transition-colors text-sm"
                                 >
-                                    Go Back to Booking
+                                    Back
                                 </button>
                             </div>
                         </div>
