@@ -53,8 +53,7 @@ export default function CountryDetails({
         title: 'Lorem ipsum',
         subtitle: 'Lorem ipsum',
         image: '/assets/activity1.jpeg',
-        rating: 4.7,
-        price: '$250'
+        rating: 4.7
     }))
 
     const testimonials = [
@@ -247,7 +246,6 @@ export default function CountryDetails({
                                             <span className="star-filled">★</span>
                                             <span>{exp.rating}</span>
                                         </div>
-                                        <span className="country-experience-price">{exp.price}</span>
                                     </div>
                                 </div>
                             </div>

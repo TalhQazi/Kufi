@@ -28,7 +28,6 @@ export default function ItineraryView({ onBack, onPaymentClick, onRequestAdjustm
         duration: "7 Days / 6 Nights",
         location: "Dubai, United Arab Emirates",
         date: "10-15th Oct, 2024",
-        price: "$65",
         description: "It involves one or various nights of the itinerary and the carefully curated adventures. From the top of Burj Khalifa to the vast dunes of the desert safari, this trip is fully designed around innovative and outstanding and cultural ventures.",
         adrenalineLevel: "Adrenaline factor",
         category: "Adventure & Culture",
@@ -623,7 +622,7 @@ export default function ItineraryView({ onBack, onPaymentClick, onRequestAdjustm
                                             </div>
                                             <button className="text-xs text-[#A67C52] font-semibold hover:underline">View it</button>
                                         </div>
-                                        <p className="text-xs text-slate-600">3 Star Hotel • 2 Nights (2 - 4th Oct) • ₨ 8k to ₨ 12k 2024</p>
+                                        <p className="text-xs text-slate-600">3 Star Hotel • 2 Nights (2 - 4th Oct)</p>
                                     </div>
 
                                     <div>
@@ -634,7 +633,7 @@ export default function ItineraryView({ onBack, onPaymentClick, onRequestAdjustm
                                             </div>
                                             <button className="text-xs text-[#A67C52] font-semibold hover:underline">View it</button>
                                         </div>
-                                        <p className="text-xs text-slate-600">3 Star Hotel • 2-3 Nights (4 - 6 Oct) • ₨ 12,000 • ₨ 30k to ₨ 32k (Oct 2024)</p>
+                                        <p className="text-xs text-slate-600">3 Star Hotel • 2-3 Nights (4 - 6 Oct)</p>
                                     </div>
 
                                     <div>
@@ -645,7 +644,7 @@ export default function ItineraryView({ onBack, onPaymentClick, onRequestAdjustm
                                             </div>
                                             <button className="text-xs text-[#A67C52] font-semibold hover:underline">View it</button>
                                         </div>
-                                        <p className="text-xs text-slate-600">2 TM/3 Hotel • (7 Oct) • ₨ 9,150 (Oct) • ₨ 100 - ₨ 8,100</p>
+                                        <p className="text-xs text-slate-600">2 TM/3 Hotel • (7 Oct)</p>
                                     </div>
                                 </div>
                             </div>
@@ -671,9 +670,9 @@ export default function ItineraryView({ onBack, onPaymentClick, onRequestAdjustm
                                                 <p className="text-sm font-semibold text-slate-900">Airport Pickup</p>
                                                 <p className="text-xs text-slate-500">Private Car Arrival</p>
                                             </div>
-                                            <button className="text-xs text-[#A67C52] font-semibold hover:underline">$20</button>
+                                            <button className="text-xs text-[#A67C52] font-semibold hover:underline">View</button>
                                         </div>
-                                        <p className="text-xs text-slate-600">Meets at airport round-trip to hotel (1 KM from RAA to) ₨ 5,111 - 5,122 • ₨ 8,100 (00)</p>
+                                        <p className="text-xs text-slate-600">Meets at airport round-trip to hotel (1 KM from RAA to)</p>
                                     </div>
 
                                     <div>
@@ -682,9 +681,9 @@ export default function ItineraryView({ onBack, onPaymentClick, onRequestAdjustm
                                                 <p className="text-sm font-semibold text-slate-900">Kathmandu to Pokhara</p>
                                                 <p className="text-xs text-slate-500">Private Bus</p>
                                             </div>
-                                            <button className="text-xs text-[#A67C52] font-semibold hover:underline">$2</button>
+                                            <button className="text-xs text-[#A67C52] font-semibold hover:underline">View</button>
                                         </div>
-                                        <p className="text-xs text-slate-600">Tourist Bus • 220 KM • 6-7 Hours • ₨ 1,500 (Oct)</p>
+                                        <p className="text-xs text-slate-600">Tourist Bus • 220 KM • 6-7 Hours</p>
                                     </div>
 
                                     <div>
@@ -693,9 +692,9 @@ export default function ItineraryView({ onBack, onPaymentClick, onRequestAdjustm
                                                 <p className="text-sm font-semibold text-slate-900">Pokhara to Kathmandu</p>
                                                 <p className="text-xs text-slate-500">Tourist Standard Grade</p>
                                             </div>
-                                            <button className="text-xs text-[#A67C52] font-semibold hover:underline">$2</button>
+                                            <button className="text-xs text-[#A67C52] font-semibold hover:underline">View</button>
                                         </div>
-                                        <p className="text-xs text-slate-600">7 - 15 Hotel (1 - 5 Group) • 6 Hours (11 - time) • ₨ 100 - ₨ 1,100</p>
+                                        <p className="text-xs text-slate-600">7 - 15 Hotel (1 - 5 Group) • 6 Hours</p>
                                     </div>
                                 </div>
                             </div>
@@ -749,7 +748,7 @@ export default function ItineraryView({ onBack, onPaymentClick, onRequestAdjustm
                                     onClick={onPaymentClick}
                                     className="flex-1 sm:flex-none px-8 py-3 rounded-lg bg-[#A67C52] text-white font-semibold hover:bg-[#8e6a45] shadow-lg transition-all"
                                 >
-                                    Accept Itinerary ({tripData.price})
+                                    Accept Itinerary
                                 </button>
                             </>
                         )}

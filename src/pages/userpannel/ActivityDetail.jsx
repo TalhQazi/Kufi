@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Footer from '../../components/layout/Footer'
 
-export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForward, onLogout, onNotificationClick, onAddToList, onHomeClick }) {
+export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForward, onLogout, onNotificationClick, onAddToList, onHomeClick, onProfileClick, onSettingsClick }) {
     const [activeTab, setActiveTab] = useState('overview')
     const [travelers, setTravelers] = useState(2)
     const [addOns, setAddOns] = useState({
@@ -9,6 +9,25 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
         campingGear: false,
         photographyPackage: false
     })
+    const [showProfileDropdown, setShowProfileDropdown] = useState(false)
+    const dropdownRef = useRef(null)
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowProfileDropdown(false)
+            }
+        }
+
+        if (showProfileDropdown) {
+            document.addEventListener('mousedown', handleClickOutside)
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [showProfileDropdown])
 
     const brownColor = "#9B6F40"
 
@@ -57,8 +76,11 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                         </button>
 
 
-                        <div className="relative">
-                            <button className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                        <div className="relative" ref={dropdownRef}>
+                            <button
+                                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                                className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
                                 <img
                                     src="/assets/profile-avatar.jpeg"
                                     alt="Profile"
@@ -68,6 +90,48 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                                     <path d="M6 9l6 6 6-6" />
                                 </svg>
                             </button>
+
+                            {showProfileDropdown && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onProfileClick) onProfileClick()
+                                            setShowProfileDropdown(false)
+                                        }}
+                                    >
+                                        MY REQUESTS
+                                    </div>
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onNotificationClick) onNotificationClick()
+                                            setShowProfileDropdown(false)
+                                        }}
+                                    >
+                                        NOTIFICATIONS
+                                    </div>
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onSettingsClick) onSettingsClick()
+                                            setShowProfileDropdown(false)
+                                        }}
+                                    >
+                                        SETTINGS
+                                    </div>
+                                    <div className="border-t border-slate-200 my-1"></div>
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onLogout) onLogout()
+                                            setShowProfileDropdown(false)
+                                        }}
+                                    >
+                                        LOGOUT
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -285,7 +349,6 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                                         />
                                         <div>
                                             <div className="text-sm font-medium text-slate-900">Quad Biking</div>
-                                            <div className="text-xs text-slate-500">Per person: $50</div>
                                         </div>
                                     </label>
 
@@ -298,7 +361,6 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                                         />
                                         <div>
                                             <div className="text-sm font-medium text-slate-900">Camping Gear</div>
-                                            <div className="text-xs text-slate-500">Per person: $30</div>
                                         </div>
                                     </label>
 
@@ -311,7 +373,6 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                                         />
                                         <div>
                                             <div className="text-sm font-medium text-slate-900">Photography Package</div>
-                                            <div className="text-xs text-slate-500">Per group: $100</div>
                                         </div>
                                     </label>
                                 </div>

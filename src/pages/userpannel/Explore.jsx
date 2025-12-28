@@ -26,71 +26,7 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
 
   const categories = [
     {
-      name: 'Trekking',
-      icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <path d="M13 4.99961C13.5523 4.99961 14 4.55189 14 3.99961C14 3.44732 13.5523 2.99961 13 2.99961C12.4477 2.99961 12 3.44732 12 3.99961C12 4.55189 12.4477 4.99961 13 4.99961Z" />
-          <path d="M5.5 21L10 11L8 9L11 7L13 9V6L15 8L17 13M9 19L11 13" />
-          <path d="M7 10L9 8" />
-        </svg>
-      )
-    },
-    {
-      name: 'Camping',
-      icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <path d="M3 20L12 3L21 20H3Z" />
-          <path d="M12 3V10" />
-          <line x1="2" y1="20" x2="22" y2="20" />
-        </svg>
-      )
-    },
-    {
-      name: 'Water Activities',
-      icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <path d="M3 12C3 12 4.5 9 6 9C7.5 9 9 12 9 12C9 12 10.5 15 12 15C13.5 15 15 12 15 12C15 12 16.5 9 18 9C19.5 9 21 12 21 12" />
-          <path d="M3 17C3 17 4.5 14 6 14C7.5 14 9 17 9 17C9 17 10.5 20 12 20C13.5 20 15 17 15 17C15 17 16.5 14 18 14C19.5 14 21 17 21 17" />
-          <circle cx="12" cy="7" r="2" />
-        </svg>
-      )
-    },
-    {
-      name: 'Bike Trips',
-      icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <circle cx="5.5" cy="17.5" r="3.5" />
-          <circle cx="18.5" cy="17.5" r="3.5" />
-          <path d="M15 6L17 8L12 14L9 11L5.5 14" />
-          <circle cx="17" cy="5" r="1" />
-        </svg>
-      )
-    },
-    {
-      name: 'Paragliding',
-      icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <path d="M12 4C6 4 3 8 3 10H21C21 8 18 4 12 4Z" />
-          <path d="M12 10V14" />
-          <path d="M10 14L9 20" />
-          <path d="M14 14L15 20" />
-          <circle cx="12" cy="3" r="1" />
-        </svg>
-      )
-    },
-    {
-      name: 'Aerial Activities',
-      icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <path d="M12 2L4 6L12 10L20 6L12 2Z" />
-          <path d="M12 10V22" />
-          <path d="M4 11V17L12 22" />
-          <path d="M20 11V17L12 22" />
-        </svg>
-      )
-    },
-    {
-      name: 'Religious Tours',
+      name: 'Culture',
       icon: (
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <path d="M5 21V7L12 3L19 7V21" />
@@ -101,7 +37,7 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
       )
     },
     {
-      name: 'Walking Tours',
+      name: 'Sightseeing',
       icon: (
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <circle cx="12" cy="4" r="2" />
@@ -112,21 +48,60 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
       )
     },
     {
-      name: 'Safaris',
+      name: 'Families',
       icon: (
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <path d="M3 12C3 12 5 8 12 8C19 8 21 12 21 12" />
-          <path d="M3 12C3 12 5 16 12 16C19 16 21 12 21 12" />
-          <circle cx="9" cy="12" r="1" fill={brownColor} />
-          <circle cx="15" cy="12" r="1" fill={brownColor} />
-          <path d="M12 4V8" />
-          <path d="M8 5L10 7" />
-          <path d="M16 5L14 7" />
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
       )
     },
     {
-      name: 'Casinos',
+      name: 'Food and Drink',
+      icon: (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
+          <path d="M3 11H21L19 20H5L3 11Z" />
+          <path d="M17 11C17 8 15 5 12 5C9 5 7 8 7 11" />
+          <line x1="12" y1="15" x2="12" y2="17" />
+        </svg>
+      )
+    },
+    {
+      name: 'Adventure',
+      icon: (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
+          <path d="M13 3.99961C13.5523 3.99961 14 3.55189 14 2.99961" />
+          <path d="M5.5 21L10 11L8 9L11 7L13 9V6L15 8L17 13M9 19L11 13" />
+          <path d="M7 10L9 8" />
+        </svg>
+      )
+    },
+    {
+      name: 'In the Air',
+      icon: (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
+          <path d="M12 2L4 6L12 10L20 6L12 2Z" />
+          <path d="M12 10v12" />
+          <path d="M4 11v6l8 5" />
+          <path d="M20 11v6l-8 5" />
+        </svg>
+      )
+    },
+    {
+      name: 'On the water',
+      icon: (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
+          <path d="M2 12c0 2 1 3 3 3s3-1 3-3 1-3 3-3 3 1 3 3 1 3 3 3 3-1 3-3" />
+          <path d="M2 17c0 2 1 3 3 3s3-1 3-3 1-3 3-3 3 1 3 3 1 3 3 3 3-1 3-3" />
+          <path d="M12 9V5" />
+          <path d="M11 5h2" />
+        </svg>
+      )
+    },
+    {
+      name: 'Entertainment',
       icon: (
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
           <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -139,23 +114,52 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
       )
     },
     {
-      name: 'Luxury',
+      name: 'Seasonal',
       icon: (
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <path d="M5 9L12 2L19 9" />
-          <path d="M5 9V20H19V9" />
-          <rect x="9" y="14" width="6" height="6" />
-          <path d="M12 2V6" />
+          <path d="M3 20L12 3L21 20H3Z" />
+          <path d="M12 3v7" />
+          <path d="M2 20h20" />
         </svg>
       )
     },
     {
-      name: 'Food Tour',
+      name: 'Wellness',
       icon: (
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <path d="M3 11H21L19 20H5L3 11Z" />
-          <path d="M17 11C17 8 15 5 12 5C9 5 7 8 7 11" />
-          <line x1="12" y1="15" x2="12" y2="17" />
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+        </svg>
+      )
+    },
+    {
+      name: 'Learning',
+      icon: (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
+          <path d="M12 12l2 2 4-4" />
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </svg>
+      )
+    },
+    {
+      name: 'Luxury',
+      icon: (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
+          <path d="M5 9l7-7 7 7" />
+          <path d="M5 9v11h14V9" />
+          <rect x="9" y="14" width="6" height="6" />
+          <path d="M12 2v4" />
+        </svg>
+      )
+    },
+    {
+      name: 'Dates',
+      icon: (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
       )
     },
@@ -419,19 +423,16 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
                               {activity.addOns.quadBiking && (
                                 <div className="text-xs text-slate-600">
                                   <span className="font-medium">• Quad Biking</span>
-                                  <span className="text-slate-400 ml-1">($50/person)</span>
                                 </div>
                               )}
                               {activity.addOns.campingGear && (
                                 <div className="text-xs text-slate-600">
                                   <span className="font-medium">• Camping Gear</span>
-                                  <span className="text-slate-400 ml-1">($30/person)</span>
                                 </div>
                               )}
                               {activity.addOns.photographyPackage && (
                                 <div className="text-xs text-slate-600">
                                   <span className="font-medium">• Photography Package</span>
-                                  <span className="text-slate-400 ml-1">($100/group)</span>
                                 </div>
                               )}
                             </div>

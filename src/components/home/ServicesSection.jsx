@@ -101,8 +101,8 @@ export default function ServicesSection() {
             <div className="max-w-[1240px] mx-auto">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 sm:gap-8 text-center">
                     {services.map((service) => (
-                        <div key={service.id} className="flex flex-col items-center gap-3 group cursor-pointer">
-                            <div className="transition-transform duration-300 group-hover:scale-110 mb-2">
+                        <div key={service.id} className="flex flex-col items-center gap-3 group">
+                            <div className="mb-2">
                                 {service.icon}
                             </div>
                             <h3 className="text-xs sm:text-sm font-semibold text-slate-800 tracking-tight">

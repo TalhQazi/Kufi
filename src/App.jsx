@@ -237,6 +237,8 @@ export default function App() {
         canGoBack={canGoBack}
         canGoForward={canGoForward}
         onNotificationClick={() => setShowNotifications(true)}
+        onProfileClick={() => navigateTo('user-profile')}
+        onSettingsClick={() => navigateTo('traveler-profile')}
         onAddToList={(activityData) => handleAddToList(activityData)}
       />
       {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}

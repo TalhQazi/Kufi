@@ -37,7 +37,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
         }
     }, [showProfileDropdown])
 
-    const tabs = ['Personal Info', 'Preferences', 'Travel History', 'Wishlist', 'Payments']
+    const tabs = ['Personal Info', 'Preferences', 'Travel History', 'Wishlist', 'Payments', 'Settings']
 
     return (
         <div className="min-h-screen bg-[#F5F1EB] font-sans overflow-x-hidden">
@@ -132,8 +132,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                     <div
                                         className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                                         onClick={() => {
-                                            setActiveTab('Personal Info')
-                                            if (onSettingsClick) onSettingsClick()
+                                            setActiveTab('Settings')
                                             setShowProfileDropdown(false)
                                             // Scroll to top if needed
                                             window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -812,6 +811,59 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 </svg>
                                 <p className="text-lg font-semibold text-slate-900 mb-2">Payment System</p>
                                 <p className="text-sm text-slate-500">Coming Soon</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'Settings' && (
+                        <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-sm min-h-[400px]">
+                            <h3 className="text-xl font-bold text-slate-900 mb-8">Account Settings</h3>
+
+                            <div className="space-y-8 max-w-2xl">
+                                {/* Notification Settings */}
+                                <section>
+                                    <h4 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B6E4E" strokeWidth="2">
+                                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                        </svg>
+                                        Notifications
+                                    </h4>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                            <div>
+                                                <p className="text-sm font-semibold text-slate-900">Email Notifications</p>
+                                                <p className="text-xs text-slate-500">Receive updates about your trip requests via email</p>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" className="sr-only peer" defaultChecked />
+                                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8B6E4E]"></div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                {/* Security Settings */}
+                                <section>
+                                    <h4 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B6E4E" strokeWidth="2">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                        </svg>
+                                        Security
+                                    </h4>
+                                    <div className="p-4 bg-slate-50 rounded-xl space-y-4">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                            <div>
+                                                <p className="text-sm font-semibold text-slate-900">Password</p>
+                                                <p className="text-xs text-slate-500">Last changed 3 months ago</p>
+                                            </div>
+                                            <button className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-[#8B6E4E] hover:bg-slate-50 transition-colors">
+                                                Update Password
+                                            </button>
+                                        </div>
+                                    </div>
+                                </section>
                             </div>
                         </div>
                     )}
