@@ -325,7 +325,6 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                         </svg>
                                         <div className="min-w-0">
                                             <h3 className="text-xs sm:text-sm font-semibold text-slate-900">Use Wallet Balance</h3>
-                                            <p className="text-[10px] sm:text-xs text-slate-600">Available: $ 150</p>
                                         </div>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
@@ -355,29 +354,23 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                 <div className="space-y-3 mb-4 pb-4 border-b border-slate-200">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-600">Activities</span>
-                                        <span className="font-semibold text-slate-900">$850.00</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-600">Accommodation</span>
-                                        <span className="font-semibold text-slate-900">$1200.00</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-600">Transportation</span>
-                                        <span className="font-semibold text-slate-900">$250.00</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-600">Meals</span>
-                                        <span className="font-semibold text-slate-900">$150.00</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-600">Taxes & Fees</span>
-                                        <span className="font-semibold text-slate-900">$230.00</span>
                                     </div>
                                 </div>
 
                                 <div className="flex justify-between items-center mb-6">
-                                    <span className="text-base sm:text-lg font-bold text-slate-900">Total Amount</span>
-                                    <span className="text-xl sm:text-2xl font-bold text-green-600">$2680.00</span>
+                                    <span className="text-base sm:text-lg font-bold text-slate-900">Total</span>
                                 </div>
 
                                 <button
@@ -411,7 +404,6 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                         window.location.hash = '#user-dashboard'
                     }}
                     bookingReference="SKY-DXB-2024-1847"
-                    totalAmount="2680.00"
                 />
             )}
 

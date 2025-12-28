@@ -1,5 +1,5 @@
 import React from 'react'
-import { Facebook, Instagram, Linkedin, MessageCircle, MapPin, Phone, Mail, SendHorizonal } from 'lucide-react'
+import { Facebook, Instagram, Youtube, MapPin, Phone, Mail, SendHorizonal } from 'lucide-react'
 
 export default function Footer() {
   return (
@@ -26,9 +26,8 @@ export default function Footer() {
               <div className="flex gap-2.5">
                 {[
                   { icon: Facebook, label: 'Facebook' },
-                  { icon: MessageCircle, label: 'WhatsApp' },
                   { icon: Instagram, label: 'Instagram' },
-                  { icon: Linkedin, label: 'LinkedIn' }
+                  { icon: Youtube, label: 'YouTube' }
                 ].map((social, idx) => (
                   <a key={idx} href="#" className="w-7 h-7 rounded-full bg-white text-[#a67c52] flex items-center justify-center hover:bg-white/90 transition-all hover:scale-110">
                     <social.icon size={14} fill={social.label === 'Facebook' ? 'currentColor' : 'none'} />
@@ -42,7 +41,7 @@ export default function Footer() {
           <div className="lg:pl-8">
             <h4 className="text-base font-bold mb-6">Our Services</h4>
             <ul className="space-y-2.5 text-[14px] text-white/90">
-              {['Home', 'About', 'Destination', 'Book Tour', 'Blog'].map((item) => (
+              {['About', 'Destination', 'Blog'].map((item) => (
                 <li key={item}>
                   <a href="#" className="hover:text-white transition-colors">{item}</a>
                 </li>
@@ -54,7 +53,7 @@ export default function Footer() {
           <div className="lg:pl-4">
             <h4 className="text-base font-bold mb-6">Quick Link</h4>
             <ul className="space-y-2.5 text-[14px] text-white/90">
-              {["FAQ's", 'Privacy Policy', 'Term & Conditions', 'Support'].map((item) => (
+              {["FAQ's", 'Privacy Policy', 'Terms & Conditions', 'Support'].map((item) => (
                 <li key={item}>
                   <a href="#" className="hover:text-white transition-colors">{item}</a>
                 </li>
@@ -98,6 +97,8 @@ export default function Footer() {
               <img src="/assets/visa.svg" alt="Visa" className="h-3 brightness-0 invert opacity-90" />
               <img src="/assets/mastercard.svg" alt="Mastercard" className="h-6" />
               <img src="/assets/paypal.svg" alt="PayPal" className="h-4 bg-white px-1 py-0.5 rounded shadow-sm" />
+              <img src="/assets/amex.svg" alt="American Express" className="h-6 rounded shadow-sm bg-white p-0.5" />
+              <img src="/assets/discover.svg" alt="Discover" className="h-6 rounded shadow-sm" />
             </div>
           </div>
 
@@ -107,6 +108,6 @@ export default function Footer() {
           <p>© Copyright lorem ipsum amet dolor All Rights Reserved.</p>
         </div>
       </div>
-    </footer>
+    </footer >
   )
 }

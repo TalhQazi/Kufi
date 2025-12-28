@@ -1,4 +1,4 @@
-export default function PaymentSuccessModal({ onClose, onViewTours, bookingReference = "SKY-DXB-2024-1847", totalAmount = "2450.00" }) {
+export default function PaymentSuccessModal({ onClose, onViewTours, bookingReference = "SKY-DXB-2024-1847" }) {
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative animate-fade-in">
@@ -35,10 +35,6 @@ export default function PaymentSuccessModal({ onClose, onViewTours, bookingRefer
                     <div className="flex justify-between items-center">
                         <span className="text-sm text-slate-600">Booking Reference</span>
                         <span className="text-sm font-bold text-slate-900">{bookingReference}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm text-slate-600">Total Amount Paid</span>
-                        <span className="text-lg font-bold text-green-600">${totalAmount}</span>
                     </div>
                 </div>
 

@@ -12,16 +12,13 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         phone: '',
         travelers: '',
         country: 'Dubai',
-        hasSpecificCountry: true,
         cities: '',
         arrivalDate: '',
         departureDate: '',
         includeHotel: false,
-        includeHotel: false,
         hotelOwn: false,
         foodAllGood: false,
         vegetarian: false,
-        insuranceOwn: false,
         travelOwn: true,
         withTransport: true,
         budget: '',
@@ -208,31 +205,30 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                         <form onSubmit={handleSubmit}>
                             {/* Country Preference */}
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-slate-700 mb-3">Country Preference</label>
-                                <div className="space-y-3">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.hasSpecificCountry}
-                                            onChange={(e) => handleChange('hasSpecificCountry', e.target.checked)}
-                                            className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                        />
-                                        <span className="text-sm text-slate-700">I have a specific country in mind</span>
-                                    </label>
-
-                                    {formData.hasSpecificCountry && (
-                                        <div className="animate-fadeIn">
-                                            <input
-                                                type="text"
-                                                value={formData.country}
-                                                onChange={(e) => handleChange('country', e.target.value)}
-                                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
-                                                placeholder="Enter country name (e.g. Italy, Japan)"
-                                                required={formData.hasSpecificCountry}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">
+                                    Country Preferance <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    value={formData.country}
+                                    onChange={(e) => handleChange('country', e.target.value)}
+                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm text-slate-700 bg-white"
+                                    required
+                                >
+                                    <option value="">Select a country</option>
+                                    <option value="Dubai">Dubai (UAE)</option>
+                                    <option value="Abu Dhabi">Abu Dhabi (UAE)</option>
+                                    <option value="Saudi Arabia">Saudi Arabia</option>
+                                    <option value="Oman">Oman</option>
+                                    <option value="Qatar">Qatar</option>
+                                    <option value="Turkey">Turkey</option>
+                                    <option value="United Kingdom">United Kingdom</option>
+                                    <option value="France">France</option>
+                                    <option value="Italy">Italy</option>
+                                    <option value="Switzerland">Switzerland</option>
+                                    <option value="Japan">Japan</option>
+                                    <option value="United States">United States</option>
+                                    <option value="Other">Other</option>
+                                </select>
                             </div>
 
                             {/* Name Fields */}
@@ -409,31 +405,6 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                     <p className="text-[11px] text-slate-500 ml-7 leading-tight italic">
                                         Ground transportation for all scheduled itinerary activities is provided.
                                     </p>
-                                </div>
-                            </div>
-
-                            {/* Travel Health Insurance */}
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-slate-700 mb-3">Travel Health Insurance</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.includeInsurance}
-                                            onChange={(e) => handleChange('includeInsurance', e.target.checked)}
-                                            className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                        />
-                                        <span className="text-sm text-slate-700">Include Insurance</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.insuranceOwn}
-                                            onChange={(e) => handleChange('insuranceOwn', e.target.checked)}
-                                            className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                        />
-                                        <span className="text-sm text-slate-700">I will choose my own</span>
-                                    </label>
                                 </div>
                             </div>
 

@@ -12,8 +12,24 @@ export default function DestinationsSection({ onCountryClick }) {
     ]
 
     const [destinations, setDestinations] = useState(baseDestinations.slice(0, 4))
+    const [clickCount, setClickCount] = useState(0)
+    const [isShowingLess, setIsShowingLess] = useState(false)
 
-    const handleShowMore = () => {
+    const handleAction = () => {
+        if (isShowingLess) {
+            // "Show Less" logic: remove 4 items
+            const newCount = destinations.length - 4
+            setDestinations(prev => prev.slice(0, -4))
+            setClickCount(prev => prev - 1)
+
+            // If we're back to the initial state, allow "Show More" again
+            if (newCount <= 4) {
+                setIsShowingLess(false)
+            }
+            return
+        }
+
+        // "Show More" logic: add 4 items
         const currentCount = destinations.length
         const nextItems = []
         const timestamp = Date.now()
@@ -22,6 +38,13 @@ export default function DestinationsSection({ onCountryClick }) {
             nextItems.push({ ...baseItem, id: `dest-${timestamp}-${currentCount + i}` })
         }
         setDestinations(prev => [...prev, ...nextItems])
+        const newClickCount = clickCount + 1
+        setClickCount(newClickCount)
+
+        // After 1 click, the next action should be "Show Less"
+        if (newClickCount >= 1) {
+            setIsShowingLess(true)
+        }
     }
 
     return (
@@ -53,10 +76,10 @@ export default function DestinationsSection({ onCountryClick }) {
                 <div className="mt-8 flex justify-center">
                     <button
                         type="button"
-                        onClick={handleShowMore}
+                        onClick={handleAction}
                         className="bg-[#a67c52] text-white px-10 py-3.5 rounded-full font-semibold hover:bg-[#8f643e] transition-all shadow-md active:scale-95 text-lg"
                     >
-                        Show More
+                        {isShowingLess ? 'Show Less' : 'Show More'}
                     </button>
                 </div>
             </div>
