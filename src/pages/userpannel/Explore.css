@@ -10,7 +10,6 @@
 }
 
 .explore-navbar-inner {
-    max-width: 1400px;
     margin: 0 auto;
     padding: 0 40px;
     display: flex;
@@ -153,7 +152,6 @@
 }
 
 .explore-categories-scroll {
-    max-width: 1400px;
     margin: 0 auto;
     padding: 0 40px;
     display: flex;
@@ -204,7 +202,6 @@
 
 /* Main Content Layout */
 .explore-main {
-    max-width: 1400px;
     margin: 0 auto;
     padding: 32px 40px;
     display: grid;
@@ -219,7 +216,7 @@
 /* Activity Cards Grid */
 .explore-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 24px;
 }
 
@@ -439,9 +436,7 @@
 
 /* Responsive adjustments */
 @media (max-width: 1200px) {
-    .explore-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+    /* Auto-fill handles columns */
 }
 
 @media (max-width: 768px) {

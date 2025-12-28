@@ -118,7 +118,7 @@ export default function CategoryPage({
                                     onHomeClick()
                                 }
                             }}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                            className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
                             style={{ background: 'none', border: 'none', padding: 0 }}
                         >
                             <img src="/assets/navbar.png" alt="Kufi Travel" className="category-logo-image" />

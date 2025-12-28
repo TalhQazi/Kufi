@@ -178,7 +178,7 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
   return (
     <div className="bg-white min-h-screen">
       <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
-        <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+        <div className="mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-1">
             <button
               onClick={() => {
@@ -281,7 +281,7 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
       </nav>
 
       <div className="bg-beige py-4 sm:py-6 px-4 sm:px-8 lg:px-20 border-b border-slate-200">
-        <div className="max-w-[1400px] mx-auto overflow-x-auto">
+        <div className="mx-auto overflow-x-auto hide-scrollbar">
           <div className="flex gap-4 sm:gap-6 lg:gap-8 min-w-max">
             {categories.map(({ name, icon }) => (
               <div
@@ -304,7 +304,7 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
       </div>
 
       <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-8">
-        <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
+        <div className="mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
           <section>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {activities.map((activity) => (
