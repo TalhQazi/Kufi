@@ -13,11 +13,11 @@
 }
 
 .category-navbar-inner {
-    max-width: 1400px;
     margin: 0 auto;
     padding: 0 80px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 32px;
 }
 
@@ -210,7 +210,6 @@
 
 /* Main Content */
 .category-main {
-    max-width: 1400px;
     margin: 0 auto;
     padding: 48px 80px;
 }
@@ -410,11 +409,6 @@
     .category-main {
         padding-left: 40px;
         padding-right: 40px;
-    }
-
-    .category-content-wrapper {
-        grid-template-columns: 1fr 280px;
-        gap: 32px;
     }
 }
 
