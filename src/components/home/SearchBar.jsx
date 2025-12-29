@@ -69,7 +69,7 @@ export default function SearchBar() {
                         icon={<FiUsers className="text-slate-500 text-lg" />}
                         value={travelers}
                         onChange={(e) => setTravelers(e.target.value)}
-                        placeholder="Guest "
+                        placeholder="Guests "
                         options={[
                             { value: '1', label: '1 Guest' },
                             { value: '2', label: '2 Guests' },
