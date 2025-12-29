@@ -178,33 +178,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                         <div className="mb-6">
                             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">Travel Booking</h1>
                             <p className="text-xs sm:text-sm text-slate-600">Fill your details so we may assist you</p>
-                        </div>
-
-                        {/* My List */}
-                        <div className="mb-6">
-                            <h2 className="text-sm font-semibold text-slate-700 mb-3">My List</h2>
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2 text-sm">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="2">
-                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                                    </svg>
-                                    <span className="text-slate-700">Paradise Travel Co.</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="2">
-                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                        <line x1="16" y1="2" x2="16" y2="6" />
-                                        <line x1="8" y1="2" x2="8" y2="6" />
-                                        <line x1="3" y1="10" x2="21" y2="10" />
-                                    </svg>
-                                    <span className="text-slate-700">2 Days</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <form onSubmit={handleSubmit}>
-                            {/* Country Preference */}
-                            <div className="mb-4">
+                            <div className="mb-6">
                                 <label className="block text-sm font-medium text-slate-700 mb-2">
                                     Country Preferance <span className="text-red-500">*</span>
                                 </label>
@@ -231,6 +205,32 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                 </select>
                             </div>
 
+                        </div>
+
+                        {/* My List */}
+                        <div className="mb-6">
+                            <h2 className="text-sm font-semibold text-slate-700 mb-3">My List</h2>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2 text-sm">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="2">
+                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                    </svg>
+                                    <span className="text-slate-700">Paradise Travel Co.</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="2">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                        <line x1="16" y1="2" x2="16" y2="6" />
+                                        <line x1="8" y1="2" x2="8" y2="6" />
+                                        <line x1="3" y1="10" x2="21" y2="10" />
+                                    </svg>
+                                    <span className="text-slate-700">2 Days</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleSubmit}>
+                            {/* Country Preference */}
                             {/* Name Fields */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                 <div>
