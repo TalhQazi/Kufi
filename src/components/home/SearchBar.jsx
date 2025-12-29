@@ -75,7 +75,7 @@ export default function SearchBar() {
                             { value: '2', label: '2 Guests' },
                             { value: '3', label: '3 Guests' },
                             { value: '4', label: '4 Guests' },
-                            { value: '5 +', label: '5 + Guests' },
+                            { value: '5', label: '5 + Guests' },
                         ]}
                         inputClassName="!bg-slate-50 !border-slate-300 !text-base !font-medium !text-slate-700 !h-[48px] !rounded-lg"
                         labelClassName="!text-sm !text-slate-700 !mb-2 !font-normal"
