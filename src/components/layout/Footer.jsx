@@ -53,7 +53,7 @@ export default function Footer() {
           <div className="lg:pl-4">
             <h4 className="text-base font-bold mb-6">Quick Link</h4>
             <ul className="space-y-2.5 text-[14px] text-white/90">
-              {["FAQ's", 'Privacy Policy', 'Terms & Conditions', 'Support'].map((item) => (
+              {["FAQ's", 'Privacy Policy', 'Terms', 'Support'].map((item) => (
                 <li key={item}>
                   <a href="#" className="hover:text-white transition-colors">{item}</a>
                 </li>
