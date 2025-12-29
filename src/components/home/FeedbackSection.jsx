@@ -117,7 +117,7 @@ export default function FeedbackSection() {
                 {/* Header Section */}
                 <div className="mb-16 relative flex flex-col md:flex-row justify-between items-start md:items-center px-4">
                     <div className="relative">
-                        <p className="text-[#9BB098] text-xs font-bold uppercase tracking-[0.3em] mb-3">WHAT THEY SAYS</p>
+                        <p className="text-[#9BB098] text-xs font-bold uppercase tracking-[0.3em] mb-3">WHAT THEY SAY</p>
                         <h2 className="text-4xl lg:text-5xl font-bold text-[#353935] m-0">
                             Best Feedback From Clients
                         </h2>

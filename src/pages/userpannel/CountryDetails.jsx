@@ -40,12 +40,72 @@ export default function CountryDetails({
     const brownColor = "#9B6F40"
 
     const categories = [
-        { name: 'Food Tour', icon: '🍽️' },
-        { name: 'When Visiting', icon: '📅' },
-        { name: 'Ship Cruise', icon: '🚢' },
-        { name: 'Memorable Tour', icon: '⭐' },
-        { name: 'Summer Visit', icon: '☀️' },
-        { name: 'Day Tour', icon: '🌄' }
+        {
+            name: 'Food Tour',
+            icon: (
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
+                    <path d="M3 11H21L19 20H5L3 11Z" />
+                    <path d="M17 11C17 8 15 5 12 5C9 5 7 8 7 11" />
+                    <line x1="12" y1="15" x2="12" y2="17" />
+                </svg>
+            )
+        },
+        {
+            name: 'When Visiting',
+            icon: (
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+            )
+        },
+        {
+            name: 'Ship Cruise',
+            icon: (
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
+                    <path d="M4 16c2 1 4 4 8 4s6-3 8-4" />
+                    <path d="M4 16V10h16v6" />
+                    <path d="M6 10L8 4h8l2 6" />
+                    <line x1="12" y1="4" x2="12" y2="2" />
+                    <path d="M2 18s4 2 10 2 10-2 10-2" strokeDasharray="2 2" />
+                </svg>
+            )
+        },
+        {
+            name: 'Memorable Tour',
+            icon: (
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
+                    <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" />
+                </svg>
+            )
+        },
+        {
+            name: 'Summer Visit',
+            icon: (
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
+                    <circle cx="12" cy="12" r="5" />
+                    <line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+            )
+        },
+        {
+            name: 'Day Tour',
+            icon: (
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
+                    <path d="M2 20h20L15 6l-5 10L8 12 2 20z" />
+                    <circle cx="18" cy="6" r="3" />
+                </svg>
+            )
+        }
     ]
 
     const experiences = Array.from({ length: 8 }, (_, i) => ({
