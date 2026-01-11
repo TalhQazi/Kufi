@@ -20,43 +20,50 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
     const [showPassword, setShowPassword] = useState(false)
     const [rememberMe, setRememberMe] = useState(false)
 
-    const handleSubmit = async (event) => {
+    const handleSubmit = (event) => {
         event.preventDefault()
 
-        try {
-            // 1. Check Admin (Optional: Keep local admin usage if needed, otherwise API)
-            if (emailOrUsername === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-                localStorage.setItem('currentUser', JSON.stringify({ name: 'Admin', role: 'admin' }))
-                localStorage.setItem('userRole', 'admin')
-                if (onLoginSuccess) onLoginSuccess('admin')
+        // 1. Check Admin
+        if (emailOrUsername === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+            localStorage.setItem('currentUser', JSON.stringify({ name: 'Admin', role: 'admin' }))
+            localStorage.setItem('userRole', 'admin')
+            if (onLoginSuccess) onLoginSuccess('admin')
+            return
+        }
+
+        // 2. Check Dummy User
+        if (emailOrUsername === DUMMY_USERNAME && password === DUMMY_PASSWORD) {
+            localStorage.setItem('currentUser', JSON.stringify({ name: 'User', role: 'user' }))
+            localStorage.setItem('userRole', 'user')
+            if (onLoginSuccess) onLoginSuccess('user')
+            return
+        }
+
+        // 3. Check Dummy Supplier
+        if (emailOrUsername === DUMMY_SUPPLIER_USERNAME && password === DUMMY_SUPPLIER_PASSWORD) {
+            localStorage.setItem('currentUser', JSON.stringify({ name: 'Supplier', role: 'supplier' }))
+            localStorage.setItem('userRole', 'supplier')
+            if (onLoginSuccess) onLoginSuccess('supplier')
+            return
+        }
+
+        // 4. Check LocalStorage for registered users
+        const storedUsers = localStorage.getItem('kufiUsers')
+        if (storedUsers) {
+            const users = JSON.parse(storedUsers)
+            const foundUser = users.find(
+                (u) => (u.email === emailOrUsername || u.name === emailOrUsername) && u.password === password
+            )
+
+            if (foundUser) {
+                localStorage.setItem('currentUser', JSON.stringify(foundUser))
+                localStorage.setItem('userRole', foundUser.role)
+                if (onLoginSuccess) onLoginSuccess(foundUser.role)
                 return
             }
-
-            // 2. Call Backend API
-            const { login } = await import('../../services/api')
-            // Assuming backend accepts 'email' and 'password'. 
-            // If the input allows username, we might need to adjust based on backend requirement.
-            // Sending 'email' as the general identifier key.
-            const result = await login({ email: emailOrUsername, password })
-
-            // Assuming result structure: { token, user: { name, role, ... } }
-            // Adjust based on actual API response structure
-            if (result && result.user) {
-                localStorage.setItem('token', result.token) // Store auth token
-                localStorage.setItem('currentUser', JSON.stringify(result.user))
-                localStorage.setItem('userRole', result.user.role)
-
-                if (onLoginSuccess) onLoginSuccess(result.user.role)
-            } else {
-                // Fallback if structure is different
-                console.warn("Unexpected API response structure:", result)
-                alert('Login successful but unexpected response format.')
-            }
-
-        } catch (error) {
-            console.error("Login error:", error)
-            alert(error.message || 'Login failed. Please check your credentials.')
         }
+
+        alert('Invalid credentials')
     }
 
     return (

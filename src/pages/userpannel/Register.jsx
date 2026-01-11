@@ -21,13 +21,16 @@ export default function Register({ onLoginClick, onClose }) {
         setForm((prev) => ({ ...prev, [name]: value }))
     }
 
-    const handleSubmit = async (event) => {
+    const handleSubmit = (event) => {
         event.preventDefault()
 
         if (form.password !== form.confirmPassword) {
             alert('Password and Confirm Password must match.')
             return
         }
+
+        const stored = localStorage.getItem('kufiUsers')
+        const users = stored ? JSON.parse(stored) : []
 
         const newUser = {
             name: form.name,
@@ -37,18 +40,12 @@ export default function Register({ onLoginClick, onClose }) {
             role: form.role === 'supplier' ? 'supplier' : 'user',
         }
 
-        try {
-            // Call Backend API
-            const { register } = await import('../../services/api')
-            const result = await register(newUser)
+        users.push(newUser)
+        localStorage.setItem('kufiUsers', JSON.stringify(users))
 
-            alert('Account created successfully! You can now log in.')
+        alert('Account created successfully (saved locally). You can now log in.')
 
-            if (onLoginClick) onLoginClick()
-        } catch (error) {
-            console.error("Registration error:", error)
-            alert(error.message || 'Registration failed.')
-        }
+        if (onLoginClick) onLoginClick()
     }
 
     return (
