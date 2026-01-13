@@ -1,18 +1,28 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import Card from '../ui/Card'
+import api from '../../api'
 
 export default function TopLocationsSection({ onCountryClick }) {
     const scrollRef = useRef(null)
     const isDown = useRef(false)
     const startX = useRef(0)
     const scrollLeftAtStart = useRef(0)
+    const [locations, setLocations] = useState([])
+    const [loading, setLoading] = useState(true)
 
-    const baseLocations = [
-        { id: 1, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-1.jpeg' },
-        { id: 2, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-2.jpeg' },
-        { id: 3, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-3.jpeg' },
-        { id: 4, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-4.jpeg' },
-    ]
+    useEffect(() => {
+        const fetchCountries = async () => {
+            try {
+                const response = await api.get('/countries')
+                setLocations(response.data || [])
+            } catch (error) {
+                console.error("Error fetching locations:", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchCountries()
+    }, [])
 
     useEffect(() => {
         const slider = scrollRef.current
@@ -88,24 +98,30 @@ export default function TopLocationsSection({ onCountryClick }) {
                     ref={scrollRef}
                     className="flex overflow-x-auto gap-6 hide-scrollbar pb-6 snap-x snap-mandatory cursor-grab active:cursor-grabbing select-none"
                 >
-                    {baseLocations.map((item, index) => (
-                        <div key={`${item.id}-${index}`} className="min-w-[280px] sm:min-w-[320px] flex-shrink-0 snap-start">
-                            <Card
-                                variant="destination"
-                                image={item.image}
-                                title={item.title}
-                                location={item.location}
-                                rating="4.4"
-                                className="rounded-[20px] shadow-card-hover"
-                                imageClassName="h-64 sm:h-[280px]"
-                                onClick={() => {
-                                    if (onCountryClick) {
-                                        onCountryClick()
-                                    }
-                                }}
-                            />
+                    {loading ? (
+                        <div className="w-full py-10 flex justify-center">
+                            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#a67c52]"></div>
                         </div>
-                    ))}
+                    ) : (
+                        locations.map((item, index) => (
+                            <div key={item._id || index} className="min-w-[280px] sm:min-w-[320px] flex-shrink-0 snap-start">
+                                <Card
+                                    variant="destination"
+                                    image={item.imageUrl || '/assets/dest-1.jpeg'}
+                                    title={item.name}
+                                    location={item.description?.substring(0, 30)}
+                                    rating="4.4"
+                                    className="rounded-[20px] shadow-card-hover"
+                                    imageClassName="h-64 sm:h-[280px]"
+                                    onClick={() => {
+                                        if (onCountryClick) {
+                                            onCountryClick(item)
+                                        }
+                                    }}
+                                />
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         </section>

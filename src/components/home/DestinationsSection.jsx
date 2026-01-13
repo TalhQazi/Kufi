@@ -1,19 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Card from '../ui/Card'
+import api from '../../api'
 
 export default function DestinationsSection({ onCountryClick }) {
-    const baseDestinations = [
-        { id: 1, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-1.jpeg' },
-        { id: 2, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-2.jpeg' },
-        { id: 3, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-3.jpeg' },
-        { id: 4, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-4.jpeg' },
-        { id: 5, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-1.jpeg' },
-        { id: 6, title: 'Lorem Ipsum', location: 'Lorem Ipi', image: '/assets/dest-2.jpeg' },
-    ]
-
-    const [destinations, setDestinations] = useState(baseDestinations.slice(0, 4))
+    const [allCountries, setAllCountries] = useState([])
+    const [destinations, setDestinations] = useState([])
+    const [loading, setLoading] = useState(true)
     const [clickCount, setClickCount] = useState(0)
     const [isShowingLess, setIsShowingLess] = useState(false)
+
+    useEffect(() => {
+        const fetchCountries = async () => {
+            try {
+                const response = await api.get('/countries')
+                const data = response.data || []
+                setAllCountries(data)
+                setDestinations(data.slice(0, 4))
+            } catch (error) {
+                console.error("Error fetching countries:", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchCountries()
+    }, [])
 
     const handleAction = () => {
         if (isShowingLess) {
@@ -34,8 +44,10 @@ export default function DestinationsSection({ onCountryClick }) {
         const nextItems = []
         const timestamp = Date.now()
         for (let i = 0; i < 4; i++) {
-            const baseItem = baseDestinations[(currentCount + i) % baseDestinations.length]
-            nextItems.push({ ...baseItem, id: `dest-${timestamp}-${currentCount + i}` })
+            const baseItem = allCountries[(currentCount + i) % allCountries.length]
+            if (baseItem) {
+                nextItems.push({ ...baseItem, _id: `dest-${timestamp}-${currentCount + i}` })
+            }
         }
         setDestinations(prev => [...prev, ...nextItems])
         const newClickCount = clickCount + 1
@@ -55,22 +67,28 @@ export default function DestinationsSection({ onCountryClick }) {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {destinations.map((item, index) => (
-                        <div key={`${item.id}-${index}`} className="w-full">
-                            <Card
-                                variant="destination"
-                                image={item.image}
-                                title={item.title}
-                                location={item.location}
-                                rating="4.4"
-                                onClick={() => {
-                                    if (onCountryClick) {
-                                        onCountryClick()
-                                    }
-                                }}
-                            />
+                    {loading ? (
+                        <div className="col-span-full py-10 flex justify-center">
+                            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#a67c52]"></div>
                         </div>
-                    ))}
+                    ) : (
+                        destinations.map((item, index) => (
+                            <div key={`${item._id || item.id}-${index}`} className="w-full">
+                                <Card
+                                    variant="destination"
+                                    image={item.imageUrl || item.image}
+                                    title={item.name || item.title}
+                                    location={item.description?.substring(0, 20) || item.location}
+                                    rating="4.4"
+                                    onClick={() => {
+                                        if (onCountryClick) {
+                                            onCountryClick(item)
+                                        }
+                                    }}
+                                />
+                            </div>
+                        ))
+                    )}
                 </div>
 
                 <div className="mt-8 flex justify-center">

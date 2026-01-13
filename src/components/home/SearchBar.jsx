@@ -1,14 +1,28 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 import { FiMapPin, FiCalendar, FiBriefcase, FiUsers } from 'react-icons/fi'
+import api from '../../api'
 
 export default function SearchBar() {
     const [city, setCity] = useState('')
+    const [cities, setCities] = useState([])
     const today = new Date().toISOString().split('T')[0]
     const [arrivalDate, setArrivalDate] = useState(today)
     const [departureDate, setDepartureDate] = useState(today)
     const [travelers, setTravelers] = useState('')
+
+    useEffect(() => {
+        const fetchCities = async () => {
+            try {
+                const response = await api.get('/cities')
+                setCities(response.data || [])
+            } catch (error) {
+                console.error("Error fetching cities:", error)
+            }
+        }
+        fetchCities()
+    }, [])
 
     const handleSubmit = (event) => {
         event.preventDefault()
@@ -28,12 +42,7 @@ export default function SearchBar() {
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
                         placeholder="Dubai"
-                        options={[
-                            { value: 'dubai', label: 'Dubai' },
-                            { value: 'bali', label: 'Bali' },
-                            { value: 'paris', label: 'Paris' },
-                            { value: 'maldives', label: 'Maldives' },
-                        ]}
+                        options={cities.map(c => ({ value: c.name.toLowerCase(), label: c.name }))}
                         inputClassName="!bg-slate-50 !border-slate-300 !text-base !font-medium !text-slate-700 !h-[48px] !rounded-lg"
                         labelClassName="!text-sm !text-slate-700 !mb-2 !font-normal"
                     />
