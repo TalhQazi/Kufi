@@ -38,9 +38,13 @@ export default function Register({ onLoginClick, onClose }) {
                 phone: form.phone,
                 password: form.password,
                 role: form.role === 'supplier' ? 'supplier' : 'user',
+                status: form.role === 'supplier' ? 'pending' : 'active',
             })
 
-            alert('Account created successfully! You can now log in.')
+            const message = form.role === 'supplier'
+                ? 'Supplier account created successfully! Please wait for admin approval before logging in.'
+                : 'Account created successfully! You can now log in.';
+            alert(message);
             if (onLoginClick) onLoginClick()
         } catch (error) {
             console.error('Registration error:', error)

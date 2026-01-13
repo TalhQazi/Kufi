@@ -23,6 +23,11 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
 
 
             if (response.data.token) {
+                if (response.data.user.role === 'supplier' && response.data.user.status === 'pending') {
+                    alert('Your account is currently pending admin approval. Please check back later.')
+                    return
+                }
+
                 localStorage.setItem('authToken', response.data.token)
                 localStorage.setItem('currentUser', JSON.stringify(response.data.user))
                 localStorage.setItem('userRole', response.data.user.role)
