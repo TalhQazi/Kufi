@@ -2,14 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import Button from '../ui/Button'
 import { FaPlay, FaBookmark, FaStar } from 'react-icons/fa'
 import { FiChevronRight, FiChevronLeft } from 'react-icons/fi'
+import api from '../../api'
 
 export default function HeroSection({ onSignupClick }) {
-    const cards = [
-        '/assets/hero-card1.jpeg',
-        '/assets/hero-card2.jpeg',
-        '/assets/hero-card3.jpeg',
-        '/assets/hero-card4.jpeg'
-    ]
+    const [countries, setCountries] = useState([])
+    const [loading, setLoading] = useState(true)
     const [idx, setIdx] = useState(0)
     const [isPaused, setIsPaused] = useState(false)
     const scrollRef = useRef(null)
@@ -17,8 +14,23 @@ export default function HeroSection({ onSignupClick }) {
     const startX = useRef(0)
     const scrollLeft = useRef(0)
 
+    useEffect(() => {
+        const fetchCountries = async () => {
+            try {
+                const response = await api.get('/countries')
+                setCountries(response.data || [])
+            } catch (error) {
+                console.error("Error fetching countries:", error)
+                // Fallback to static if needed or show error
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchCountries()
+    }, [])
+
     // Triple the cards for infinite effect
-    const infiniteCards = [...cards, ...cards, ...cards]
+    const infiniteCards = [...countries, ...countries, ...countries]
     const cardWidth = 260 + 24 // card width + gap
 
     // Auto-scroll effect (one picture at a time)
@@ -34,19 +46,19 @@ export default function HeroSection({ onSignupClick }) {
         return () => clearInterval(autoScroll)
     }, [isPaused, isDragging, cardWidth])
 
-    // Center scroll on mount
+    // Center scroll on mount or when countries load
     useEffect(() => {
-        if (scrollRef.current) {
-            const initialScroll = cards.length * cardWidth
+        if (scrollRef.current && countries.length > 0) {
+            const initialScroll = countries.length * cardWidth
             scrollRef.current.scrollLeft = initialScroll
         }
-    }, [])
+    }, [countries, cardWidth])
 
     const handleScroll = () => {
-        if (!scrollRef.current) return
+        if (!scrollRef.current || countries.length === 0) return
 
         const sl = scrollRef.current.scrollLeft
-        const contentWidth = cards.length * cardWidth
+        const contentWidth = countries.length * cardWidth
 
         // Reset to middle if we go too far left or right
         if (sl <= 0) {
@@ -57,7 +69,7 @@ export default function HeroSection({ onSignupClick }) {
 
         // Update active index based on scroll position (focused card)
         const currentActive = Math.round((sl % contentWidth) / cardWidth)
-        setIdx(currentActive % cards.length)
+        setIdx(currentActive % countries.length)
     }
 
     const handleMouseDown = (e) => {
@@ -94,6 +106,12 @@ export default function HeroSection({ onSignupClick }) {
     }
 
 
+
+    if (loading) return (
+        <div className="min-h-[600px] lg:min-h-[700px] flex items-center justify-center bg-gray-900 text-white">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#A67C52]"></div>
+        </div>
+    )
 
     return (
         <div className="min-h-[600px] lg:min-h-[700px] flex flex-col bg-cover bg-center text-white px-4 sm:px-8 lg:px-20 pb-20 box-border relative"
@@ -137,17 +155,17 @@ export default function HeroSection({ onSignupClick }) {
                             className="rounded-3xl overflow-hidden shadow-2xl relative cursor-pointer"
                             onClick={() => {
                                 setIsPaused(true)
-                                setIdx((idx + 1) % cards.length)
+                                setIdx((idx + 1) % countries.length)
                                 setTimeout(() => setIsPaused(false), 5000)
                             }}
                         >
                             <img
-                                src={cards[idx]}
-                                alt="Featured experience"
+                                src={countries[idx]?.imageUrl || '/assets/hero-card1.jpeg'}
+                                alt={countries[idx]?.name || "Featured experience"}
                                 className="w-full h-80 object-cover"
                             />
                             <div className="absolute bottom-4 left-4 right-4 text-white">
-                                <h3 className="text-lg font-bold">Lorem Ipsum</h3>
+                                <h3 className="text-lg font-bold">{countries[idx]?.name || "Lorem Ipsum"}</h3>
                                 <div className="flex items-center gap-1 text-sm text-[#F59E0B]">
                                     <FaStar /> <span>4.4</span>
                                 </div>
@@ -169,27 +187,27 @@ export default function HeroSection({ onSignupClick }) {
                         onMouseMove={handleMouseMove}
                         onMouseEnter={() => setIsPaused(true)}
                     >
-                        {infiniteCards.map((cardPath, index) => {
-                            const isActive = (index % cards.length) === idx
+                        {infiniteCards.map((country, index) => {
+                            const isActive = (index % countries.length) === idx
                             return (
                                 <div key={index} className="relative group flex-shrink-0 flex items-center h-[420px] w-[260px] justify-center">
                                     {/* Background Number */}
                                     <div className={`absolute left-1/2 -translate-x-1/2 text-[180px] font-normal text-transparent font-outline-2 text-white/5 select-none z-0 pointer-events-none font-playfair leading-none transition-all duration-500 ${isActive ? '-top-10 opacity-50' : '-top-5 opacity-20'}`}>
-                                        0{(index % cards.length) + 1}
+                                        0{(index % countries.length) + 1}
                                     </div>
 
                                     <div
                                         className={`relative rounded-2xl overflow-hidden shadow-lg shadow-black/50 bg-gray-900 text-white transition-all duration-500 z-10 border-none ring-0 ${isActive ? 'w-[260px] h-[400px] opacity-100 mb-0' : 'w-[240px] h-[300px] opacity-80 mb-[-20px]'}`}
                                     >
                                         <img
-                                            src={cardPath}
-                                            alt={`Experience ${index + 1}`}
+                                            src={country.imageUrl || '/assets/hero-card1.jpeg'}
+                                            alt={country.name}
                                             className="absolute inset-0 w-full h-full object-cover block m-0 p-0 border-none pointer-events-none"
                                         />
                                         <div className="absolute bottom-0 left-0 w-full p-5 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
                                             <div className="flex justify-between items-end">
                                                 <div>
-                                                    <h3 className="m-0 mb-1.5 text-lg font-semibold whitespace-nowrap">Lorem Ipsum</h3>
+                                                    <h3 className="m-0 mb-1.5 text-lg font-semibold whitespace-nowrap">{country.name}</h3>
                                                     <div className="flex items-center gap-1.5 text-sm">
                                                         <FaStar size={13} className="text-[#F59E0B]" />
                                                         <span className="text-white font-medium">4.4</span>
@@ -223,14 +241,13 @@ export default function HeroSection({ onSignupClick }) {
                         </button>
                     </div>
 
-                    {/* Pagination Indicators */}
                     <div className="hidden md:flex items-center absolute bottom-0 right-0 h-6">
                         {/* Background track */}
                         <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-[2px] bg-[#D4AF37]/30 rounded-full" />
 
                         {/* Individual indicators */}
                         <div className="flex items-center gap-3 relative z-10">
-                            {cards.map((_, index) => (
+                            {countries.map((_, index) => (
                                 <div
                                     key={index}
                                     className={`transition-all duration-300 cursor-pointer rounded-full ${index === idx
@@ -239,7 +256,7 @@ export default function HeroSection({ onSignupClick }) {
                                         }`}
                                     onClick={() => {
                                         if (scrollRef.current) {
-                                            const contentWidth = cards.length * cardWidth
+                                            const contentWidth = countries.length * cardWidth
                                             const scrollAmount = contentWidth + (index * cardWidth)
                                             scrollRef.current.scrollTo({ left: scrollAmount, behavior: 'smooth' })
                                         }
