@@ -9,7 +9,10 @@ import {
   Menu,
   X,
   LogOut,
+  Globe,
+  MapPin,
 } from "lucide-react";
+
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard },
@@ -18,7 +21,10 @@ const navItems = [
   { label: "Analytics", icon: BarChart3 },
   { label: "Payments & Finance", icon: CreditCard },
   { label: "System Notification", icon: Bell },
+  { label: "Manage Countries", icon: Globe },
+  { label: "Manage Cities", icon: MapPin },
 ];
+
 
 const Sidebar = ({ activePage, onSelect, onLogout, onHomeClick, isVisible, isDarkMode }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

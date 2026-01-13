@@ -3,6 +3,8 @@ import { FaFacebookF, FaTwitter, FaInstagram, FaYoutube, FaEye, FaEyeSlash } fro
 import { FcGoogle } from 'react-icons/fc'
 import { FiMail, FiLock, FiGlobe, FiUser, FiPhone } from 'react-icons/fi'
 import { HiMenu } from 'react-icons/hi'
+import api from '../../api'
+
 
 export default function Register({ onLoginClick, onClose }) {
     const [form, setForm] = useState({
@@ -21,7 +23,7 @@ export default function Register({ onLoginClick, onClose }) {
         setForm((prev) => ({ ...prev, [name]: value }))
     }
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault()
 
         if (form.password !== form.confirmPassword) {
@@ -29,23 +31,21 @@ export default function Register({ onLoginClick, onClose }) {
             return
         }
 
-        const stored = localStorage.getItem('kufiUsers')
-        const users = stored ? JSON.parse(stored) : []
+        try {
+            const response = await api.post('/auth/register', {
+                name: form.name,
+                email: form.email,
+                phone: form.phone,
+                password: form.password,
+                role: form.role === 'supplier' ? 'supplier' : 'user',
+            })
 
-        const newUser = {
-            name: form.name,
-            email: form.email,
-            phone: form.phone,
-            password: form.password,
-            role: form.role === 'supplier' ? 'supplier' : 'user',
+            alert('Account created successfully! You can now log in.')
+            if (onLoginClick) onLoginClick()
+        } catch (error) {
+            console.error('Registration error:', error)
+            alert(error.response?.data?.message || 'Registration failed. Please try again.')
         }
-
-        users.push(newUser)
-        localStorage.setItem('kufiUsers', JSON.stringify(users))
-
-        alert('Account created successfully (saved locally). You can now log in.')
-
-        if (onLoginClick) onLoginClick()
     }
 
     return (

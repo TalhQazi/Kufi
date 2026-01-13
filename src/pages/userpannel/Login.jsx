@@ -2,68 +2,39 @@ import { useState } from 'react'
 import { FaFacebookF, FaTwitter, FaInstagram, FaYoutube, FaEye, FaEyeSlash, FaCheck, FaTimes } from 'react-icons/fa'
 import { FcGoogle } from 'react-icons/fc'
 import { FiMail, FiLock, FiGlobe } from 'react-icons/fi'
+import api from '../../api'
 
-const ADMIN_EMAIL = 'admin@kufi.com'
-const ADMIN_PASSWORD = 'Admin@123'
-
-// Dummy user credentials for quick login
-const DUMMY_USERNAME = 'user'
-const DUMMY_PASSWORD = 'user123'
-
-// Dummy supplier credentials for quick login
-const DUMMY_SUPPLIER_USERNAME = 'supplier'
-const DUMMY_SUPPLIER_PASSWORD = 'supplier123'
 
 export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
+
     const [emailOrUsername, setEmailOrUsername] = useState('')
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [rememberMe, setRememberMe] = useState(false)
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault()
 
-        // 1. Check Admin
-        if (emailOrUsername === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-            localStorage.setItem('currentUser', JSON.stringify({ name: 'Admin', role: 'admin' }))
-            localStorage.setItem('userRole', 'admin')
-            if (onLoginSuccess) onLoginSuccess('admin')
-            return
-        }
+        try {
+            const response = await api.post('/auth/login', {
+                email: emailOrUsername, // Assuming backend accepts either email or username in this field
+                password: password
+            })
 
-        // 2. Check Dummy User
-        if (emailOrUsername === DUMMY_USERNAME && password === DUMMY_PASSWORD) {
-            localStorage.setItem('currentUser', JSON.stringify({ name: 'User', role: 'user' }))
-            localStorage.setItem('userRole', 'user')
-            if (onLoginSuccess) onLoginSuccess('user')
-            return
-        }
 
-        // 3. Check Dummy Supplier
-        if (emailOrUsername === DUMMY_SUPPLIER_USERNAME && password === DUMMY_SUPPLIER_PASSWORD) {
-            localStorage.setItem('currentUser', JSON.stringify({ name: 'Supplier', role: 'supplier' }))
-            localStorage.setItem('userRole', 'supplier')
-            if (onLoginSuccess) onLoginSuccess('supplier')
-            return
-        }
+            if (response.data.token) {
+                localStorage.setItem('authToken', response.data.token)
+                localStorage.setItem('currentUser', JSON.stringify(response.data.user))
+                localStorage.setItem('userRole', response.data.user.role)
 
-        // 4. Check LocalStorage for registered users
-        const storedUsers = localStorage.getItem('kufiUsers')
-        if (storedUsers) {
-            const users = JSON.parse(storedUsers)
-            const foundUser = users.find(
-                (u) => (u.email === emailOrUsername || u.name === emailOrUsername) && u.password === password
-            )
-
-            if (foundUser) {
-                localStorage.setItem('currentUser', JSON.stringify(foundUser))
-                localStorage.setItem('userRole', foundUser.role)
-                if (onLoginSuccess) onLoginSuccess(foundUser.role)
-                return
+                if (onLoginSuccess) onLoginSuccess(response.data.user.role)
+            } else {
+                alert('Login failed: Token not received')
             }
+        } catch (error) {
+            console.error('Login error:', error)
+            alert(error.response?.data?.message || 'Invalid credentials or server error')
         }
-
-        alert('Invalid credentials')
     }
 
     return (

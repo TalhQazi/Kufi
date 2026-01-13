@@ -10,7 +10,10 @@ import PaymentsFinance from './pages/adminpannel/payments-finance'
 import SystemNotification from './pages/adminpannel/system-notification'
 import SupplierDashboard from './pages/supplierpannel/supplier-dashboard'
 import NotificationsBooking from './pages/adminpannel/notifications-booking'
+import CountryManagement from './pages/adminpannel/CountryManagement'
+import CityManagement from './pages/adminpannel/CityManagement'
 import './App.css'
+
 
 const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
   const [activePage, setActivePage] = useState(initialPage)
@@ -37,7 +40,10 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
       )
     if (activePage === 'Supplier Dashboard') return <SupplierDashboard onLogout={onLogout} onHomeClick={onHomeClick} />
     if (activePage === 'Booking Notifications') return <NotificationsBooking />
+    if (activePage === 'Manage Countries') return <CountryManagement />
+    if (activePage === 'Manage Cities') return <CityManagement />
     return <Dashboard />
+
   }
 
   return (
