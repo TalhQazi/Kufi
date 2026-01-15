@@ -27,6 +27,7 @@ export default function App() {
   const [showNotifications, setShowNotifications] = useState(false)
   const [bookingData, setBookingData] = useState(null) // Store booking form data
   const [selectedActivities, setSelectedActivities] = useState([]) // Store selected activities for user profile
+  const [currentUser, setCurrentUser] = useState(JSON.parse(localStorage.getItem('currentUser')) || null)
 
   // Navigation history state (for custom buttons)
   const [history, setHistory] = useState([getInitialPage()])
@@ -61,6 +62,8 @@ export default function App() {
     // Clear any stored session data
     localStorage.removeItem('currentUser')
     localStorage.removeItem('userRole')
+    localStorage.removeItem('authToken')
+    setCurrentUser(null)
     // Reset to home page and clear history
     setHistory(['home'])
     setCurrentIndex(0)
@@ -330,6 +333,9 @@ export default function App() {
         onSigninClick={handleOpenLogin}
         onCategoryClick={() => navigateTo('category-page')}
         onCountryClick={() => navigateTo('country-details')}
+        currentUser={currentUser}
+        onLogout={handleLogout}
+        onProfileClick={() => navigateTo('user-profile')}
       />
 
       {/* Login Modal */}
@@ -340,6 +346,8 @@ export default function App() {
               onRegisterClick={handleOpenRegister}
               onLoginSuccess={(role) => {
                 setShowModal(null)
+                const user = JSON.parse(localStorage.getItem('currentUser'))
+                setCurrentUser(user)
                 if (role === 'admin') {
                   navigateTo('admin')
                 } else if (role === 'supplier') {
