@@ -1,95 +1,51 @@
-import React from "react";
+import api from "../../api";
+import { useState, useEffect } from "react";
 import { Bell, UserCheck, Users, Clock4, DollarSign, AlertTriangle } from "lucide-react";
 
-const notifications = [
-  {
-    icon: Bell,
-    iconBg: "bg-emerald-50 text-emerald-500",
-    title: "New supplier registration awaiting approval",
-    time: "2 hours ago",
-  },
-  {
-    icon: Users,
-    iconBg: "bg-blue-50 text-blue-500",
-    title: "Traveler booking request submitted to Supplier A",
-    time: "4 hours ago",
-  },
-  {
-    icon: UserCheck,
-    iconBg: "bg-teal-50 text-teal-500",
-    title: "Supplier shared new itinerary with Traveler",
-    time: "6 hours ago",
-  },
-  {
-    icon: UserCheck,
-    iconBg: "bg-emerald-50 text-emerald-500",
-    title: "Traveler accepted itinerary and completed payment",
-    time: "8 hours ago",
-  },
-  {
-    icon: Clock4,
-    iconBg: "bg-indigo-50 text-indigo-500",
-    title: "Supplier marked tour as completed",
-    time: "1 day ago",
-  },
-  {
-    icon: Clock4,
-    iconBg: "bg-indigo-50 text-indigo-500",
-    title: "Supplier marked tour as completed",
-    time: "1 day ago",
-  },
-  {
-    icon: Clock4,
-    iconBg: "bg-indigo-50 text-indigo-500",
-    title: "Supplier marked tour as completed",
-    time: "1 day ago",
-  },
-];
-
-const stats = [
-  {
-    label: "Total Suppliers",
-    value: "248",
-    change: "+12%",
-    positive: true,
-    icon: Users,
-    iconBg: "bg-emerald-50 text-emerald-500",
-  },
-  {
-    label: "Active Travelers",
-    value: "1,429",
-    change: "+8%",
-    positive: true,
-    icon: Users,
-    iconBg: "bg-blue-50 text-blue-500",
-  },
-  {
-    label: "Pending Requests",
-    value: "34",
-    change: "-5%",
-    positive: false,
-    icon: Clock4,
-    iconBg: "bg-amber-50 text-amber-500",
-  },
-  {
-    label: "Total Revenue",
-    value: "$124.5K",
-    change: "+23%",
-    positive: true,
-    icon: DollarSign,
-    iconBg: "bg-emerald-50 text-emerald-500",
-  },
-  {
-    label: "Reported Issues",
-    value: "7",
-    change: "+2",
-    positive: false,
-    icon: AlertTriangle,
-    iconBg: "bg-rose-50 text-rose-500",
-  },
-];
-
 const SystemNotification = ({ onViewDetails }) => {
+  const [notifications, setNotifications] = useState([]);
+  const [stats, setStats] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSystemData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await api.get('/notifications/system');
+        setNotifications(response.data.notifications || []);
+
+        // Map backend icons if necessary or use defaults based on type
+        const iconMap = {
+          bell: Bell,
+          users: Users,
+          userCheck: UserCheck,
+          clock: Clock4,
+          dollar: DollarSign,
+          alert: AlertTriangle
+        };
+
+        const enrichedStats = (response.data.stats || []).map(stat => ({
+          ...stat,
+          icon: iconMap[stat.iconType] || Bell
+        }));
+
+        setStats(enrichedStats);
+      } catch (error) {
+        console.error("Error fetching system notifications:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSystemData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a26e35]"></div>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       <div>
@@ -164,9 +120,8 @@ const SystemNotification = ({ onViewDetails }) => {
                     </div>
                   </div>
                   <span
-                    className={`text-xs font-semibold ${
-                      item.positive ? "text-emerald-500" : "text-rose-500"
-                    }`}
+                    className={`text-xs font-semibold ${item.positive ? "text-emerald-500" : "text-rose-500"
+                      }`}
                   >
                     {item.change}
                   </span>

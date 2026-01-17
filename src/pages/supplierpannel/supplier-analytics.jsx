@@ -1,4 +1,5 @@
-import React from "react";
+import api from "../../api";
+import React, { useState, useEffect } from "react";
 import { Line, Bar } from "react-chartjs-2";
 import { Search, CalendarDays, Bell, Settings } from "lucide-react";
 import {
@@ -22,129 +23,74 @@ ChartJS.register(
   Legend
 );
 
-const revenueData = [
-  { month: "Jan", value: 4000 },
-  { month: "Feb", value: 5200 },
-  { month: "Mar", value: 6700 },
-  { month: "Apr", value: 7100 },
-  { month: "May", value: 8800 },
-  { month: "Jun", value: 9800 },
-];
-
-const bookingsByExperience = [
-  { label: "Mountain Hiking", value: 45 },
-  { label: "Kayaking Tour", value: 70 },
-  { label: "Wine Tasting", value: 95 },
-  { label: "City Walking", value: 32 },
-  { label: "Cooking Class", value: 60 },
-];
-
-const revenueChartData = {
-  labels: revenueData.map((d) => d.month),
-  datasets: [
-    {
-      label: "revenue",
-      data: revenueData.map((d) => d.value),
-      borderColor: "#2563eb",
-      backgroundColor: "rgba(37, 99, 235, 0.08)",
-      tension: 0.35,
-      fill: false,
-      pointRadius: 4,
-      pointBackgroundColor: "#2563eb",
-      pointBorderColor: "#ffffff",
-      pointBorderWidth: 2,
-    },
-  ],
-};
-
-const revenueChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: false,
-    },
-    tooltip: {
-      mode: "index",
-      intersect: false,
-    },
-  },
-  scales: {
-    x: {
-      grid: {
-        color: "#e5e7eb",
-        borderDash: [4, 4],
-      },
-      ticks: {
-        font: { size: 11 },
-        color: "#6b7280",
-      },
-    },
-    y: {
-      grid: {
-        color: "#e5e7eb",
-        borderDash: [4, 4],
-      },
-      ticks: {
-        font: { size: 11 },
-        color: "#6b7280",
-        callback: (value) => `${value}`,
-      },
-    },
-  },
-};
-
-const bookingsChartData = {
-  labels: bookingsByExperience.map((d) => d.label),
-  datasets: [
-    {
-      label: "bookings",
-      data: bookingsByExperience.map((d) => d.value),
-      backgroundColor: "#2563eb",
-      borderRadius: 4,
-      barThickness: 36,
-    },
-  ],
-};
-
-const bookingsChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: false,
-    },
-    tooltip: {
-      mode: "index",
-      intersect: false,
-    },
-  },
-  scales: {
-    x: {
-      grid: {
-        color: "#e5e7eb",
-        borderDash: [4, 4],
-      },
-      ticks: {
-        font: { size: 11 },
-        color: "#6b7280",
-      },
-    },
-    y: {
-      beginAtZero: true,
-      grid: {
-        color: "#e5e7eb",
-        borderDash: [4, 4],
-      },
-      ticks: {
-        font: { size: 11 },
-        color: "#6b7280",
-      },
-    },
-  },
-};
-
 const SupplierAnalytics = ({ darkMode }) => {
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setIsLoading(true);
+        const response = await api.get('/analytics/supplier');
+        setAnalyticsData(response.data);
+      } catch (error) {
+        console.error("Error fetching supplier analytics:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, []);
+
+  const revenueData = analyticsData?.revenueTrend || [
+    { month: "Jan", value: 0 },
+    { month: "Feb", value: 0 },
+    { month: "Mar", value: 0 },
+    { month: "Apr", value: 0 },
+    { month: "May", value: 0 },
+    { month: "Jun", value: 0 },
+  ];
+
+  const bookingsByExperience = analyticsData?.bookingsByExperience || [];
+
+  const revenueChartData = {
+    labels: revenueData.map((d) => d.month),
+    datasets: [
+      {
+        label: "revenue",
+        data: revenueData.map((d) => d.value),
+        borderColor: "#2563eb",
+        backgroundColor: "rgba(37, 99, 235, 0.08)",
+        tension: 0.35,
+        fill: false,
+        pointRadius: 4,
+        pointBackgroundColor: "#2563eb",
+        pointBorderColor: "#ffffff",
+        pointBorderWidth: 2,
+      },
+    ],
+  };
+
+  const bookingsChartData = {
+    labels: bookingsByExperience.map((d) => d.label || d.title),
+    datasets: [
+      {
+        label: "bookings",
+        data: bookingsByExperience.map((d) => d.value || d.count),
+        backgroundColor: "#2563eb",
+        borderRadius: 4,
+        barThickness: 36,
+      },
+    ],
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a26e35]"></div>
+      </div>
+    );
+  }
   const chartTextColor = darkMode ? "#94a3b8" : "#6b7280";
   const chartGridColor = darkMode ? "#334155" : "#e5e7eb";
 

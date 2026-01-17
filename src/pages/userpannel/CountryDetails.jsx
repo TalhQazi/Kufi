@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import api from '../../api'
 import './CountryDetails.css'
 import Footer from '../../components/layout/Footer'
 
@@ -13,6 +14,8 @@ export default function CountryDetails({
     onSettingsClick
 }) {
     const [dropdown, setDropdown] = useState(false)
+    const [experiences, setExperiences] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
     const dropdownRef = useRef(null)
 
     // Scroll to top when component mounts
@@ -108,57 +111,48 @@ export default function CountryDetails({
         }
     ]
 
-    const experiences = Array.from({ length: 8 }, (_, i) => ({
-        id: i + 1,
-        title: 'Lorem ipsum',
-        subtitle: 'Lorem ipsum',
-        image: '/assets/activity1.jpeg',
-        rating: 4.7
-    }))
+    const [testimonials, setTestimonials] = useState([])
+    const [blogs, setBlogs] = useState([])
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
 
-    const testimonials = [
-        {
-            id: 1,
-            text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis consectetur mauris id erat dapibus, a facilisis ipsum pulvinar.',
-            author: 'Tommy',
-            avatar: '/assets/avatar1.jpg',
-            rating: 5
-        },
-        {
-            id: 2,
-            text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis consectetur mauris id erat dapibus, a facilisis ipsum pulvinar.',
-            author: 'Tommy',
-            avatar: '/assets/avatar2.jpg',
-            rating: 5
+    useEffect(() => {
+        const fetchCountryActivities = async () => {
+            try {
+                setIsLoading(true)
+                const response = await api.get(`/activities?country=${countryName}`)
+                setExperiences(Array.isArray(response.data) ? response.data : [])
+            } catch (error) {
+                console.error("Error fetching country activities:", error)
+            } finally {
+                setIsLoading(false)
+            }
         }
-    ]
 
-    const blogs = [
-        {
-            id: 1,
-            title: 'Lorem Amet sit',
-            image: '/assets/activity1.jpeg',
-            date: 'March 11, 2024'
-        },
-        {
-            id: 2,
-            title: 'Lorem Amet sit',
-            image: '/assets/activity1.jpeg',
-            date: 'March 11, 2024'
-        },
-        {
-            id: 3,
-            title: 'Lorem Amet sit',
-            image: '/assets/activity1.jpeg',
-            date: 'March 11, 2024'
-        },
-        {
-            id: 4,
-            title: 'Lorem Amet sit',
-            image: '/assets/activity1.jpeg',
-            date: 'March 11, 2024'
+        const fetchTestimonialsAndBlogs = async () => {
+            try {
+                const [feedRes, blogRes] = await Promise.all([
+                    api.get('/feedbacks'),
+                    api.get('/blogs')
+                ]);
+                setTestimonials(feedRes.data || []);
+                setBlogs(blogRes.data || []);
+            } catch (error) {
+                console.error("Error fetching testimonials or blogs:", error);
+            }
         }
-    ]
+
+        fetchCountryActivities()
+        fetchTestimonialsAndBlogs()
+    }, [countryName])
+
+    const getProfileImage = () => {
+        if (currentUser.profileImage || currentUser.avatar || currentUser.imageUrl) {
+            return currentUser.profileImage || currentUser.avatar || currentUser.imageUrl;
+        }
+        return null;
+    };
+
+    const profileImage = getProfileImage();
 
     return (
         <div className="country-details">
@@ -191,11 +185,18 @@ export default function CountryDetails({
 
                         <div className="country-profile-dropdown" ref={dropdownRef}>
                             <button onClick={() => setDropdown(!dropdown)} className="country-profile-btn">
-                                <img
-                                    src="/assets/profile-avatar.jpeg"
-                                    alt="Profile"
-                                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
-                                />
+                                {profileImage ? (
+                                    <img
+                                        src={profileImage}
+                                        alt="Profile"
+                                        className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
+                                        onError={(e) => { e.target.src = '/assets/profile-avatar.jpeg' }}
+                                    />
+                                ) : (
+                                    <div className="w-8 h-8 rounded-full bg-[#a26e35] text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm">
+                                        {currentUser.name ? currentUser.name.substring(0, 2).toUpperCase() : 'U'}
+                                    </div>
+                                )}
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
                                     <path d="M6 9l6 6 6-6" />
                                 </svg>
@@ -291,25 +292,39 @@ export default function CountryDetails({
                 <section className="country-experiences">
                     <h2 className="country-section-title">Popular Experiences</h2>
                     <div className="country-experiences-grid">
-                        {experiences.map((exp) => (
-                            <div
-                                key={exp.id}
-                                className="country-experience-card"
-                                onClick={() => onActivityClick && onActivityClick(exp.id)}
-                            >
-                                <img src={exp.image} alt={exp.title} className="country-experience-image" />
-                                <div className="country-experience-content">
-                                    <h3 className="country-experience-title">{exp.title}</h3>
-                                    <p className="country-experience-subtitle">{exp.subtitle}</p>
-                                    <div className="country-experience-footer">
+                        {isLoading ? (
+                            <div className="col-span-full py-20 flex justify-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
+                            </div>
+                        ) : experiences.length > 0 ? (
+                            experiences.map((exp) => (
+                                <div
+                                    key={exp._id || exp.id}
+                                    className="country-experience-card"
+                                    onClick={() => onActivityClick && onActivityClick(exp._id || exp.id)}
+                                >
+                                    <div className="country-card-image-wrapper">
+                                        <img
+                                            src={exp.imageUrl || exp.image || "/assets/activity1.jpeg"}
+                                            alt={exp.title}
+                                            className="country-experience-image"
+                                        />
                                         <div className="country-experience-rating">
-                                            <span className="star-filled">★</span>
-                                            <span>{exp.rating}</span>
+                                            <span>★</span>
+                                            <span>{exp.rating || 4.7}</span>
                                         </div>
                                     </div>
+                                    <div className="country-experience-content">
+                                        <h3 className="country-experience-title">{exp.title}</h3>
+                                        <p className="country-experience-subtitle">{exp.category || "Discovery"}</p>
+                                    </div>
                                 </div>
+                            ))
+                        ) : (
+                            <div className="col-span-full py-20 text-center text-slate-500">
+                                No experiences found in {countryName} yet.
                             </div>
-                        ))}
+                        )}
                     </div>
                 </section>
 

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import api from "../../api";
+import React, { useState, useEffect } from "react";
 import {
   CalendarDays,
   MapPin,
@@ -12,53 +13,53 @@ import {
 } from "lucide-react";
 import SupplierGenerateItinerary from "./supplier-generate-itinerary";
 
-const requests = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    avatar:
-      "https://images.pexels.com/photos/3760853/pexels-photo-3760853.jpeg?auto=compress&cs=tinysrgb&w=200",
-    status: "Pending",
-    location: "Bali, Indonesia",
-    travelers: 2,
-    amount: "$2,130",
-    dateRange: "Dec 15 - Dec 22, 2024",
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    avatar:
-      "https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=200",
-    status: "Pending",
-    location: "Tokyo, Japan",
-    travelers: 4,
-    amount: "$2,830",
-    dateRange: "Jan 10 - Jan 20, 2025",
-  },
-  {
-    id: 3,
-    name: "Emma Williams",
-    avatar:
-      "https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=200",
-    status: "Pending",
-    location: "Paris, France",
-    travelers: 2,
-    amount: "$2,450",
-    dateRange: "Feb 14 - Feb 21, 2025",
-  },
-];
-
 const SupplierRequests = ({ darkMode }) => {
-  const [selectedId, setSelectedId] = useState(1);
+  const [requests, setRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState(null);
   const [view, setView] = useState("list"); // 'list' | 'itinerary' | 'generate'
   const [acceptedRequestId, setAcceptedRequestId] = useState(null);
   const [itineraryRequestId, setItineraryRequestId] = useState(null);
 
-  const selected = requests.find((r) => r.id === selectedId) ?? requests[0];
-  const itineraryRequest =
-    requests.find((r) => r.id === itineraryRequestId) ?? selected;
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        setIsLoading(true);
+        const response = await api.get('/bookings/supplier?status=pending');
+        const data = response.data.bookings || [];
+        setRequests(data);
+        if (data.length > 0) setSelectedId(data[0].id || data[0]._id);
+      } catch (error) {
+        console.error("Error fetching supplier requests:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchRequests();
+  }, []);
 
-  if (view === "itinerary") {
+  const selected = requests.find((r) => (r.id || r._id) === selectedId) || (requests.length > 0 ? requests[0] : null);
+  const itineraryRequest =
+    requests.find((r) => (r.id || r._id) === itineraryRequestId) || selected;
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a26e35]"></div>
+      </div>
+    );
+  }
+
+  if (requests.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[400px] gap-4">
+        <Sparkles className="h-12 w-12 text-[#a26e35] opacity-20" />
+        <p className={`text-sm ${darkMode ? "text-slate-400" : "text-gray-500"}`}>No pending requests found</p>
+      </div>
+    );
+  }
+
+  if (view === "itinerary" && itineraryRequest) {
     return (
       <div className={`space-y-6 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
         {/* Hero banner */}
@@ -96,7 +97,7 @@ const SupplierRequests = ({ darkMode }) => {
                   <MapPin className="h-3.5 w-3.5 text-emerald-500" />
                   Destination
                 </p>
-                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.location}</p>
+                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.location || itineraryRequest.experience}</p>
               </div>
 
               <div className="space-y-1">
@@ -104,7 +105,7 @@ const SupplierRequests = ({ darkMode }) => {
                   <CalendarDays className="h-3.5 w-3.5 text-emerald-500" />
                   Dates
                 </p>
-                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.dateRange}</p>
+                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.dateRange || itineraryRequest.date}</p>
               </div>
 
               <div className="space-y-1">
@@ -112,41 +113,8 @@ const SupplierRequests = ({ darkMode }) => {
                   <Users className="h-3.5 w-3.5 text-emerald-500" />
                   Travelers
                 </p>
-                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.travelers} Adults</p>
+                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.travelers || itineraryRequest.guests} Adults</p>
               </div>
-
-              <div className="space-y-1">
-                <p className={`font-semibold flex items-center gap-1.5 ${darkMode ? "text-slate-200" : "text-gray-800"}`}>
-                  <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-                  Budget range
-                </p>
-                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>$2000 - $2500</p>
-              </div>
-
-              <div className="space-y-1">
-                <p className={`font-semibold flex items-center gap-1.5 ${darkMode ? "text-slate-200" : "text-gray-800"}`}>
-                  <Heart className="h-3.5 w-3.5 text-emerald-500" />
-                  Interests
-                </p>
-                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Culture, Food, Art, Nightlife</p>
-              </div>
-
-              <div className="space-y-1">
-                <p className={`font-semibold flex items-center gap-1.5 ${darkMode ? "text-slate-200" : "text-gray-800"}`}>
-                  <span className="inline-block h-3.5 w-3.5 rounded-full bg-emerald-500" />
-                  Accessibility
-                </p>
-                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Wheelchair Accessible</p>
-              </div>
-            </div>
-
-            <div className={`mt-4 rounded-2xl px-4 py-3 text-[11px] transition-colors ${darkMode ? "bg-slate-800 text-slate-300" : "bg-gray-50 text-gray-700"}`}>
-              <p className={`mb-1 text-[11px] font-semibold transition-colors ${darkMode ? "text-slate-200" : "text-gray-700"}`}>
-                Traveler Notes
-              </p>
-              <p className="opacity-90">
-                Would love to explore local cafés and art museums.
-              </p>
             </div>
           </div>
 
@@ -160,69 +128,6 @@ const SupplierRequests = ({ darkMode }) => {
           </button>
         </div>
 
-        {/* Recommended templates */}
-        <div className="space-y-4">
-          <div>
-            <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-              Recommended itinerary Templates
-            </h2>
-            <p className={`text-xs mt-1 transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
-              Based on traveler preferences similar trips performed well.
-            </p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            {[1, 2, 3].map((idx) => (
-              <div
-                key={idx}
-                className={`overflow-hidden rounded-2xl border shadow-sm flex flex-col transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}
-              >
-                <div className="h-32 w-full overflow-hidden">
-                  <img
-                    src="https://images.pexels.com/photos/161853/eiffel-tower-paris-france-tower-161853.jpeg?auto=compress&cs=tinysrgb&w=800"
-                    alt="Paris"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className={`flex flex-1 flex-col gap-2 px-4 py-3 text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
-                  <p className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-                    6-Day Classic Paris Discovery
-                  </p>
-                  <p>
-                    Balanced mix of landmarks, culture & gastronomy.
-                  </p>
-                  <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
-                    Louvre, Seine Cruise, Montmartre, local cafés
-                  </p>
-                  <div className="mt-1 flex flex-wrap gap-1.5">
-                    {["Family-friendly", "Art & Culture", "Guided"].map(
-                      (tag) => (
-                        <span
-                          key={tag}
-                          className={`rounded-full px-2.5 py-0.5 text-[10px] transition-colors ${darkMode ? "bg-slate-800 text-slate-300" : "bg-gray-100 text-gray-700"}`}
-                        >
-                          {tag}
-                        </span>
-                      )
-                    )}
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-[11px]">
-                    <span className="opacity-70">From</span>
-                    <span className={`font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>$2,150 est.</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setView("generate")}
-                    className="mt-2 inline-flex items-center justify-center rounded-full bg-[#a26e35] px-4 py-2 text-[11px] font-semibold text-white hover:bg-[#8b5e2d] transition-colors"
-                  >
-                    Select Template
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Bottom bar */}
         <div className={`flex flex-col gap-3 border-t pt-4 mt-2 sm:flex-row sm:items-center sm:justify-between transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`}>
           <button
@@ -232,13 +137,6 @@ const SupplierRequests = ({ darkMode }) => {
           >
             <span className="mr-2 rotate-180">➜</span>
             Back to Requests
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("generate")}
-            className="inline-flex items-center justify-center rounded-full bg-[#a26e35] px-6 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#8b5e2d] transition-colors"
-          >
-            Proceed to Auto Generate Itinerary
           </button>
         </div>
       </div>
@@ -253,7 +151,6 @@ const SupplierRequests = ({ darkMode }) => {
     <div className={`grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2.1fr)_minmax(280px,0.9fr)] transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
       {/* Left: requests list */}
       <div className="space-y-5">
-        {/* Header + search */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className={`text-xl font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Received Booking Request</h1>
@@ -261,27 +158,18 @@ const SupplierRequests = ({ darkMode }) => {
               Review and manage incoming travel requests
             </p>
           </div>
-
-          <div className="relative w-full md:w-72">
-            <input
-              type="text"
-              placeholder="Search"
-              className={`w-full rounded-full border px-4 py-2 pl-4 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#a26e35]/40 ${darkMode ? "bg-slate-900 border-slate-800 text-white placeholder:text-slate-500" : "bg-white border-gray-200 text-gray-700 placeholder:text-gray-400"}`}
-            />
-          </div>
         </div>
 
         <div className="space-y-4">
           {requests.map((req) => (
             <div
-              key={req.id}
-              className={`rounded-2xl border px-5 py-4 shadow-sm cursor-pointer transition-all ${darkMode ? "bg-slate-900 border-slate-800 hover:border-amber-500/50" : "bg-white border-gray-100 hover:border-[#a26e35]/50"}`}
-              onClick={() => setSelectedId(req.id)}
+              key={req.id || req._id}
+              className={`rounded-2xl border px-5 py-4 shadow-sm cursor-pointer transition-all ${((req.id || req._id) === selectedId) ? (darkMode ? "border-amber-500/50 bg-slate-800/50" : "border-[#a26e35]/50 bg-amber-50/30") : (darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100")}`}
+              onClick={() => setSelectedId(req.id || req._id)}
             >
-              {/* Top row: avatar, name, status */}
               <div className="flex items-center gap-3">
                 <img
-                  src={req.avatar}
+                  src={req.avatar || "/assets/profile-avatar.jpeg"}
                   alt={req.name}
                   className="h-10 w-10 rounded-full object-cover"
                 />
@@ -295,19 +183,18 @@ const SupplierRequests = ({ darkMode }) => {
                 </div>
               </div>
 
-              {/* Middle row: info */}
               <div className={`mt-3 flex flex-wrap items-center gap-x-8 gap-y-2 text-[12px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
                 <span className="inline-flex items-center gap-1.5">
                   <MapPin className="h-3.5 w-3.5 text-emerald-500" />
-                  {req.location}
+                  {req.location || req.experience}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <CalendarDays className="h-3.5 w-3.5 text-emerald-500" />
-                  {req.dateRange}
+                  {req.dateRange || req.date}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5 text-emerald-500" />
-                  {req.travelers} Travelers
+                  {req.travelers || req.guests} Travelers
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
@@ -315,19 +202,18 @@ const SupplierRequests = ({ darkMode }) => {
                 </span>
               </div>
 
-              {/* Bottom row: actions */}
               <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t transition-colors pt-4" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
                 <button
                   type="button"
-                  disabled={acceptedRequestId !== req.id}
+                  disabled={acceptedRequestId !== (req.id || req._id)}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (acceptedRequestId === req.id) {
-                      setItineraryRequestId(req.id);
+                    if (acceptedRequestId === (req.id || req._id)) {
+                      setItineraryRequestId(req.id || req._id);
                       setView("itinerary");
                     }
                   }}
-                  className={`inline-flex w-full lg:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${acceptedRequestId === req.id
+                  className={`inline-flex w-full lg:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${acceptedRequestId === (req.id || req._id)
                     ? "bg-[#a26e35] text-white shadow-sm hover:bg-[#8b5e2d]"
                     : (darkMode ? "bg-slate-800 text-slate-600 cursor-not-allowed" : "bg-gray-100 text-gray-400 cursor-not-allowed")
                     }`}
@@ -340,7 +226,7 @@ const SupplierRequests = ({ darkMode }) => {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setAcceptedRequestId(req.id);
+                      setAcceptedRequestId(req.id || req._id);
                     }}
                     className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors"
                   >
@@ -356,113 +242,38 @@ const SupplierRequests = ({ darkMode }) => {
         </div>
       </div>
 
-      {/* Right: traveler details */}
       <aside className="space-y-4">
-        <div className={`rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
-          {/* Header */}
-          <div className={`flex items-center justify-between px-5 py-3 border-b transition-colors ${darkMode ? "bg-slate-800/50 border-slate-800" : "bg-gray-50 border-gray-100"}`}>
-            <p className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Traveler Details</p>
-            <button className={`p-1 rounded-md transition-colors ${darkMode ? "hover:bg-slate-700 text-slate-500" : "hover:bg-gray-200 text-gray-400"}`}>
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="px-5 py-4 space-y-4 text-xs">
-            {/* Avatar + name */}
-            <div className="flex items-center gap-3">
-              <img
-                src={selected.avatar}
-                alt={selected.name}
-                className="h-12 w-12 rounded-full object-cover border-2 border-white"
-              />
-              <div>
-                <p className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-                  {selected.name}
-                </p>
-                <p className="text-[11px] text-emerald-600 font-medium">Verified Traveler</p>
-              </div>
+        {selected && (
+          <div className={`rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+            <div className={`flex items-center justify-between px-5 py-3 border-b transition-colors ${darkMode ? "bg-slate-800/50 border-slate-800" : "bg-gray-50 border-gray-100"}`}>
+              <p className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Traveler Details</p>
             </div>
-
-            {/* Email */}
-            <div className="flex items-center gap-3 pt-2">
-              <span className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${darkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-50 text-emerald-600"}`}>
-                <Mail className="h-4 w-4" />
-              </span>
-              <div>
-                <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-500"}`}>Email</p>
-                <p className={`text-xs transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>sarah.j@email.com</p>
-              </div>
-            </div>
-
-            {/* Phone */}
-            <div className="flex items-center gap-3">
-              <span className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${darkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-50 text-blue-600"}`}>
-                <Phone className="h-4 w-4" />
-              </span>
-              <div>
-                <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-500"}`}>Phone</p>
-                <p className={`text-xs transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>+1 (555) 123-4567</p>
-              </div>
-            </div>
-
-            <div className={`border-t pt-3 mt-1 transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`} />
-
-            {/* Interests */}
-            <div>
-              <div className={`mb-1 flex items-center gap-2 text-[11px] font-semibold transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
-                <Heart className="h-3.5 w-3.5 text-emerald-500" />
-                <span>Interests</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {["Beach", "Culture", "Adventure"].map((tag) => (
-                  <span
-                    key={tag}
-                    className={`rounded-full px-3 py-1 text-[11px] transition-colors font-medium ${darkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-50 text-emerald-700"}`}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className={`border-t pt-3 transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`} />
-
-            {/* Special requests */}
-            <div>
-              <p className={`mb-1 text-[11px] font-semibold transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
-                Special Requests
-              </p>
-              <div className={`rounded-xl px-3 py-2 text-[11px] transition-colors ${darkMode ? "bg-slate-800 text-slate-400" : "bg-gray-50 text-gray-600"}`}>
-                Looking for romantic beachfront accommodations
-              </div>
-            </div>
-
-            <div className={`border-t pt-3 transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`} />
-
-            {/* Trip summary */}
-            <div className="space-y-2">
-              <p className={`text-[11px] font-semibold transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Trip Summary</p>
-              <div className="space-y-1.5 text-[11px]">
-                <div className="flex items-center justify-between">
-                  <span className={`transition-colors ${darkMode ? "text-slate-500" : "text-gray-600"}`}>Destination:</span>
-                  <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Bali, Indonesia</span>
+            <div className="px-5 py-4 space-y-4 text-xs">
+              <div className="flex items-center gap-3">
+                <img
+                  src={selected.avatar || "/assets/profile-avatar.jpeg"}
+                  alt={selected.name}
+                  className="h-12 w-12 rounded-full object-cover border-2 border-white"
+                />
+                <div>
+                  <p className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                    {selected.name}
+                  </p>
+                  <p className="text-[11px] text-emerald-600 font-medium">Verified Traveler</p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className={`transition-colors ${darkMode ? "text-slate-500" : "text-gray-600"}`}>Dates:</span>
-                  <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Dec 15 - Dec 22, 2025</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className={`transition-colors ${darkMode ? "text-slate-500" : "text-gray-600"}`}>Travelers:</span>
-                  <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>2</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className={`transition-colors ${darkMode ? "text-slate-500" : "text-gray-600"}`}>Budget:</span>
-                  <span className="font-semibold text-emerald-600">$3,500</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${darkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-50 text-emerald-600"}`}>
+                  <Mail className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-500"}`}>Email</p>
+                  <p className={`text-xs transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{selected.email || "N/A"}</p>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </aside>
     </div>
   );

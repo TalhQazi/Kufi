@@ -1,63 +1,52 @@
+import api from "../../api";
 import { useState, useEffect } from 'react'
 import { FiMapPin, FiStar } from 'react-icons/fi'
 
 export default function TopActivitiesSection() {
     const [activeIndex, setActiveIndex] = useState(0)
+    const [leftCards, setLeftCards] = useState([]);
+    const [carouselItems, setCarouselItems] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const leftCards = [
-        {
-            id: 1,
-            badge: 'International',
-            title: 'Rajasthan Heritage Tour',
-            subtitle: 'Find out why travelers like you are raving about Bali',
-            image: '/assets/activity1.jpeg',
-        },
-        {
-            id: 2,
-            badge: '',
-            title: 'Kerala Backwaters',
-            subtitle: 'Find out why travelers like you are raving about Bali',
-            image: '/assets/activity2.jpeg',
-        },
-    ]
+    useEffect(() => {
+        const fetchTopActivities = async () => {
+            try {
+                setIsLoading(true);
+                const response = await api.get('/activities'); // Fetching all activities and filtering/slicing for top ones
+                const allActivities = response.data || [];
 
-    const carouselItems = [
-        {
-            id: 1,
-            title: 'Maldives Luxury Escape',
-            image: '/assets/activity3.jpeg',
-            available: '363 available',
-            reviews: '4.7 (2,543 Reviews)',
-        },
-        {
-            id: 2,
-            title: 'Bali Island Adventure',
-            image: '/assets/activity1.jpeg',
-            available: '412 available',
-            reviews: '4.8 (3,120 Reviews)',
-        },
-        {
-            id: 3,
-            title: 'Swiss Alps Hiking',
-            image: '/assets/activity2.jpeg',
-            available: '128 available',
-            reviews: '4.9 (1,850 Reviews)',
-        },
-        {
-            id: 4,
-            title: 'Dubai Desert Safari',
-            image: '/assets/dest-1.jpeg',
-            available: '850 available',
-            reviews: '4.6 (5,200 Reviews)',
-        },
-        {
-            id: 5,
-            title: 'Kyoto Cultural Tour',
-            image: '/assets/dest-4.jpeg',
-            available: '245 available',
-            reviews: '4.8 (1,900 Reviews)',
-        }
-    ]
+                // Simulate "top" by slicing or use a specific endpoint if available
+                setLeftCards(allActivities.slice(0, 2).map(act => ({
+                    id: act._id,
+                    badge: act.isInternational ? 'International' : '',
+                    title: act.title,
+                    subtitle: act.summary || act.description?.substring(0, 50),
+                    image: act.images?.[0] || act.image || '/assets/activity1.jpeg'
+                })));
+
+                setCarouselItems(allActivities.slice(2, 7).map(act => ({
+                    id: act._id,
+                    title: act.title,
+                    image: act.images?.[0] || act.image || '/assets/activity3.jpeg',
+                    available: `${act.availability || 0} available`,
+                    reviews: `${act.rating || 0} (${act.reviewsCount || 0} Reviews)`
+                })));
+            } catch (error) {
+                console.error("Error fetching top activities:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchTopActivities();
+    }, []);
+
+    if (isLoading) {
+        return (
+            <section className="py-12 sm:py-16 px-4 sm:px-8 lg:px-20 bg-[#E8DED0]">
+                <div className="max-w-[1200px] mx-auto text-center text-slate-500">Loading top activities...</div>
+            </section>
+        );
+    }
 
     // Auto-rotate every 5 seconds
     useEffect(() => {

@@ -80,53 +80,93 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                                     className="flex items-center gap-2 p-1 pr-2 rounded-full border border-slate-200 hover:bg-slate-50 transition-colors"
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-[#A67C52] flex items-center justify-center text-white overflow-hidden">
-                                        {currentUser.profileImage ? (
-                                            <img src={currentUser.profileImage} alt={currentUser.name} className="w-full h-full object-cover" />
+                                    <div className="w-8 h-8 rounded-full bg-[#A67C52] flex items-center justify-center text-white overflow-hidden border border-slate-100">
+                                        {currentUser.profileImage || currentUser.avatar || currentUser.imageUrl ? (
+                                            <img
+                                                src={currentUser.profileImage || currentUser.avatar || currentUser.imageUrl}
+                                                alt={currentUser.name}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = "/assets/profile-avatar.jpeg";
+                                                }}
+                                            />
                                         ) : (
-                                            <FiUser size={18} />
+                                            <div className="text-xs font-bold">
+                                                {currentUser.name ? currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : <FiUser size={18} />}
+                                            </div>
                                         )}
                                     </div>
                                     <span className="text-sm font-medium text-slate-700 hidden lg:block">
-                                        {currentUser.name?.split(' ')[0] || 'Profile'}
+                                        {currentUser.name || 'User'}
                                     </span>
                                     <FiChevronDown size={14} className={`text-slate-500 transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {profileDropdownOpen && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-50 animate-in fade-in zoom-in duration-200">
-                                        <div className="px-4 py-2 border-b border-slate-100">
-                                            <p className="text-sm font-semibold text-slate-900 truncate">{currentUser.name || 'User'}</p>
+                                    <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-50 animate-in fade-in zoom-in duration-200">
+                                        <div className="px-4 py-3 border-b border-slate-100 mb-1">
+                                            <p className="text-sm font-bold text-slate-900 truncate">{currentUser.name || 'User'}</p>
                                             <p className="text-xs text-slate-500 truncate">{currentUser.email}</p>
                                         </div>
+
+                                        {currentUser.role === 'admin' && (
+                                            <button
+                                                onClick={() => {
+                                                    window.location.hash = '#admin'
+                                                    setProfileDropdownOpen(false)
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                            >
+                                                <FiSettings size={16} className="text-[#A67C52]" />
+                                                <span>Admin Dashboard</span>
+                                            </button>
+                                        )}
+
                                         <button
                                             onClick={() => {
-                                                onProfileClick && onProfileClick()
+                                                if (onProfileClick) onProfileClick();
+                                                else window.location.hash = '#user-profile';
                                                 setProfileDropdownOpen(false)
                                             }}
-                                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                                         >
-                                            <FiUser size={16} />
+                                            <FiUser size={16} className="text-[#A67C52]" />
                                             <span>My Profile</span>
                                         </button>
+
                                         <button
                                             onClick={() => {
-                                                // Using hash for now as per App.jsx logic
+                                                window.location.hash = '#itinerary-view'
+                                                setProfileDropdownOpen(false)
+                                            }}
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#A67C52]">
+                                                <path d="M9 11l3 3L22 4" />
+                                                <path d="M22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9" />
+                                            </svg>
+                                            <span>My Requests</span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
                                                 window.location.hash = '#traveler-profile'
                                                 setProfileDropdownOpen(false)
                                             }}
-                                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                                         >
-                                            <FiSettings size={16} />
+                                            <FiSettings size={16} className="text-[#A67C52]" />
                                             <span>Settings</span>
                                         </button>
+
                                         <div className="border-t border-slate-100 my-1"></div>
                                         <button
                                             onClick={() => {
-                                                onLogout && onLogout()
+                                                if (onLogout) onLogout()
                                                 setProfileDropdownOpen(false)
                                             }}
-                                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
                                         >
                                             <FiLogOut size={16} />
                                             <span>Logout</span>

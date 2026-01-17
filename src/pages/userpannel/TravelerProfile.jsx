@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import api from '../../api'
 import NotificationsModal from './NotificationsModal'
 import Footer from '../../components/layout/Footer'
 
@@ -7,6 +8,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
     const [showProfileDropdown, setShowProfileDropdown] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
     const [profileData, setProfileData] = useState({
         fullName: 'Sarah Anderson',
         email: 'sarah.anderson@email.com',
@@ -37,7 +39,53 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
         }
     }, [showProfileDropdown])
 
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                setIsLoading(true)
+                const response = await api.get('/auth/profile')
+                if (response.data) {
+                    setProfileData({
+                        fullName: response.data.fullName || '',
+                        email: response.data.email || '',
+                        phone: response.data.phone || '',
+                        country: response.data.country || '',
+                        dob: response.data.dob ? response.data.dob.split('T')[0] : '1988-03-15',
+                        gender: response.data.gender || 'Female',
+                        address: response.data.address || '',
+                        city: response.data.city || '',
+                        nationality: response.data.nationality || ''
+                    })
+                }
+            } catch (error) {
+                console.error("Error fetching profile:", error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        fetchProfile()
+    }, [])
+
+    const handleUpdateProfile = async () => {
+        try {
+            await api.patch('/auth/profile', profileData)
+            setIsEditing(false)
+            alert("Profile updated successfully!")
+        } catch (error) {
+            console.error("Error updating profile:", error)
+            alert("Failed to update profile. Please try again.")
+        }
+    }
+
     const tabs = ['Personal Info', 'Preferences', 'Travel History', 'Wishlist', 'Payments', 'Settings']
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-[#F5F1EB] font-sans overflow-x-hidden">
@@ -79,11 +127,21 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                                 className="flex items-center gap-2 cursor-pointer"
                             >
-                                <img
-                                    src="/assets/profile-avatar.jpeg"
-                                    alt="Profile"
-                                    className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border-2 border-white shadow-sm"
-                                />
+                                {profileData.profileImage || profileData.avatar || profileData.imageUrl ? (
+                                    <img
+                                        src={profileData.profileImage || profileData.avatar || profileData.imageUrl}
+                                        alt="Profile"
+                                        className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border-2 border-white shadow-sm"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "/assets/profile-avatar.jpeg";
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#A67C52] flex items-center justify-center text-white text-[10px] md:text-xs font-bold border-2 border-white shadow-sm">
+                                        {profileData.fullName ? profileData.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : <FiUser size={20} />}
+                                    </div>
+                                )}
                                 <svg
                                     width="16"
                                     height="16"
@@ -189,7 +247,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={() => setIsEditing(false)}
+                                    onClick={handleUpdateProfile}
                                     className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-primary-brown text-white rounded-lg text-xs font-semibold hover:bg-primary-dark transition-colors"
                                 >
                                     Save Changes
@@ -214,8 +272,20 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                         {/* Left: Profile Info */}
                         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full sm:w-auto">
                             <div className="flex flex-col items-center sm:items-start">
-                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden mb-3">
-                                    <img src="/assets/profile-avatar.jpeg" alt="Sarah Anderson" className="w-full h-full object-cover" />
+                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden mb-3 bg-[#A67C52] flex items-center justify-center text-white text-2xl font-bold border-2 border-white shadow-sm">
+                                    {(profileData.profileImage || profileData.avatar || profileData.imageUrl) ? (
+                                        <img
+                                            src={profileData.profileImage || profileData.avatar || profileData.imageUrl}
+                                            alt={profileData.fullName}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = "/assets/profile-avatar.jpeg";
+                                            }}
+                                        />
+                                    ) : (
+                                        profileData.fullName ? profileData.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : <FiUser size={40} />
+                                    )}
                                 </div>
                                 <button className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg bg-[#D4AF37] text-white text-[10px] sm:text-xs font-semibold">
                                     Gold Member

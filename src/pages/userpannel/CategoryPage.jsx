@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import api from '../../api'
 import './CategoryPage.css'
 import Footer from '../../components/layout/Footer'
 
@@ -13,6 +14,8 @@ export default function CategoryPage({
     onSettingsClick
 }) {
     const [dropdown, setDropdown] = useState(false)
+    const [experiences, setExperiences] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
     const dropdownRef = useRef(null)
 
     // Close dropdown when clicking outside
@@ -44,44 +47,21 @@ export default function CategoryPage({
         // Add more categories as needed
     }
 
-    const experiences = [
-        {
-            id: 1,
-            title: '3-Day Desert Camp under the Stars',
-            location: 'Moab, United States',
-            category: 'Wild Nature Experiences',
-            image: '/assets/activity1.jpeg',
-            badge: 'Popular',
-            badgeColor: '#9B6F40'
-        },
-        {
-            id: 2,
-            title: 'Lakeside Camping & Aurora Viewing',
-            location: 'Banff, Canada',
-            category: 'Mountain Escape Des...',
-            image: '/assets/activity1.jpeg',
-            badge: 'Adventure',
-            badgeColor: '#059669'
-        },
-        {
-            id: 3,
-            title: 'Glamping in the Heart of Yosemite',
-            location: 'Yosemite, United States',
-            category: 'Wild Nature Experiences',
-            image: '/assets/activity1.jpeg',
-            badge: 'Luxury',
-            badgeColor: '#9B6F40'
-        },
-        {
-            id: 4,
-            title: 'Remote Camping in Patagonia Wilderness',
-            location: 'Torres del Paine, Chile',
-            category: 'Patagonia Adventures',
-            image: '/assets/activity1.jpeg',
-            badge: 'Recommended',
-            badgeColor: '#0ea5e9'
+    useEffect(() => {
+        const fetchCategoryData = async () => {
+            try {
+                setIsLoading(true)
+                // Assuming backend supports filtering by category
+                const response = await api.get(`/activities?category=${categoryName}`)
+                setExperiences(Array.isArray(response.data) ? response.data : [])
+            } catch (error) {
+                console.error("Error fetching category activities:", error)
+            } finally {
+                setIsLoading(false)
+            }
         }
-    ]
+        fetchCategoryData()
+    }, [categoryName])
 
     const recommendedSpots = [
         {
@@ -205,33 +185,47 @@ export default function CategoryPage({
                         <h2 className="category-section-title">Explore Experiences</h2>
 
                         <div className="category-experiences-grid">
-                            {experiences.map((exp) => (
-                                <div
-                                    key={exp.id}
-                                    className="category-experience-card"
-                                    onClick={() => onActivityClick && onActivityClick(exp.id)}
-                                >
-                                    <div className="category-experience-image-wrapper">
-                                        <img src={exp.image} alt={exp.title} className="category-experience-image" />
-                                        <span
-                                            className="category-experience-badge"
-                                            style={{ backgroundColor: exp.badgeColor }}
-                                        >
-                                            {exp.badge}
-                                        </span>
-                                    </div>
-
-                                    <div className="category-experience-content">
-                                        <p className="category-experience-location">{exp.location}</p>
-                                        <p className="category-experience-category">{exp.category}</p>
-                                        <h3 className="category-experience-title">{exp.title}</h3>
-
-                                        <button className="category-view-details-btn">
-                                            View Details
-                                        </button>
-                                    </div>
+                            {isLoading ? (
+                                <div className="col-span-full py-20 flex justify-center">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
                                 </div>
-                            ))}
+                            ) : experiences.length > 0 ? (
+                                experiences.map((exp) => (
+                                    <div
+                                        key={exp._id || exp.id}
+                                        className="category-experience-card"
+                                        onClick={() => onActivityClick && onActivityClick(exp._id || exp.id)}
+                                    >
+                                        <div className="category-experience-image-wrapper">
+                                            <img
+                                                src={exp.imageUrl || exp.image || "/assets/activity1.jpeg"}
+                                                alt={exp.title}
+                                                className="category-experience-image"
+                                            />
+                                            <span
+                                                className="category-experience-badge"
+                                                style={{ backgroundColor: exp.badgeColor || brownColor }}
+                                            >
+                                                {exp.category || "Adventure"}
+                                            </span>
+                                        </div>
+
+                                        <div className="category-experience-content">
+                                            <p className="category-experience-location">{exp.city || ""} {exp.country || exp.location}</p>
+                                            <p className="category-experience-category">{exp.category}</p>
+                                            <h3 className="category-experience-title">{exp.title}</h3>
+
+                                            <button className="category-view-details-btn">
+                                                View Details
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-full py-20 text-center text-slate-500">
+                                    No experiences found in this category.
+                                </div>
+                            )}
                         </div>
                     </section>
 

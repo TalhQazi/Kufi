@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Users, Trello, DollarSign, BookOpen, Check, RefreshCw, Eye, Send } from "lucide-react";
+import api from "../../api";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -239,6 +240,63 @@ const QuickActionButton = ({ icon: Icon, label, bgColor, onClick }) => (
 );
 
 const Dashboard = ({ onNavigate }) => {
+  const [statsData, setStatsData] = useState(stats);
+  const [activityData, setActivityData] = useState(recentActivity);
+  const [revData, setRevData] = useState(revenueData);
+  const [bookData, setBookData] = useState(bookingsData);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const results = await Promise.allSettled([
+          api.get('/admin/stats'),
+          api.get('/admin/activity'),
+          api.get('/admin/revenue-trend'),
+          api.get('/admin/bookings-trend')
+        ]);
+
+        if (results[0].status === 'fulfilled' && results[0].value.data) {
+          const s = results[0].value.data;
+          setStatsData(prev => prev.map(item => {
+            if (item.title === "Total Users") return { ...item, value: s.totalUsers?.toLocaleString() || item.value, change: s.usersChange || item.change };
+            if (item.title === "Active Listings") return { ...item, value: s.activeListings?.toLocaleString() || item.value, change: s.listingsChange || item.change };
+            if (item.title === "Revenue") return { ...item, value: `$${s.totalRevenue?.toLocaleString()}` || item.value, change: s.revenueChange || item.change };
+            if (item.title === "Bookings") return { ...item, value: s.totalBookings?.toLocaleString() || item.value, change: s.bookingsChange || item.change };
+            return item;
+          }));
+        }
+
+        if (results[1].status === 'fulfilled' && results[1].value.data) {
+          setActivityData(results[1].value.data.activities || results[1].value.data);
+        }
+
+        if (results[2].status === 'fulfilled' && results[2].value.data) {
+          setRevData(prev => ({
+            ...prev,
+            labels: results[2].value.data.labels || prev.labels,
+            datasets: [{ ...prev.datasets[0], data: results[2].value.data.data || prev.datasets[0].data }]
+          }));
+        }
+
+        if (results[3].status === 'fulfilled' && results[3].value.data) {
+          setBookData(prev => ({
+            ...prev,
+            labels: results[3].value.data.labels || prev.labels,
+            datasets: [{ ...prev.datasets[0], data: results[3].value.data.data || prev.datasets[0].data }]
+          }));
+        }
+      } catch (error) {
+        console.error("Dashboard fetch error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Page heading */}
@@ -253,7 +311,7 @@ const Dashboard = ({ onNavigate }) => {
 
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
-        {stats.map((item) => (
+        {statsData.map((item) => (
           <StatCard key={item.title} {...item} />
         ))}
       </div>
@@ -267,7 +325,7 @@ const Dashboard = ({ onNavigate }) => {
             </h2>
           </div>
           <div className="h-48 sm:h-64">
-            <Line data={revenueData} options={revenueOptions} />
+            <Line data={revData} options={revenueOptions} />
           </div>
         </div>
 
@@ -278,7 +336,7 @@ const Dashboard = ({ onNavigate }) => {
             </h2>
           </div>
           <div className="h-48 sm:h-64">
-            <Bar data={bookingsData} options={bookingsOptions} />
+            <Bar data={bookData} options={bookingsOptions} />
           </div>
         </div>
       </div>
@@ -289,11 +347,11 @@ const Dashboard = ({ onNavigate }) => {
           Recent Activity
         </h2>
         <div className="divide-y divide-gray-50">
-          {recentActivity.map((item, index) => (
+          {activityData.map((item, index) => (
             <ActivityItem
               key={item.action}
               {...item}
-              isLast={index === recentActivity.length - 1}
+              isLast={index === activityData.length - 1}
             />
           ))}
         </div>

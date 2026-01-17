@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { FiSearch, FiBell, FiMapPin, FiCalendar, FiFilter, FiArrowUp, FiArrowDown } from 'react-icons/fi'
 import { FaCheckCircle, FaClock, FaCreditCard } from 'react-icons/fa'
+import api from '../../api'
 import Footer from '../../components/layout/Footer'
 
 export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, canGoForward, onExploreClick, onItineraryClick, onHomeClick, onNotificationClick, onProfileClick, onSettingsClick, onCountryClick }) {
     const [dropdown, setDropdown] = useState(false)
+    const [tripRequests, setTripRequests] = useState([])
+    const [countries, setCountries] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
     const dropdownRef = useRef(null)
 
     // Close dropdown when clicking outside
@@ -23,84 +27,52 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
             document.removeEventListener('mousedown', handleClickOutside)
         }
     }, [dropdown])
-    const tripRequests = [
-        {
-            id: 1,
-            title: '3-Day Dubai Adventure',
-            location: 'Dubai, UAE',
-            supplier: 'Desert Dreams Travel',
-            requestDate: '1/15/2025',
-            travelDates: 'Mar 20-23, 2025',
-            status: 'supplier replied back',
-            statusColor: 'bg-green-100 text-green-700',
-            statusIcon: <FaCheckCircle />,
-            image: '/assets/dest-1.jpeg'
-        },
-        {
-            id: 2,
-            title: 'Bali Cultural Experience',
-            location: 'Bali, Indonesia',
-            supplier: 'Island Explorers',
-            requestDate: '1/15/2025',
-            travelDates: 'Mar 20-23, 2025',
-            status: 'Pending Review',
-            statusColor: 'bg-yellow-100 text-yellow-700',
-            statusIcon: <FaClock />,
-            image: '/assets/dest-2.jpeg'
-        },
-        {
-            id: 3,
-            title: 'Paris Romance Getaway',
-            location: 'Paris, France',
-            supplier: 'Desert Dreams Travel',
-            requestDate: '1/15/2025',
-            travelDates: 'Mar 20-23, 2025',
-            status: 'Payment Completed',
-            statusColor: 'bg-emerald-100 text-emerald-700',
-            statusIcon: <FaCreditCard />,
-            image: '/assets/dest-3.jpeg'
-        },
-        {
-            id: 4,
-            title: 'Tokyo City Explorer',
-            location: 'Tokyo, Japan',
-            supplier: 'Desert Dreams Travel',
-            requestDate: '1/15/2025',
-            travelDates: 'Mar 20-23, 2025',
-            status: 'supplier replied back',
-            statusColor: 'bg-green-100 text-green-700',
-            statusIcon: <FaCheckCircle />,
-            image: '/assets/dest-4.jpeg'
-        }
-    ]
 
-    const upcomingTrips = [
-        {
-            id: 1,
-            location: 'Dubai, UAE',
-            dates: 'Mar 20-23, 2025',
-            image: '/assets/dest-1.jpeg'
-        },
-        {
-            id: 2,
-            location: 'Bali, Indonesia',
-            dates: 'Apr 5-12, 2025',
-            image: '/assets/dest-2.jpeg'
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                setIsLoading(true)
+                const [itinerariesRes, countriesRes] = await Promise.all([
+                    api.get('/itineraries').catch(() => ({ data: [] })),
+                    api.get('/countries').catch(() => ({ data: [] }))
+                ])
+                setTripRequests(itinerariesRes.data || [])
+                setCountries(countriesRes.data || [])
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error)
+            } finally {
+                setIsLoading(false)
+            }
         }
-    ]
+        fetchDashboardData()
+    }, [])
 
-    const suggestedDestinations = [
-        {
-            id: 1,
-            name: 'Santorini, Greece',
-            image: '/assets/activity1.jpeg'
-        },
-        {
-            id: 2,
-            name: 'Maldives',
-            image: '/assets/activity2.jpeg'
+    const upcomingTrips = tripRequests.filter(req => req.status === 'Payment Completed' || req.status === 'Completed').slice(0, 2)
+    const suggestedDestinations = Array.isArray(countries) ? countries.slice(0, 3) : []
+
+    const getStatusStyles = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'completed':
+            case 'payment completed':
+            case 'accepted':
+                return { color: 'bg-emerald-100 text-emerald-700', icon: <FaCreditCard /> };
+            case 'supplier replied back':
+            case 'ready':
+                return { color: 'bg-green-100 text-green-700', icon: <FaCheckCircle /> };
+            case 'pending':
+            case 'pending review':
+            default:
+                return { color: 'bg-yellow-100 text-yellow-700', icon: <FaClock /> };
         }
-    ]
+    }
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white text-primary-brown font-inter">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B6E4E]"></div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 font-inter">
@@ -133,11 +105,21 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                 onClick={() => setDropdown(!dropdown)}
                                 className="flex items-center gap-2 cursor-pointer"
                             >
-                                <img
-                                    src="/assets/profile-avatar.jpeg"
-                                    alt="Profile"
-                                    className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border-2 border-white shadow-sm"
-                                />
+                                {currentUser?.profileImage || currentUser?.avatar || currentUser?.imageUrl ? (
+                                    <img
+                                        src={currentUser.profileImage || currentUser.avatar || currentUser.imageUrl}
+                                        alt="Profile"
+                                        className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border-2 border-white shadow-sm"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "/assets/profile-avatar.jpeg";
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#A67C52] flex items-center justify-center text-white text-[10px] md:text-xs font-bold border-2 border-white shadow-sm">
+                                        {currentUser?.name ? currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : <FiUser size={20} />}
+                                    </div>
+                                )}
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6E4E" strokeWidth="2" className="hidden md:block">
                                     <path d="M6 9l6 6 6-6" />
                                 </svg>
@@ -211,10 +193,10 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                     <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent flex flex-col justify-center px-4 sm:px-8 md:px-16">
                         <div className="flex items-center gap-2 text-white/90 text-xs sm:text-sm md:text-base mb-2 sm:mb-3 font-medium tracking-wide">
                             <FiMapPin />
-                            <span>Dubai, UAE</span>
+                            <span>Destination Discovery</span>
                         </div>
                         <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 max-w-3xl leading-tight font-['Playfair_Display'] tracking-tight">
-                            Welcome Back, Levent! <span className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl align-middle ml-1 sm:ml-2">🌍</span> <br className="hidden sm:block" />
+                            Welcome Back! <span className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl align-middle ml-1 sm:ml-2">🌍</span> <br className="hidden sm:block" />
                             <span className="hidden sm:inline">Ready For Your Next <br />Adventure?</span>
                             <span className="sm:hidden">Ready For Your Next Adventure?</span>
                         </h1>
@@ -258,52 +240,59 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                         </div>
 
                         <div className="flex flex-col gap-4 md:gap-6">
-                            {tripRequests.map((trip) => (
-                                <div key={trip.id} className="bg-white rounded-xl md:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-6 hover:shadow-md transition-shadow">
-                                    <div className="w-full md:w-48 h-40 sm:h-48 md:h-auto shrink-0">
-                                        <img
-                                            src={trip.image}
-                                            alt={trip.title}
-                                            className="w-full h-full object-cover rounded-lg md:rounded-xl"
-                                        />
-                                    </div>
-                                    <div className="flex-1 py-1 md:py-2">
-                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
-                                            <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">{trip.title}</h3>
-                                            <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 w-fit ${trip.statusColor}`}>
-                                                {trip.statusIcon}
-                                                <span className="whitespace-nowrap">{trip.status}</span>
-                                            </span>
-                                        </div>
+                            {tripRequests.length > 0 ? (
+                                tripRequests.map((trip) => {
+                                    const styles = getStatusStyles(trip.status);
+                                    return (
+                                        <div
+                                            key={trip._id || trip.id}
+                                            className="bg-white rounded-xl md:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-6 hover:shadow-md transition-shadow cursor-pointer"
+                                            onClick={() => onItineraryClick && onItineraryClick(trip._id || trip.id)}
+                                        >
+                                            <div className="w-full md:w-48 h-40 sm:h-48 md:h-auto shrink-0">
+                                                <img
+                                                    src={trip.imageUrl || trip.image || '/assets/dest-1.jpeg'}
+                                                    alt={trip.title}
+                                                    className="w-full h-full object-cover rounded-lg md:rounded-xl"
+                                                />
+                                            </div>
+                                            <div className="flex-1 py-1 md:py-2">
+                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
+                                                    <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">{trip.title}</h3>
+                                                    <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 w-fit ${styles.color}`}>
+                                                        {styles.icon}
+                                                        <span className="whitespace-nowrap">{trip.status || 'Pending'}</span>
+                                                    </span>
+                                                </div>
 
-                                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
-                                            <div className="flex items-center gap-1">
-                                                <FiMapPin className="shrink-0" />
-                                                <span className="truncate">{trip.location}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-gray-200 flex items-center justify-center text-[8px] sm:text-[10px] shrink-0">👤</span>
-                                                <span className="truncate">{trip.supplier}</span>
-                                            </div>
-                                        </div>
+                                                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
+                                                    <div className="flex items-center gap-1">
+                                                        <FiMapPin className="shrink-0" />
+                                                        <span className="truncate">{trip.destination || trip.location || 'Various Locations'}</span>
+                                                    </div>
+                                                </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
-                                            <div className="flex items-center gap-2">
-                                                <FiCalendar className="text-gray-400 shrink-0" />
-                                                <span>Requested: {trip.requestDate}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <FiCalendar className="text-gray-400 shrink-0" />
-                                                <span>Travel: {trip.travelDates}</span>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
+                                                    <div className="flex items-center gap-2">
+                                                        <FiCalendar className="text-gray-400 shrink-0" />
+                                                        <span>Requested: {new Date(trip.createdAt).toLocaleDateString()}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-
-                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mt-auto gap-3 sm:gap-4">
-                                            {/* Button and price removed as requested */}
-                                        </div>
-                                    </div>
+                                    )
+                                })
+                            ) : (
+                                <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-200">
+                                    <p className="text-gray-500 mb-4">No trip requests found.</p>
+                                    <button
+                                        onClick={onExploreClick}
+                                        className="text-primary-brown font-bold hover:underline"
+                                    >
+                                        Explore experiences to start planning
+                                    </button>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
 
@@ -313,29 +302,31 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                         <div>
                             <h3 className="text-lg font-bold text-gray-900 mb-4">Upcoming Trips</h3>
                             <div className="flex flex-col gap-4">
-                                {upcomingTrips.map((trip) => (
-                                    <div
-                                        key={trip.id}
-                                        onClick={() => {
-                                            if (onItineraryClick) {
-                                                onItineraryClick()
-                                            }
-                                        }}
-                                        className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
-                                    >
-                                        <div className="h-32 rounded-lg overflow-hidden mb-3">
-                                            <img src={trip.image} alt={trip.location} className="w-full h-full object-cover" />
+                                {upcomingTrips.length > 0 ? (
+                                    upcomingTrips.map((trip) => (
+                                        <div
+                                            key={trip._id || trip.id}
+                                            onClick={() => onItineraryClick && onItineraryClick(trip._id || trip.id)}
+                                            className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+                                        >
+                                            <div className="h-32 rounded-lg overflow-hidden mb-3">
+                                                <img src={trip.imageUrl || trip.image || '/assets/dest-1.jpeg'} alt={trip.title} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-1">
+                                                <FiMapPin className="text-gray-400" />
+                                                {trip.destination || trip.location}
+                                            </div>
+                                            <div className="flex items-center gap-2 text-xs text-gray-500 pl-6">
+                                                <FiCalendar />
+                                                {new Date(trip.createdAt).toLocaleDateString()}
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-1">
-                                            <FiMapPin className="text-gray-400" />
-                                            {trip.location}
-                                        </div>
-                                        <div className="flex items-center gap-2 text-xs text-gray-500 pl-6">
-                                            <FiCalendar />
-                                            {trip.dates}
-                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="p-6 bg-white rounded-xl border border-gray-100 text-center text-sm text-gray-500">
+                                        No upcoming trips.
                                     </div>
-                                ))}
+                                )}
                             </div>
                         </div>
 
@@ -343,26 +334,28 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                         <div>
                             <h3 className="text-lg font-bold text-gray-900 mb-4">Suggested Destinations</h3>
                             <div className="flex flex-col gap-4">
-                                {suggestedDestinations.map((dest) => (
-                                    <div
-                                        key={dest.id}
-                                        onClick={() => {
-                                            if (onCountryClick) {
-                                                onCountryClick()
-                                            }
-                                        }}
-                                        className="relative rounded-xl overflow-hidden h-40 cursor-pointer group"
-                                    >
-                                        <img
-                                            src={dest.image}
-                                            alt={dest.name}
-                                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
-                                            <span className="text-white font-bold">{dest.name}</span>
+                                {suggestedDestinations.length > 0 ? (
+                                    suggestedDestinations.map((dest) => (
+                                        <div
+                                            key={dest._id || dest.id}
+                                            onClick={() => onCountryClick && onCountryClick(dest._id || dest.id)}
+                                            className="relative rounded-xl overflow-hidden h-40 cursor-pointer group"
+                                        >
+                                            <img
+                                                src={dest.imageUrl || dest.image || '/assets/activity1.jpeg'}
+                                                alt={dest.name}
+                                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+                                                <span className="text-white font-bold">{dest.name}</span>
+                                            </div>
                                         </div>
+                                    ))
+                                ) : (
+                                    <div className="p-6 bg-white rounded-xl border border-gray-100 text-center text-sm text-gray-500">
+                                        Check back later for suggestions.
                                     </div>
-                                ))}
+                                )}
                             </div>
                         </div>
                     </div>

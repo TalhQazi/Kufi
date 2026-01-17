@@ -1,9 +1,25 @@
 import { useState, useEffect, useRef } from 'react'
+import api from '../../api'
 import Footer from '../../components/layout/Footer'
 
-export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForward, onLogout, onNotificationClick, onAddToList, onHomeClick, onProfileClick, onSettingsClick }) {
+export default function ActivityDetail({
+    activityId,
+    onBack,
+    onForward,
+    canGoBack,
+    canGoForward,
+    onLogout,
+    onNotificationClick,
+    onAddToList,
+    onHomeClick,
+    onProfileClick,
+    onSettingsClick
+}) {
     const [activeTab, setActiveTab] = useState('overview')
     const [travelers, setTravelers] = useState(2)
+    const [isLoading, setIsLoading] = useState(true)
+    const [activity, setActivity] = useState(null)
+    const [similarActivities, setSimilarActivities] = useState([])
     const [addOns, setAddOns] = useState({
         quadBiking: false,
         campingGear: false,
@@ -12,32 +28,45 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
     const [showProfileDropdown, setShowProfileDropdown] = useState(false)
     const dropdownRef = useRef(null)
 
-    // Close dropdown when clicking outside
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setShowProfileDropdown(false)
+        const loadData = async () => {
+            if (!activityId) {
+                setIsLoading(false)
+                return
+            }
+
+            try {
+                setIsLoading(true)
+                const [activityRes, similarRes] = await Promise.allSettled([
+                    api.get(`/activities/${activityId}`),
+                    api.get(`/activities/similar?category=${activity?.category}`)
+                ])
+
+                if (activityRes.status === 'fulfilled') {
+                    setActivity(activityRes.value.data)
+                }
+
+                if (similarRes.status === 'fulfilled') {
+                    setSimilarActivities(similarRes.value.data)
+                } else {
+                    // Fallback similar activities
+                    setSimilarActivities(Array.from({ length: 4 }, (_, i) => ({
+                        id: i + 1,
+                        title: 'Recommended Adventure',
+                        image: `/assets/activity${(i % 2) + 1}.jpeg`,
+                        badge: 'Adventure',
+                        location: 'Various Locations',
+                    })))
+                }
+            } catch (error) {
+                console.error("Error loading activity details:", error)
+            } finally {
+                setIsLoading(false)
             }
         }
 
-        if (showProfileDropdown) {
-            document.addEventListener('mousedown', handleClickOutside)
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-        }
-    }, [showProfileDropdown])
-
-    const brownColor = "#9B6F40"
-
-    const similarActivities = Array.from({ length: 4 }, (_, i) => ({
-        id: i + 1,
-        title: 'Himalayan Trekking Expedition',
-        image: `/assets/activity${(i % 2) + 1}.jpeg`,
-        badge: 'Trekking',
-        location: 'USA, India',
-    }))
+        loadData()
+    }, [activityId])
 
     const toggleAddOn = (key) => {
         setAddOns(prev => ({ ...prev, [key]: !prev[key] }))
@@ -145,8 +174,8 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                         {/* Hero Image */}
                         <div className="relative rounded-2xl overflow-hidden mb-6">
                             <img
-                                src="/assets/dest-1.jpeg"
-                                alt="Dubai Desert Safari"
+                                src={activity?.imageUrl || activity?.images?.[0] || "/assets/dest-1.jpeg"}
+                                alt={activity?.title || "Activity"}
                                 className="w-full h-[300px] sm:h-[400px] object-cover"
                             />
                         </div>
@@ -160,7 +189,7 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
 
                         {/* Title */}
                         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">
-                            Dubai Dessert Safari with BBQ Dinner & Camel Ride
+                            {activity?.title || "Dubai Dessert Safari with BBQ Dinner & Camel Ride"}
                         </h1>
 
                         {/* Meta Info */}
@@ -182,7 +211,7 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                                     <circle cx="12" cy="12" r="10" />
                                     <path d="M12 6v6l4 2" />
                                 </svg>
-                                <span>6 Hours</span>
+                                <span>{activity?.duration || "6 Hours"}</span>
                             </div>
                         </div>
 
@@ -235,9 +264,9 @@ export default function ActivityDetail({ onBack, onForward, canGoBack, canGoForw
                                 <div className="mb-8">
                                     <h2 className="text-xl font-bold text-slate-900 mb-3">About this experience</h2>
                                     <p className="text-sm text-slate-600 leading-relaxed">
-                                        Lorem ipsum dolor sit amet consectetur. Arcu lorem diam massa malesuada vulputate nibh eu faucibus. Vel fermentum nibendum accumsan rhoncus
+                                        {activity?.description || `Lorem ipsum dolor sit amet consectetur. Arcu lorem diam massa malesuada vulputate nibh eu faucibus. Vel fermentum nibendum accumsan rhoncus
                                         integer felis id. Eget accumsan sit vitae tellus ut vitae tempus malesuada at. Sed dictumst diam ac luctus tristique adipiscing. At mauris condimentum erat
-                                        non mauris nec. Auctor tellus suspendisse pellentesque malesuada risus. Non orci odio quis ornare urna elit. Lex ullamcorper nunc at sit.
+                                        non mauris nec. Auctor tellus suspendisse pellentesque malesuada risus. Non orci odio quis ornare urna elit. Lex ullamcorper nunc at sit.`}
                                     </p>
                                 </div>
 

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import api from "../../api";
+import React, { useState, useEffect } from "react";
 import {
   DollarSign,
   CalendarDays,
@@ -20,76 +21,62 @@ import SupplierAnalytics from "./supplier-analytics";
 import SupplierProfile from "./supplier-profile";
 import SupplierRequests from "./supplier-requests";
 
-
-const statCards = [
-  {
-    label: "Total Revenue",
-    value: "$12,450",
-    delta: "+12.5%",
-    icon: DollarSign,
-  },
-  {
-    label: "Active Bookings",
-    value: "23",
-    delta: "+4",
-    icon: CalendarDays,
-  },
-  {
-    label: "Average Rating",
-    value: "4.8",
-    delta: "+0.2",
-    icon: Star,
-  },
-  {
-    label: "Experiences",
-    value: "8",
-    delta: "+2",
-    icon: Briefcase,
-  },
-];
-
-const recentBookings = [
-  {
-    title: "Mountain Hiking Adventure",
-    subtitle: "Sarah Johnson • 2 guests",
-    status: "Confirmed",
-  },
-  {
-    title: "Mountain Hiking Adventure",
-    subtitle: "Sarah Johnson • 2 guests",
-    status: "Confirmed",
-  },
-  {
-    title: "Mountain Hiking Adventure",
-    subtitle: "Sarah Johnson • 2 guests",
-    status: "Confirmed",
-  },
-];
-
-const travelerStats = [
-  {
-    label: "Total Pending Requests",
-    value: 12,
-    icon: Clock3,
-  },
-  {
-    label: "Accepted Requests",
-    value: 28,
-    icon: Check,
-  },
-  {
-    label: "Rejected Requests",
-    value: 5,
-    icon: XIcon,
-  },
-];
-
 const SupplierDashboard = ({ onLogout, onHomeClick }) => {
   const [activeSection, setActiveSection] = useState("Dashboard");
   const [experienceView, setExperienceView] = useState("list");
   const [darkMode, setDarkMode] = useState(false);
   const [history, setHistory] = useState(["Dashboard"]);
   const [historyIndex, setHistoryIndex] = useState(0);
+  const [stats, setStats] = useState(null);
+  const [recentBookings, setRecentBookings] = useState([]);
+  const [travelerStats, setTravelerStats] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSupplierDashboard = async () => {
+      try {
+        setIsLoading(true);
+        const [statsRes, bookingsRes] = await Promise.all([
+          api.get('/analytics/supplier'),
+          api.get('/bookings/supplier?limit=5')
+        ]);
+
+        setStats(statsRes.data.overview || [
+          { label: "Total Revenue", value: "$0", delta: "0%", icon: DollarSign },
+          { label: "Active Bookings", value: "0", delta: "0", icon: CalendarDays },
+          { label: "Average Rating", value: "0.0", delta: "0.0", icon: Star },
+          { label: "Experiences", value: "0", delta: "0", icon: Briefcase },
+        ]);
+
+        setRecentBookings(bookingsRes.data.bookings || []);
+
+        setTravelerStats(statsRes.data.travelerStats || [
+          { label: "Total Pending Requests", value: 0, icon: Clock3 },
+          { label: "Accepted Requests", value: 0, icon: Check },
+          { label: "Rejected Requests", value: 0, icon: XIcon },
+        ]);
+      } catch (error) {
+        console.error("Error fetching supplier dashboard data:", error);
+        // Fallback stats to keep UI functional
+        setStats([
+          { label: "Total Revenue", value: "$0", delta: "0%", icon: DollarSign },
+          { label: "Active Bookings", value: "0", delta: "0", icon: CalendarDays },
+          { label: "Average Rating", value: "0.0", delta: "0.0", icon: Star },
+          { label: "Experiences", value: "0", delta: "0", icon: Briefcase },
+        ]);
+        setTravelerStats([
+          { label: "Total Pending Requests", value: 0, icon: Clock3 },
+          { label: "Accepted Requests", value: 0, icon: Check },
+          { label: "Rejected Requests", value: 0, icon: XIcon },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (activeSection === 'Dashboard') {
+      fetchSupplierDashboard();
+    }
+  }, [activeSection]);
 
   const navigateTo = (section, resetExperienceView = true) => {
     if (section === activeSection && (!resetExperienceView || experienceView === "list")) return;
@@ -124,12 +111,19 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
     setDarkMode((prev) => !prev);
   };
 
+  if (isLoading && activeSection === 'Dashboard') {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a26e35]"></div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`min-h-screen md:h-screen flex flex-col md:flex-row transition-colors duration-300 ${darkMode ? "dark bg-slate-950" : "bg-white"
         }`}
     >
-      {/* Supplier sidebar (separate component) */}
       <SupplierSidebar
         activeSection={activeSection}
         onSelectSection={navigateTo}
@@ -138,13 +132,10 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
         onToggleDarkMode={handleToggleDarkMode}
       />
 
-      {/* Main content */}
       <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-y-auto">
         {activeSection === "Dashboard" && (
           <>
-            {/* Top header bar with icons */}
             <div className={`mb-4 flex items-center justify-between rounded-b-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900 border-b border-slate-800" : "bg-white"}`}>
-              {/* Navigation buttons */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={goBack}
@@ -185,7 +176,6 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
               </div>
             </div>
 
-            {/* Heading */}
             <div className="mb-4 sm:mb-5">
               <h1 className={`text-lg sm:text-xl font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-gray-900"}`}>Dashboard</h1>
               <p className={`text-xs sm:text-sm mt-1 transition-colors duration-300 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
@@ -193,10 +183,9 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
               </p>
             </div>
 
-            {/* Top stats */}
             <div className="mb-6 grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {statCards.map((card) => {
-                const Icon = card.icon;
+              {stats?.map((card) => {
+                const Icon = card.icon || Briefcase;
                 return (
                   <div
                     key={card.label}
@@ -221,15 +210,13 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
               })}
             </div>
 
-            {/* Middle row: Recent bookings + Quick actions */}
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(260px,0.9fr)] gap-4 sm:gap-5 mb-6">
-              {/* Recent bookings */}
               <div className={`rounded-xl sm:rounded-2xl border px-4 sm:px-5 py-3 sm:py-4 transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
                 <h2 className={`text-xs sm:text-sm font-semibold mb-3 transition-colors duration-300 ${darkMode ? "text-white" : "text-gray-900"}`}>
                   Recent Bookings
                 </h2>
                 <div className="space-y-2">
-                  {recentBookings.map((booking, idx) => (
+                  {recentBookings.length > 0 ? recentBookings.map((booking, idx) => (
                     <div
                       key={idx}
                       className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors duration-300 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100"}`}
@@ -246,11 +233,12 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                         {booking.status}
                       </span>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="text-center py-8 text-gray-400 text-sm">No recent bookings</div>
+                  )}
                 </div>
               </div>
 
-              {/* Quick actions */}
               <div className={`rounded-xl sm:rounded-2xl border px-4 sm:px-5 py-3 sm:py-4 space-y-2 sm:space-y-3 transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
                 <h2 className={`text-xs sm:text-sm font-semibold mb-1 transition-colors duration-300 ${darkMode ? "text-white" : "text-gray-900"}`}>
                   Quick Actions
@@ -279,7 +267,6 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
               </div>
             </div>
 
-            {/* Traveler requests */}
             <div className="bg-transparent">
               <div className="mb-3 flex items-baseline justify-between">
                 <div>
@@ -292,10 +279,9 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                 </div>
               </div>
 
-              {/* Stats row */}
               <div className="mb-4 grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
-                {travelerStats.map((item, idx) => {
-                  const Icon = item.icon;
+                {travelerStats?.map((item, idx) => {
+                  const Icon = item.icon || Clock3;
                   const bgColor =
                     idx === 0
                       ? "bg-amber-400"
@@ -322,7 +308,6 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                 })}
               </div>
 
-              {/* Select traveler request dropdown */}
               <div className={`mb-4 rounded-xl sm:rounded-2xl px-3 py-2 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900" : "bg-white"}`}>
                 <div className={`flex items-center justify-between rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm transition-colors duration-300 ${darkMode ? "bg-slate-800 text-slate-300" : "bg-[#f7f1e7] text-gray-700"}`}>
                   <span>Select Traveler Request</span>
@@ -330,7 +315,6 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                 </div>
               </div>
 
-              {/* Empty state box */}
               <div className={`rounded-xl sm:rounded-2xl border px-3 sm:px-4 py-8 sm:py-10 text-center text-[10px] sm:text-xs transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800 text-slate-500" : "bg-white border-gray-100 text-gray-400"}`}>
                 Please select a traveler request to view details
               </div>

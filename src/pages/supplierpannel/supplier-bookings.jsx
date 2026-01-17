@@ -1,117 +1,31 @@
-import React from "react";
+import api from "../../api";
+import React, { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
-const bookings = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    code: "VT938426",
-    guests: 2,
-    experience: "Mt. Hiking Adven",
-    date: "11 Jun 2025",
-    amount: "$746",
-    status: "Pending",
-  },
-  {
-    id: 2,
-    name: "Mike Chen",
-    code: "HK373983",
-    guests: 4,
-    experience: "Sunset Tour",
-    date: "11 Jun 2025",
-    amount: "$468",
-    status: "Completed",
-  },
-  {
-    id: 3,
-    name: "Emma Wilson",
-    code: "KL836593",
-    guests: 6,
-    experience: "Wine Tasting",
-    date: "11 Jun 2025",
-    amount: "$385",
-    status: "Cancelled",
-  },
-  {
-    id: 4,
-    name: "James Brown",
-    code: "GU823948",
-    guests: 2,
-    experience: "Mt. Hiking Adven",
-    date: "11 Jun 2025",
-    amount: "$581",
-    status: "Completed",
-  },
-  {
-    id: 5,
-    name: "Jane Sunny",
-    code: "WH847583",
-    guests: 8,
-    experience: "Sunset Tour",
-    date: "11 Jun 2025",
-    amount: "$632",
-    status: "Completed",
-  },
-  {
-    id: 6,
-    name: "Jane Sunny",
-    code: "WH847583",
-    guests: 8,
-    experience: "Sunset Tour",
-    date: "11 Jun 2025",
-    amount: "$632",
-    status: "Completed",
-  },
-  {
-    id: 7,
-    name: "Jane Sunny",
-    code: "WH847583",
-    guests: 8,
-    experience: "Sunset Tour",
-    date: "11 Jun 2025",
-    amount: "$632",
-    status: "Pending",
-  },
-];
-
-const drafts = [
-  {
-    id: 1,
-    title: "Bali Adventure Plan",
-    author: "Alex Johnson",
-    lastEdit: "Today, 2:30 PM",
-    progress: 0.95,
-  },
-  {
-    id: 2,
-    title: "Morocco Desert Tour",
-    author: "Emma Wilson",
-    lastEdit: "Yesterday, 10:15 AM",
-    progress: 0.4,
-  },
-  {
-    id: 3,
-    title: "Greek Islands Cruise",
-    author: "Michael Davis",
-    lastEdit: "May 15, 2025",
-    progress: 0.85,
-  },
-];
-
-const statusClass = (status) => {
-  switch (status) {
-    case "Completed":
-      return "bg-emerald-50 text-emerald-600 border-emerald-100";
-    case "Pending":
-      return "bg-amber-50 text-amber-600 border-amber-100";
-    case "Cancelled":
-      return "bg-rose-50 text-rose-600 border-rose-100";
-    default:
-      return "bg-gray-50 text-gray-600 border-gray-100";
-  }
-};
-
 const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
+  const [bookings, setBookings] = useState([]);
+  const [drafts, setDrafts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [bookingsRes, draftsRes] = await Promise.all([
+          api.get('/bookings/supplier'),
+          api.get('/activities/drafts')
+        ]);
+        setBookings(bookingsRes.data.bookings || []);
+        setDrafts(draftsRes.data.drafts || []);
+      } catch (error) {
+        console.error("Error fetching supplier bookings:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const statusClass = (status) => {
     switch (status) {
       case "Completed":
@@ -124,6 +38,14 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
         return darkMode ? "bg-slate-800 text-slate-400 border-slate-700" : "bg-gray-50 text-gray-600 border-gray-100";
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a26e35]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className={`grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2.1fr)_minmax(280px,0.9fr)] transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
@@ -168,7 +90,7 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
 
           {/* Mobile: Card View */}
           <div className="md:hidden divide-y divide-gray-100">
-            {bookings.map((row) => (
+            {bookings.length > 0 ? bookings.map((row) => (
               <div key={row.id} className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -195,7 +117,7 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                   <p className="text-sm font-bold text-[#a26e35]">{row.amount}</p>
                 </div>
               </div>
-            ))}
+            )) : <div className="text-center py-8 text-gray-400 text-xs">No bookings found</div>}
           </div>
 
           {/* Desktop: Table View */}
@@ -213,7 +135,7 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                 </tr>
               </thead>
               <tbody>
-                {bookings.map((row, idx) => (
+                {bookings.length > 0 ? bookings.map((row, idx) => (
                   <tr
                     key={row.id}
                     className={`transition-colors ${idx % 2 === 1 ? (darkMode ? "bg-slate-800/30" : "bg-gray-50/40") : (darkMode ? "bg-slate-900" : "bg-white")}`}
@@ -239,7 +161,7 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                       </span>
                     </td>
                   </tr>
-                ))}
+                )) : <tr><td colSpan="7" className="text-center py-8 text-gray-400 text-xs">No bookings found</td></tr>}
               </tbody>
             </table>
           </div>
@@ -283,13 +205,13 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
             <div>
               <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Draft itineraries</h2>
               <p className={`mt-1 text-xs transition-colors ${darkMode ? "text-slate-400" : "text-amber-800/80"}`}>
-                You have <span className="font-semibold">3</span> itineraries saved as draft.
+                You have <span className="font-semibold">{drafts.length}</span> itineraries saved as draft.
               </p>
             </div>
           </div>
 
           <div className="mt-4 space-y-3">
-            {drafts.map((draft) => (
+            {drafts.length > 0 ? drafts.map((draft) => (
               <div
                 key={draft.id}
                 className={`rounded-xl px-4 py-3 shadow-sm ring-1 transition-colors ${darkMode ? "bg-slate-800 ring-slate-700" : "bg-white/80 ring-amber-100"}`}
@@ -301,7 +223,7 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                     </h3>
                     <p className={`mt-0.5 text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>{draft.author}</p>
                     <p className={`mt-0.5 text-[10px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
-                      Last edited: {draft.lastEdit}
+                      Last edited: {draft.lastEdit || 'Just now'}
                     </p>
                   </div>
                 </div>
@@ -310,13 +232,13 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                   <div className={`flex items-center justify-between text-[10px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
                     <span>Progress</span>
                     <span className="font-semibold text-[#a26e35]">
-                      {Math.round(draft.progress * 100)}%
+                      {Math.round((draft.progress || 0) * 100)}%
                     </span>
                   </div>
                   <div className={`mt-1 h-1.5 w-full overflow-hidden rounded-full transition-colors ${darkMode ? "bg-slate-700" : "bg-amber-100"}`}>
                     <div
                       className="h-full rounded-full bg-[#a26e35]"
-                      style={{ width: `${draft.progress * 100}%` }}
+                      style={{ width: `${(draft.progress || 0) * 100}%` }}
                     />
                   </div>
                 </div>
@@ -336,7 +258,7 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                   </button>
                 </div>
               </div>
-            ))}
+            )) : <div className="text-center py-8 text-gray-400 text-xs">No drafts found</div>}
           </div>
         </div>
       </aside>

@@ -1,77 +1,12 @@
-import React, { useState } from "react";
+import api from "../../api";
+import { useState, useEffect } from "react";
 import { DollarSign, BarChart3, WalletCards, ReceiptText } from "lucide-react";
-
-const summaryCards = [
-  {
-    label: "Total Revenue",
-    value: "$67,890",
-    icon: DollarSign,
-    bg: "bg-emerald-500",
-  },
-  {
-    label: "Commission Earned",
-    value: "$6,789",
-    icon: BarChart3,
-    bg: "bg-blue-500",
-  },
-  {
-    label: "Pending Payouts",
-    value: "$2,340",
-    icon: WalletCards,
-    bg: "bg-amber-500",
-  },
-  {
-    label: "Transactions",
-    value: "892",
-    icon: ReceiptText,
-    bg: "bg-purple-500",
-  },
-];
 
 const tabs = [
   { label: "All Transactions", value: "all" },
   { label: "Completed", value: "completed" },
   { label: "Pending", value: "pending" },
   { label: "Failed", value: "failed" },
-];
-
-const transactions = [
-  {
-    id: "TXN-001",
-    user: "John Doe",
-    listing: "Luxury Villa in Bali",
-    amount: "$250.00",
-    commission: "$25.00",
-    date: "2025-03-15",
-    status: "completed",
-  },
-  {
-    id: "TXN-002",
-    user: "Jane Smith",
-    listing: "City Tour Package",
-    amount: "$120.00",
-    commission: "$12.00",
-    date: "2025-03-14",
-    status: "pending",
-  },
-  {
-    id: "TXN-003",
-    user: "Mike Johnson",
-    listing: "Beach Resort Stay",
-    amount: "$400.00",
-    commission: "$40.00",
-    date: "2025-03-13",
-    status: "completed",
-  },
-  {
-    id: "TXN-004",
-    user: "Sarah Williams",
-    listing: "Desert Safari Experience",
-    amount: "$180.00",
-    commission: "$18.00",
-    date: "2025-03-12",
-    status: "failed",
-  },
 ];
 
 const StatusBadge = ({ status }) => {
@@ -92,7 +27,38 @@ const StatusBadge = ({ status }) => {
 };
 
 const PaymentsFinance = () => {
+  const [transactions, setTransactions] = useState([]);
+  const [summaryData, setSummaryData] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        setIsLoading(true);
+        const response = await api.get('/payments/transactions');
+        setTransactions(response.data.transactions || []);
+        setSummaryData(response.data.summary || {
+          totalRevenue: "$0",
+          commissionEarned: "$0",
+          pendingPayouts: "$0",
+          transactionCount: "0"
+        });
+      } catch (error) {
+        console.error("Error fetching payments data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPayments();
+  }, []);
+
+  const summaryCards = summaryData ? [
+    { label: "Total Revenue", value: summaryData.totalRevenue, icon: DollarSign, bg: "bg-emerald-500" },
+    { label: "Commission Earned", value: summaryData.commissionEarned, icon: BarChart3, bg: "bg-blue-500" },
+    { label: "Pending Payouts", value: summaryData.pendingPayouts, icon: WalletCards, bg: "bg-amber-500" },
+    { label: "Transactions", value: summaryData.transactionCount, icon: ReceiptText, bg: "bg-purple-500" },
+  ] : [];
 
   const filteredTransactions =
     activeTab === "all"

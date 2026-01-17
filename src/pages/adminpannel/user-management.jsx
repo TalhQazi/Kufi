@@ -113,16 +113,31 @@ const UserManagement = () => {
     });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!selectedUser) return;
-    setUserList((prev) =>
-      prev.map((user) =>
-        user.email === selectedUser.email
-          ? { ...user, type: selectedUser.pendingType, activity: selectedUser.pendingActivity }
-          : user,
-      ),
-    );
-    setSelectedUser(null);
+    try {
+      // Mapping 'Tourist'/'Traveler' to 'user' and 'Supplier' to 'supplier' for the backend
+      const role = selectedUser.pendingType.toLowerCase().includes('supplier') ? 'supplier' : 'user';
+
+      await api.patch(`/auth/users/${selectedUser.id}`, {
+        role: role,
+        activity: selectedUser.pendingActivity
+      });
+
+      setUserList((prev) =>
+        prev.map((user) =>
+          user.id === selectedUser.id
+            ? { ...user, type: selectedUser.pendingType, activity: selectedUser.pendingActivity }
+            : user,
+        ),
+      );
+      setSelectedUser(null);
+      alert("User updated successfully");
+      fetchUsers();
+    } catch (error) {
+      console.error("Error updating user:", error);
+      alert("Failed to update user");
+    }
   };
 
   const handleSuspend = async (user) => {

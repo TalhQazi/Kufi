@@ -29,6 +29,33 @@ export default function App() {
   const [selectedActivities, setSelectedActivities] = useState([]) // Store selected activities for user profile
   const [currentUser, setCurrentUser] = useState(JSON.parse(localStorage.getItem('currentUser')) || null)
 
+  // States for dynamic content
+  const [selectedActivityId, setSelectedActivityId] = useState(null)
+  const [selectedCountryName, setSelectedCountryName] = useState('Italy')
+  const [selectedCategoryName, setSelectedCategoryName] = useState('Camping Adventures')
+  const [selectedItineraryId, setSelectedItineraryId] = useState(null)
+
+  // Helper functions for dynamic navigation
+  const handleActivityClick = (id) => {
+    setSelectedActivityId(id)
+    navigateTo('activity-detail')
+  }
+
+  const handleCountryClick = (name) => {
+    setSelectedCountryName(name)
+    navigateTo('country-details')
+  }
+
+  const handleCategoryClick = (name) => {
+    setSelectedCategoryName(name)
+    navigateTo('category-page')
+  }
+
+  const handleItineraryClick = (id) => {
+    setSelectedItineraryId(id)
+    navigateTo('itinerary-view')
+  }
+
   // Navigation history state (for custom buttons)
   const [history, setHistory] = useState([getInitialPage()])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -162,8 +189,8 @@ export default function App() {
         onAddToList={(activity) => handleAddToList(activity)}
         onRemoveActivity={handleRemoveFromList}
         onLogout={handleLogout}
-        onActivityClick={() => navigateTo('activity-detail')}
-        onCategoryClick={() => navigateTo('category-page')}
+        onActivityClick={handleActivityClick}
+        onCategoryClick={handleCategoryClick}
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
         onSettingsClick={() => navigateTo('traveler-profile')}
@@ -181,11 +208,11 @@ export default function App() {
   if (page === 'country-details') return (
     <>
       <CountryDetails
-        countryName="Italy"
+        countryName={selectedCountryName}
         onLogout={handleLogout}
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
-        onActivityClick={() => navigateTo('activity-detail')}
+        onActivityClick={handleActivityClick}
         onBack={goBack}
         onHomeClick={() => navigateTo('home')}
         onSettingsClick={() => navigateTo('traveler-profile')}
@@ -197,11 +224,11 @@ export default function App() {
   if (page === 'category-page') return (
     <>
       <CategoryPage
-        categoryName="Camping Adventures"
+        categoryName={selectedCategoryName}
         onLogout={handleLogout}
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
-        onActivityClick={() => navigateTo('activity-detail')}
+        onActivityClick={handleActivityClick}
         onBack={goBack}
         onHomeClick={() => navigateTo('home')}
         onSettingsClick={() => navigateTo('traveler-profile')}
@@ -219,12 +246,12 @@ export default function App() {
         canGoBack={canGoBack}
         canGoForward={canGoForward}
         onExploreClick={() => navigateTo('explore')}
-        onItineraryClick={() => navigateTo('itinerary-view')}
+        onItineraryClick={handleItineraryClick}
         onHomeClick={() => navigateTo('home')}
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
         onSettingsClick={() => navigateTo('traveler-profile')}
-        onCountryClick={() => navigateTo('country-details')}
+        onCountryClick={handleCountryClick}
       />
       {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
     </>
@@ -233,6 +260,7 @@ export default function App() {
   if (page === 'activity-detail') return (
     <>
       <ActivityDetail
+        activityId={selectedActivityId}
         onHomeClick={() => navigateTo('home')}
         onLogout={handleLogout}
         onBack={goBack}
@@ -300,6 +328,7 @@ export default function App() {
   if (page === 'itinerary-view') return (
     <>
       <ItineraryView
+        itineraryId={selectedItineraryId}
         onBack={goBack}
         onPaymentClick={() => navigateTo('payment')}
         onRequestAdjustment={() => alert('Adjustment request sent!')}

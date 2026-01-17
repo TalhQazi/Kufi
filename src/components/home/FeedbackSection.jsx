@@ -1,3 +1,4 @@
+import api from "../../api";
 import { useState, useRef, useEffect } from 'react';
 
 export default function FeedbackSection() {
@@ -28,43 +29,23 @@ export default function FeedbackSection() {
         scrollRef.current.scrollLeft = scrollLeftState - walk;
     };
 
-    const feedbackItems = [
-        {
-            id: 1,
-            avatar: '/assets/feedback-A.jpeg',
-            name: 'Lisa',
-            nameLabel: 'LISA',
-            text: '" Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor "'
-        },
-        {
-            id: 2,
-            avatar: '/assets/feedback-B.jpeg',
-            name: 'Mr. John Doe',
-            nameLabel: 'MR. JOHN DOE',
-            text: '" Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor "'
-        },
-        {
-            id: 3,
-            avatar: '/assets/feedback-C.jpeg',
-            name: 'Mr. John Doe',
-            nameLabel: 'MR. JOHN DOE',
-            text: '" Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor "'
-        },
-        {
-            id: 4,
-            avatar: '/assets/feedback-A.jpeg',
-            name: 'Sarah Jenkins',
-            nameLabel: 'SARAH JENKINS',
-            text: '" Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor "'
-        },
-        {
-            id: 5,
-            avatar: '/assets/feedback-B.jpeg',
-            name: 'Michael Chen',
-            nameLabel: 'MICHAEL CHEN',
-            text: '" Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor "'
-        }
-    ];
+    const [feedbackItems, setFeedbackItems] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchFeedbacks = async () => {
+            try {
+                setIsLoading(true);
+                const response = await api.get('/feedbacks');
+                setFeedbackItems(response.data || []);
+            } catch (error) {
+                console.error("Error fetching feedbacks:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchFeedbacks();
+    }, []);
 
     // Triple the items for infinite loop logic
     const loopedItems = [...feedbackItems, ...feedbackItems, ...feedbackItems];

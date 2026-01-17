@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import api from '../../api'
 import Footer from '../../components/layout/Footer'
 
 export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, canGoForward, onSubmit, onHomeClick, onNotificationClick, onProfileClick, onSettingsClick }) {
@@ -24,6 +25,19 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         budget: '',
         additionalOptions: false
     })
+    const [countries, setCountries] = useState([])
+
+    useEffect(() => {
+        const fetchCountries = async () => {
+            try {
+                const response = await api.get('/countries')
+                setCountries(Array.isArray(response.data) ? response.data : [])
+            } catch (error) {
+                console.error("Error fetching countries:", error)
+            }
+        }
+        fetchCountries()
+    }, [])
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -42,11 +56,16 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         }
     }, [dropdown])
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        console.log('Booking submitted:', formData)
-        // Show success message
-        setShowSuccess(true)
+        try {
+            console.log('Booking submitted:', formData)
+            await api.post('/bookings', formData)
+            setShowSuccess(true)
+        } catch (error) {
+            console.error("Error submitting booking:", error)
+            alert("Failed to submit booking. Please try again.")
+        }
     }
 
     // Auto-redirect after showing success message
@@ -189,19 +208,27 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                     required
                                 >
                                     <option value="">Select a country</option>
-                                    <option value="Dubai">Dubai (UAE)</option>
-                                    <option value="Abu Dhabi">Abu Dhabi (UAE)</option>
-                                    <option value="Saudi Arabia">Saudi Arabia</option>
-                                    <option value="Oman">Oman</option>
-                                    <option value="Qatar">Qatar</option>
-                                    <option value="Turkey">Turkey</option>
-                                    <option value="United Kingdom">United Kingdom</option>
-                                    <option value="France">France</option>
-                                    <option value="Italy">Italy</option>
-                                    <option value="Switzerland">Switzerland</option>
-                                    <option value="Japan">Japan</option>
-                                    <option value="United States">United States</option>
-                                    <option value="Other">Other</option>
+                                    {countries.length > 0 ? (
+                                        countries.map(c => (
+                                            <option key={c._id || c.id} value={c.name}>{c.name}</option>
+                                        ))
+                                    ) : (
+                                        <>
+                                            <option value="Dubai">Dubai (UAE)</option>
+                                            <option value="Abu Dhabi">Abu Dhabi (UAE)</option>
+                                            <option value="Saudi Arabia">Saudi Arabia</option>
+                                            <option value="Oman">Oman</option>
+                                            <option value="Qatar">Qatar</option>
+                                            <option value="Turkey">Turkey</option>
+                                            <option value="United Kingdom">United Kingdom</option>
+                                            <option value="France">France</option>
+                                            <option value="Italy">Italy</option>
+                                            <option value="Switzerland">Switzerland</option>
+                                            <option value="Japan">Japan</option>
+                                            <option value="United States">United States</option>
+                                            <option value="Other">Other</option>
+                                        </>
+                                    )}
                                 </select>
                             </div>
 

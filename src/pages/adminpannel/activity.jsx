@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowRight, Search, Eye, Check, X } from "lucide-react";
+import api from "../../api";
 
 const StatusBadge = ({ status }) => {
   const styles =
@@ -19,45 +20,56 @@ const StatusBadge = ({ status }) => {
 const Activity = ({ onAddNew }) => {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [listingData, setListingData] = useState([
-    {
-      id: 1,
-      listing: "Luxury Villa in Bali",
-      provider: "Paradise Stays",
-      category: "Accommodation",
-      location: "Bali, Indonesia",
-      price: "$250/night",
-      status: "pending",
-    },
-    {
-      id: 2,
-      listing: "City Tour Package",
-      provider: "Adventure Tours",
-      category: "Tours",
-      location: "Tokyo, Japan",
-      price: "$120/person",
-      status: "pending",
-    },
-    {
-      id: 3,
-      listing: "Beach Resort Stay",
-      provider: "Coastal Resorts",
-      category: "Accommodation",
-      location: "Maldives",
-      price: "$400/night",
-      status: "approved",
-    },
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [listingData, setListingData] = useState([]);
 
-  const handleStatusChange = (id, newStatus) => {
-    setListingData((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
-    );
+  useEffect(() => {
+    fetchActivities();
+  }, []);
+
+  const fetchActivities = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/activities');
+      const data = Array.isArray(response.data) ? response.data : (response.data.activities || []);
+
+      const transformedListings = data.map(item => ({
+        id: item._id,
+        listing: item.title || item.name,
+        provider: item.supplierName || 'Kufi Partner',
+        category: item.category || 'Activity',
+        location: item.location || 'N/A',
+        price: item.price ? `$${item.price}` : 'Contact for Price',
+        status: item.status || 'pending',
+      }));
+
+      setListingData(transformedListings);
+    } catch (error) {
+      console.error("Error fetching activities:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await api.patch(`/activities/${id}`, { status: newStatus });
+      fetchActivities();
+    } catch (error) {
+      console.error("Error updating activity status:", error);
+      alert("Failed to update status");
+    }
+  };
+
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to remove this listing?")) {
-      setListingData((prev) => prev.filter((item) => item.id !== id));
+      try {
+        await api.delete(`/activities/${id}`);
+        fetchActivities();
+      } catch (error) {
+        console.error("Error deleting activity:", error);
+        alert("Failed to delete activity");
+      }
     }
   };
 

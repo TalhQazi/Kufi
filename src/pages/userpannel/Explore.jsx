@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
+import api from '../../api'
 import Footer from '../../components/layout/Footer'
 
 export default function Explore({ selectedActivities = [], onAddToList, onRemoveActivity, onLogout, onActivityClick, onNotificationClick, onProfileClick, onSendRequest, onBack, onForward, canGoBack, canGoForward, onCategoryClick, onSettingsClick, onHomeClick }) {
   const [dropdown, setDropdown] = useState(false)
+  const [activities, setActivities] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
   const dropdownRef = useRef(null)
 
   // Close dropdown when clicking outside
@@ -21,6 +24,21 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [dropdown])
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        setIsLoading(true)
+        const response = await api.get('/activities')
+        setActivities(Array.isArray(response.data) ? response.data : [])
+      } catch (error) {
+        console.error("Error fetching activities:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchActivities()
+  }, [])
 
   const brownColor = "#9B6F40"
 
@@ -165,15 +183,6 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
     },
   ]
 
-  const activities = Array.from({ length: 9 }, (_, i) => ({
-    id: i + 1,
-    title: 'Himalayan Trekking Expedition',
-    image: '/assets/activity1.jpeg',
-    badge: 'Trekking',
-    rating: 4.2,
-    reviews: 218,
-    location: 'USA, India',
-  }))
 
   return (
     <div className="bg-white min-h-screen">
@@ -210,11 +219,21 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
                 onClick={() => setDropdown(!dropdown)}
                 className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
               >
-                <img
-                  src="/assets/profile-avatar.jpeg"
-                  alt="Profile"
-                  className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
-                />
+                {currentUser?.profileImage || currentUser?.avatar || currentUser?.imageUrl ? (
+                  <img
+                    src={currentUser.profileImage || currentUser.avatar || currentUser.imageUrl}
+                    alt="Profile"
+                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "/assets/profile-avatar.jpeg";
+                    }}
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-[#A67C52] flex items-center justify-center text-white text-[10px] font-bold border-2 border-white shadow-sm">
+                    {currentUser?.name ? currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : <FiUser size={18} />}
+                  </div>
+                )}
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
                   <path d="M6 9l6 6 6-6" />
                 </svg>
@@ -307,59 +326,76 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
         <div className="mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
           <section>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {activities.map((activity) => (
-                <article
-                  key={activity.id}
-                  className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => onActivityClick && onActivityClick(activity.id)}
-                >
-                  <div className="relative">
-                    <img
-                      src={activity.image}
-                      alt={activity.title}
-                      className="w-full h-48 object-cover"
-                    />
-                    <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-primary-brown text-white text-xs font-medium">
-                      {activity.badge}
-                    </span>
-                  </div>
+              {isLoading ? (
+                <div className="col-span-full py-20 flex justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
+                </div>
+              ) : activities.length > 0 ? (
+                activities.map((activity) => {
+                  const activityId = activity._id || activity.id;
+                  const isSelected = selectedActivities.some(a => (a._id || a.id) === activityId);
 
-                  <div className="p-4">
-                    <h3 className="m-0 mb-2 text-base font-semibold text-slate-900 line-clamp-2">{activity.title}</h3>
-
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex text-gold">
-                        <span>★</span><span>★</span><span>★</span><span>★</span><span className="text-slate-300">★</span>
-                      </div>
-                      <span className="text-sm font-semibold text-slate-900">{activity.rating}</span>
-                      <span className="text-xs text-slate-500">({activity.reviews} reviews)</span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 mb-3 text-slate-600">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                        <circle cx="12" cy="10" r="3" />
-                      </svg>
-                      <span className="text-xs">{activity.location}</span>
-                    </div>
-
-                    <button
-                      className={`w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors ${selectedActivities.some(a => a.id === activity.id)
-                        ? 'bg-primary-dark text-white'
-                        : 'bg-beige text-primary-brown hover:bg-primary hover:text-white'
-                        }`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (!selectedActivities.some(a => a.id === activity.id)) {
-                          onAddToList && onAddToList(activity)
-                        }
-                      }}
+                  return (
+                    <article
+                      key={activityId}
+                      className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                      onClick={() => onActivityClick && onActivityClick(activityId)}
                     >
-                      {selectedActivities.some(a => a.id === activity.id) ? 'ADDED TO LIST' : 'ADD TO LIST'}
-                    </button>
-                  </div>
-                </article>
-              ))}
+                      <div className="relative">
+                        <img
+                          src={activity.imageUrl || activity.images?.[0] || "/assets/activity1.jpeg"}
+                          alt={activity.title}
+                          className="w-full h-48 object-cover"
+                        />
+                        <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-primary-brown text-white text-xs font-medium">
+                          {activity.category || activity.badge || "Trekking"}
+                        </span>
+                      </div>
+
+                      <div className="p-4">
+                        <h3 className="m-0 mb-2 text-base font-semibold text-slate-900 line-clamp-2">{activity.title}</h3>
+
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex text-gold">
+                            <span>★</span><span>★</span><span>★</span><span>★</span><span className="text-slate-300">★</span>
+                          </div>
+                          <span className="text-sm font-semibold text-slate-900">{activity.rating || 4.2}</span>
+                          <span className="text-xs text-slate-500">({activity.reviewsCount || activity.reviews || 0} reviews)</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 mb-3 text-slate-600">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                          </svg>
+                          <span className="text-xs truncate">
+                            {activity.city ? `${activity.city}, ` : ''}{activity.country || activity.location || 'USA, India'}
+                          </span>
+                        </div>
+
+                        <button
+                          className={`w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors ${isSelected
+                            ? 'bg-primary-dark text-white'
+                            : 'bg-beige text-primary-brown hover:bg-primary-brown hover:text-white'
+                            }`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (!isSelected) {
+                              onAddToList && onAddToList(activity)
+                            }
+                          }}
+                        >
+                          {isSelected ? 'ADDED TO LIST' : 'ADD TO LIST'}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })
+              ) : (
+                <div className="col-span-full py-20 text-center text-slate-500">
+                  No activities found.
+                </div>
+              )}
             </div>
           </section>
 
