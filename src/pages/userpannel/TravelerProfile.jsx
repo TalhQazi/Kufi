@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { FiUser } from 'react-icons/fi'
 import api from '../../api'
 import NotificationsModal from './NotificationsModal'
 import Footer from '../../components/layout/Footer'
