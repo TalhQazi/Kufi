@@ -4,7 +4,7 @@ export default function ServicesSection() {
             id: 1,
             label: 'Different Constraints',
             icon: (
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" class="stroke-[#A67C52]" strokeWidth="1.2">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" className="stroke-[#A67C52]" strokeWidth="1.2">
                     {/* Globe with pins */}
                     <circle cx="12" cy="14" r="8" />
                     {/* Lat/Long approximation */}
@@ -23,7 +23,7 @@ export default function ServicesSection() {
             id: 2,
             label: 'Food Tour',
             icon: (
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" class="stroke-[#A67C52]" strokeWidth="1.2">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" className="stroke-[#A67C52]" strokeWidth="1.2">
                     {/* Cloche */}
                     <path d="M12 3v2" />
                     <path d="M4 17h16" />
@@ -36,7 +36,7 @@ export default function ServicesSection() {
             id: 3,
             label: 'Ship Cruise',
             icon: (
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" class="stroke-[#A67C52]" strokeWidth="1.2">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" className="stroke-[#A67C52]" strokeWidth="1.2">
                     {/* Ship Front */}
                     <path d="M4 16c2 1 4 4 8 4s6-3 8-4" />
                     <path d="M4 16V10h16v6" />
@@ -50,7 +50,7 @@ export default function ServicesSection() {
             id: 4,
             label: 'Mountains Tour',
             icon: (
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" class="stroke-[#A67C52]" strokeWidth="1.2">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" className="stroke-[#A67C52]" strokeWidth="1.2">
                     {/* Mountains */}
                     <path d="M2 20h20L15 6l-5 10L8 12 2 20z" />
                     {/* Sun */}
@@ -65,7 +65,7 @@ export default function ServicesSection() {
             id: 5,
             label: 'Summer Rest',
             icon: (
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" class="stroke-[#A67C52]" strokeWidth="1.2">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" className="stroke-[#A67C52]" strokeWidth="1.2">
                     {/* Umbrella */}
                     <path d="M12 4v16" />
                     <path d="M4 8c0-4 3.5-5 8-5s8 1 8 5" />
@@ -82,7 +82,7 @@ export default function ServicesSection() {
             id: 6,
             label: 'Bus Tour',
             icon: (
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" class="stroke-[#A67C52]" strokeWidth="1.2">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" className="stroke-[#A67C52]" strokeWidth="1.2">
                     {/* Bus Front */}
                     <rect x="4" y="4" width="16" height="14" rx="2" />
                     <path d="M4 10h16" /> {/* Windshield bottom */}

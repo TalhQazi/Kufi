@@ -40,6 +40,15 @@ export default function TopActivitiesSection() {
         fetchTopActivities();
     }, []);
 
+    // Auto-rotate every 5 seconds
+    useEffect(() => {
+        if (carouselItems.length === 0) return;
+        const interval = setInterval(() => {
+            setActiveIndex((current) => (current + 1) % carouselItems.length)
+        }, 5000)
+        return () => clearInterval(interval)
+    }, [carouselItems.length])
+
     if (isLoading) {
         return (
             <section className="py-12 sm:py-16 px-4 sm:px-8 lg:px-20 bg-[#E8DED0]">
@@ -47,14 +56,6 @@ export default function TopActivitiesSection() {
             </section>
         );
     }
-
-    // Auto-rotate every 5 seconds
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setActiveIndex((current) => (current + 1) % carouselItems.length)
-        }, 5000)
-        return () => clearInterval(interval)
-    }, [carouselItems.length])
 
     const handleNext = () => {
         setActiveIndex((current) => (current + 1) % carouselItems.length)
