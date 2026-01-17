@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { FiUser } from 'react-icons/fi'
 import api from '../../api'
 import Footer from '../../components/layout/Footer'
 
@@ -6,6 +7,7 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
   const [dropdown, setDropdown] = useState(false)
   const [activities, setActivities] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {}
   const dropdownRef = useRef(null)
 
   // Close dropdown when clicking outside

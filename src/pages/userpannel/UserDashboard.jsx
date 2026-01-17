@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { FiSearch, FiBell, FiMapPin, FiCalendar, FiFilter, FiArrowUp, FiArrowDown } from 'react-icons/fi'
+import { FiSearch, FiBell, FiMapPin, FiCalendar, FiFilter, FiArrowUp, FiArrowDown, FiUser } from 'react-icons/fi'
 import { FaCheckCircle, FaClock, FaCreditCard } from 'react-icons/fa'
 import api from '../../api'
 import Footer from '../../components/layout/Footer'
@@ -9,6 +9,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
     const [tripRequests, setTripRequests] = useState([])
     const [countries, setCountries] = useState([])
     const [isLoading, setIsLoading] = useState(true)
+    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {}
     const dropdownRef = useRef(null)
 
     // Close dropdown when clicking outside
