@@ -160,7 +160,7 @@ export default function HeroSection({ onSignupClick }) {
                             }}
                         >
                             <img
-                                src={countries[idx]?.imageUrl || '/assets/hero-card1.jpeg'}
+                                src={countries[idx]?.image || countries[idx]?.imageUrl || '/assets/hero-card1.jpeg'}
                                 alt={countries[idx]?.name || "Featured experience"}
                                 className="w-full h-80 object-cover"
                             />
@@ -200,7 +200,7 @@ export default function HeroSection({ onSignupClick }) {
                                         className={`relative rounded-2xl overflow-hidden shadow-lg shadow-black/50 bg-gray-900 text-white transition-all duration-500 z-10 border-none ring-0 ${isActive ? 'w-[260px] h-[400px] opacity-100 mb-0' : 'w-[240px] h-[300px] opacity-80 mb-[-20px]'}`}
                                     >
                                         <img
-                                            src={country.imageUrl || '/assets/hero-card1.jpeg'}
+                                            src={country.image || country.imageUrl || '/assets/hero-card1.jpeg'}
                                             alt={country.name}
                                             className="absolute inset-0 w-full h-full object-cover block m-0 p-0 border-none pointer-events-none"
                                         />
