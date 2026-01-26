@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowRight, Search, Eye, Check, X } from "lucide-react";
+import { ArrowRight, Search, Eye, Check, X, Trash2 } from "lucide-react";
 import api from "../../api";
 
 const StatusBadge = ({ status }) => {
@@ -22,6 +22,8 @@ const Activity = ({ onAddNew }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [listingData, setListingData] = useState([]);
+  const [viewingActivity, setViewingActivity] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
   useEffect(() => {
     fetchActivities();
@@ -36,6 +38,7 @@ const Activity = ({ onAddNew }) => {
       const transformedListings = data.map(item => ({
         id: item._id,
         listing: item.title || item.name,
+        image: item.image,
         provider: item.supplierName || 'Kufi Partner',
         category: item.category || 'Activity',
         location: item.location || 'N/A',
@@ -48,6 +51,19 @@ const Activity = ({ onAddNew }) => {
       console.error("Error fetching activities:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleView = async (id) => {
+    try {
+      setViewLoading(true);
+      const res = await api.get(`/activities/${id}`);
+      setViewingActivity(res.data);
+    } catch (error) {
+      console.error("Error fetching activity details:", error);
+      alert("Failed to load activity details");
+    } finally {
+      setViewLoading(false);
     }
   };
 
@@ -152,9 +168,18 @@ const Activity = ({ onAddNew }) => {
           {filteredListings.map((item) => (
             <div key={item.id} className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-3">
               <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-semibold text-slate-900 text-sm">{item.listing}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{item.provider}</p>
+                <div className="flex items-start gap-3">
+                  {item.image && (
+                    <img
+                      src={item.image}
+                      alt={item.listing}
+                      className="w-12 h-12 rounded-lg object-cover border border-gray-200"
+                    />
+                  )}
+                  <div>
+                    <p className="font-semibold text-slate-900 text-sm">{item.listing}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{item.provider}</p>
+                  </div>
                 </div>
                 <StatusBadge status={item.status} />
               </div>
@@ -177,6 +202,7 @@ const Activity = ({ onAddNew }) => {
               <div className="flex items-center justify-between gap-3 pt-1">
                 <button
                   className="flex-1 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-bold flex items-center justify-center gap-1 hover:bg-gray-200 transition-colors"
+                  onClick={() => handleView(item.id)}
                 >
                   <Eye className="w-3.5 h-3.5" /> View
                 </button>
@@ -226,8 +252,19 @@ const Activity = ({ onAddNew }) => {
               {filteredListings.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50/80">
                   <td className="px-6 py-4">
-                    <p className="font-semibold text-slate-900 leading-tight">{item.listing}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{item.provider}</p>
+                    <div className="flex items-center gap-3">
+                      {item.image && (
+                        <img
+                          src={item.image}
+                          alt={item.listing}
+                          className="w-12 h-12 rounded-lg object-cover border border-gray-200"
+                        />
+                      )}
+                      <div>
+                        <p className="font-semibold text-slate-900 leading-tight">{item.listing}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{item.provider}</p>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-gray-600 hidden lg:table-cell">{item.category}</td>
                   <td className="px-6 py-4 text-gray-600 hidden xl:table-cell">{item.location}</td>
@@ -239,6 +276,7 @@ const Activity = ({ onAddNew }) => {
                     <div className="flex items-center gap-3">
                       <button
                         className="text-[#704b24] hover:text-[#8b5c2a] transition-colors p-1.5 rounded-lg hover:bg-[#f7f1e7]"
+                        onClick={() => handleView(item.id)}
                         aria-label="View"
                       >
                         <Eye className="w-4 h-4" />
@@ -259,6 +297,13 @@ const Activity = ({ onAddNew }) => {
                       >
                         <X className="w-4 h-4" />
                       </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="transition-colors p-1.5 rounded-lg text-rose-600 hover:bg-rose-50"
+                        aria-label="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -272,6 +317,65 @@ const Activity = ({ onAddNew }) => {
           )}
         </div>
       </div>
+
+      {viewingActivity && (
+        <div className="fixed inset-0 bg-black/40 z-[70] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-slate-900">Activity Details</h2>
+              <button
+                className="text-gray-400 hover:text-gray-600 text-sm"
+                onClick={() => setViewingActivity(null)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="p-6 space-y-4 text-sm text-slate-800">
+              {viewLoading ? (
+                <div className="py-6 text-center text-gray-500">Loading...</div>
+              ) : (
+                <>
+                  {viewingActivity.image && (
+                    <img
+                      src={viewingActivity.image}
+                      alt={viewingActivity.title}
+                      className="w-full h-48 object-cover rounded-xl border border-gray-100 mb-3"
+                    />
+                  )}
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-[#c18c4d] font-semibold mb-1">Title</p>
+                    <p className="font-semibold">{viewingActivity.title}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[11px] text-gray-400 uppercase font-semibold mb-1">Category</p>
+                      <p>{viewingActivity.category || 'Activity'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-gray-400 uppercase font-semibold mb-1">Location</p>
+                      <p>{viewingActivity.location || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[11px] text-gray-400 uppercase font-semibold mb-1">Duration</p>
+                      <p>{viewingActivity.duration || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-gray-400 uppercase font-semibold mb-1">Price</p>
+                      <p className="font-semibold text-[#a26e35]">{viewingActivity.price ? `$${viewingActivity.price}` : 'Contact for Price'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-gray-400 uppercase font-semibold mb-1">Description</p>
+                    <p className="text-sm text-gray-600 whitespace-pre-line">{viewingActivity.description || 'No description provided.'}</p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

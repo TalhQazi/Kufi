@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Upload } from "lucide-react";
 import api from "../../api";
 
-const AddActivity = () => {
+const AddActivity = ({ onBack }) => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -13,6 +13,7 @@ const AddActivity = () => {
     duration: "",
     status: "active",
     price: "",
+    thumbnail: "",
   });
 
   const handleChange = (e) => {
@@ -23,6 +24,20 @@ const AddActivity = () => {
     }));
   };
 
+  const handleThumbnailChange = (file) => {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData((prev) => ({
+        ...prev,
+        thumbnail: reader.result,
+      }));
+    };
+
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async () => {
     if (!formData.title || !formData.category || !formData.location) {
       alert("Please fill in the required fields (Name, Category, Location)");
@@ -30,9 +45,25 @@ const AddActivity = () => {
     }
 
     try {
-      await api.post("/activities", formData);
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        location: formData.location,
+        duration: formData.duration,
+        // Convert price to number if possible
+        price: formData.price ? Number(formData.price) : undefined,
+        // Backend expects `image` field, use thumbnail data if provided
+        image: formData.thumbnail || undefined,
+        // Map UI status (active/inactive) to valid enum values
+        status: formData.status === "active" ? "approved" : "pending",
+      };
+
+      await api.post("/activities", payload);
       alert("Activity saved successfully!");
-      // Optionally reset form or redirect
+      if (onBack) {
+        onBack();
+      }
     } catch (error) {
       console.error("Error saving activity:", error);
       alert("Failed to save activity. Please try again.");
@@ -57,7 +88,10 @@ const AddActivity = () => {
             onChange={handleChange}
             placeholder="e.g., Mountain Hiking"
           />
-          <ThumbnailDrop />
+          <ThumbnailDrop
+            thumbnail={formData.thumbnail}
+            onThumbnailChange={handleThumbnailChange}
+          />
           <div>
             <label className="text-sm font-semibold text-gray-600 mb-2 block">
               Short Description
@@ -133,7 +167,10 @@ const AddActivity = () => {
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <button className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:bg-gray-100">
+          <button
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:bg-gray-100"
+            onClick={onBack}
+          >
             Cancel
           </button>
           <button
@@ -186,18 +223,55 @@ const SelectField = ({ label, name, value, onChange, options }) => (
   </div>
 );
 
-const ThumbnailDrop = () => (
-  <div>
-    <label className="text-sm font-semibold text-gray-600 mb-2 block">
-      Thumbnail Image
-    </label>
-    <div className="w-full border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-center text-sm text-gray-500 p-6 min-h-[180px]">
-      <Upload className="w-7 h-7 text-gray-400 mb-3" />
-      <p className="font-semibold text-gray-600">Drag and drop or click to upload</p>
-      <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+const ThumbnailDrop = ({ thumbnail, onThumbnailChange }) => {
+  const fileInputRef = useRef(null);
+
+  const handleClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      onThumbnailChange(file);
+    }
+  };
+
+  return (
+    <div>
+      <label className="text-sm font-semibold text-gray-600 mb-2 block">
+        Thumbnail Image
+      </label>
+      <div
+        className="w-full border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-center text-sm text-gray-500 p-6 min-h-[180px] cursor-pointer hover:border-[#a26e35]/60 transition-colors"
+        onClick={handleClick}
+      >
+        {thumbnail ? (
+          <img
+            src={thumbnail}
+            alt="Activity thumbnail"
+            className="w-full h-40 object-cover rounded-xl mb-3"
+          />
+        ) : (
+          <>
+            <Upload className="w-7 h-7 text-gray-400 mb-3" />
+            <p className="font-semibold text-gray-600">Drag and drop or click to upload</p>
+            <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+          </>
+        )}
+      </div>
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+      />
     </div>
-  </div>
-);
+  );
+};
 
 const StatusToggle = ({ status, onChange }) => (
   <div>
@@ -229,8 +303,18 @@ const PreviewCard = ({ formData }) => (
     </div>
     <div className="bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden">
       <div className="h-36 bg-gray-200 flex flex-col items-center justify-center text-gray-500 text-sm">
-        <Upload className="w-5 h-5 mb-2" />
-        Thumbnail preview
+        {formData.thumbnail ? (
+          <img
+            src={formData.thumbnail}
+            alt="Activity thumbnail preview"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <>
+            <Upload className="w-5 h-5 mb-2" />
+            Thumbnail preview
+          </>
+        )}
       </div>
       <div className="p-4 space-y-2">
         <h4 className="font-semibold text-slate-900">

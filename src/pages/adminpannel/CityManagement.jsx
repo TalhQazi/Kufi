@@ -20,16 +20,26 @@ const CityManagement = () => {
     }, []);
 
     const fetchData = async () => {
+        setLoading(true);
         try {
-            setLoading(true);
-            const [citiesRes, countriesRes] = await Promise.all([
+            const [citiesResult, countriesResult] = await Promise.allSettled([
                 api.get('/cities'),
                 api.get('/countries')
             ]);
-            setCities(citiesRes.data);
-            setCountries(countriesRes.data);
+
+            if (citiesResult.status === "fulfilled") {
+                setCities(citiesResult.value.data);
+            } else {
+                console.error("Error fetching cities:", citiesResult.reason);
+            }
+
+            if (countriesResult.status === "fulfilled") {
+                setCountries(countriesResult.value.data);
+            } else {
+                console.error("Error fetching countries:", countriesResult.reason);
+            }
         } catch (error) {
-            console.error("Error fetching data:", error);
+            console.error("Unexpected error fetching data:", error);
         } finally {
             setLoading(false);
         }
