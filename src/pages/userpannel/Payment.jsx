@@ -2,7 +2,7 @@ import { useState } from 'react'
 import PaymentSuccessModal from './PaymentSuccessModal.jsx'
 import Footer from '../../components/layout/Footer'
 
-export default function Payment({ bookingData, onBack, onForward, canGoBack, canGoForward, onNotificationClick, onHomeClick }) {
+export default function Payment({ bookingData, onBack, onForward, canGoBack, canGoForward, onNotificationClick, onHomeClick, hideHeaderFooter = false }) {
     const [paymentMethod, setPaymentMethod] = useState('card')
     const [cardData, setCardData] = useState({
         cardholderName: '',
@@ -41,36 +41,38 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
     return (
         <div className="min-h-screen bg-slate-50">
             {/* Navigation Header */}
-            <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
-                <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => {
-                                if (onBack) {
-                                    onBack()
-                                } else {
-                                    window.location.hash = '#home'
-                                }
-                            }}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                            <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
-                        </button>
-                    </div>
+            {!hideHeaderFooter && (
+                <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
+                    <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => {
+                                    if (onBack) {
+                                        onBack()
+                                    } else {
+                                        window.location.hash = '#home'
+                                    }
+                                }}
+                                className="cursor-pointer hover:opacity-80 transition-opacity"
+                            >
+                                <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
+                            </button>
+                        </div>
 
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => onNotificationClick && onNotificationClick()}
-                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors hidden sm:block"
-                        >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                            </svg>
-                        </button>
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => onNotificationClick && onNotificationClick()}
+                                className="p-2 hover:bg-slate-100 rounded-lg transition-colors hidden sm:block"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </nav>
+                </nav>
+            )}
 
             <main className="py-6 sm:py-10 px-4 sm:px-8 lg:px-20">
                 <div className="max-w-6xl mx-auto">
@@ -407,7 +409,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                 />
             )}
 
-            <Footer />
+            {!hideHeaderFooter && <Footer />}
         </div>
     )
 }

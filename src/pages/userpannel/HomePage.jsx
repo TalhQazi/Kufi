@@ -11,30 +11,32 @@ import BlogSection from '../../components/home/BlogSection'
 import FeedbackSection from '../../components/home/FeedbackSection'
 import Footer from '../../components/layout/Footer'
 
-export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick, onCountryClick, onHomeClick, currentUser, onLogout, onProfileClick }) {
+export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick, onCountryClick, onHomeClick, currentUser, onLogout, onProfileClick, hideHeaderFooter = false }) {
     return (
         <>
-            <Header
-                onSignupClick={onSignupClick}
-                onSigninClick={onSigninClick}
-                onHomeClick={onHomeClick}
-                currentUser={currentUser}
-                onLogout={onLogout}
-                onProfileClick={onProfileClick}
-            />
+            {!hideHeaderFooter && (
+                <Header
+                    onSignupClick={onSignupClick}
+                    onSigninClick={onSigninClick}
+                    onHomeClick={onHomeClick}
+                    currentUser={currentUser}
+                    onLogout={onLogout}
+                    onProfileClick={onProfileClick}
+                />
+            )}
             <div className="relative">
                 <HeroSection onSignupClick={onSignupClick} />
                 <SearchBar />
             </div>
             <DestinationsSection onCountryClick={onCountryClick} />
-            <CategoriesSection onCategoryClick={onCategoryClick} />
+            <CategoriesSection onCategoryClick={(name) => onCategoryClick(name)} />
             <TopLocationsSection onCountryClick={onCountryClick} />
             <TopActivitiesSection />
             <BookingSystemSection />
             <FeedbackSection />
             <ServicesSection />
             <BlogSection />
-            <Footer />
+            {!hideHeaderFooter && <Footer />}
         </>
     )
 }

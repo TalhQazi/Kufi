@@ -13,7 +13,8 @@ export default function ActivityDetail({
     onAddToList,
     onHomeClick,
     onProfileClick,
-    onSettingsClick
+    onSettingsClick,
+    hideHeaderFooter = false
 }) {
     const [activeTab, setActiveTab] = useState('overview')
     const [travelers, setTravelers] = useState(2)
@@ -75,96 +76,94 @@ export default function ActivityDetail({
     return (
         <div className="bg-white min-h-screen">
             {/* Header */}
-            <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
-                <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => {
-                                if (onHomeClick) {
-                                    onHomeClick()
-                                } else {
-                                    window.location.hash = '#home'
-                                }
-                            }}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                            <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
-                        </button>
-                    </div>
-
-
-                    <div className="flex items-center gap-2 sm:gap-4">
-                        <button
-                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                            onClick={() => onNotificationClick && onNotificationClick()}
-                        >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                            </svg>
-                        </button>
-
-
-                        <div className="relative" ref={dropdownRef}>
+            {!hideHeaderFooter && (
+                <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
+                    <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-1">
                             <button
-                                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                                className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                                onClick={() => {
+                                    if (onHomeClick) {
+                                        onHomeClick()
+                                    } else {
+                                        window.location.hash = '#home'
+                                    }
+                                }}
+                                className="cursor-pointer hover:opacity-80 transition-opacity"
                             >
-                                <img
-                                    src="/assets/profile-avatar.jpeg"
-                                    alt="Profile"
-                                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
-                                />
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                    <path d="M6 9l6 6 6-6" />
+                                <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
+                            </button>
+                        </div>
+
+
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            <button
+                                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                                onClick={() => onNotificationClick && onNotificationClick()}
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                                 </svg>
                             </button>
 
-                            {showProfileDropdown && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onProfileClick) onProfileClick()
-                                            setShowProfileDropdown(false)
-                                        }}
-                                    >
-                                        MY REQUESTS
+
+                            <div className="relative" ref={dropdownRef}>
+                                <button
+                                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                                    className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                                >
+                                    <ProfilePic user={JSON.parse(localStorage.getItem('currentUser') || '{}')} size="sm" />
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </button>
+
+                                {showProfileDropdown && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onProfileClick) onProfileClick()
+                                                setShowProfileDropdown(false)
+                                            }}
+                                        >
+                                            MY REQUESTS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onNotificationClick) onNotificationClick()
+                                                setShowProfileDropdown(false)
+                                            }}
+                                        >
+                                            NOTIFICATIONS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onSettingsClick) onSettingsClick()
+                                                setShowProfileDropdown(false)
+                                            }}
+                                        >
+                                            SETTINGS
+                                        </div>
+                                        <div className="border-t border-slate-200 my-1"></div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onLogout) onLogout()
+                                                setShowProfileDropdown(false)
+                                            }}
+                                        >
+                                            LOGOUT
+                                        </div>
                                     </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onNotificationClick) onNotificationClick()
-                                            setShowProfileDropdown(false)
-                                        }}
-                                    >
-                                        NOTIFICATIONS
-                                    </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onSettingsClick) onSettingsClick()
-                                            setShowProfileDropdown(false)
-                                        }}
-                                    >
-                                        SETTINGS
-                                    </div>
-                                    <div className="border-t border-slate-200 my-1"></div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onLogout) onLogout()
-                                            setShowProfileDropdown(false)
-                                        }}
-                                    >
-                                        LOGOUT
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </nav>
+                </nav>
+            )}
 
             {/* Main Content */}
             <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-8">
@@ -429,7 +428,7 @@ export default function ActivityDetail({
                     </aside>
                 </div>
             </main>
-            <Footer />
+            {!hideHeaderFooter && <Footer />}
         </div>
     )
 }

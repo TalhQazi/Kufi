@@ -160,7 +160,7 @@ export default function CategoriesSection({ onCategoryClick }) {
                             className="flex flex-col items-center gap-3 cursor-pointer transition-transform duration-300 hover:-translate-y-2"
                             onClick={() => {
                                 if (onCategoryClick) {
-                                    onCategoryClick()
+                                    onCategoryClick(name)
                                 }
                             }}
                         >

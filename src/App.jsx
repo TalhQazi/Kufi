@@ -14,6 +14,8 @@ import Payment from './pages/userpannel/Payment.jsx'
 import ItineraryView from './pages/userpannel/ItineraryView.jsx'
 import TravelerProfile from './pages/userpannel/TravelerProfile.jsx'
 import AdminApp from './AdminApp.jsx'
+import Header from './components/layout/Header.jsx'
+import Footer from './components/layout/Footer.jsx'
 
 export default function App() {
   // Get initial page from URL or default to 'home'
@@ -182,190 +184,208 @@ export default function App() {
     return <AdminApp initialPage="Supplier Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('home')} />
   }
 
-  if (page === 'explore') return (
-    <>
-      <Explore
-        selectedActivities={selectedActivities}
-        onAddToList={(activity) => handleAddToList(activity)}
-        onRemoveActivity={handleRemoveFromList}
-        onLogout={handleLogout}
-        onActivityClick={handleActivityClick}
-        onCategoryClick={handleCategoryClick}
-        onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
-        onSettingsClick={() => navigateTo('traveler-profile')}
-        onSendRequest={() => navigateTo('travel-booking')}
-        onBack={goBack}
-        onForward={goForward}
-        canGoBack={canGoBack}
-        canGoForward={canGoForward}
-        onHomeClick={() => navigateTo('home')}
-      />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
-    </>
-  )
-
-  if (page === 'country-details') return (
-    <>
-      <CountryDetails
-        countryName={selectedCountryName}
-        onLogout={handleLogout}
-        onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
-        onActivityClick={handleActivityClick}
-        onBack={goBack}
-        onHomeClick={() => navigateTo('home')}
-        onSettingsClick={() => navigateTo('traveler-profile')}
-      />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
-    </>
-  )
-
-  if (page === 'category-page') return (
-    <>
-      <CategoryPage
-        categoryName={selectedCategoryName}
-        onLogout={handleLogout}
-        onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
-        onActivityClick={handleActivityClick}
-        onBack={goBack}
-        onHomeClick={() => navigateTo('home')}
-        onSettingsClick={() => navigateTo('traveler-profile')}
-      />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
-    </>
-  )
-
-  if (page === 'user-profile') return (
-    <>
-      <UserDashboard
-        onLogout={handleLogout}
-        onBack={goBack}
-        onForward={goForward}
-        canGoBack={canGoBack}
-        canGoForward={canGoForward}
-        onExploreClick={() => navigateTo('explore')}
-        onItineraryClick={handleItineraryClick}
-        onHomeClick={() => navigateTo('home')}
-        onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
-        onSettingsClick={() => navigateTo('traveler-profile')}
-        onCountryClick={handleCountryClick}
-      />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
-    </>
-  )
-
-  if (page === 'activity-detail') return (
-    <>
-      <ActivityDetail
-        activityId={selectedActivityId}
-        onHomeClick={() => navigateTo('home')}
-        onLogout={handleLogout}
-        onBack={goBack}
-        onForward={goForward}
-        canGoBack={canGoBack}
-        canGoForward={canGoForward}
-        onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
-        onSettingsClick={() => navigateTo('traveler-profile')}
-        onAddToList={(activityData) => handleAddToList(activityData)}
-      />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
-    </>
-  )
-
-  if (page === 'travel-booking') return (
-    <>
-      <TravelBooking
-        onHomeClick={() => navigateTo('home')}
-        onLogout={handleLogout}
-        onBack={goBack}
-        onForward={goForward}
-        canGoBack={canGoBack}
-        canGoForward={canGoForward}
-        onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
-        onSettingsClick={() => navigateTo('traveler-profile')}
-        onSubmit={(data) => {
-          setBookingData(data)
-          navigateTo('explore')
-        }}
-      />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
-    </>
-  )
-
-  if (page === 'booking-confirmation') return (
-    <BookingConfirmation
-      onHomeClick={() => navigateTo('home')}
-      bookingData={bookingData}
-      onContinueBrowsing={() => navigateTo('explore')}
-      onGoToCart={() => navigateTo('payment')}
-      onBack={goBack}
-      onForward={goForward}
-      canGoBack={canGoBack}
-      canGoForward={canGoForward}
-    />
-  )
-
-  if (page === 'payment') return (
-    <>
-      <Payment
-        onHomeClick={() => navigateTo('home')}
-        bookingData={bookingData}
-        onBack={goBack}
-        onForward={goForward}
-        canGoBack={canGoBack}
-        canGoForward={canGoForward}
-        onNotificationClick={() => setShowNotifications(true)}
-      />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
-    </>
-  )
-
-  if (page === 'itinerary-view') return (
-    <>
-      <ItineraryView
-        itineraryId={selectedItineraryId}
-        onBack={goBack}
-        onPaymentClick={() => navigateTo('payment')}
-        onRequestAdjustment={() => alert('Adjustment request sent!')}
-        onLogout={handleLogout}
-        onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
-        onSettingsClick={() => navigateTo('traveler-profile')}
-        onHomeClick={() => navigateTo('home')}
-      />
-      {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} onPaymentClick={() => navigateTo('payment')} onViewItinerary={() => navigateTo('itinerary-view')} />}
-    </>
-  )
-
-  if (page === 'traveler-profile') return (
-    <>
-      <TravelerProfile
-        onBack={goBack}
-        onLogout={handleLogout}
-        onProfileClick={() => navigateTo('user-profile')}
-        onSettingsClick={() => navigateTo('traveler-profile')}
-        onHomeClick={() => navigateTo('home')}
-      />
-    </>
-  )
+  // User panel pages wrapping
+  const renderUserPage = () => {
+    switch (page) {
+      case 'explore':
+        return (
+          <Explore
+            selectedActivities={selectedActivities}
+            onAddToList={(activity) => handleAddToList(activity)}
+            onRemoveActivity={handleRemoveFromList}
+            onLogout={handleLogout}
+            onActivityClick={handleActivityClick}
+            onCategoryClick={handleCategoryClick}
+            onNotificationClick={() => setShowNotifications(true)}
+            onProfileClick={() => navigateTo('user-profile')}
+            onSettingsClick={() => navigateTo('traveler-profile')}
+            onSendRequest={() => navigateTo('travel-booking')}
+            onBack={goBack}
+            onForward={goForward}
+            canGoBack={canGoBack}
+            canGoForward={canGoForward}
+            onHomeClick={() => navigateTo('home')}
+            initialCategory={selectedCategoryName}
+            hideHeaderFooter={true}
+          />
+        )
+      case 'country-details':
+        return (
+          <CountryDetails
+            countryName={selectedCountryName}
+            onLogout={handleLogout}
+            onNotificationClick={() => setShowNotifications(true)}
+            onProfileClick={() => navigateTo('user-profile')}
+            onActivityClick={handleActivityClick}
+            onBack={goBack}
+            onHomeClick={() => navigateTo('home')}
+            onSettingsClick={() => navigateTo('traveler-profile')}
+            hideHeaderFooter={true}
+          />
+        )
+      case 'category-page':
+        return (
+          <CategoryPage
+            categoryName={selectedCategoryName}
+            onLogout={handleLogout}
+            onNotificationClick={() => setShowNotifications(true)}
+            onProfileClick={() => navigateTo('user-profile')}
+            onActivityClick={handleActivityClick}
+            onBack={goBack}
+            onHomeClick={() => navigateTo('home')}
+            onSettingsClick={() => navigateTo('traveler-profile')}
+            hideHeaderFooter={true}
+          />
+        )
+      case 'user-profile':
+        return (
+          <UserDashboard
+            onLogout={handleLogout}
+            onBack={goBack}
+            onForward={goForward}
+            canGoBack={canGoBack}
+            canGoForward={canGoForward}
+            onExploreClick={() => navigateTo('explore')}
+            onItineraryClick={handleItineraryClick}
+            onHomeClick={() => navigateTo('home')}
+            onNotificationClick={() => setShowNotifications(true)}
+            onProfileClick={() => navigateTo('user-profile')}
+            onSettingsClick={() => navigateTo('traveler-profile')}
+            onCountryClick={handleCountryClick}
+            hideHeaderFooter={true}
+          />
+        )
+      case 'activity-detail':
+        return (
+          <ActivityDetail
+            activityId={selectedActivityId}
+            onHomeClick={() => navigateTo('home')}
+            onLogout={handleLogout}
+            onBack={goBack}
+            onForward={goForward}
+            canGoBack={canGoBack}
+            canGoForward={canGoForward}
+            onNotificationClick={() => setShowNotifications(true)}
+            onProfileClick={() => navigateTo('user-profile')}
+            onSettingsClick={() => navigateTo('traveler-profile')}
+            onAddToList={(activityData) => handleAddToList(activityData)}
+            hideHeaderFooter={true}
+          />
+        )
+      case 'travel-booking':
+        return (
+          <TravelBooking
+            onHomeClick={() => navigateTo('home')}
+            onLogout={handleLogout}
+            onBack={goBack}
+            onForward={goForward}
+            canGoBack={canGoBack}
+            canGoForward={canGoForward}
+            onNotificationClick={() => setShowNotifications(true)}
+            onProfileClick={() => navigateTo('user-profile')}
+            onSettingsClick={() => navigateTo('traveler-profile')}
+            onSubmit={(data) => {
+              setBookingData(data)
+              navigateTo('explore')
+            }}
+            selectedActivities={selectedActivities}
+            hideHeaderFooter={true}
+          />
+        )
+      case 'booking-confirmation':
+        return (
+          <BookingConfirmation
+            onHomeClick={() => navigateTo('home')}
+            bookingData={bookingData}
+            onContinueBrowsing={() => navigateTo('explore')}
+            onGoToCart={() => navigateTo('payment')}
+            onBack={goBack}
+            onForward={goForward}
+            canGoBack={canGoBack}
+            canGoForward={canGoForward}
+            hideHeaderFooter={true}
+          />
+        )
+      case 'payment':
+        return (
+          <Payment
+            onHomeClick={() => navigateTo('home')}
+            bookingData={bookingData}
+            onBack={goBack}
+            onForward={goForward}
+            canGoBack={canGoBack}
+            canGoForward={canGoForward}
+            onNotificationClick={() => setShowNotifications(true)}
+            hideHeaderFooter={true}
+          />
+        )
+      case 'itinerary-view':
+        return (
+          <ItineraryView
+            itineraryId={selectedItineraryId}
+            onBack={goBack}
+            onPaymentClick={() => navigateTo('payment')}
+            onRequestAdjustment={() => alert('Adjustment request sent!')}
+            onLogout={handleLogout}
+            onNotificationClick={() => setShowNotifications(true)}
+            onProfileClick={() => navigateTo('user-profile')}
+            onSettingsClick={() => navigateTo('traveler-profile')}
+            onHomeClick={() => navigateTo('home')}
+            hideHeaderFooter={true}
+          />
+        )
+      case 'traveler-profile':
+        return (
+          <TravelerProfile
+            onBack={goBack}
+            onLogout={handleLogout}
+            onProfileClick={() => navigateTo('user-profile')}
+            onSettingsClick={() => navigateTo('traveler-profile')}
+            onHomeClick={() => navigateTo('home')}
+            hideHeaderFooter={true}
+          />
+        )
+      default:
+        return (
+          <HomePage
+            onHomeClick={() => navigateTo('home')}
+            onSignupClick={handleOpenRegister}
+            onSigninClick={handleOpenLogin}
+            onCategoryClick={handleCategoryClick}
+            onCountryClick={(item) => handleCountryClick(item.name || item.title || item)}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onProfileClick={() => navigateTo('user-profile')}
+            hideHeaderFooter={true}
+          />
+        )
+    }
+  }
 
   return (
-    <>
-      <HomePage
-        onHomeClick={() => navigateTo('home')}
+    <div className="flex flex-col min-h-screen">
+      <Header
         onSignupClick={handleOpenRegister}
         onSigninClick={handleOpenLogin}
-        onCategoryClick={() => navigateTo('category-page')}
-        onCountryClick={() => navigateTo('country-details')}
+        onHomeClick={() => navigateTo('home')}
         currentUser={currentUser}
         onLogout={handleLogout}
         onProfileClick={() => navigateTo('user-profile')}
       />
+
+      <main className="flex-grow">
+        {renderUserPage()}
+      </main>
+
+      <Footer />
+
+      {showNotifications && (
+        <NotificationsModal
+          onClose={() => setShowNotifications(false)}
+          onPaymentClick={() => navigateTo('payment')}
+          onViewItinerary={() => navigateTo('itinerary-view')}
+        />
+      )}
 
       {/* Login Modal */}
       {showModal === 'login' && (
@@ -402,6 +422,6 @@ export default function App() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

@@ -2,11 +2,31 @@ import { useState, useEffect, useRef } from 'react'
 import { FiUser } from 'react-icons/fi'
 import api from '../../api'
 import Footer from '../../components/layout/Footer'
+import ProfilePic from '../../components/ui/ProfilePic'
 
-export default function Explore({ selectedActivities = [], onAddToList, onRemoveActivity, onLogout, onActivityClick, onNotificationClick, onProfileClick, onSendRequest, onBack, onForward, canGoBack, canGoForward, onCategoryClick, onSettingsClick, onHomeClick }) {
+export default function Explore({
+  selectedActivities = [],
+  onAddToList,
+  onRemoveActivity,
+  onLogout,
+  onActivityClick,
+  onNotificationClick,
+  onProfileClick,
+  onSendRequest,
+  onBack,
+  onForward,
+  canGoBack,
+  canGoForward,
+  onCategoryClick,
+  onSettingsClick,
+  onHomeClick,
+  initialCategory = null
+}) {
   const [dropdown, setDropdown] = useState(false)
-  const [activities, setActivities] = useState([])
+  const [allActivities, setAllActivities] = useState([])
+  const [filteredActivities, setFilteredActivities] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory)
   const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {}
   const dropdownRef = useRef(null)
 
@@ -32,7 +52,14 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
       try {
         setIsLoading(true)
         const response = await api.get('/activities')
-        setActivities(Array.isArray(response.data) ? response.data : [])
+        const data = Array.isArray(response.data) ? response.data : []
+        setAllActivities(data)
+
+        if (selectedCategory) {
+          setFilteredActivities(data.filter(a => a.category === selectedCategory))
+        } else {
+          setFilteredActivities(data)
+        }
       } catch (error) {
         console.error("Error fetching activities:", error)
       } finally {
@@ -41,6 +68,22 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
     }
     fetchActivities()
   }, [])
+
+  useEffect(() => {
+    if (selectedCategory) {
+      setFilteredActivities(allActivities.filter(a => a.category === selectedCategory))
+    } else {
+      setFilteredActivities(allActivities)
+    }
+  }, [selectedCategory, allActivities])
+
+  const handleLocalCategoryClick = (categoryName) => {
+    if (selectedCategory === categoryName) {
+      setSelectedCategory(null) // Unselect if clicked again
+    } else {
+      setSelectedCategory(categoryName)
+    }
+  }
 
   const brownColor = "#9B6F40"
 
@@ -188,136 +231,131 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
 
   return (
     <div className="bg-white min-h-screen">
-      <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
-        <div className="mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => {
-                if (onHomeClick) {
-                  onHomeClick()
-                }
-              }}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-            >
-              <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
-            </button>
-          </div>
-
-
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-              onClick={() => onNotificationClick && onNotificationClick()}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-            </button>
-
-
-            <div className="relative" ref={dropdownRef}>
+      {!hideHeaderFooter && (
+        <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
+          <div className="mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-1">
               <button
-                onClick={() => setDropdown(!dropdown)}
-                className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                onClick={() => {
+                  if (onHomeClick) {
+                    onHomeClick()
+                  }
+                }}
+                className="cursor-pointer hover:opacity-80 transition-opacity"
               >
-                {currentUser?.profileImage || currentUser?.avatar || currentUser?.imageUrl ? (
-                  <img
-                    src={currentUser.profileImage || currentUser.avatar || currentUser.imageUrl}
-                    alt="Profile"
-                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "/assets/profile-avatar.jpeg";
-                    }}
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-[#A67C52] flex items-center justify-center text-white text-[10px] font-bold border-2 border-white shadow-sm">
-                    {currentUser?.name ? currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : <FiUser size={18} />}
-                  </div>
-                )}
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                  <path d="M6 9l6 6 6-6" />
+                <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
+              </button>
+            </div>
+
+
+            <div className="flex items-center gap-2 sm:gap-4">
+              <button
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                onClick={() => onNotificationClick && onNotificationClick()}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
               </button>
 
-              {dropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
-                  <div
-                    className="px-4 py-2 text-xs font-semibold text-primary-brown hover:bg-slate-50 cursor-pointer"
-                    onClick={() => {
-                      onProfileClick && onProfileClick()
-                      setDropdown(false)
-                    }}
-                  >
-                    MY REQUESTS
+
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdown(!dropdown)}
+                  className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <ProfilePic user={currentUser} size="sm" />
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+
+                {dropdown && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                    <div
+                      className="px-4 py-2 text-xs font-semibold text-primary-brown hover:bg-slate-50 cursor-pointer"
+                      onClick={() => {
+                        onProfileClick && onProfileClick()
+                        setDropdown(false)
+                      }}
+                    >
+                      MY REQUESTS
+                    </div>
+                    <div
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                      onClick={() => {
+                        onNotificationClick && onNotificationClick()
+                        setDropdown(false)
+                      }}
+                    >
+                      NOTIFICATIONS
+                    </div>
+                    <div
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                      onClick={() => {
+                        // Navigate to payments or traveler profile payments tab
+                        if (onSettingsClick) {
+                          onSettingsClick()
+                        }
+                        setDropdown(false)
+                      }}
+                    >
+                      PAYMENTS
+                    </div>
+                    <div
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                      onClick={() => {
+                        onSettingsClick && onSettingsClick()
+                        setDropdown(false)
+                      }}
+                    >
+                      SETTINGS
+                    </div>
+                    <div className="border-t border-slate-200 my-1"></div>
+                    <div
+                      className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                      onClick={() => {
+                        if (onLogout) {
+                          onLogout()
+                        }
+                        setDropdown(false)
+                      }}
+                    >
+                      LOGOUT
+                    </div>
                   </div>
-                  <div
-                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                    onClick={() => {
-                      onNotificationClick && onNotificationClick()
-                      setDropdown(false)
-                    }}
-                  >
-                    NOTIFICATIONS
-                  </div>
-                  <div
-                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                    onClick={() => {
-                      // Navigate to payments or traveler profile payments tab
-                      if (onSettingsClick) {
-                        onSettingsClick()
-                      }
-                      setDropdown(false)
-                    }}
-                  >
-                    PAYMENTS
-                  </div>
-                  <div
-                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                    onClick={() => {
-                      onSettingsClick && onSettingsClick()
-                      setDropdown(false)
-                    }}
-                  >
-                    SETTINGS
-                  </div>
-                  <div className="border-t border-slate-200 my-1"></div>
-                  <div
-                    className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
-                    onClick={() => {
-                      if (onLogout) {
-                        onLogout()
-                      }
-                      setDropdown(false)
-                    }}
-                  >
-                    LOGOUT
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
 
       <div className="bg-beige py-4 sm:py-6 px-4 sm:px-8 lg:px-20 border-b border-slate-200">
         <div className="mx-auto overflow-x-auto hide-scrollbar">
           <div className="flex gap-4 sm:gap-6 lg:gap-8 min-w-max">
+            <div
+              className={`flex flex-col items-center gap-2 cursor-pointer transition-all min-w-[70px] sm:min-w-[80px] p-2 rounded-xl ${!selectedCategory ? 'bg-primary-brown/10 scale-105' : 'hover:bg-slate-50'}`}
+              onClick={() => setSelectedCategory(null)}
+            >
+              <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center rounded-full bg-white shadow-sm">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                </svg>
+              </div>
+              <p className={`m-0 text-[10px] sm:text-xs font-bold text-center whitespace-nowrap ${!selectedCategory ? 'text-primary-brown' : 'text-slate-700'}`}>All</p>
+            </div>
             {categories.map(({ name, icon }) => (
               <div
                 key={name}
-                className="flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[70px] sm:min-w-[80px]"
-                onClick={() => {
-                  if (onCategoryClick) {
-                    onCategoryClick()
-                  }
-                }}
+                className={`flex flex-col items-center gap-2 cursor-pointer transition-all min-w-[70px] sm:min-w-[80px] p-2 rounded-xl ${selectedCategory === name ? 'bg-primary-brown/10 scale-105' : 'hover:bg-slate-50'}`}
+                onClick={() => handleLocalCategoryClick(name)}
               >
-                <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center rounded-full bg-white shadow-sm">
                   {icon}
                 </div>
-                <p className="m-0 text-[10px] sm:text-xs font-medium text-slate-700 text-center whitespace-nowrap">{name}</p>
+                <p className={`m-0 text-[10px] sm:text-xs font-bold text-center whitespace-nowrap ${selectedCategory === name ? 'text-primary-brown' : 'text-slate-700'}`}>{name}</p>
               </div>
             ))}
           </div>
@@ -332,8 +370,8 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
                 <div className="col-span-full py-20 flex justify-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
                 </div>
-              ) : activities.length > 0 ? (
-                activities.map((activity) => {
+              ) : filteredActivities.length > 0 ? (
+                filteredActivities.map((activity) => {
                   const activityId = activity._id || activity.id;
                   const isSelected = selectedActivities.some(a => (a._id || a.id) === activityId);
 
@@ -504,7 +542,7 @@ export default function Explore({ selectedActivities = [], onAddToList, onRemove
           </aside>
         </div>
       </main>
-      <Footer />
+      {!hideHeaderFooter && <Footer />}
     </div>
   )
 }

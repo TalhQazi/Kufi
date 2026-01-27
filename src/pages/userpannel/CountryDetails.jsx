@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import api from '../../api'
 import './CountryDetails.css'
 import Footer from '../../components/layout/Footer'
+import ProfilePic from '../../components/ui/ProfilePic'
 
 export default function CountryDetails({
     onHomeClick,
@@ -11,7 +12,8 @@ export default function CountryDetails({
     onProfileClick,
     onActivityClick,
     onBack,
-    onSettingsClick
+    onSettingsClick,
+    hideHeaderFooter = false
 }) {
     const [dropdown, setDropdown] = useState(false)
     const [experiences, setExperiences] = useState([])
@@ -157,85 +159,76 @@ export default function CountryDetails({
     return (
         <div className="country-details">
             {/* Navigation */}
-            <nav className="country-navbar">
-                <div className="country-navbar-inner">
-                    <div className="country-logo">
-                        <button
-                            onClick={() => {
-                                if (onHomeClick) {
-                                    onHomeClick()
-                                }
-                            }}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                            style={{ background: 'none', border: 'none', padding: 0 }}
-                        >
-                            <img src="/assets/navbar.png" alt="Kufi Travel" className="country-logo-image" />
-                        </button>
-                    </div>
+            {!hideHeaderFooter && (
+                <nav className="country-navbar">
+                    <div className="country-navbar-inner">
+                        <div className="country-logo">
+                            <button
+                                onClick={() => {
+                                    if (onHomeClick) {
+                                        onHomeClick()
+                                    }
+                                }}
+                                className="cursor-pointer hover:opacity-80 transition-opacity"
+                                style={{ background: 'none', border: 'none', padding: 0 }}
+                            >
+                                <img src="/assets/navbar.png" alt="Kufi Travel" className="country-logo-image" />
+                            </button>
+                        </div>
 
 
-                    <div className="country-navbar-right">
-                        <button className="country-icon-btn" onClick={onNotificationClick}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                            </svg>
-                        </button>
-
-
-                        <div className="country-profile-dropdown" ref={dropdownRef}>
-                            <button onClick={() => setDropdown(!dropdown)} className="country-profile-btn">
-                                {profileImage ? (
-                                    <img
-                                        src={profileImage}
-                                        alt="Profile"
-                                        className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
-                                        onError={(e) => { e.target.src = '/assets/profile-avatar.jpeg' }}
-                                    />
-                                ) : (
-                                    <div className="w-8 h-8 rounded-full bg-[#a26e35] text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm">
-                                        {currentUser.name ? currentUser.name.substring(0, 2).toUpperCase() : 'U'}
-                                    </div>
-                                )}
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                    <path d="M6 9l6 6 6-6" />
+                        <div className="country-navbar-right">
+                            <button className="country-icon-btn" onClick={onNotificationClick}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                                 </svg>
                             </button>
 
-                            {dropdown && (
-                                <div className="country-dropdown-menu">
-                                    <div className="country-dropdown-item" onClick={() => { onProfileClick && onProfileClick(); setDropdown(false); }}>
-                                        MY REQUESTS
+
+                            <div className="country-profile-dropdown" ref={dropdownRef}>
+                                <button onClick={() => setDropdown(!dropdown)} className="country-profile-btn">
+                                    <ProfilePic user={currentUser} size="sm" />
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </button>
+
+                                {dropdown && (
+                                    <div className="country-dropdown-menu">
+                                        <div className="country-dropdown-item" onClick={() => { onProfileClick && onProfileClick(); setDropdown(false); }}>
+                                            MY REQUESTS
+                                        </div>
+                                        <div className="country-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
+                                            NOTIFICATIONS
+                                        </div>
+                                        <div className="country-dropdown-item" onClick={() => {
+                                            if (onSettingsClick) {
+                                                onSettingsClick()
+                                            }
+                                            setDropdown(false);
+                                        }}>
+                                            PAYMENTS
+                                        </div>
+                                        <div className="country-dropdown-item" onClick={() => {
+                                            if (onSettingsClick) {
+                                                onSettingsClick()
+                                            }
+                                            setDropdown(false);
+                                        }}>
+                                            SETTINGS
+                                        </div>
+                                        <div className="country-dropdown-divider"></div>
+                                        <div className="country-dropdown-item logout" onClick={() => { onLogout && onLogout(); setDropdown(false); }}>
+                                            LOGOUT
+                                        </div>
                                     </div>
-                                    <div className="country-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
-                                        NOTIFICATIONS
-                                    </div>
-                                    <div className="country-dropdown-item" onClick={() => {
-                                        if (onSettingsClick) {
-                                            onSettingsClick()
-                                        }
-                                        setDropdown(false);
-                                    }}>
-                                        PAYMENTS
-                                    </div>
-                                    <div className="country-dropdown-item" onClick={() => {
-                                        if (onSettingsClick) {
-                                            onSettingsClick()
-                                        }
-                                        setDropdown(false);
-                                    }}>
-                                        SETTINGS
-                                    </div>
-                                    <div className="country-dropdown-divider"></div>
-                                    <div className="country-dropdown-item logout" onClick={() => { onLogout && onLogout(); setDropdown(false); }}>
-                                        LOGOUT
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </nav>
+                </nav>
+            )}
 
             {/* Hero Section */}
             <section className="country-hero">
@@ -369,7 +362,7 @@ export default function CountryDetails({
                 </section>
             </main>
 
-            <Footer />
+            {!hideHeaderFooter && <Footer />}
         </div>
     )
 }

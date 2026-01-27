@@ -3,8 +3,9 @@ import { FiSearch, FiBell, FiMapPin, FiCalendar, FiFilter, FiArrowUp, FiArrowDow
 import { FaCheckCircle, FaClock, FaCreditCard } from 'react-icons/fa'
 import api from '../../api'
 import Footer from '../../components/layout/Footer'
+import ProfilePic from '../../components/ui/ProfilePic'
 
-export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, canGoForward, onExploreClick, onItineraryClick, onHomeClick, onNotificationClick, onProfileClick, onSettingsClick, onCountryClick }) {
+export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, canGoForward, onExploreClick, onItineraryClick, onHomeClick, onNotificationClick, onProfileClick, onSettingsClick, onCountryClick, hideHeaderFooter = false }) {
     const [dropdown, setDropdown] = useState(false)
     const [tripRequests, setTripRequests] = useState([])
     const [countries, setCountries] = useState([])
@@ -78,110 +79,98 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
     return (
         <div className="min-h-screen bg-gray-50 font-inter">
             {/* Header */}
-            <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => {
-                                if (onHomeClick) {
-                                    onHomeClick()
-                                }
-                            }}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                            <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
-                        </button>
-                    </div>
-
-                    <div className="flex items-center gap-4 md:gap-6">
-                        <button
-                            className="text-gray-500 hover:text-gray-700 relative"
-                            onClick={() => onNotificationClick && onNotificationClick()}
-                        >
-                            <FiBell size={22} />
-                            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                        </button>
-                        <div className="relative" ref={dropdownRef}>
+            {!hideHeaderFooter && (
+                <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
+                        <div className="flex items-center gap-1">
                             <button
-                                onClick={() => setDropdown(!dropdown)}
-                                className="flex items-center gap-2 cursor-pointer"
+                                onClick={() => {
+                                    if (onHomeClick) {
+                                        onHomeClick()
+                                    }
+                                }}
+                                className="cursor-pointer hover:opacity-80 transition-opacity"
                             >
-                                {currentUser?.profileImage || currentUser?.avatar || currentUser?.imageUrl ? (
-                                    <img
-                                        src={currentUser.profileImage || currentUser.avatar || currentUser.imageUrl}
-                                        alt="Profile"
-                                        className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border-2 border-white shadow-sm"
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = "/assets/profile-avatar.jpeg";
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#A67C52] flex items-center justify-center text-white text-[10px] md:text-xs font-bold border-2 border-white shadow-sm">
-                                        {currentUser?.name ? currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : <FiUser size={20} />}
+                                <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-4 md:gap-6">
+                            <button
+                                className="text-gray-500 hover:text-gray-700 relative"
+                                onClick={() => onNotificationClick && onNotificationClick()}
+                            >
+                                <FiBell size={22} />
+                                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                            </button>
+                            <div className="relative" ref={dropdownRef}>
+                                <button
+                                    onClick={() => setDropdown(!dropdown)}
+                                    className="flex items-center gap-2 cursor-pointer"
+                                >
+                                    <ProfilePic user={currentUser} size="sm" />
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6E4E" strokeWidth="2" className="hidden md:block">
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </button>
+
+                                {dropdown && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onProfileClick) onProfileClick()
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            MY REQUESTS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onNotificationClick) onNotificationClick()
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            NOTIFICATIONS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onSettingsClick) onSettingsClick()
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            PAYMENTS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onSettingsClick) onSettingsClick()
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            SETTINGS
+                                        </div>
+                                        <div className="border-t border-slate-200 my-1"></div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onLogout) {
+                                                    onLogout()
+                                                }
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            LOGOUT
+                                        </div>
                                     </div>
                                 )}
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6E4E" strokeWidth="2" className="hidden md:block">
-                                    <path d="M6 9l6 6 6-6" />
-                                </svg>
-                            </button>
-
-                            {dropdown && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onProfileClick) onProfileClick()
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        MY REQUESTS
-                                    </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onNotificationClick) onNotificationClick()
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        NOTIFICATIONS
-                                    </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onSettingsClick) onSettingsClick()
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        PAYMENTS
-                                    </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onSettingsClick) onSettingsClick()
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        SETTINGS
-                                    </div>
-                                    <div className="border-t border-slate-200 my-1"></div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onLogout) {
-                                                onLogout()
-                                            }
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        LOGOUT
-                                    </div>
-                                </div>
-                            )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </header>
+                </header>
+            )}
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
                 {/* Hero Section */}
@@ -362,7 +351,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                     </div>
                 </div>
             </main>
-            <Footer />
+            {!hideHeaderFooter && <Footer />}
         </div>
     )
 }

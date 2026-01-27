@@ -2,20 +2,19 @@ import { useState, useEffect, useRef } from 'react'
 import api from '../../api'
 import Footer from '../../components/layout/Footer'
 
-export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, canGoForward, onSubmit, onHomeClick, onNotificationClick, onProfileClick, onSettingsClick }) {
+export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, canGoForward, onSubmit, onHomeClick, onNotificationClick, onProfileClick, onSettingsClick, hideHeaderFooter = false, selectedActivities = [] }) {
     const [showSuccess, setShowSuccess] = useState(false)
     const [dropdown, setDropdown] = useState(false)
     const dropdownRef = useRef(null)
+    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {}
+
     const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
+        firstName: currentUser.firstName || '',
+        lastName: currentUser.lastName || '',
+        email: currentUser.email || '',
+        phone: currentUser.phone || '',
         travelers: '',
-        country: 'Dubai',
         cities: '',
-        arrivalDate: '',
-        departureDate: '',
         includeHotel: false,
         hotelOwn: false,
         foodAllGood: false,
@@ -23,7 +22,8 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         travelOwn: true,
         withTransport: true,
         budget: '',
-        additionalOptions: false
+        additionalOptions: false,
+        activities: selectedActivities.map(a => a.id || a._id)
     })
     const [countries, setCountries] = useState([])
 
@@ -85,109 +85,107 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
     return (
         <div className="min-h-screen bg-slate-50">
             {/* Header */}
-            <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
-                <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => {
-                                if (onHomeClick) {
-                                    onHomeClick()
-                                } else {
-                                    window.location.hash = '#home'
-                                }
-                            }}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                            <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
-                        </button>
-                    </div>
-
-
-                    <div className="flex items-center gap-2 sm:gap-4">
-                        <button
-                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                            onClick={() => onNotificationClick && onNotificationClick()}
-                        >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                            </svg>
-                        </button>
-
-
-                        <div className="relative" ref={dropdownRef}>
+            {!hideHeaderFooter && (
+                <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
+                    <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-1">
                             <button
-                                onClick={() => setDropdown(!dropdown)}
-                                className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                                onClick={() => {
+                                    if (onHomeClick) {
+                                        onHomeClick()
+                                    } else {
+                                        window.location.hash = '#home'
+                                    }
+                                }}
+                                className="cursor-pointer hover:opacity-80 transition-opacity"
                             >
-                                <img
-                                    src="/assets/profile-avatar.jpeg"
-                                    alt="Profile"
-                                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
-                                />
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                    <path d="M6 9l6 6 6-6" />
+                                <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
+                            </button>
+                        </div>
+
+
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            <button
+                                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                                onClick={() => onNotificationClick && onNotificationClick()}
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                                 </svg>
                             </button>
 
-                            {dropdown && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-primary-brown hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            onProfileClick && onProfileClick()
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        MY REQUESTS
+
+                            <div className="relative" ref={dropdownRef}>
+                                <button
+                                    onClick={() => setDropdown(!dropdown)}
+                                    className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                                >
+                                    <ProfilePic user={JSON.parse(localStorage.getItem('currentUser') || '{}')} size="sm" />
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </button>
+
+                                {dropdown && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-primary-brown hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                onProfileClick && onProfileClick()
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            MY REQUESTS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                onNotificationClick && onNotificationClick()
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            NOTIFICATIONS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onSettingsClick) {
+                                                    onSettingsClick()
+                                                }
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            PAYMENTS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                onSettingsClick && onSettingsClick()
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            SETTINGS
+                                        </div>
+                                        <div className="border-t border-slate-200 my-1"></div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onLogout) {
+                                                    onLogout()
+                                                }
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            LOGOUT
+                                        </div>
                                     </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            onNotificationClick && onNotificationClick()
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        NOTIFICATIONS
-                                    </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onSettingsClick) {
-                                                onSettingsClick()
-                                            }
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        PAYMENTS
-                                    </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            onSettingsClick && onSettingsClick()
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        SETTINGS
-                                    </div>
-                                    <div className="border-t border-slate-200 my-1"></div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onLogout) {
-                                                onLogout()
-                                            }
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        LOGOUT
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </nav>
+                </nav>
+            )}
 
             {/* Main Content */}
             <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-8">
@@ -197,67 +195,44 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                         <div className="mb-6">
                             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">Travel Booking</h1>
                             <p className="text-xs sm:text-sm text-slate-600">Fill your details so we may assist you</p>
-                            <div className="mb-6">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">
-                                    Country Preferance <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    value={formData.country}
-                                    onChange={(e) => handleChange('country', e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm text-slate-700 bg-white"
-                                    required
-                                >
-                                    <option value="">Select a country</option>
-                                    {countries.length > 0 ? (
-                                        countries.map(c => (
-                                            <option key={c._id || c.id} value={c.name}>{c.name}</option>
-                                        ))
-                                    ) : (
-                                        <>
-                                            <option value="Dubai">Dubai (UAE)</option>
-                                            <option value="Abu Dhabi">Abu Dhabi (UAE)</option>
-                                            <option value="Saudi Arabia">Saudi Arabia</option>
-                                            <option value="Oman">Oman</option>
-                                            <option value="Qatar">Qatar</option>
-                                            <option value="Turkey">Turkey</option>
-                                            <option value="United Kingdom">United Kingdom</option>
-                                            <option value="France">France</option>
-                                            <option value="Italy">Italy</option>
-                                            <option value="Switzerland">Switzerland</option>
-                                            <option value="Japan">Japan</option>
-                                            <option value="United States">United States</option>
-                                            <option value="Other">Other</option>
-                                        </>
-                                    )}
-                                </select>
-                            </div>
-
                         </div>
 
                         {/* My List */}
-                        <div className="mb-6">
-                            <h2 className="text-sm font-semibold text-slate-700 mb-3">My List</h2>
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2 text-sm">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="2">
-                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                                    </svg>
-                                    <span className="text-slate-700">Paradise Travel Co.</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="2">
-                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                        <line x1="16" y1="2" x2="16" y2="6" />
-                                        <line x1="8" y1="2" x2="8" y2="6" />
-                                        <line x1="3" y1="10" x2="21" y2="10" />
-                                    </svg>
-                                    <span className="text-slate-700">2 Days</span>
-                                </div>
+                        <div className="mb-8 p-4 bg-beige/30 rounded-xl border border-primary-brown/10">
+                            <h2 className="text-sm font-bold text-primary-brown mb-3 uppercase tracking-wider">My Trip List</h2>
+                            <div className="space-y-3">
+                                {selectedActivities.length > 0 ? (
+                                    selectedActivities.map((activity, idx) => (
+                                        <div key={activity.id || idx} className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 shadow-sm border border-white">
+                                                    <img
+                                                        src={activity.imageUrl || activity.image || "/assets/activity1.jpeg"}
+                                                        alt={activity.title}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h3 className="text-sm font-semibold text-slate-900 truncate">{activity.title}</h3>
+                                                    <p className="text-[10px] text-slate-500 uppercase font-medium">{activity.location || activity.country}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-primary-brown text-[10px] font-bold">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                                </svg>
+                                                <span>{activity.duration || 'Full Day'}</span>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-xs text-slate-500 italic py-2">No activities selected in your trip list.</p>
+                                )}
                             </div>
                         </div>
 
                         <form onSubmit={handleSubmit}>
-                            {/* Country Preference */}
                             {/* Name Fields */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                 <div>
@@ -336,35 +311,6 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                     <option value="4">4 Travelers</option>
                                     <option value="5+">5+ Travelers</option>
                                 </select>
-                            </div>
-
-
-                            {/* Dates */}
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                        Arrival Date <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={formData.arrivalDate}
-                                        onChange={(e) => handleChange('arrivalDate', e.target.value)}
-                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                        Departure Date <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={formData.departureDate}
-                                        onChange={(e) => handleChange('departureDate', e.target.value)}
-                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
-                                        required
-                                    />
-                                </div>
                             </div>
 
                             {/* Hotel Preferences */}
@@ -470,7 +416,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                     </div>
                 </div >
             </main >
-            <Footer />
+            {!hideHeaderFooter && <Footer />}
 
             {/* Success Modal */}
             {

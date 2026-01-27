@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import Button from '../ui/Button'
 import { FiPhone, FiUser, FiSettings, FiLogOut, FiChevronDown } from 'react-icons/fi'
 import { HiMenu, HiX } from 'react-icons/hi'
+import ProfilePic from '../ui/ProfilePic'
 
 export default function Header({ onSignupClick, onSigninClick, onHomeClick, currentUser, onLogout, onProfileClick }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -80,23 +81,7 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                                     className="flex items-center gap-2 p-1 pr-2 rounded-full border border-slate-200 hover:bg-slate-50 transition-colors"
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-[#A67C52] flex items-center justify-center text-white overflow-hidden border border-slate-100">
-                                        {currentUser.profileImage || currentUser.avatar || currentUser.imageUrl ? (
-                                            <img
-                                                src={currentUser.profileImage || currentUser.avatar || currentUser.imageUrl}
-                                                alt={currentUser.name}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    e.target.onerror = null;
-                                                    e.target.src = "/assets/profile-avatar.jpeg";
-                                                }}
-                                            />
-                                        ) : (
-                                            <div className="text-xs font-bold">
-                                                {currentUser.name ? currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : <FiUser size={18} />}
-                                            </div>
-                                        )}
-                                    </div>
+                                    <ProfilePic user={currentUser} size="sm" />
                                     <span className="text-sm font-medium text-slate-700 hidden lg:block">
                                         {currentUser.name || 'User'}
                                     </span>
@@ -226,13 +211,7 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                             {currentUser ? (
                                 <div className="flex flex-col gap-2">
                                     <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg mb-2">
-                                        <div className="w-10 h-10 rounded-full bg-[#A67C52] flex items-center justify-center text-white overflow-hidden">
-                                            {currentUser.profileImage ? (
-                                                <img src={currentUser.profileImage} alt={currentUser.name} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <FiUser size={20} />
-                                            )}
-                                        </div>
+                                        <ProfilePic user={currentUser} size="md" />
                                         <div>
                                             <p className="text-sm font-semibold text-slate-900">{currentUser.name}</p>
                                             <p className="text-xs text-slate-500">{currentUser.email}</p>
