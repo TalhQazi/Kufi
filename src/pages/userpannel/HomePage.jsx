@@ -23,8 +23,12 @@ export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick
                 onProfileClick={onProfileClick}
             />
             <div className="relative">
-                <HeroSection onSignupClick={onSignupClick} />
-                <SearchBar />
+                <HeroSection onSignupClick={onSignupClick} onCountryClick={onCountryClick} />
+                <SearchBar onSearch={(payload) => {
+                    if (onCountryClick && payload?.city) {
+                        onCountryClick(payload.city)
+                    }
+                }} />
             </div>
             <DestinationsSection onCountryClick={onCountryClick} />
             <CategoriesSection onCategoryClick={onCategoryClick} />

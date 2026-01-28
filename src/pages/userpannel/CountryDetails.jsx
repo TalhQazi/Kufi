@@ -6,6 +6,7 @@ import Footer from '../../components/layout/Footer'
 export default function CountryDetails({
     onHomeClick,
     countryName = "Italy",
+    selectedCityName,
     onLogout,
     onNotificationClick,
     onProfileClick,
@@ -16,12 +17,22 @@ export default function CountryDetails({
     const [dropdown, setDropdown] = useState(false)
     const [experiences, setExperiences] = useState([])
     const [isLoading, setIsLoading] = useState(true)
+    const [country, setCountry] = useState(null)
+    const [cities, setCities] = useState([])
+    const [citiesLoading, setCitiesLoading] = useState(true)
     const dropdownRef = useRef(null)
 
     // Scroll to top when component mounts
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' })
     }, [])
+
+    // If user came from homepage filter (city selected), jump to Cities section
+    useEffect(() => {
+        if (!selectedCityName) return
+        const el = document.getElementById('country-cities')
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, [selectedCityName, countryName])
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -116,13 +127,52 @@ export default function CountryDetails({
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
 
     useEffect(() => {
+        const fetchCountryAndCities = async () => {
+            try {
+                setCitiesLoading(true)
+                const countriesRes = await api.get('/countries')
+                const allCountries = Array.isArray(countriesRes.data) ? countriesRes.data : []
+
+                const matchedCountry = allCountries.find(
+                    (c) => (c?.name || '').toLowerCase() === (countryName || '').toLowerCase()
+                )
+
+                setCountry(matchedCountry || null)
+
+                if (matchedCountry?._id) {
+                    const citiesRes = await api.get(
+                        `/cities?country=${matchedCountry._id}&countryName=${encodeURIComponent(matchedCountry.name || '')}`
+                    )
+                    setCities(Array.isArray(citiesRes.data) ? citiesRes.data : [])
+                } else {
+                    setCities([])
+                }
+            } catch (error) {
+                console.error("Error fetching country/cities:", error)
+                setCountry(null)
+                setCities([])
+            } finally {
+                setCitiesLoading(false)
+            }
+        }
+
         const fetchCountryActivities = async () => {
             try {
                 setIsLoading(true)
-                const response = await api.get(`/activities?country=${countryName}`)
-                setExperiences(Array.isArray(response.data) ? response.data : [])
+                const response = await api.get('/activities')
+                const allActivities = Array.isArray(response.data) ? response.data : []
+
+                const filtered = allActivities.filter((a) => {
+                    const c = (a?.country || '').toLowerCase()
+                    const loc = (a?.location || '').toLowerCase()
+                    const target = (countryName || '').toLowerCase()
+                    return c === target || loc.includes(target)
+                })
+
+                setExperiences(filtered)
             } catch (error) {
                 console.error("Error fetching country activities:", error)
+                setExperiences([])
             } finally {
                 setIsLoading(false)
             }
@@ -141,6 +191,7 @@ export default function CountryDetails({
             }
         }
 
+        fetchCountryAndCities()
         fetchCountryActivities()
         fetchTestimonialsAndBlogs()
     }, [countryName])
@@ -241,8 +292,8 @@ export default function CountryDetails({
             <section className="country-hero">
                 <div className="country-hero-overlay"></div>
                 <img
-                    src="/assets/italy-hero.jpg"
-                    alt={countryName}
+                    src={country?.image || country?.imageUrl || "/assets/italy-hero.jpg"}
+                    alt={country?.name || countryName}
                     className="country-hero-image"
                     onError={(e) => { e.target.src = '/assets/activity1.jpeg' }}
                 />
@@ -267,11 +318,43 @@ export default function CountryDetails({
                     <h2 className="country-section-title">About {countryName}</h2>
                     <div className="country-about-text">
                         <p>
-                            Italy is an art-filled playground with a long history spanning thousands of years. It is known for its Renaissance art and architecture, and is home to some of the world's most iconic landmarks. From the ancient wonders of Rome to the Renaissance treasures of Florence and the romantic canals of Venice, Italy offers an unforgettable journey through time.
+                            {country?.description || `No description found for ${countryName} yet.`}
                         </p>
-                        <p>
-                            Indulge in world-class cuisine, from authentic pasta and pizza to fine wines and gelato. Experience the warmth of Italian hospitality, explore charming villages, pristine coastlines, and stunning countryside. Whether you're seeking art, history, culture, or simply la dolce vita, Italy promises memories that will last a lifetime.
-                        </p>
+                    </div>
+                </section>
+
+                {/* Cities Section */}
+                <section id="country-cities" className="country-experiences">
+                    <h2 className="country-section-title">Cities in {countryName}</h2>
+                    <div className="country-experiences-grid">
+                        {citiesLoading ? (
+                            <div className="col-span-full py-20 flex justify-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
+                            </div>
+                        ) : cities.length > 0 ? (
+                            cities.map((city) => (
+                                <div
+                                    key={city._id}
+                                    className="country-experience-card"
+                                >
+                                    <div className="country-card-image-wrapper">
+                                        <img
+                                            src={city.image || "/assets/activity1.jpeg"}
+                                            alt={city.name}
+                                            className="country-experience-image"
+                                        />
+                                    </div>
+                                    <div className="country-experience-content">
+                                        <h3 className="country-experience-title">{city.name}</h3>
+                                        <p className="country-experience-subtitle">{city.description || ""}</p>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="col-span-full py-20 text-center text-slate-500">
+                                No cities found in {countryName} yet.
+                            </div>
+                        )}
                     </div>
                 </section>
 

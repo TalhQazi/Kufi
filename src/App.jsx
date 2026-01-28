@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import api from './api'
 import HomePage from './pages/userpannel/HomePage.jsx'
 import Login from './pages/userpannel/Login.jsx'
 import Register from './pages/userpannel/Register.jsx'
@@ -34,6 +35,7 @@ export default function App() {
   const [selectedCountryName, setSelectedCountryName] = useState('Italy')
   const [selectedCategoryName, setSelectedCategoryName] = useState('Camping Adventures')
   const [selectedItineraryId, setSelectedItineraryId] = useState(null)
+  const [selectedCityName, setSelectedCityName] = useState(null)
 
   // Helper functions for dynamic navigation
   const handleActivityClick = (id) => {
@@ -41,8 +43,55 @@ export default function App() {
     navigateTo('activity-detail')
   }
 
-  const handleCountryClick = (name) => {
-    setSelectedCountryName(name)
+  const handleCountryClick = async (payload) => {
+    // Accept either:
+    // - country name string
+    // - country object { name }
+    // - city object { name, country }
+    const maybeName = typeof payload === 'string' ? payload : payload?.name
+    const maybeCountry = payload?.country
+
+    // City selection from SearchBar
+    if (maybeCountry) {
+      setSelectedCityName(maybeName || null)
+
+      try {
+        // If country is already a string name
+        if (typeof maybeCountry === 'string' && !/^[0-9a-fA-F]{24}$/.test(maybeCountry)) {
+          setSelectedCountryName(maybeCountry)
+          navigateTo('country-details')
+          return
+        }
+
+        // Otherwise resolve countryId -> countryName
+        const countryId = typeof maybeCountry === 'string' ? maybeCountry : maybeCountry?._id
+        if (countryId) {
+          const countriesRes = await api.get('/countries')
+          const allCountries = Array.isArray(countriesRes.data) ? countriesRes.data : []
+          const matched = allCountries.find((c) => c?._id === countryId)
+          if (matched?.name) {
+            setSelectedCountryName(matched.name)
+            navigateTo('country-details')
+            return
+          }
+        }
+      } catch (e) {
+        console.error('Error resolving city country:', e)
+      }
+
+      // Fallback: if we couldn't resolve country, still navigate
+      if (maybeName) {
+        setSelectedCountryName(maybeName)
+      }
+      navigateTo('country-details')
+      return
+    }
+
+    // Country selection
+    const countryName = maybeName
+    if (!countryName) return
+    setSelectedCityName(null)
+    setSelectedCountryName(countryName)
     navigateTo('country-details')
   }
 
@@ -209,6 +258,7 @@ export default function App() {
     <>
       <CountryDetails
         countryName={selectedCountryName}
+        selectedCityName={selectedCityName}
         onLogout={handleLogout}
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
@@ -360,8 +410,8 @@ export default function App() {
         onHomeClick={() => navigateTo('home')}
         onSignupClick={handleOpenRegister}
         onSigninClick={handleOpenLogin}
-        onCategoryClick={() => navigateTo('category-page')}
-        onCountryClick={() => navigateTo('country-details')}
+        onCategoryClick={handleCategoryClick}
+        onCountryClick={handleCountryClick}
         currentUser={currentUser}
         onLogout={handleLogout}
         onProfileClick={() => navigateTo('user-profile')}

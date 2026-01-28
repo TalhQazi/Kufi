@@ -6,8 +6,7 @@ export default function DestinationsSection({ onCountryClick }) {
     const [allCountries, setAllCountries] = useState([])
     const [destinations, setDestinations] = useState([])
     const [loading, setLoading] = useState(true)
-    const [clickCount, setClickCount] = useState(0)
-    const [isShowingLess, setIsShowingLess] = useState(false)
+    const [showAll, setShowAll] = useState(false)
 
     useEffect(() => {
         const fetchCountries = async () => {
@@ -26,41 +25,15 @@ export default function DestinationsSection({ onCountryClick }) {
     }, [])
 
     const handleAction = () => {
-        if (isShowingLess) {
-            // "Show Less" logic: remove 4 items
-            const newCount = destinations.length - 4
-            setDestinations(prev => prev.slice(0, -4))
-            setClickCount(prev => prev - 1)
-
-            // If we're back to the initial state, allow "Show More" again
-            if (newCount <= 4) {
-                setIsShowingLess(false)
-            }
-            return
-        }
-
-        // "Show More" logic: add 4 items
-        const currentCount = destinations.length
-        const nextItems = []
-        const timestamp = Date.now()
-        for (let i = 0; i < 4; i++) {
-            const baseItem = allCountries[(currentCount + i) % allCountries.length]
-            if (baseItem) {
-                nextItems.push({ ...baseItem, _id: `dest-${timestamp}-${currentCount + i}` })
-            }
-        }
-        setDestinations(prev => [...prev, ...nextItems])
-        const newClickCount = clickCount + 1
-        setClickCount(newClickCount)
-
-        // After 1 click, the next action should be "Show Less"
-        if (newClickCount >= 1) {
-            setIsShowingLess(true)
-        }
+        setShowAll((prev) => {
+            const next = !prev
+            setDestinations(next ? allCountries : allCountries.slice(0, 4))
+            return next
+        })
     }
 
     return (
-        <section className="bg-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
+        <section id="explore-destinations" className="bg-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
             <div className="max-w-[1240px] mx-auto">
                 <div className="mb-10">
                     <h2 className="text-xl sm:text-3xl font-bold text-slate-900">Explore Destinations</h2>
@@ -76,13 +49,13 @@ export default function DestinationsSection({ onCountryClick }) {
                             <div key={`${item._id || item.id}-${index}`} className="w-full">
                                 <Card
                                     variant="destination"
-                                    image={item.imageUrl || item.image}
+                                    image={item.image || item.imageUrl || '/assets/hero-card1.jpeg'}
                                     title={item.name || item.title}
                                     location={item.description?.substring(0, 20) || item.location}
                                     rating="4.4"
                                     onClick={() => {
                                         if (onCountryClick) {
-                                            onCountryClick(item)
+                                            onCountryClick(item.name)
                                         }
                                     }}
                                 />
@@ -91,15 +64,17 @@ export default function DestinationsSection({ onCountryClick }) {
                     )}
                 </div>
 
-                <div className="mt-8 flex justify-center">
-                    <button
-                        type="button"
-                        onClick={handleAction}
-                        className="bg-[#a67c52] text-white px-10 py-3.5 rounded-full font-semibold hover:bg-[#8f643e] transition-all shadow-md active:scale-95 text-lg"
-                    >
-                        {isShowingLess ? 'Show Less' : 'Show More'}
-                    </button>
-                </div>
+                {allCountries.length > 4 && (
+                    <div className="mt-8 flex justify-center">
+                        <button
+                            type="button"
+                            onClick={handleAction}
+                            className="bg-[#a67c52] text-white px-10 py-3.5 rounded-full font-semibold hover:bg-[#8f643e] transition-all shadow-md active:scale-95 text-lg"
+                        >
+                            {showAll ? 'Show Less' : 'Show More'}
+                        </button>
+                    </div>
+                )}
             </div>
         </section>
     )

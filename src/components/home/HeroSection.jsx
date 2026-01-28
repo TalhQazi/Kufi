@@ -4,7 +4,7 @@ import { FaPlay, FaBookmark, FaStar } from 'react-icons/fa'
 import { FiChevronRight, FiChevronLeft } from 'react-icons/fi'
 import api from '../../api'
 
-export default function HeroSection({ onSignupClick }) {
+export default function HeroSection({ onSignupClick, onCountryClick }) {
     const [countries, setCountries] = useState([])
     const [loading, setLoading] = useState(true)
     const [idx, setIdx] = useState(0)
@@ -94,6 +94,11 @@ export default function HeroSection({ onSignupClick }) {
         scrollRef.current.scrollLeft = scrollLeft.current - walk
     }
 
+    const handleCountryCardClick = (country) => {
+        if (!country || !onCountryClick) return
+        onCountryClick(country.name)
+    }
+
     const prev = () => {
         if (scrollRef.current) {
             scrollRef.current.scrollBy({ left: -cardWidth, behavior: 'smooth' })
@@ -127,21 +132,30 @@ export default function HeroSection({ onSignupClick }) {
             <main className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-10 items-center mt-12 lg:mt-20 relative z-10">
                 <section className="max-w-[550px]">
                     <p className="text-2xl sm:text-[28px] mb-2 font-sacramento text-white/90">
-                        <span className="font-sacramento">Lorem</span>
-                        <span className="text-[#A67C52] ml-2 font-sacramento">Ipsum</span>
-                        <span className="font-sacramento ml-2">Amet</span>
+                        <span className="font-sacramento">Plan</span>
+                        <span className="text-[#A67C52] ml-2 font-sacramento">Book</span>
+                        <span className="font-sacramento ml-2">Explore</span>
                     </p>
                     <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] m-0 mb-6">
-                        Lorem Ipsum Dol <br />
-                        Sit Amet Conse
+                        Your Next Trip <br />
+                        Starts With Kufi
                     </h1>
                     <div className="w-16 h-1 bg-[#A67C52] mb-6"></div>
                     <p className="text-sm sm:text-base max-w-[480px] text-slate-200 leading-relaxed mb-8">
-                        Lorem ipsum dolor sit amet consectetur. Ultricies varius praesent aliquam cum egestas tristique sit blandit tortor.
+                        Discover handpicked destinations, trusted local experiences, and simple bookings all in one place.
                     </p>
 
                     <div className="flex items-center gap-4">
-                        <Button variant="primary" className="!bg-[#A67C52] !text-white !rounded-full !px-8 !py-3 hover:!bg-[#8e6a45]">Let's Explore</Button>
+                        <Button
+                            variant="primary"
+                            className="!bg-[#A67C52] !text-white !rounded-full !px-8 !py-3 hover:!bg-[#8e6a45]"
+                            onClick={() => {
+                                const el = document.getElementById('explore-destinations')
+                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                            }}
+                        >
+                            Let's Explore
+                        </Button>
                         <button className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors">
                             <FaPlay size={14} className="ml-1" />
                         </button>
@@ -153,11 +167,7 @@ export default function HeroSection({ onSignupClick }) {
                     <div className="md:hidden">
                         <div
                             className="rounded-3xl overflow-hidden shadow-2xl relative cursor-pointer"
-                            onClick={() => {
-                                setIsPaused(true)
-                                setIdx((idx + 1) % countries.length)
-                                setTimeout(() => setIsPaused(false), 5000)
-                            }}
+                            onClick={() => handleCountryCardClick(countries[idx])}
                         >
                             <img
                                 src={countries[idx]?.image || countries[idx]?.imageUrl || '/assets/hero-card1.jpeg'}
@@ -197,7 +207,11 @@ export default function HeroSection({ onSignupClick }) {
                                     </div>
 
                                     <div
-                                        className={`relative rounded-2xl overflow-hidden shadow-lg shadow-black/50 bg-gray-900 text-white transition-all duration-500 z-10 border-none ring-0 ${isActive ? 'w-[260px] h-[400px] opacity-100 mb-0' : 'w-[240px] h-[300px] opacity-80 mb-[-20px]'}`}
+                                        className={`relative rounded-2xl overflow-hidden shadow-lg shadow-black/50 bg-gray-900 text-white transition-all duration-500 z-10 border-none ring-0 cursor-pointer ${isActive ? 'w-[260px] h-[400px] opacity-100 mb-0' : 'w-[240px] h-[300px] opacity-80 mb-[-20px]'}`}
+                                        onClick={() => {
+                                            if (isDragging) return
+                                            handleCountryCardClick(country)
+                                        }}
                                     >
                                         <img
                                             src={country.image || country.imageUrl || '/assets/hero-card1.jpeg'}

@@ -4,9 +4,10 @@ import Button from '../ui/Button'
 import { FiMapPin, FiCalendar, FiBriefcase, FiUsers } from 'react-icons/fi'
 import api from '../../api'
 
-export default function SearchBar() {
+export default function SearchBar({ onSearch }) {
     const [city, setCity] = useState('')
     const [cities, setCities] = useState([])
+    const [selectedCityObj, setSelectedCityObj] = useState(null)
     const today = new Date().toISOString().split('T')[0]
     const [arrivalDate, setArrivalDate] = useState(today)
     const [departureDate, setDepartureDate] = useState(today)
@@ -26,7 +27,14 @@ export default function SearchBar() {
 
     const handleSubmit = (event) => {
         event.preventDefault()
-        console.log({ city, arrivalDate, departureDate, travelers })
+        if (onSearch) {
+            onSearch({
+                city: selectedCityObj,
+                arrivalDate,
+                departureDate,
+                travelers,
+            })
+        }
     }
 
     return (
@@ -40,7 +48,12 @@ export default function SearchBar() {
                         label="Where do you want to visit ?"
                         icon={<FiMapPin className="text-slate-500 text-lg" />}
                         value={city}
-                        onChange={(e) => setCity(e.target.value)}
+                        onChange={(e) => {
+                            const val = e.target.value
+                            setCity(val)
+                            const matched = cities.find((c) => (c?.name || '').toLowerCase() === (val || '').toLowerCase())
+                            setSelectedCityObj(matched || null)
+                        }}
                         placeholder="Dubai"
                         options={cities.map(c => ({ value: c.name.toLowerCase(), label: c.name }))}
                         inputClassName="!bg-slate-50 !border-slate-300 !text-base !font-medium !text-slate-700 !h-[48px] !rounded-lg"

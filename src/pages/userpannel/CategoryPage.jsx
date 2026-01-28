@@ -51,11 +51,19 @@ export default function CategoryPage({
         const fetchCategoryData = async () => {
             try {
                 setIsLoading(true)
-                // Assuming backend supports filtering by category
-                const response = await api.get(`/activities?category=${categoryName}`)
-                setExperiences(Array.isArray(response.data) ? response.data : [])
+                const response = await api.get('/activities')
+                const all = Array.isArray(response.data) ? response.data : []
+
+                const filtered = all.filter((a) => {
+                    const cat = (a?.category || '').toLowerCase()
+                    const target = (categoryName || '').toLowerCase()
+                    return target ? cat === target : true
+                })
+
+                setExperiences(filtered)
             } catch (error) {
                 console.error("Error fetching category activities:", error)
+                setExperiences([])
             } finally {
                 setIsLoading(false)
             }
