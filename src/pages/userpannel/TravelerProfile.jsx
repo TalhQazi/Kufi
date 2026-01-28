@@ -3,8 +3,9 @@ import { FiUser } from 'react-icons/fi'
 import api from '../../api'
 import NotificationsModal from './NotificationsModal'
 import Footer from '../../components/layout/Footer'
+import ProfilePic from '../../components/ui/ProfilePic'
 
-export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSettingsClick, onHomeClick }) {
+export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSettingsClick, onHomeClick, hideHeaderFooter = false }) {
     const [activeTab, setActiveTab] = useState('Personal Info')
     const [showProfileDropdown, setShowProfileDropdown] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
@@ -91,132 +92,120 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
     return (
         <div className="min-h-screen bg-[#F5F1EB] font-sans overflow-x-hidden">
             {/* Header */}
-            <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
-                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
-                    {/* Left: Logo */}
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => {
-                                if (onHomeClick) {
-                                    onHomeClick()
-                                }
-                            }}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                            <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
-                        </button>
-                    </div>
-
-                    {/* Right: Notifications, Messages, Profile */}
-                    <div className="flex items-center gap-4 md:gap-6">
-                        {/* Bell Icon with notification dot */}
-                        <button
-                            onClick={() => setShowNotifications(true)}
-                            className="text-gray-500 hover:text-gray-700 relative"
-                        >
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                            </svg>
-                            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                        </button>
-
-
-                        {/* Profile with dropdown */}
-                        <div className="relative" ref={dropdownRef}>
+            {!hideHeaderFooter && (
+                <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
+                    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
+                        {/* Left: Logo */}
+                        <div className="flex items-center gap-1">
                             <button
-                                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                                className="flex items-center gap-2 cursor-pointer"
+                                onClick={() => {
+                                    if (onHomeClick) {
+                                        onHomeClick()
+                                    }
+                                }}
+                                className="cursor-pointer hover:opacity-80 transition-opacity"
                             >
-                                {profileData.profileImage || profileData.avatar || profileData.imageUrl ? (
-                                    <img
-                                        src={profileData.profileImage || profileData.avatar || profileData.imageUrl}
-                                        alt="Profile"
-                                        className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border-2 border-white shadow-sm"
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = "/assets/profile-avatar.jpeg";
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#A67C52] flex items-center justify-center text-white text-[10px] md:text-xs font-bold border-2 border-white shadow-sm">
-                                        {profileData.fullName ? profileData.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : <FiUser size={20} />}
-                                    </div>
-                                )}
-                                <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="#8B6E4E"
-                                    strokeWidth="2"
-                                    className="hidden md:block"
-                                >
-                                    <path d="M6 9l6 6 6-6" />
+                                <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
+                            </button>
+                        </div>
+
+                        {/* Right: Notifications, Messages, Profile */}
+                        <div className="flex items-center gap-4 md:gap-6">
+                            {/* Bell Icon with notification dot */}
+                            <button
+                                onClick={() => setShowNotifications(true)}
+                                className="text-gray-500 hover:text-gray-700 relative"
+                            >
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                                 </svg>
+                                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
                             </button>
 
-                            {/* Dropdown Menu */}
-                            {showProfileDropdown && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onProfileClick) onProfileClick()
-                                            setShowProfileDropdown(false)
-                                        }}
+
+                            {/* Profile with dropdown */}
+                            <div className="relative" ref={dropdownRef}>
+                                <button
+                                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                                    className="flex items-center gap-2 cursor-pointer"
+                                >
+                                    <ProfilePic user={profileData} size="sm" />
+                                    <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="#8B6E4E"
+                                        strokeWidth="2"
+                                        className="hidden md:block"
                                     >
-                                        MY REQUESTS
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {showProfileDropdown && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onProfileClick) onProfileClick()
+                                                setShowProfileDropdown(false)
+                                            }}
+                                        >
+                                            MY REQUESTS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                setShowNotifications(true)
+                                                setShowProfileDropdown(false)
+                                            }}
+                                        >
+                                            NOTIFICATIONS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                setActiveTab('Payments')
+                                                setShowProfileDropdown(false)
+                                                // Scroll to top if needed
+                                                window.scrollTo({ top: 0, behavior: 'smooth' })
+                                            }}
+                                        >
+                                            PAYMENTS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                setActiveTab('Settings')
+                                                setShowProfileDropdown(false)
+                                                // Scroll to top if needed
+                                                window.scrollTo({ top: 0, behavior: 'smooth' })
+                                            }}
+                                        >
+                                            SETTINGS
+                                        </div>
+                                        <div className="border-t border-slate-200 my-1"></div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onLogout) {
+                                                    onLogout()
+                                                }
+                                                setShowProfileDropdown(false)
+                                            }}
+                                        >
+                                            LOGOUT
+                                        </div>
                                     </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            setShowNotifications(true)
-                                            setShowProfileDropdown(false)
-                                        }}
-                                    >
-                                        NOTIFICATIONS
-                                    </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            setActiveTab('Payments')
-                                            setShowProfileDropdown(false)
-                                            // Scroll to top if needed
-                                            window.scrollTo({ top: 0, behavior: 'smooth' })
-                                        }}
-                                    >
-                                        PAYMENTS
-                                    </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            setActiveTab('Settings')
-                                            setShowProfileDropdown(false)
-                                            // Scroll to top if needed
-                                            window.scrollTo({ top: 0, behavior: 'smooth' })
-                                        }}
-                                    >
-                                        SETTINGS
-                                    </div>
-                                    <div className="border-t border-slate-200 my-1"></div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onLogout) {
-                                                onLogout()
-                                            }
-                                            setShowProfileDropdown(false)
-                                        }}
-                                    >
-                                        LOGOUT
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </header>
+                </header>
+            )}
 
             {/* Container */}
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
@@ -273,21 +262,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                         {/* Left: Profile Info */}
                         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full sm:w-auto">
                             <div className="flex flex-col items-center sm:items-start">
-                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden mb-3 bg-[#A67C52] flex items-center justify-center text-white text-2xl font-bold border-2 border-white shadow-sm">
-                                    {(profileData.profileImage || profileData.avatar || profileData.imageUrl) ? (
-                                        <img
-                                            src={profileData.profileImage || profileData.avatar || profileData.imageUrl}
-                                            alt={profileData.fullName}
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = "/assets/profile-avatar.jpeg";
-                                            }}
-                                        />
-                                    ) : (
-                                        profileData.fullName ? profileData.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : <FiUser size={40} />
-                                    )}
-                                </div>
+                                <ProfilePic user={profileData} size="xl" />
                                 <button className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg bg-[#D4AF37] text-white text-[10px] sm:text-xs font-semibold">
                                     Gold Member
                                 </button>
@@ -953,7 +928,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                     }}
                 />
             )}
-            <Footer />
+            {!hideHeaderFooter && <Footer />}
         </div>
     )
 }

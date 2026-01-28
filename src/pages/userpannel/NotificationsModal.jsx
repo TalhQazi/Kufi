@@ -1,47 +1,63 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import api from '../../api'
 
 export default function NotificationsModal({ onClose, onPaymentClick, onViewItinerary }) {
     const [activeTab, setActiveTab] = useState('all')
+    const [notifications, setNotifications] = useState([])
+    const [systemNotifications, setSystemNotifications] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
 
-    const notifications = [
-        {
-            id: 1,
-            type: 'inquiry',
-            supplier: 'SkyHigh Adventures',
-            avatar: '/assets/hero-card1.jpeg',
-            message: "Your trip request for 'Dubai Desert Safari' has been accepted.",
-            time: '2 hrs ago',
-            status: 'accepted',
-            actions: ['View Itinerary', 'Proceed to Payment']
-        },
-        {
-            id: 2,
-            type: 'inquiry',
-            supplier: 'Ocean Explorers',
-            avatar: '/assets/hero-card2.jpeg',
-            message: "Your trip request for 'Maldives Diving' is pending review.",
-            time: '5 hrs ago',
-            status: 'pending',
-            actions: ['Awaiting Response']
-        }
-    ]
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                setIsLoading(true)
+                const [itinerariesRes, systemRes] = await Promise.all([
+                    api.get('/itineraries').catch(() => ({ data: [] })),
+                    api.get('/notifications/system').catch(() => ({ data: { notifications: [] } }))
+                ])
 
-    const systemNotifications = [
-        {
-            id: 1,
-            icon: 'success',
-            title: 'Payment Successful',
-            message: 'Your payment for Bali Adventure has been processed',
-            time: '1 day ago'
-        },
-        {
-            id: 2,
-            icon: 'info',
-            title: 'Your trip starts in 3 days',
-            message: 'Dubai Desert Safari begins on March 15, 2024',
-            time: '2 days ago'
+                const tripRequests = itinerariesRes.data || []
+                const mappedRequests = tripRequests.map(trip => {
+                    const status = trip.status?.toLowerCase()
+                    let mappedStatus = 'pending'
+                    let actions = ['Awaiting Response']
+
+                    if (['accepted', 'supplier replied back', 'ready'].includes(status)) {
+                        mappedStatus = 'accepted'
+                        actions = ['View Itinerary', 'Proceed to Payment']
+                    }
+
+                    return {
+                        id: trip._id || trip.id,
+                        type: 'inquiry',
+                        supplier: trip.supplierName || 'Travel Partner',
+                        avatar: trip.imageUrl || trip.image || '/assets/hero-card1.jpeg',
+                        message: `Your trip request for '${trip.title}' is ${trip.status || 'in progress'}.`,
+                        time: new Date(trip.createdAt).toLocaleDateString(),
+                        status: mappedStatus,
+                        actions: actions
+                    }
+                })
+
+                setNotifications(mappedRequests)
+
+                const sysNotifs = (systemRes.data.notifications || []).map((n, idx) => ({
+                    id: `sys-${idx}`,
+                    icon: n.iconType === 'success' ? 'success' : 'info',
+                    title: n.title,
+                    message: n.message || n.title,
+                    time: n.time
+                }))
+                setSystemNotifications(sysNotifs)
+
+            } catch (error) {
+                console.error("Error fetching notifications:", error)
+            } finally {
+                setIsLoading(false)
+            }
         }
-    ]
+        fetchNotifications()
+    }, [])
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -142,61 +158,71 @@ export default function NotificationsModal({ onClose, onPaymentClick, onViewItin
 
                     {/* Notification Cards */}
                     <div className="space-y-4 mb-6">
-                        {filteredNotifications.map((notification) => (
-                            <div key={notification.id} className="border border-slate-200 rounded-xl p-4">
-                                <div className="flex gap-3">
-                                    {/* Avatar */}
-                                    <img
-                                        src={notification.avatar}
-                                        alt={notification.supplier}
-                                        className="w-12 h-12 rounded-full object-cover shrink-0"
-                                    />
+                        {isLoading ? (
+                            <div className="flex justify-center py-10">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-brown"></div>
+                            </div>
+                        ) : filteredNotifications.length > 0 ? (
+                            filteredNotifications.map((notification) => (
+                                <div key={notification.id} className="border border-slate-200 rounded-xl p-4">
+                                    <div className="flex gap-3">
+                                        {/* Avatar */}
+                                        <img
+                                            src={notification.avatar}
+                                            alt={notification.supplier}
+                                            className="w-12 h-12 rounded-full object-cover shrink-0"
+                                        />
 
-                                    {/* Content */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="font-semibold text-slate-900 text-sm">{notification.supplier}</h3>
-                                                <p className="text-xs text-slate-500">{notification.time}</p>
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="font-semibold text-slate-900 text-sm">{notification.supplier}</h3>
+                                                    <p className="text-xs text-slate-500">{notification.time}</p>
+                                                </div>
+                                                <div className={`flex items-center gap-1.5 text-xs font-medium ml-2 ${getStatusColor(notification.status)}`}>
+                                                    {getStatusIcon(notification.status)}
+                                                    <span>{notification.status === 'accepted' ? 'Inquiry Replied Back' : 'Pending'}</span>
+                                                </div>
                                             </div>
-                                            <div className={`flex items-center gap-1.5 text-xs font-medium ml-2 ${getStatusColor(notification.status)}`}>
-                                                {getStatusIcon(notification.status)}
-                                                <span>{notification.status === 'accepted' ? 'Inquiry Replied Back' : 'Pending'}</span>
+
+                                            <p className="text-sm text-slate-700 mb-3">{notification.message}</p>
+
+                                            {/* Action Buttons */}
+                                            <div className="flex flex-wrap gap-2">
+                                                {notification.actions.map((action, index) => (
+                                                    <button
+                                                        key={index}
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${action === 'View Itinerary'
+                                                            ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                                            : action === 'Proceed to Payment'
+                                                                ? 'bg-green-500 text-white hover:bg-green-600'
+                                                                : 'bg-slate-200 text-slate-600 cursor-not-allowed'
+                                                            }`}
+                                                        disabled={action === 'Awaiting Response'}
+                                                        onClick={() => {
+                                                            if (action === 'Proceed to Payment') {
+                                                                onPaymentClick && onPaymentClick()
+                                                                onClose()
+                                                            } else if (action === 'View Itinerary') {
+                                                                onViewItinerary && onViewItinerary()
+                                                                onClose()
+                                                            }
+                                                        }}
+                                                    >
+                                                        {action}
+                                                    </button>
+                                                ))}
                                             </div>
-                                        </div>
-
-                                        <p className="text-sm text-slate-700 mb-3">{notification.message}</p>
-
-                                        {/* Action Buttons */}
-                                        <div className="flex flex-wrap gap-2">
-                                            {notification.actions.map((action, index) => (
-                                                <button
-                                                    key={index}
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${action === 'View Itinerary'
-                                                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                                                        : action === 'Proceed to Payment'
-                                                            ? 'bg-green-500 text-white hover:bg-green-600'
-                                                            : 'bg-slate-200 text-slate-600 cursor-not-allowed'
-                                                        }`}
-                                                    disabled={action === 'Awaiting Response'}
-                                                    onClick={() => {
-                                                        if (action === 'Proceed to Payment') {
-                                                            onPaymentClick && onPaymentClick()
-                                                            onClose()
-                                                        } else if (action === 'View Itinerary') {
-                                                            onViewItinerary && onViewItinerary()
-                                                            onClose()
-                                                        }
-                                                    }}
-                                                >
-                                                    {action}
-                                                </button>
-                                            ))}
                                         </div>
                                     </div>
                                 </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-10 text-slate-500 text-sm italic">
+                                No requests or notifications found.
                             </div>
-                        ))}
+                        )}
                     </div>
 
                     {/* System Notifications */}

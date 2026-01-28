@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Bell, ChevronDown, Settings, LogOut, Moon, Sun } from "lucide-react";
+import ProfilePic from "../../../components/ui/ProfilePic";
 
 const Header = ({ onBellClick, onLogout, onMenuClick, isDarkMode, onThemeToggle }) => {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -63,9 +64,7 @@ const Header = ({ onBellClick, onLogout, onMenuClick, isDarkMode, onThemeToggle 
             onClick={() => setShowDropdown(!showDropdown)}
             className={`flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 rounded-lg transition-colors ${isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"}`}
           >
-            <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-semibold text-white">
-              A
-            </div>
+            <ProfilePic user={JSON.parse(localStorage.getItem('currentUser'))} size="sm" />
             <div className="hidden lg:flex flex-col leading-tight mr-1">
               <span className={`text-xs font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
                 Admin User

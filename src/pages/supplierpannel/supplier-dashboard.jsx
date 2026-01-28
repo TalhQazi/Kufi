@@ -20,6 +20,7 @@ import SupplierBookings from "./supplier-bookings";
 import SupplierAnalytics from "./supplier-analytics";
 import SupplierProfile from "./supplier-profile";
 import SupplierRequests from "./supplier-requests";
+import ProfilePic from "../../components/ui/ProfilePic";
 
 const SupplierDashboard = ({ onLogout, onHomeClick }) => {
   const [activeSection, setActiveSection] = useState("Dashboard");
@@ -167,12 +168,9 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                 >
                   <Settings className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => navigateTo("Profile")}
-                  className={`hidden sm:block h-9 w-9 rounded-full overflow-hidden border-2 transition-colors ${darkMode ? "bg-slate-700 border-slate-800" : "bg-gray-300 border-white shadow-sm"}`}
-                >
-                  <img src="/assets/hero-card1.jpeg" alt="Profile" className="w-full h-full object-cover" />
-                </button>
+                <div className="hidden sm:block">
+                  <ProfilePic user={JSON.parse(localStorage.getItem('currentUser'))} size="sm" />
+                </div>
               </div>
             </div>
 

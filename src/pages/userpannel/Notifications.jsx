@@ -1,47 +1,65 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import api from '../../api'
+import ProfilePic from '../../components/ui/ProfilePic'
 
-export default function Notifications({ onLogout, onBack, onHomeClick }) {
+export default function Notifications({ onLogout, onBack, onHomeClick, onNotificationClick, onProfileClick, onSettingsClick, hideHeaderFooter = false }) {
     const [activeTab, setActiveTab] = useState('all')
+    const [notifications, setNotifications] = useState([])
+    const [systemNotifications, setSystemNotifications] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
+    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {}
 
-    const notifications = [
-        {
-            id: 1,
-            type: 'inquiry',
-            supplier: 'SkyHigh Adventures',
-            avatar: '/assets/hero-card1.jpeg',
-            message: "Your trip request for 'Dubai Desert Safari' has been accepted.",
-            time: '2 hrs ago',
-            status: 'accepted',
-            actions: ['View Itinerary', 'Proceed to Payment']
-        },
-        {
-            id: 2,
-            type: 'inquiry',
-            supplier: 'Ocean Explorers',
-            avatar: '/assets/hero-card2.jpeg',
-            message: "Your trip request for 'Maldives Diving' is pending review.",
-            time: '5 hrs ago',
-            status: 'pending',
-            actions: ['Awaiting Response']
-        }
-    ]
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                setIsLoading(true)
+                const [itinerariesRes, systemRes] = await Promise.all([
+                    api.get('/itineraries').catch(() => ({ data: [] })),
+                    api.get('/notifications/system').catch(() => ({ data: { notifications: [] } }))
+                ])
 
-    const systemNotifications = [
-        {
-            id: 1,
-            icon: 'success',
-            title: 'Payment Successful',
-            message: 'Your payment for Bali Adventure has been processed',
-            time: '1 day ago'
-        },
-        {
-            id: 2,
-            icon: 'info',
-            title: 'Your trip starts in 3 days',
-            message: 'Dubai Desert Safari begins on March 15, 2024',
-            time: '2 days ago'
+                const tripRequests = itinerariesRes.data || []
+                const mappedRequests = tripRequests.map(trip => {
+                    const status = trip.status?.toLowerCase()
+                    let mappedStatus = 'pending'
+                    let actions = ['Awaiting Response']
+
+                    if (['accepted', 'supplier replied back', 'ready'].includes(status)) {
+                        mappedStatus = 'accepted'
+                        actions = ['View Itinerary', 'Proceed to Payment']
+                    }
+
+                    return {
+                        id: trip._id || trip.id,
+                        type: 'inquiry',
+                        supplier: trip.supplierName || 'Travel Partner',
+                        avatar: trip.imageUrl || trip.image || '/assets/hero-card1.jpeg',
+                        message: `Your trip request for '${trip.title}' is ${trip.status || 'in progress'}.`,
+                        time: new Date(trip.createdAt).toLocaleDateString(),
+                        status: mappedStatus,
+                        actions: actions
+                    }
+                })
+
+                setNotifications(mappedRequests)
+
+                const sysNotifs = (systemRes.data.notifications || []).map((n, idx) => ({
+                    id: `sys-${idx}`,
+                    icon: n.iconType === 'success' ? 'success' : 'info',
+                    title: n.title,
+                    message: n.message || n.title,
+                    time: n.time
+                }))
+                setSystemNotifications(sysNotifs)
+
+            } catch (error) {
+                console.error("Error fetching notifications:", error)
+            } finally {
+                setIsLoading(false)
+            }
         }
-    ]
+        fetchNotifications()
+    }, [])
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -78,46 +96,52 @@ export default function Notifications({ onLogout, onBack, onHomeClick }) {
     return (
         <div className="bg-white min-h-screen">
             {/* Header */}
-            <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
-                <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => {
-                                if (onHomeClick) {
-                                    onHomeClick()
-                                } else {
-                                    window.location.hash = '#home'
-                                }
-                            }}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                            <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
-                        </button>
-                    </div>
-
-
-                    <div className="flex items-center gap-2 sm:gap-4">
-                        <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                            </svg>
-                        </button>
-
-
-                        <div className="relative">
-                            <button className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-semibold">
-                                    U
-                                </div>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                    <path d="M6 9l6 6 6-6" />
-                                </svg>
+            {!hideHeaderFooter && (
+                <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
+                    <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => {
+                                    if (onHomeClick) {
+                                        onHomeClick()
+                                    } else {
+                                        window.location.hash = '#home'
+                                    }
+                                }}
+                                className="cursor-pointer hover:opacity-80 transition-opacity"
+                            >
+                                <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
                             </button>
                         </div>
+
+
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            <button
+                                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                                onClick={() => onNotificationClick && onNotificationClick()}
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                </svg>
+                            </button>
+
+
+                            <div className="relative">
+                                <button
+                                    onClick={() => onProfileClick && onProfileClick()}
+                                    className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                                >
+                                    <ProfilePic user={currentUser} size="sm" />
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </nav>
+                </nav>
+            )}
 
             {/* Main Content */}
             <main className="px-4 sm:px-8 lg:px-20 py-8">
@@ -161,52 +185,57 @@ export default function Notifications({ onLogout, onBack, onHomeClick }) {
 
                     {/* Notification Cards */}
                     <div className="space-y-4 mb-8">
-                        {notifications.map((notification) => (
-                            <div key={notification.id} className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                                <div className="flex gap-4">
-                                    {/* Avatar */}
-                                    <img
-                                        src={notification.avatar}
-                                        alt={notification.supplier}
-                                        className="w-12 h-12 rounded-full object-cover shrink-0"
-                                    />
+                        {isLoading ? (
+                            <div className="flex justify-center py-10">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-brown"></div>
+                            </div>
+                        ) : notifications.length > 0 ? (
+                            notifications.map((notification) => (
+                                <div key={notification.id} className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                                    <div className="flex gap-4">
+                                        {/* Avatar */}
+                                        <img
+                                            src={notification.avatar}
+                                            alt={notification.supplier}
+                                            className="w-12 h-12 rounded-full object-cover shrink-0"
+                                        />
 
-                                    {/* Content */}
-                                    <div className="flex-1">
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div>
-                                                <h3 className="font-semibold text-slate-900">{notification.supplier}</h3>
-                                                <p className="text-xs text-slate-500">{notification.time}</p>
+                                        {/* Content */}
+                                        <div className="flex-1">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div>
+                                                    <h3 className="font-semibold text-slate-900">{notification.supplier}</h3>
+                                                    <p className="text-xs text-slate-500">{notification.time}</p>
+                                                </div>
+                                                <div className={`flex items-center gap-1.5 text-sm font-medium capitalize ${getStatusColor(notification.status)}`}>
+                                                    {getStatusIcon(notification.status)}
+                                                    <span>{notification.status}</span>
+                                                </div>
                                             </div>
-                                            <div className={`flex items-center gap-1.5 text-sm font-medium capitalize ${getStatusColor(notification.status)}`}>
-                                                {getStatusIcon(notification.status)}
-                                                <span>{notification.status}</span>
+
+                                            <p className="text-sm text-slate-700 mb-3">{notification.message}</p>
+
+                                            {/* Action Buttons */}
+                                            <div className="flex flex-wrap gap-2">
+                                                {notification.actions.map((action, index) => (
+                                                    <button
+                                                        key={index}
+                                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${action === 'View Itinerary'
+                                                            ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                                            : action === 'Proceed to Payment'
+                                                                ? 'bg-green-500 text-white hover:bg-green-600'
+                                                                : 'bg-slate-200 text-slate-600 cursor-not-allowed'
+                                                            }`}
+                                                        disabled={action === 'Awaiting Response'}
+                                                    >
+                                                        {action}
+                                                    </button>
+                                                ))}
                                             </div>
-                                        </div>
-
-                                        <p className="text-sm text-slate-700 mb-3">{notification.message}</p>
-
-                                        {/* Action Buttons */}
-                                        <div className="flex flex-wrap gap-2">
-                                            {notification.actions.map((action, index) => (
-                                                <button
-                                                    key={index}
-                                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${action === 'View Itinerary'
-                                                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                                                        : action === 'Proceed to Payment'
-                                                            ? 'bg-green-500 text-white hover:bg-green-600'
-                                                            : 'bg-slate-200 text-slate-600 cursor-not-allowed'
-                                                        }`}
-                                                    disabled={action === 'Awaiting Response'}
-                                                >
-                                                    {action}
-                                                </button>
-                                            ))}
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
                     </div>
 
                     {/* System Notifications */}

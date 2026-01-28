@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import api from '../../api'
 import './CategoryPage.css'
 import Footer from '../../components/layout/Footer'
+import ProfilePic from '../../components/ui/ProfilePic'
 
 export default function CategoryPage({
     categoryName = "Camping Adventures",
@@ -11,7 +12,8 @@ export default function CategoryPage({
     onActivityClick,
     onBack,
     onHomeClick,
-    onSettingsClick
+    onSettingsClick,
+    hideHeaderFooter = false
 }) {
     const [dropdown, setDropdown] = useState(false)
     const [experiences, setExperiences] = useState([])
@@ -97,78 +99,76 @@ export default function CategoryPage({
     return (
         <div className="category-page">
             {/* Navigation */}
-            <nav className="category-navbar">
-                <div className="category-navbar-inner">
-                    <div className="category-logo">
-                        <button
-                            onClick={() => {
-                                if (onHomeClick) {
-                                    onHomeClick()
-                                }
-                            }}
-                            className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-                            style={{ background: 'none', border: 'none', padding: 0 }}
-                        >
-                            <img src="/assets/navbar.png" alt="Kufi Travel" className="category-logo-image" />
-                        </button>
-                    </div>
+            {!hideHeaderFooter && (
+                <nav className="category-navbar">
+                    <div className="category-navbar-inner">
+                        <div className="category-logo">
+                            <button
+                                onClick={() => {
+                                    if (onHomeClick) {
+                                        onHomeClick()
+                                    }
+                                }}
+                                className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                                style={{ background: 'none', border: 'none', padding: 0 }}
+                            >
+                                <img src="/assets/navbar.png" alt="Kufi Travel" className="category-logo-image" />
+                            </button>
+                        </div>
 
 
-                    <div className="category-navbar-right">
-                        <button className="category-icon-btn" onClick={onNotificationClick}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                            </svg>
-                        </button>
-
-
-                        <div className="category-profile-dropdown" ref={dropdownRef}>
-                            <button onClick={() => setDropdown(!dropdown)} className="category-profile-btn">
-                                <img
-                                    src="/assets/profile-avatar.jpeg"
-                                    alt="Profile"
-                                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
-                                />
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                    <path d="M6 9l6 6 6-6" />
+                        <div className="category-navbar-right">
+                            <button className="category-icon-btn" onClick={onNotificationClick}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                                 </svg>
                             </button>
 
-                            {dropdown && (
-                                <div className="category-dropdown-menu">
-                                    <div className="category-dropdown-item" onClick={() => { onProfileClick && onProfileClick(); setDropdown(false); }}>
-                                        MY REQUESTS
+
+                            <div className="category-profile-dropdown" ref={dropdownRef}>
+                                <button onClick={() => setDropdown(!dropdown)} className="category-profile-btn">
+                                    <ProfilePic user={JSON.parse(localStorage.getItem('currentUser') || '{}')} size="sm" />
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </button>
+
+                                {dropdown && (
+                                    <div className="category-dropdown-menu">
+                                        <div className="category-dropdown-item" onClick={() => { onProfileClick && onProfileClick(); setDropdown(false); }}>
+                                            MY REQUESTS
+                                        </div>
+                                        <div className="category-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
+                                            NOTIFICATIONS
+                                        </div>
+                                        <div className="category-dropdown-item" onClick={() => {
+                                            if (onSettingsClick) {
+                                                onSettingsClick()
+                                            }
+                                            setDropdown(false);
+                                        }}>
+                                            PAYMENTS
+                                        </div>
+                                        <div className="category-dropdown-item" onClick={() => {
+                                            if (onSettingsClick) {
+                                                onSettingsClick()
+                                            }
+                                            setDropdown(false);
+                                        }}>
+                                            SETTINGS
+                                        </div>
+                                        <div className="category-dropdown-divider"></div>
+                                        <div className="category-dropdown-item logout" onClick={() => { onLogout && onLogout(); setDropdown(false); }}>
+                                            LOGOUT
+                                        </div>
                                     </div>
-                                    <div className="category-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
-                                        NOTIFICATIONS
-                                    </div>
-                                    <div className="category-dropdown-item" onClick={() => {
-                                        if (onSettingsClick) {
-                                            onSettingsClick()
-                                        }
-                                        setDropdown(false);
-                                    }}>
-                                        PAYMENTS
-                                    </div>
-                                    <div className="category-dropdown-item" onClick={() => {
-                                        if (onSettingsClick) {
-                                            onSettingsClick()
-                                        }
-                                        setDropdown(false);
-                                    }}>
-                                        SETTINGS
-                                    </div>
-                                    <div className="category-dropdown-divider"></div>
-                                    <div className="category-dropdown-item logout" onClick={() => { onLogout && onLogout(); setDropdown(false); }}>
-                                        LOGOUT
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </nav>
+                </nav>
+            )}
 
             {/* Hero Banner */}
             <section className="category-hero">
@@ -270,7 +270,7 @@ export default function CategoryPage({
                     </aside>
                 </div>
             </main>
-            <Footer />
+            {!hideHeaderFooter && <Footer />}
         </div>
     )
 }
