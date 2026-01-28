@@ -1,7 +1,7 @@
 import api from "../../api";
 import React, { useState, useEffect } from 'react'
 
-export default function BlogSection() {
+export default function BlogSection({ onBlogClick }) {
     const [blogData, setBlogData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [startIndex, setStartIndex] = useState(0)
@@ -86,10 +86,14 @@ export default function BlogSection() {
                         <article
                             key={`${item.id}-${index}-${startIndex}`}
                             className="relative rounded-2xl overflow-hidden h-80 sm:h-[420px] group cursor-pointer shadow-lg animate-fadeIn"
+                            onClick={() => {
+                                const id = item?._id || item?.id
+                                if (id && onBlogClick) onBlogClick(id)
+                            }}
                         >
                             <div
                                 className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                                style={{ backgroundImage: `url(${item.image})` }}
+                                style={{ backgroundImage: `url(${item.image || item.imageUrl || '/assets/blog1.jpeg'})` }}
                             />
                             {/* Dark gradient overlay */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />

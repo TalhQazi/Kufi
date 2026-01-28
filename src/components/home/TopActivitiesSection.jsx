@@ -2,7 +2,7 @@ import api from "../../api";
 import { useState, useEffect } from 'react'
 import { FiMapPin, FiStar } from 'react-icons/fi'
 
-export default function TopActivitiesSection() {
+export default function TopActivitiesSection({ onActivityClick }) {
     const [activeIndex, setActiveIndex] = useState(0)
     const [leftCards, setLeftCards] = useState([]);
     const [carouselItems, setCarouselItems] = useState([]);
@@ -75,7 +75,13 @@ export default function TopActivitiesSection() {
                 <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-6">
                     <div className="flex flex-col gap-4">
                         {leftCards.map((card) => (
-                            <article key={card.id} className="relative h-56 sm:h-[210px] rounded-2xl overflow-hidden shadow-lg cursor-pointer">
+                            <article
+                                key={card.id}
+                                className="relative h-56 sm:h-[210px] rounded-2xl overflow-hidden shadow-lg cursor-pointer"
+                                onClick={() => {
+                                    if (onActivityClick) onActivityClick(card.id)
+                                }}
+                            >
                                 <div
                                     className="absolute inset-0 w-full h-full bg-cover bg-center transition-transform hover:scale-105 duration-700"
                                     style={{ backgroundImage: `url(${card.image})` }}
@@ -89,7 +95,12 @@ export default function TopActivitiesSection() {
                         ))}
                     </div>
 
-                    <article className="relative h-[360px] md:h-[430px] rounded-2xl overflow-hidden shadow-lg group cursor-pointer">
+                    <article
+                        className="relative h-[360px] md:h-[430px] rounded-2xl overflow-hidden shadow-lg group cursor-pointer"
+                        onClick={() => {
+                            if (onActivityClick && activeItem?.id) onActivityClick(activeItem.id)
+                        }}
+                    >
                         {carouselItems.map((item, index) => (
                             <div
                                 key={item.id}
@@ -121,7 +132,10 @@ export default function TopActivitiesSection() {
                                                 {carouselItems.map((_, idx) => (
                                                     <button
                                                         key={idx}
-                                                        onClick={() => setActiveIndex(idx)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            setActiveIndex(idx)
+                                                        }}
                                                         className={`h-1 rounded-full transition-all duration-300 ${idx === activeIndex ? 'w-8 bg-white' : 'w-4 bg-white/50 hover:bg-white/70'}`}
                                                         aria-label={`Go to slide ${idx + 1}`}
                                                     />
@@ -129,14 +143,20 @@ export default function TopActivitiesSection() {
                                             </div>
                                             <div className="flex gap-2 z-20">
                                                 <button
-                                                    onClick={handlePrev}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        handlePrev()
+                                                    }}
                                                     className="w-9 h-9 rounded-full bg-white text-slate-900 text-base flex items-center justify-center shadow-md hover:bg-slate-100 transition-colors cursor-pointer"
                                                     aria-label="Previous slide"
                                                 >
                                                     ←
                                                 </button>
                                                 <button
-                                                    onClick={handleNext}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        handleNext()
+                                                    }}
                                                     className="w-9 h-9 rounded-full bg-white text-slate-900 text-base flex items-center justify-center shadow-md hover:bg-slate-100 transition-colors cursor-pointer"
                                                     aria-label="Next slide"
                                                 >

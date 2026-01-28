@@ -14,6 +14,7 @@ import BookingConfirmation from './pages/userpannel/BookingConfirmation.jsx'
 import Payment from './pages/userpannel/Payment.jsx'
 import ItineraryView from './pages/userpannel/ItineraryView.jsx'
 import TravelerProfile from './pages/userpannel/TravelerProfile.jsx'
+import BlogDetail from './pages/userpannel/BlogDetail.jsx'
 import AdminApp from './AdminApp.jsx'
 import Header from './components/layout/Header.jsx'
 import Footer from './components/layout/Footer.jsx'
@@ -38,6 +39,7 @@ export default function App() {
   const [selectedCategoryName, setSelectedCategoryName] = useState('Camping Adventures')
   const [selectedItineraryId, setSelectedItineraryId] = useState(null)
   const [selectedCityName, setSelectedCityName] = useState(null)
+  const [selectedBlogId, setSelectedBlogId] = useState(null)
 
   // Helper functions for dynamic navigation
   const handleActivityClick = (id) => {
@@ -105,6 +107,12 @@ export default function App() {
   const handleItineraryClick = (id) => {
     setSelectedItineraryId(id)
     navigateTo('itinerary-view')
+  }
+
+  const handleBlogClick = (id) => {
+    if (!id) return
+    setSelectedBlogId(id)
+    navigateTo('blog-detail')
   }
 
   // Navigation history state (for custom buttons)
@@ -245,6 +253,15 @@ export default function App() {
       />
     )
 
+    if (page === 'blog-detail') return (
+      <BlogDetail
+        blogId={selectedBlogId}
+        onBack={goBack}
+        onHomeClick={() => navigateTo('home')}
+        hideHeaderFooter={true}
+      />
+    )
+
     if (page === 'country-details') return (
       <CountryDetails
         countryName={selectedCountryName}
@@ -381,6 +398,8 @@ export default function App() {
         onSigninClick={handleOpenLogin}
         onCategoryClick={handleCategoryClick}
         onCountryClick={handleCountryClick}
+        onActivityClick={handleActivityClick}
+        onBlogClick={handleBlogClick}
         currentUser={currentUser}
         onLogout={handleLogout}
         onProfileClick={() => navigateTo('user-profile')}
