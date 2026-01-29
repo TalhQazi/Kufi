@@ -50,6 +50,48 @@ export default function FeedbackSection() {
     // Triple the items for infinite loop logic
     const loopedItems = [...feedbackItems, ...feedbackItems, ...feedbackItems];
 
+    const fallbackReviews = [
+        {
+            id: 'fallback-1',
+            text: 'Amazing experience! Everything was perfectly organized and the itinerary was exactly what we wanted.',
+            name: 'Ayesha Khan',
+            nameLabel: 'TRAVELER',
+            avatar: '/assets/girl1.jif',
+        },
+        {
+            id: 'fallback-2',
+            text: 'Support team was super responsive. Booking was smooth and the recommendations were spot on.',
+            name: 'Hassan Ali',
+            nameLabel: 'CLIENT',
+            avatar: '/assets/boy1.jif',
+        },
+        {
+            id: 'fallback-3',
+            text: 'Loved the destinations and activities. Great value for money and a very premium feel overall.',
+            name: 'Sara Ahmed',
+            nameLabel: 'TRAVELER',
+            avatar: '/assets/girl2.jif',
+        },
+        {
+            id: 'fallback-4',
+            text: 'We had a wonderful family trip. Everything was planned nicely and we felt taken care of throughout.',
+            name: 'Usman Riaz',
+            nameLabel: 'CLIENT',
+            avatar: '/assets/boy2.jif',
+        },
+    ];
+
+    const rightSideReviews = (Array.isArray(feedbackItems) && feedbackItems.length > 0 ? feedbackItems : fallbackReviews)
+        .slice(0, 4)
+        .map((item) => ({
+            id: item?._id || item?.id,
+            text: item?.text || item?.message || item?.feedback || item?.comment || '',
+            name: item?.name || item?.author || item?.userName || 'Client',
+            nameLabel: item?.nameLabel || item?.role || 'CLIENT',
+            avatar: item?.avatar || item?.image || item?.profileImage || '/assets/profile-avatar.jpeg',
+            rating: Number(item?.rating) || 5,
+        }));
+
     // Handle Infinite Scroll Loop Positioning
     useEffect(() => {
         if (scrollRef.current) {
@@ -116,7 +158,7 @@ export default function FeedbackSection() {
                 </div>
 
                 {/* Feedback Content with Constant Picture */}
-                <div className="flex flex-col lg:flex-row items-end lg:items-end gap-0">
+                <div className="flex flex-col lg:flex-row items-start gap-10">
 
                     {/* Constant Image - Stays static on the left */}
                     <div className="flex-shrink-0 relative z-0">
@@ -129,41 +171,48 @@ export default function FeedbackSection() {
                         </div>
                     </div>
 
-                    {/* Scrollable Comments - Overlaps the static image */}
-                    <div
-                        ref={scrollRef}
-                        onMouseDown={handleMouseDown}
-                        onMouseMove={handleMouseMove}
-                        onMouseUp={handleMouseUp}
-                        onMouseLeave={handleMouseLeave}
-                        onScroll={handleScroll}
-                        className="flex flex-row items-end gap-12 overflow-x-auto pb-12 pt-8 hide-scrollbar cursor-grab active:cursor-grabbing select-none w-full mt-[-80px] lg:mt-0 lg:ml-[-420px] relative z-20 px-4 sm:px-10 lg:pl-[400px] snap-x snap-mandatory scroll-smooth"
-                    >
-                        {loopedItems.map((item, index) => (
-                            <div key={`${item.id}-${index}`} className="flex-shrink-0 snap-center">
-                                <div className="w-[300px] sm:w-[320px] lg:w-[350px] h-full bg-white rounded-[32px] p-6 shadow-xl border border-white flex flex-col justify-between transition-transform duration-300 hover:scale-[1.02]">
-                                    <div>
-                                        <div className="flex gap-1 mb-4 text-[#FFB21E]">
-                                            {[...Array(5)].map((_, i) => <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>)}
+                    {/* Right Side Reviews */}
+                    <div className="w-full lg:flex-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
+                            {rightSideReviews.map((item) => (
+                                <div key={item.id} className="bg-white rounded-[28px] p-6 shadow-xl border border-white">
+                                    <div className="flex items-center justify-between gap-4 mb-4">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <img
+                                                src={item.avatar}
+                                                alt={item.name}
+                                                className="w-10 h-10 rounded-[14px] object-cover"
+                                                onError={(e) => { e.target.src = '/assets/profile-avatar.jpeg' }}
+                                            />
+                                            <div className="min-w-0">
+                                                <h4 className="m-0 text-sm font-bold text-slate-900 truncate">{item.name}</h4>
+                                                <p className="m-0 text-[10px] text-[#A8B9A6] font-bold uppercase tracking-widest leading-none mt-1 truncate">{item.nameLabel}</p>
+                                            </div>
                                         </div>
-                                        <p className="text-slate-500 text-xs sm:text-sm italic font-medium leading-relaxed mb-6">
-                                            {item.text}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <img
-                                            src={item.avatar}
-                                            alt={item.name}
-                                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-[16px] object-cover"
-                                        />
-                                        <div>
-                                            <h4 className="m-0 text-xs font-bold text-slate-800">{item.name}</h4>
-                                            <p className="m-0 text-[9px] text-[#A8B9A6] font-bold uppercase tracking-widest leading-none mt-1">{item.nameLabel}</p>
+                                        <div className="flex gap-1 text-[#FFB21E] shrink-0">
+                                            {[...Array(5)].map((_, i) => (
+                                                <svg
+                                                    key={i}
+                                                    className={`w-4 h-4 ${i < item.rating ? 'fill-current' : 'fill-slate-200'}`}
+                                                    viewBox="0 0 20 20"
+                                                >
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                </svg>
+                                            ))}
                                         </div>
                                     </div>
+                                    <p className="m-0 text-slate-600 text-sm leading-relaxed">
+                                        {item.text}
+                                    </p>
                                 </div>
+                            ))}
+                        </div>
+
+                        {isLoading && (
+                            <div className="mt-6 text-sm text-slate-400">
+                                Loading reviews...
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
             </div>

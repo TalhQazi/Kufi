@@ -19,7 +19,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-[14px] text-white/90 mb-6 leading-relaxed max-w-[280px]">
-              Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever.
+              stepping outside comfort zones, embracing the unfamiliar, and creating lasting memories
             </p>
             <div>
               <p className="text-[14px] font-medium mb-3">Connect with us</p>
@@ -67,7 +67,7 @@ export default function Footer() {
             <ul className="space-y-4 text-[14px] text-white/90">
               <li className="flex items-start gap-2.5">
                 <MapPin size={18} className="mt-0.5 shrink-0 opacity-80" />
-                <span>Lorem ipsum dolor sit amet consectetur.</span>
+                <span>Kufi@support.com</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone size={18} className="shrink-0 opacity-80" />

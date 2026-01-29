@@ -33,7 +33,7 @@ export default function DestinationsSection({ onCountryClick }) {
     }
 
     return (
-        <section id="explore-destinations" className="bg-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
+        <section id="destinations" className="bg-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
             <div className="max-w-[1240px] mx-auto">
                 <div className="mb-10">
                     <h2 className="text-xl sm:text-3xl font-bold text-slate-900">Explore Destinations</h2>

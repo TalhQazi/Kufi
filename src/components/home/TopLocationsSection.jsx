@@ -83,14 +83,14 @@ export default function TopLocationsSection({ onCountryClick }) {
     }, [])
 
     return (
-        <section className="bg-gradient-to-b from-white to-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
+        <section id="top-locations" className="bg-gradient-to-b from-white to-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
             <div className="max-w-[1240px] mx-auto">
                 <div className="text-center mb-10">
                     <p className="text-lg font-normal text-[#a67c52] m-0 mb-1 font-sacramento">Top Locations</p>
                     <h2 className="text-xl sm:text-3xl font-bold text-slate-900 m-0 mb-4">Top Locations We Are Currently Serving</h2>
                     <p className="text-sm text-slate-500 max-w-[560px] m-0 mx-auto">
-                        Lorem ipsum dolor sit amet consectetur. Porttitor montes mi tristique elit bibendum
-                        elit libero egestas pellentesque.
+                        Travel makes one modest. You see what a tiny place you occupy in the world.
+                        One's destination is never a place, but a new way of seeing things.
                     </p>
                 </div>
 
@@ -107,7 +107,7 @@ export default function TopLocationsSection({ onCountryClick }) {
                             <div key={item._id || index} className="min-w-[280px] sm:min-w-[320px] flex-shrink-0 snap-start">
                                 <Card
                                     variant="destination"
-                                    image={item.imageUrl || '/assets/dest-1.jpeg'}
+                                    image={item.image || item.imageUrl || item.Picture || '/assets/dest-1.jpeg'}
                                     title={item.name}
                                     location={item.description?.substring(0, 30)}
                                     rating="4.4"

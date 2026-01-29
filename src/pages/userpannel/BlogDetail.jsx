@@ -5,9 +5,52 @@ export default function BlogDetail({ blogId, onBack, onHomeClick, hideHeaderFoot
   const [blog, setBlog] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  const fallbackBlogs = [
+    {
+      id: '1',
+      title: 'Travel Experience',
+      subtitle: 'ADVENTURE',
+      image: '/assets/blog1.jpeg',
+      content:
+        'Discover how to plan an unforgettable adventure with the right balance of exploration, comfort, and local experiences. From choosing the best season to visit to building a flexible itinerary, these tips will help you travel smarter and enjoy every moment.'
+    },
+    {
+      id: '2',
+      title: 'Mountain Path',
+      subtitle: 'NATURE',
+      image: '/assets/blog2.jpeg',
+      content:
+        'Mountain journeys are about patience and preparation. Learn what to pack, how to pace your route, and how to capture the best views while staying safe. This guide covers essentials for beginner and intermediate travelers.'
+    },
+    {
+      id: '3',
+      title: 'Ocean View',
+      subtitle: 'BEACH',
+      image: '/assets/blog3.jpeg',
+      content:
+        'If you love calm waters and coastal vibes, here are the best ways to plan a beach escape: where to stay, what to do beyond the shoreline, and how to find authentic food spots. Perfect for families and couples alike.'
+    },
+    {
+      id: '4',
+      title: 'City Streets',
+      subtitle: 'CULTURE',
+      image: '/assets/blog4.jpeg',
+      content:
+        'City travel is all about discovering hidden neighborhoods, local markets, and culture-rich streets. Get practical tips on transport, budgeting, and must-visit experiences that make a city trip feel premium and memorable.'
+    }
+  ]
+
   useEffect(() => {
     const fetchBlog = async () => {
-      if (!blogId) {
+      const effectiveId = blogId || (() => {
+        try {
+          return sessionStorage.getItem('selectedBlogId')
+        } catch (e) {
+          return null
+        }
+      })()
+
+      if (!effectiveId) {
         setBlog(null)
         setIsLoading(false)
         return
@@ -15,11 +58,40 @@ export default function BlogDetail({ blogId, onBack, onHomeClick, hideHeaderFoot
 
       try {
         setIsLoading(true)
-        const res = await api.get(`/blogs/${blogId}`)
-        setBlog(res.data || null)
+        let data = null
+        try {
+          const res = await api.get(`/blogs/${effectiveId}`)
+          data = res?.data || null
+        } catch (e) {
+          // fallback below
+        }
+
+        if (!data) {
+          try {
+            const listRes = await api.get('/blogs')
+            const list = Array.isArray(listRes?.data) ? listRes.data : []
+            const match = list.find(b => String(b?._id || b?.id) === String(effectiveId))
+            data = match || null
+          } catch (e) {
+            // ignore and use local fallback
+          }
+        }
+
+        if (!data) {
+          const fallbackMatch = fallbackBlogs.find(b => String(b.id) === String(effectiveId))
+          data = fallbackMatch || fallbackBlogs[0] || null
+        }
+
+        setBlog(data)
+        try {
+          sessionStorage.setItem('selectedBlogId', String(effectiveId))
+        } catch (e) {
+          // ignore
+        }
       } catch (error) {
         console.error('Error fetching blog:', error)
-        setBlog(null)
+        const fallbackMatch = fallbackBlogs.find(b => String(b.id) === String(blogId))
+        setBlog(fallbackMatch || fallbackBlogs[0] || null)
       } finally {
         setIsLoading(false)
       }
@@ -29,9 +101,9 @@ export default function BlogDetail({ blogId, onBack, onHomeClick, hideHeaderFoot
   }, [blogId])
 
   const title = blog?.title || 'Blog'
-  const image = blog?.image || blog?.imageUrl || '/assets/blog1.jpeg'
+  const image = blog?.image || blog?.imageUrl || blog?.coverImage || blog?.Picture || blog?.images?.[0] || '/assets/blog1.jpeg'
   const subtitle = blog?.subtitle || blog?.category || ''
-  const content = blog?.content || blog?.description || blog?.body || ''
+  const content = blog?.content || blog?.description || blog?.body || blog?.details || ''
 
   return (
     <div className="min-h-screen bg-white">

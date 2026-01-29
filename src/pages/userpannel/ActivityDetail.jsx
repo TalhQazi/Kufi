@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../../api'
 import Footer from '../../components/layout/Footer'
+import ProfilePic from '../../components/ui/ProfilePic'
 
 export default function ActivityDetail({
     activityId,
@@ -10,6 +11,7 @@ export default function ActivityDetail({
     canGoForward,
     onLogout,
     onNotificationClick,
+    onActivityClick,
     onAddToList,
     onHomeClick,
     onProfileClick,
@@ -38,26 +40,58 @@ export default function ActivityDetail({
 
             try {
                 setIsLoading(true)
-                const [activityRes, similarRes] = await Promise.allSettled([
-                    api.get(`/activities/${activityId}`),
-                    api.get(`/activities/similar?category=${activity?.category}`)
-                ])
+                const activityRes = await api.get(`/activities/${activityId}`)
+                const loadedActivity = activityRes?.data
+                setActivity(loadedActivity)
 
-                if (activityRes.status === 'fulfilled') {
-                    setActivity(activityRes.value.data)
+                const normalizeActivities = (items) => {
+                    const list = Array.isArray(items) ? items : []
+                    return list
+                        .filter(a => (a?._id || a?.id) && (a?._id || a?.id) !== activityId)
+                        .slice(0, 4)
+                        .map((a) => {
+                            const id = a?._id || a?.id
+                            const image = a?.imageUrl || a?.images?.[0] || a?.image || a?.Picture || '/assets/dest-1.jpeg'
+                            const title = a?.title || 'Activity'
+                            const badge = a?.category || loadedActivity?.category || ''
+                            const location = a?.location || a?.city?.name || a?.country?.name || 'Location'
+                            return { id, image, title, badge, location }
+                        })
                 }
 
-                if (similarRes.status === 'fulfilled') {
-                    setSimilarActivities(similarRes.value.data)
+                const loadFallbackSimilarFromAll = async () => {
+                    const allRes = await api.get('/activities')
+                    const normalized = normalizeActivities(allRes?.data)
+                    setSimilarActivities(normalized)
+                }
+
+                const loadedCategory = loadedActivity?.category
+                if (loadedCategory) {
+                    try {
+                        const similarRes = await api.get(`/activities/similar?category=${encodeURIComponent(loadedCategory)}`)
+                        const rawSimilar = Array.isArray(similarRes?.data) ? similarRes.data : []
+                        const normalized = normalizeActivities(rawSimilar)
+                        if (normalized.length > 0) {
+                            setSimilarActivities(normalized)
+                        } else {
+                            await loadFallbackSimilarFromAll()
+                        }
+                    } catch (error) {
+                        console.error('Error loading similar activities:', error)
+                        try {
+                            await loadFallbackSimilarFromAll()
+                        } catch (fallbackError) {
+                            console.error('Error loading fallback activities:', fallbackError)
+                            setSimilarActivities([])
+                        }
+                    }
                 } else {
-                    // Fallback similar activities
-                    setSimilarActivities(Array.from({ length: 4 }, (_, i) => ({
-                        id: i + 1,
-                        title: 'Recommended Adventure',
-                        image: `/assets/activity${(i % 2) + 1}.jpeg`,
-                        badge: 'Adventure',
-                        location: 'Various Locations',
-                    })))
+                    try {
+                        await loadFallbackSimilarFromAll()
+                    } catch (fallbackError) {
+                        console.error('Error loading fallback activities:', fallbackError)
+                        setSimilarActivities([])
+                    }
                 }
             } catch (error) {
                 console.error("Error loading activity details:", error)
@@ -72,6 +106,23 @@ export default function ActivityDetail({
     const toggleAddOn = (key) => {
         setAddOns(prev => ({ ...prev, [key]: !prev[key] }))
     }
+
+    const activityImage = activity?.imageUrl || activity?.images?.[0] || activity?.image || "/assets/dest-1.jpeg"
+    const activityTitle = activity?.title || "Activity"
+    const activityCategoryBadges = Array.isArray(activity?.categories)
+        ? activity.categories
+        : (activity?.category ? [activity.category] : [])
+    const activityLocation =
+        activity?.location ||
+        [activity?.city?.name, activity?.country?.name].filter(Boolean).join(', ') ||
+        activity?.city ||
+        activity?.country ||
+        ""
+    const activityRating = typeof activity?.rating === 'number' ? activity.rating : null
+    const activityReviewsCount =
+        typeof activity?.reviewsCount === 'number'
+            ? activity.reviewsCount
+            : (Array.isArray(activity?.reviews) ? activity.reviews.length : null)
 
     return (
         <div className="bg-white min-h-screen">
@@ -173,22 +224,29 @@ export default function ActivityDetail({
                         {/* Hero Image */}
                         <div className="relative rounded-2xl overflow-hidden mb-6">
                             <img
-                                src={activity?.imageUrl || activity?.images?.[0] || "/assets/dest-1.jpeg"}
-                                alt={activity?.title || "Activity"}
+                                src={activityImage}
+                                alt={activityTitle}
                                 className="w-full h-[300px] sm:h-[400px] object-cover"
                             />
                         </div>
 
                         {/* Category Badges */}
-                        <div className="flex flex-wrap gap-2 mb-4">
-                            <span className="px-3 py-1 rounded-full bg-beige text-primary-brown text-xs font-medium">Adventure</span>
-                            <span className="px-3 py-1 rounded-full bg-beige text-primary-brown text-xs font-medium">Cultural</span>
-                            <span className="px-3 py-1 rounded-full bg-beige text-primary-brown text-xs font-medium">Evening Tour</span>
-                        </div>
+                        {activityCategoryBadges.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {activityCategoryBadges.slice(0, 3).map((badge) => (
+                                    <span
+                                        key={badge}
+                                        className="px-3 py-1 rounded-full bg-beige text-primary-brown text-xs font-medium"
+                                    >
+                                        {badge}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
 
                         {/* Title */}
                         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">
-                            {activity?.title || "Dubai Dessert Safari with BBQ Dinner & Camel Ride"}
+                            {activityTitle}
                         </h1>
 
                         {/* Meta Info */}
@@ -198,19 +256,19 @@ export default function ActivityDetail({
                                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                                     <circle cx="12" cy="10" r="3" />
                                 </svg>
-                                <span className="whitespace-nowrap">Dubai, UAE</span>
+                                <span className="whitespace-nowrap">{activityLocation || 'Location'}</span>
                             </div>
                             <div className="flex items-center gap-1">
                                 <span className="text-gold">★</span>
-                                <span className="font-semibold text-slate-900">4.8</span>
-                                <span className="hidden sm:inline">(230 reviews)</span>
+                                <span className="font-semibold text-slate-900">{activityRating ?? '—'}</span>
+                                <span className="hidden sm:inline">({activityReviewsCount ?? '—'} reviews)</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <svg width="14" height="14" className="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <circle cx="12" cy="12" r="10" />
                                     <path d="M12 6v6l4 2" />
                                 </svg>
-                                <span>{activity?.duration || "6 Hours"}</span>
+                                <span>{activity?.duration || '—'}</span>
                             </div>
                         </div>
 
@@ -236,7 +294,7 @@ export default function ActivityDetail({
                                         : 'text-slate-600 hover:text-slate-900'
                                         }`}
                                 >
-                                    Reviews (1)
+                                    Reviews ({activityReviewsCount ?? 0})
                                     {activeTab === 'reviews' && (
                                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600"></div>
                                     )}
@@ -263,26 +321,26 @@ export default function ActivityDetail({
                                 <div className="mb-8">
                                     <h2 className="text-xl font-bold text-slate-900 mb-3">About this experience</h2>
                                     <p className="text-sm text-slate-600 leading-relaxed">
-                                        {activity?.description || `Lorem ipsum dolor sit amet consectetur. Arcu lorem diam massa malesuada vulputate nibh eu faucibus. Vel fermentum nibendum accumsan rhoncus
-                                        integer felis id. Eget accumsan sit vitae tellus ut vitae tempus malesuada at. Sed dictumst diam ac luctus tristique adipiscing. At mauris condimentum erat
-                                        non mauris nec. Auctor tellus suspendisse pellentesque malesuada risus. Non orci odio quis ornare urna elit. Lex ullamcorper nunc at sit.`}
+                                        {activity?.description || '—'}
                                     </p>
                                 </div>
 
                                 {/* Highlights */}
-                                <div className="mb-8">
-                                    <h2 className="text-xl font-bold text-slate-900 mb-3">Highlights</h2>
-                                    <ul className="space-y-2">
-                                        {[1, 2, 3, 4].map((item) => (
-                                            <li key={item} className="flex items-start gap-2 text-sm text-slate-600">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="shrink-0 mt-0.5">
-                                                    <path d="M20 6L9 17l-5-5" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                </svg>
-                                                <span>Lorem ipsum dolor sit amet consectetur.</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
+                                {Array.isArray(activity?.highlights) && activity.highlights.length > 0 && (
+                                    <div className="mb-8">
+                                        <h2 className="text-xl font-bold text-slate-900 mb-3">Highlights</h2>
+                                        <ul className="space-y-2">
+                                            {activity.highlights.map((text, idx) => (
+                                                <li key={idx} className="flex items-start gap-2 text-sm text-slate-600">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="shrink-0 mt-0.5">
+                                                        <path d="M20 6L9 17l-5-5" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                    </svg>
+                                                    <span>{text}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -303,7 +361,13 @@ export default function ActivityDetail({
                             <h2 className="text-2xl font-bold text-slate-900 mb-6">Similar Experience</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 {similarActivities.map((activity) => (
-                                    <article key={activity.id} className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                                    <article
+                                        key={activity.id}
+                                        className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                                        onClick={() => {
+                                            if (onActivityClick && activity?.id) onActivityClick(activity.id)
+                                        }}
+                                    >
                                         <div className="relative">
                                             <img
                                                 src={activity.image}
@@ -323,7 +387,22 @@ export default function ActivityDetail({
                                                 </svg>
                                                 <span className="text-xs">{activity.location}</span>
                                             </div>
-                                            <button className="w-full py-2 rounded-lg text-xs font-bold bg-beige text-primary-brown hover:bg-primary hover:text-white transition-colors">
+                                            <button
+                                                className="w-full py-2 rounded-lg text-xs font-bold bg-beige text-primary-brown hover:bg-primary hover:text-white transition-colors"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    if (onAddToList) {
+                                                        onAddToList({
+                                                            id: activity?.id,
+                                                            title: activity?.title,
+                                                            location: activity?.location,
+                                                            image: activity?.image,
+                                                            travelers: travelers,
+                                                            addOns: addOns
+                                                        })
+                                                    }
+                                                }}
+                                            >
                                                 ADD TO LIST
                                             </button>
                                         </div>
@@ -412,10 +491,10 @@ export default function ActivityDetail({
                                 onClick={() => {
                                     if (onAddToList) {
                                         onAddToList({
-                                            id: 1, // Activity ID
-                                            title: 'Dubai Desert Safari with BBQ Dinner & Camel Ride',
-                                            location: 'Dubai, United Arab Emirates',
-                                            image: '/assets/dest-1.jpeg',
+                                            id: activity?._id || activityId,
+                                            title: activityTitle,
+                                            location: activityLocation || 'Location',
+                                            image: activityImage,
                                             travelers: travelers,
                                             addOns: addOns
                                         })

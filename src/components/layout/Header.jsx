@@ -7,7 +7,15 @@ import ProfilePic from '../ui/ProfilePic'
 export default function Header({ onSignupClick, onSigninClick, onHomeClick, currentUser, onLogout, onProfileClick }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
+    const [activeSection, setActiveSection] = useState('home')
     const dropdownRef = useRef(null)
+
+    const navItems = [
+        { id: 'home', label: 'Home' },
+        { id: 'destinations', label: 'Destinations' },
+        { id: 'top-locations', label: 'Top Locations' },
+        { id: 'blog', label: 'Blog' },
+    ]
 
     // Close profile dropdown when clicking outside
     useEffect(() => {
@@ -33,6 +41,49 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
         }
     }, [mobileMenuOpen])
 
+    useEffect(() => {
+        const hash = window.location.hash.replace('#', '')
+        if (navItems.some((n) => n.id === hash)) {
+            setActiveSection(hash)
+        }
+
+        const elements = navItems
+            .map((n) => document.getElementById(n.id))
+            .filter(Boolean)
+
+        if (elements.length === 0) return
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const visible = entries
+                    .filter((e) => e.isIntersecting)
+                    .sort((a, b) => (b.intersectionRatio || 0) - (a.intersectionRatio || 0))
+
+                if (visible.length > 0) {
+                    const id = visible[0].target.id
+                    if (id) setActiveSection(id)
+                }
+            },
+            { threshold: [0.35, 0.5, 0.65] }
+        )
+
+        elements.forEach((el) => observer.observe(el))
+
+        const handleHashChange = () => {
+            const next = window.location.hash.replace('#', '')
+            if (navItems.some((n) => n.id === next)) {
+                setActiveSection(next)
+            }
+        }
+
+        window.addEventListener('hashchange', handleHashChange)
+
+        return () => {
+            window.removeEventListener('hashchange', handleHashChange)
+            observer.disconnect()
+        }
+    }, [])
+
     return (
         <header className="w-full bg-white mb-0 sticky top-0 z-50 shadow-sm">
             <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4 py-4 px-4 sm:px-6 lg:px-12">
@@ -52,21 +103,19 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                 </div>
 
                 <nav className="hidden md:flex items-center gap-6 lg:gap-10 text-sm font-medium">
-                    <a
-                        href="#home"
-                        className="text-[#A67C52] no-underline relative hover:text-[#8e6a45]"
-                    >
-                        Home
-                    </a>
-                    <a href="#destinations" className="text-slate-700 no-underline relative hover:text-[#A67C52] transition-colors">
-                        Destinations
-                    </a>
-                    <a href="#top-locations" className="text-slate-700 no-underline relative hover:text-[#A67C52] transition-colors">
-                        Top Locations
-                    </a>
-                    <a href="#blog" className="text-slate-700 no-underline relative hover:text-[#A67C52] transition-colors">
-                        Blog
-                    </a>
+                    {navItems.map((item) => (
+                        <a
+                            key={item.id}
+                            href={`#${item.id}`}
+                            onClick={() => setActiveSection(item.id)}
+                            className={`${activeSection === item.id
+                                ? 'text-[#A67C52]'
+                                : 'text-slate-700'
+                                } no-underline relative hover:text-[#A67C52] transition-colors`}
+                        >
+                            {item.label}
+                        </a>
+                    ))}
                 </nav>
 
                 <div className="flex items-center gap-4 sm:gap-8">
@@ -179,34 +228,22 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
             {mobileMenuOpen && (
                 <div className="md:hidden border-t border-slate-200 bg-white">
                     <nav className="flex flex-col px-4 py-4 gap-4">
-                        <a
-                            href="#home"
-                            className="text-[#A67C52] no-underline py-2 hover:text-[#8e6a45]"
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            Home
-                        </a>
-                        <a
-                            href="#destinations"
-                            className="text-slate-700 no-underline py-2 hover:text-[#A67C52] transition-colors"
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            Destinations
-                        </a>
-                        <a
-                            href="#top-locations"
-                            className="text-slate-700 no-underline py-2 hover:text-[#A67C52] transition-colors"
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            Top Locations
-                        </a>
-                        <a
-                            href="#blog"
-                            className="text-slate-700 no-underline py-2 hover:text-[#A67C52] transition-colors"
-                            onClick={() => setMobileMenuOpen(false)}
-                        >
-                            Blog
-                        </a>
+                        {navItems.map((item) => (
+                            <a
+                                key={item.id}
+                                href={`#${item.id}`}
+                                className={`${activeSection === item.id
+                                    ? 'text-[#A67C52]'
+                                    : 'text-slate-700'
+                                    } no-underline py-2 hover:text-[#A67C52] transition-colors`}
+                                onClick={() => {
+                                    setActiveSection(item.id)
+                                    setMobileMenuOpen(false)
+                                }}
+                            >
+                                {item.label}
+                            </a>
+                        ))}
                         <div className="pt-2 border-t border-slate-200">
                             {currentUser ? (
                                 <div className="flex flex-col gap-2">

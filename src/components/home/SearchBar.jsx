@@ -13,6 +13,19 @@ export default function SearchBar({ onSearch }) {
     const [departureDate, setDepartureDate] = useState(today)
     const [travelers, setTravelers] = useState('')
 
+    const departureMinDate = arrivalDate && arrivalDate > today ? arrivalDate : today
+
+    useEffect(() => {
+        if (!departureDate) return
+        if (arrivalDate && departureDate < arrivalDate) {
+            setDepartureDate(arrivalDate)
+            return
+        }
+        if (departureDate < today) {
+            setDepartureDate(today)
+        }
+    }, [arrivalDate, departureDate, today])
+
     useEffect(() => {
         const fetchCities = async () => {
             try {
@@ -67,7 +80,14 @@ export default function SearchBar({ onSearch }) {
                         type="date"
                         icon={<FiCalendar className="text-slate-500 text-lg" />}
                         value={arrivalDate}
-                        onChange={(e) => setArrivalDate(e.target.value)}
+                        onChange={(e) => {
+                            const val = e.target.value
+                            setArrivalDate(val)
+                            if (val && departureDate && departureDate < val) {
+                                setDepartureDate(val)
+                            }
+                        }}
+                        inputProps={{ min: today }}
                         inputClassName="!bg-slate-50 !border-slate-300 !text-sm !font-medium !text-slate-700 !h-[48px] !rounded-lg"
                         labelClassName="!text-sm !text-slate-700 !mb-2 !font-normal"
                     />
@@ -80,6 +100,7 @@ export default function SearchBar({ onSearch }) {
                         icon={<FiCalendar className="text-slate-500 text-lg" />}
                         value={departureDate}
                         onChange={(e) => setDepartureDate(e.target.value)}
+                        inputProps={{ min: departureMinDate }}
                         inputClassName="!bg-slate-50 !border-slate-300 !text-sm !font-medium !text-slate-700 !h-[48px] !rounded-lg"
                         labelClassName="!text-sm !text-slate-700 !mb-2 !font-normal"
                     />

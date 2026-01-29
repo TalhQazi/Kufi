@@ -148,9 +148,9 @@ export default function HeroSection({ onSignupClick, onCountryClick }) {
                     <div className="flex items-center gap-4">
                         <Button
                             variant="primary"
-                            className="!bg-[#A67C52] !text-white !rounded-full !px-8 !py-3 hover:!bg-[#8e6a45]"
+                            className="!bg-[#A67C52] !text-white !rounded-full !px-10 !py-3.5 hover:!bg-[#8e6a45] !shadow-lg hover:!shadow-xl active:!scale-[0.98]"
                             onClick={() => {
-                                const el = document.getElementById('explore-destinations')
+                                const el = document.getElementById('destinations')
                                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
                             }}
                         >

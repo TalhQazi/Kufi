@@ -20,7 +20,8 @@ export default function Explore({
   onCategoryClick,
   onSettingsClick,
   onHomeClick,
-  initialCategory = null
+  initialCategory = null,
+  hideHeaderFooter = false
 }) {
   const [dropdown, setDropdown] = useState(false)
   const [allActivities, setAllActivities] = useState([])
@@ -383,7 +384,7 @@ export default function Explore({
                     >
                       <div className="relative">
                         <img
-                          src={activity.imageUrl || activity.images?.[0] || "/assets/activity1.jpeg"}
+                          src={activity.imageUrl || activity.images?.[0] || activity.image || activity.Picture || "/assets/activity1.jpeg"}
                           alt={activity.title}
                           className="w-full h-48 object-cover"
                         />

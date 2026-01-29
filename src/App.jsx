@@ -112,6 +112,11 @@ export default function App() {
   const handleBlogClick = (id) => {
     if (!id) return
     setSelectedBlogId(id)
+    try {
+      sessionStorage.setItem('selectedBlogId', String(id))
+    } catch (e) {
+      // ignore
+    }
     navigateTo('blog-detail')
   }
 
@@ -171,18 +176,28 @@ export default function App() {
   }
 
   const handleAddToList = (activity) => {
+    const normalizedActivity = activity
+      ? {
+        ...activity,
+        id: activity.id || activity._id,
+        image: activity.image || activity.imageUrl || activity.images?.[0] || activity.Picture,
+        location: activity.location || [activity.city?.name, activity.country?.name].filter(Boolean).join(', ') || activity.country || activity.city,
+      }
+      : null
+
     setSelectedActivities(prev => {
       // Check if activity already exists
-      const exists = prev.find(a => a.id === activity.id)
+      if (!normalizedActivity?.id) return prev
+      const exists = prev.find(a => (a.id || a._id) === normalizedActivity.id)
       if (exists) return prev
-      return [...prev, activity]
+      return [...prev, normalizedActivity]
     })
     // Navigate to explore page to show the selection
     navigateTo('explore')
   }
 
   const handleRemoveFromList = (activityId) => {
-    setSelectedActivities(prev => prev.filter(a => a.id !== activityId))
+    setSelectedActivities(prev => prev.filter(a => (a.id || a._id) !== activityId))
   }
 
   // Navigation functions
@@ -250,6 +265,7 @@ export default function App() {
         canGoBack={canGoBack}
         canGoForward={canGoForward}
         onHomeClick={() => navigateTo('home')}
+        hideHeaderFooter={true}
       />
     )
 
@@ -270,6 +286,7 @@ export default function App() {
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
         onActivityClick={handleActivityClick}
+        onBlogClick={handleBlogClick}
         onBack={goBack}
         onHomeClick={() => navigateTo('home')}
         onSettingsClick={() => navigateTo('traveler-profile')}
@@ -320,7 +337,9 @@ export default function App() {
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
         onSettingsClick={() => navigateTo('traveler-profile')}
+        onActivityClick={handleActivityClick}
         onAddToList={(activityData) => handleAddToList(activityData)}
+        hideHeaderFooter={true}
       />
     )
 
@@ -335,6 +354,8 @@ export default function App() {
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={() => navigateTo('user-profile')}
         onSettingsClick={() => navigateTo('traveler-profile')}
+        selectedActivities={selectedActivities}
+        hideHeaderFooter={true}
         onSubmit={(data) => {
           setBookingData(data)
           navigateTo('explore')

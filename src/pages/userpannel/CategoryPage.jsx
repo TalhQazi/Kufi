@@ -11,10 +11,12 @@ export default function CategoryPage({
     onActivityClick,
     onBack,
     onHomeClick,
-    onSettingsClick
+    onSettingsClick,
+    hideHeaderFooter = false
 }) {
     const [dropdown, setDropdown] = useState(false)
     const [experiences, setExperiences] = useState([])
+    const [recommendedSpots, setRecommendedSpots] = useState([])
     const [isLoading, setIsLoading] = useState(true)
     const dropdownRef = useRef(null)
 
@@ -47,6 +49,15 @@ export default function CategoryPage({
         // Add more categories as needed
     }
 
+    const normalizeCategory = (value) => {
+        return String(value || '')
+            .toLowerCase()
+            .replace(/adventures?/g, '')
+            .replace(/experiences?/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+    }
+
     useEffect(() => {
         const fetchCategoryData = async () => {
             try {
@@ -54,16 +65,31 @@ export default function CategoryPage({
                 const response = await api.get('/activities')
                 const all = Array.isArray(response.data) ? response.data : []
 
+                const target = normalizeCategory(categoryName)
                 const filtered = all.filter((a) => {
-                    const cat = (a?.category || '').toLowerCase()
-                    const target = (categoryName || '').toLowerCase()
-                    return target ? cat === target : true
+                    const cat = normalizeCategory(a?.category)
+                    if (!target) return true
+                    return cat === target || cat.includes(target) || target.includes(cat)
                 })
 
                 setExperiences(filtered)
+
+                const derivedRecommended = filtered.slice(0, 3).map((a, idx) => {
+                    const city = a?.city?.name || a?.city || ''
+                    const country = a?.country?.name || a?.country || a?.location || ''
+                    const location = [city, country].filter(Boolean).join(', ')
+                    return {
+                        id: a?._id || a?.id || idx,
+                        name: a?.title || 'Activity',
+                        location: location || 'Location',
+                        image: a?.imageUrl || a?.images?.[0] || a?.image || a?.Picture || '/assets/activity1.jpeg'
+                    }
+                })
+                setRecommendedSpots(derivedRecommended)
             } catch (error) {
                 console.error("Error fetching category activities:", error)
                 setExperiences([])
+                setRecommendedSpots([])
             } finally {
                 setIsLoading(false)
             }
@@ -71,110 +97,92 @@ export default function CategoryPage({
         fetchCategoryData()
     }, [categoryName])
 
-    const recommendedSpots = [
-        {
-            id: 1,
-            name: 'Glacier National Park',
-            location: 'Montana, USA',
-            image: '/assets/activity1.jpeg'
-        },
-        {
-            id: 2,
-            name: 'Lake Louise',
-            location: 'Alberta, Canada',
-            image: '/assets/activity1.jpeg'
-        },
-        {
-            id: 3,
-            name: 'Sedona Red Rocks',
-            location: 'Arizona, USA',
-            image: '/assets/activity1.jpeg'
-        }
-    ]
-
     const currentCategory = categoryInfo[categoryName] || categoryInfo["Camping Adventures"]
+    const heroImage = experiences?.[0]?.imageUrl || experiences?.[0]?.images?.[0] || experiences?.[0]?.image || experiences?.[0]?.Picture || currentCategory.heroImage
 
     return (
         <div className="category-page">
             {/* Navigation */}
-            <nav className="category-navbar">
-                <div className="category-navbar-inner">
-                    <div className="category-logo">
-                        <button
-                            onClick={() => {
-                                if (onHomeClick) {
-                                    onHomeClick()
-                                }
-                            }}
-                            className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-                            style={{ background: 'none', border: 'none', padding: 0 }}
-                        >
-                            <img src="/assets/navbar.png" alt="Kufi Travel" className="category-logo-image" />
-                        </button>
-                    </div>
+            {!hideHeaderFooter && (
+                <nav className="category-navbar">
+                    <div className="category-navbar-inner">
+                        <div className="category-logo">
+                            <button
+                                onClick={() => {
+                                    if (onHomeClick) {
+                                        onHomeClick()
+                                    }
+                                }}
+                                className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                                style={{ background: 'none', border: 'none', padding: 0 }}
+                            >
+                                <img src="/assets/navbar.png" alt="Kufi Travel" className="category-logo-image" />
+                            </button>
+                        </div>
 
 
-                    <div className="category-navbar-right">
-                        <button className="category-icon-btn" onClick={onNotificationClick}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                            </svg>
-                        </button>
-
-
-                        <div className="category-profile-dropdown" ref={dropdownRef}>
-                            <button onClick={() => setDropdown(!dropdown)} className="category-profile-btn">
-                                <img
-                                    src="/assets/profile-avatar.jpeg"
-                                    alt="Profile"
-                                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
-                                />
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                    <path d="M6 9l6 6 6-6" />
+                        <div className="category-navbar-right">
+                            <button className="category-icon-btn" onClick={onNotificationClick}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                                 </svg>
                             </button>
 
-                            {dropdown && (
-                                <div className="category-dropdown-menu">
-                                    <div className="category-dropdown-item" onClick={() => { onProfileClick && onProfileClick(); setDropdown(false); }}>
-                                        MY REQUESTS
+
+                            <div className="category-profile-dropdown" ref={dropdownRef}>
+                                <button onClick={() => setDropdown(!dropdown)} className="category-profile-btn">
+                                    <img
+                                        src="/assets/profile-avatar.jpeg"
+                                        alt="Profile"
+                                        className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
+                                    />
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </button>
+
+                                {dropdown && (
+                                    <div className="category-dropdown-menu">
+                                        <div className="category-dropdown-item" onClick={() => { onProfileClick && onProfileClick(); setDropdown(false); }}>
+                                            MY REQUESTS
+                                        </div>
+                                        <div className="category-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
+                                            NOTIFICATIONS
+                                        </div>
+                                        <div className="category-dropdown-item" onClick={() => {
+                                            if (onSettingsClick) {
+                                                onSettingsClick()
+                                            }
+                                            setDropdown(false);
+                                        }}>
+                                            PAYMENTS
+                                        </div>
+                                        <div className="category-dropdown-item" onClick={() => {
+                                            if (onSettingsClick) {
+                                                onSettingsClick()
+                                            }
+                                            setDropdown(false);
+                                        }}>
+                                            SETTINGS
+                                        </div>
+                                        <div className="category-dropdown-divider"></div>
+                                        <div className="category-dropdown-item logout" onClick={() => { onLogout && onLogout(); setDropdown(false); }}>
+                                            LOGOUT
+                                        </div>
                                     </div>
-                                    <div className="category-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
-                                        NOTIFICATIONS
-                                    </div>
-                                    <div className="category-dropdown-item" onClick={() => {
-                                        if (onSettingsClick) {
-                                            onSettingsClick()
-                                        }
-                                        setDropdown(false);
-                                    }}>
-                                        PAYMENTS
-                                    </div>
-                                    <div className="category-dropdown-item" onClick={() => {
-                                        if (onSettingsClick) {
-                                            onSettingsClick()
-                                        }
-                                        setDropdown(false);
-                                    }}>
-                                        SETTINGS
-                                    </div>
-                                    <div className="category-dropdown-divider"></div>
-                                    <div className="category-dropdown-item logout" onClick={() => { onLogout && onLogout(); setDropdown(false); }}>
-                                        LOGOUT
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </nav>
+                </nav>
+            )}
 
             {/* Hero Banner */}
             <section className="category-hero">
                 <div className="category-hero-overlay"></div>
                 <img
-                    src={currentCategory.heroImage}
+                    src={heroImage}
                     alt={categoryName}
                     className="category-hero-image"
                     onError={(e) => { e.target.src = '/assets/activity1.jpeg' }}
@@ -206,7 +214,7 @@ export default function CategoryPage({
                                     >
                                         <div className="category-experience-image-wrapper">
                                             <img
-                                                src={exp.imageUrl || exp.image || "/assets/activity1.jpeg"}
+                                                src={exp.imageUrl || exp.images?.[0] || exp.image || exp.Picture || "/assets/activity1.jpeg"}
                                                 alt={exp.title}
                                                 className="category-experience-image"
                                             />
@@ -219,7 +227,7 @@ export default function CategoryPage({
                                         </div>
 
                                         <div className="category-experience-content">
-                                            <p className="category-experience-location">{exp.city || ""} {exp.country || exp.location}</p>
+                                            <p className="category-experience-location">{exp.city?.name || exp.city || ""} {exp.country?.name || exp.country || exp.location}</p>
                                             <p className="category-experience-category">{exp.category}</p>
                                             <h3 className="category-experience-title">{exp.title}</h3>
 
@@ -270,7 +278,7 @@ export default function CategoryPage({
                     </aside>
                 </div>
             </main>
-            <Footer />
+            {!hideHeaderFooter && <Footer />}
         </div>
     )
 }

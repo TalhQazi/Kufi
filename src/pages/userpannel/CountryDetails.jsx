@@ -11,11 +11,14 @@ export default function CountryDetails({
     onNotificationClick,
     onProfileClick,
     onActivityClick,
+    onBlogClick,
     onBack,
-    onSettingsClick
+    onSettingsClick,
+    hideHeaderFooter = false
 }) {
     const [dropdown, setDropdown] = useState(false)
     const [experiences, setExperiences] = useState([])
+    const [selectedCategory, setSelectedCategory] = useState(null)
     const [isLoading, setIsLoading] = useState(true)
     const [country, setCountry] = useState(null)
     const [cities, setCities] = useState([])
@@ -52,6 +55,15 @@ export default function CountryDetails({
     }, [dropdown])
 
     const brownColor = "#9B6F40"
+
+    const normalizeCategory = (value) => {
+        return String(value || '')
+            .toLowerCase()
+            .replace(/adventures?/g, '')
+            .replace(/experiences?/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+    }
 
     const categories = [
         {
@@ -122,9 +134,49 @@ export default function CountryDetails({
         }
     ]
 
+    const displayedExperiences = selectedCategory
+        ? experiences.filter((exp) => {
+            const expCat = normalizeCategory(exp?.category)
+            const target = normalizeCategory(selectedCategory)
+            if (!target) return true
+            return expCat === target || expCat.includes(target) || target.includes(expCat)
+        })
+        : experiences
+
     const [testimonials, setTestimonials] = useState([])
     const [blogs, setBlogs] = useState([])
+    const [displayedTestimonials, setDisplayedTestimonials] = useState([])
+    const [displayedBlogs, setDisplayedBlogs] = useState([])
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+
+    const fallbackTestimonials = [
+        { id: 'fb-1', rating: 5, text: 'Everything was well organized and the support was super quick. Highly recommended!', author: 'Ayesha Khan' },
+        { id: 'fb-2', rating: 5, text: 'Booking process was smooth and the itinerary was exactly as promised.', author: 'Hassan Ali' },
+        { id: 'fb-3', rating: 4, text: 'Great experience overall. Activities were premium and worth it.', author: 'Sara Ahmed' },
+        { id: 'fb-4', rating: 5, text: 'We had an amazing family trip. Excellent planning and guidance.', author: 'Usman Riaz' },
+        { id: 'fb-5', rating: 4, text: 'Very cooperative team. They adjusted our plan as per our needs.', author: 'Nimra Zahid' },
+        { id: 'fb-6', rating: 5, text: 'The destinations were beautiful and everything was on time.', author: 'Ali Raza' },
+        { id: 'fb-7', rating: 5, text: 'Loved the overall service and responsiveness. Will book again.', author: 'Fatima Noor' },
+        { id: 'fb-8', rating: 4, text: 'Good value for money and great recommendations for activities.', author: 'Bilal Ahmed' },
+    ]
+
+    const fallbackBlogs = [
+        { id: 'blog-1', title: 'Top Tips for a Perfect Trip', date: 'Jan 2026', image: '/assets/blog1.jpeg' },
+        { id: 'blog-2', title: 'Hidden Gems You Must Visit', date: 'Jan 2026', image: '/assets/blog2.jpeg' },
+        { id: 'blog-3', title: 'How to Travel on a Smart Budget', date: 'Jan 2026', image: '/assets/blog3.jpeg' },
+        { id: 'blog-4', title: 'What to Pack for Any Trip', date: 'Jan 2026', image: '/assets/blog4.jpeg' },
+    ]
+
+    const pickRandomItems = (items, count) => {
+        const list = Array.isArray(items) ? items.filter(Boolean) : []
+        if (list.length <= count) return list
+        const shuffled = [...list]
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1))
+            ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+        }
+        return shuffled.slice(0, count)
+    }
 
     useEffect(() => {
         const fetchCountryAndCities = async () => {
@@ -184,10 +236,35 @@ export default function CountryDetails({
                     api.get('/feedbacks'),
                     api.get('/blogs')
                 ]);
-                setTestimonials(feedRes.data || []);
-                setBlogs(blogRes.data || []);
+                const fetchedTestimonials = Array.isArray(feedRes.data) ? feedRes.data : []
+                const fetchedBlogs = Array.isArray(blogRes.data) ? blogRes.data : []
+
+                setTestimonials(fetchedTestimonials)
+                setBlogs(fetchedBlogs)
+
+                const testimonialsPool = [...fetchedTestimonials, ...fallbackTestimonials]
+                    .map((t, idx) => ({
+                        id: t?._id || t?.id || `t-${idx}`,
+                        rating: t?.rating || 5,
+                        text: t?.text || t?.message || t?.comment || '',
+                        author: t?.author || t?.name || 'Client'
+                    }))
+                    .filter(t => t.text)
+
+                setDisplayedTestimonials(pickRandomItems(testimonialsPool, 2))
+
+                const normalizedBlogs = (fetchedBlogs.length > 0 ? fetchedBlogs : fallbackBlogs).map((b, idx) => ({
+                    id: b?._id || b?.id || `b-${idx}`,
+                    title: b?.title || 'Travel Blog',
+                    date: b?.date || (b?.createdAt ? new Date(b.createdAt).toLocaleDateString() : ''),
+                    image: b?.imageUrl || b?.image || b?.coverImage || '/assets/blog1.jpeg'
+                }))
+
+                setDisplayedBlogs(pickRandomItems(normalizedBlogs, 2))
             } catch (error) {
                 console.error("Error fetching testimonials or blogs:", error);
+                setDisplayedTestimonials(pickRandomItems(fallbackTestimonials, 2))
+                setDisplayedBlogs(pickRandomItems(fallbackBlogs, 2))
             }
         }
 
@@ -208,85 +285,87 @@ export default function CountryDetails({
     return (
         <div className="country-details">
             {/* Navigation */}
-            <nav className="country-navbar">
-                <div className="country-navbar-inner">
-                    <div className="country-logo">
-                        <button
-                            onClick={() => {
-                                if (onHomeClick) {
-                                    onHomeClick()
-                                }
-                            }}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                            style={{ background: 'none', border: 'none', padding: 0 }}
-                        >
-                            <img src="/assets/navbar.png" alt="Kufi Travel" className="country-logo-image" />
-                        </button>
-                    </div>
+            {!hideHeaderFooter && (
+                <nav className="country-navbar">
+                    <div className="country-navbar-inner">
+                        <div className="country-logo">
+                            <button
+                                onClick={() => {
+                                    if (onHomeClick) {
+                                        onHomeClick()
+                                    }
+                                }}
+                                className="cursor-pointer hover:opacity-80 transition-opacity"
+                                style={{ background: 'none', border: 'none', padding: 0 }}
+                            >
+                                <img src="/assets/navbar.png" alt="Kufi Travel" className="country-logo-image" />
+                            </button>
+                        </div>
 
 
-                    <div className="country-navbar-right">
-                        <button className="country-icon-btn" onClick={onNotificationClick}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                            </svg>
-                        </button>
-
-
-                        <div className="country-profile-dropdown" ref={dropdownRef}>
-                            <button onClick={() => setDropdown(!dropdown)} className="country-profile-btn">
-                                {profileImage ? (
-                                    <img
-                                        src={profileImage}
-                                        alt="Profile"
-                                        className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
-                                        onError={(e) => { e.target.src = '/assets/profile-avatar.jpeg' }}
-                                    />
-                                ) : (
-                                    <div className="w-8 h-8 rounded-full bg-[#a26e35] text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm">
-                                        {currentUser.name ? currentUser.name.substring(0, 2).toUpperCase() : 'U'}
-                                    </div>
-                                )}
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                    <path d="M6 9l6 6 6-6" />
+                        <div className="country-navbar-right">
+                            <button className="country-icon-btn" onClick={onNotificationClick}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                                 </svg>
                             </button>
 
-                            {dropdown && (
-                                <div className="country-dropdown-menu">
-                                    <div className="country-dropdown-item" onClick={() => { onProfileClick && onProfileClick(); setDropdown(false); }}>
-                                        MY REQUESTS
+
+                            <div className="country-profile-dropdown" ref={dropdownRef}>
+                                <button onClick={() => setDropdown(!dropdown)} className="country-profile-btn">
+                                    {profileImage ? (
+                                        <img
+                                            src={profileImage}
+                                            alt="Profile"
+                                            className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
+                                            onError={(e) => { e.target.src = '/assets/profile-avatar.jpeg' }}
+                                        />
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-full bg-[#a26e35] text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm">
+                                            {currentUser.name ? currentUser.name.substring(0, 2).toUpperCase() : 'U'}
+                                        </div>
+                                    )}
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </button>
+
+                                {dropdown && (
+                                    <div className="country-dropdown-menu">
+                                        <div className="country-dropdown-item" onClick={() => { onProfileClick && onProfileClick(); setDropdown(false); }}>
+                                            MY REQUESTS
+                                        </div>
+                                        <div className="country-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
+                                            NOTIFICATIONS
+                                        </div>
+                                        <div className="country-dropdown-item" onClick={() => {
+                                            if (onSettingsClick) {
+                                                onSettingsClick()
+                                            }
+                                            setDropdown(false);
+                                        }}>
+                                            PAYMENTS
+                                        </div>
+                                        <div className="country-dropdown-item" onClick={() => {
+                                            if (onSettingsClick) {
+                                                onSettingsClick()
+                                            }
+                                            setDropdown(false);
+                                        }}>
+                                            SETTINGS
+                                        </div>
+                                        <div className="country-dropdown-divider"></div>
+                                        <div className="country-dropdown-item logout" onClick={() => { onLogout && onLogout(); setDropdown(false); }}>
+                                            LOGOUT
+                                        </div>
                                     </div>
-                                    <div className="country-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
-                                        NOTIFICATIONS
-                                    </div>
-                                    <div className="country-dropdown-item" onClick={() => {
-                                        if (onSettingsClick) {
-                                            onSettingsClick()
-                                        }
-                                        setDropdown(false);
-                                    }}>
-                                        PAYMENTS
-                                    </div>
-                                    <div className="country-dropdown-item" onClick={() => {
-                                        if (onSettingsClick) {
-                                            onSettingsClick()
-                                        }
-                                        setDropdown(false);
-                                    }}>
-                                        SETTINGS
-                                    </div>
-                                    <div className="country-dropdown-divider"></div>
-                                    <div className="country-dropdown-item logout" onClick={() => { onLogout && onLogout(); setDropdown(false); }}>
-                                        LOGOUT
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </nav>
+                </nav>
+            )}
 
             {/* Hero Section */}
             <section className="country-hero">
@@ -363,7 +442,25 @@ export default function CountryDetails({
                     <h2 className="country-section-title">Top Categories in {countryName}</h2>
                     <div className="country-categories-grid">
                         {categories.map((category) => (
-                            <div key={category.name} className="country-category-card">
+                            <div
+                                key={category.name}
+                                className={`country-category-card ${selectedCategory === category.name ? 'ring-2 ring-primary-brown' : ''}`}
+                                onClick={() => {
+                                    setSelectedCategory(category.name)
+                                    const el = document.getElementById('country-popular-experiences')
+                                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault()
+                                        setSelectedCategory(category.name)
+                                        const el = document.getElementById('country-popular-experiences')
+                                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                    }
+                                }}
+                            >
                                 <div className="country-category-icon">{category.icon}</div>
                                 <h3 className="country-category-name">{category.name}</h3>
                             </div>
@@ -372,15 +469,15 @@ export default function CountryDetails({
                 </section>
 
                 {/* Popular Experiences */}
-                <section className="country-experiences">
+                <section id="country-popular-experiences" className="country-experiences">
                     <h2 className="country-section-title">Popular Experiences</h2>
                     <div className="country-experiences-grid">
                         {isLoading ? (
                             <div className="col-span-full py-20 flex justify-center">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
                             </div>
-                        ) : experiences.length > 0 ? (
-                            experiences.map((exp) => (
+                        ) : displayedExperiences.length > 0 ? (
+                            displayedExperiences.map((exp) => (
                                 <div
                                     key={exp._id || exp.id}
                                     className="country-experience-card"
@@ -388,7 +485,7 @@ export default function CountryDetails({
                                 >
                                     <div className="country-card-image-wrapper">
                                         <img
-                                            src={exp.imageUrl || exp.image || "/assets/activity1.jpeg"}
+                                            src={exp.imageUrl || exp.images?.[0] || exp.image || exp.Picture || "/assets/activity1.jpeg"}
                                             alt={exp.title}
                                             className="country-experience-image"
                                         />
@@ -415,7 +512,7 @@ export default function CountryDetails({
                 <section className="country-feedback">
                     <h2 className="country-section-title">Best Feedback From Clients</h2>
                     <div className="country-feedback-grid">
-                        {testimonials.map((testimonial) => (
+                        {displayedTestimonials.map((testimonial) => (
                             <div key={testimonial.id} className="country-feedback-card">
                                 <div className="country-feedback-stars">
                                     {[...Array(testimonial.rating)].map((_, i) => (
@@ -438,13 +535,35 @@ export default function CountryDetails({
                 <section className="country-blog">
                     <h2 className="country-section-title">Latest Travel Blog</h2>
                     <div className="country-blog-grid">
-                        {blogs.map((blog) => (
-                            <div key={blog.id} className="country-blog-card">
+                        {displayedBlogs.map((blog) => (
+                            <div
+                                key={blog.id}
+                                className="country-blog-card"
+                                onClick={() => {
+                                    if (onBlogClick && blog?.id) onBlogClick(blog.id)
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault()
+                                        if (onBlogClick && blog?.id) onBlogClick(blog.id)
+                                    }
+                                }}
+                            >
                                 <img src={blog.image} alt={blog.title} className="country-blog-image" />
                                 <div className="country-blog-content">
                                     <h3 className="country-blog-title">{blog.title}</h3>
                                     <p className="country-blog-date">{blog.date}</p>
-                                    <button className="country-blog-btn">Read More</button>
+                                    <button
+                                        className="country-blog-btn"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            if (onBlogClick && blog?.id) onBlogClick(blog.id)
+                                        }}
+                                    >
+                                        Read More
+                                    </button>
                                 </div>
                             </div>
                         ))}
@@ -452,7 +571,7 @@ export default function CountryDetails({
                 </section>
             </main>
 
-            <Footer />
+            {!hideHeaderFooter && <Footer />}
         </div>
     )
 }

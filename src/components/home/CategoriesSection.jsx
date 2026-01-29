@@ -149,7 +149,7 @@ export default function CategoriesSection({ onCategoryClick }) {
                     <p className="text-2xl sm:text-3xl font-sacramento text-[#A67C52] m-0 mb-2">Top Categories</p>
                     <h2 className="text-3xl sm:text-4xl font-bold text-[#1a1a1a] m-0 mb-4">Explore By Categories</h2>
                     <p className="text-sm sm:text-base text-slate-600 max-w-[680px] m-0 mx-auto leading-relaxed">
-                        Lorem ipsum dolor sit amet consectetur. Porttitor montes mi tristique elit bibendum ut libero egestas pellentesque.
+                        Select according to your interest to check. Choose your own interest and join kufi travelling agency overall world.
                     </p>
                 </div>
 

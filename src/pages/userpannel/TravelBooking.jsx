@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../../api'
 import Footer from '../../components/layout/Footer'
+import ProfilePic from '../../components/ui/ProfilePic'
 
 export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, canGoForward, onSubmit, onHomeClick, onNotificationClick, onProfileClick, onSettingsClick, hideHeaderFooter = false, selectedActivities = [] }) {
     const [showSuccess, setShowSuccess] = useState(false)
@@ -59,8 +60,32 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
     const handleSubmit = async (e) => {
         e.preventDefault()
         try {
-            console.log('Booking submitted:', formData)
-            await api.post('/bookings', formData)
+            const travelersRaw = String(formData.travelers || '').trim()
+            const travelersParsed = travelersRaw === '5+'
+                ? 5
+                : Number.parseInt(travelersRaw, 10)
+
+            if (!Number.isFinite(travelersParsed) || travelersParsed <= 0) {
+                alert('Please select number of travelers.')
+                return
+            }
+
+            const activities = (selectedActivities || [])
+                .map(a => a?.id || a?._id)
+                .filter(Boolean)
+
+            const payload = {
+                ...formData,
+                travelers: travelersParsed,
+                activities,
+                userId: currentUser?._id || currentUser?.id,
+            }
+
+            if (!payload.userId) delete payload.userId
+            if (!payload.cities) delete payload.cities
+
+            console.log('Booking submitted:', payload)
+            await api.post('/bookings', payload)
             setShowSuccess(true)
         } catch (error) {
             console.error("Error submitting booking:", error)
