@@ -57,17 +57,31 @@ export default function CountryDetails({
     const brownColor = "#9B6F40"
 
     const normalizeCategory = (value) => {
-        return String(value || '')
+        const raw = String(value || '')
             .toLowerCase()
             .replace(/adventures?/g, '')
             .replace(/experiences?/g, '')
-            .replace(/\s+/g, ' ')
+            .replace(/[^a-z0-9]/g, '')
             .trim()
+
+        const aliases = {
+            shipcrusie: 'shipcruise',
+            shipcrusiee: 'shipcruise',
+            whenvisting: 'whenvisiting',
+            whenvisiting: 'whenvisiting',
+            daytour: 'daytour',
+            foodtour: 'foodtour',
+            memorabletour: 'memorabletour',
+            summervisit: 'summervisit'
+        }
+
+        return aliases[raw] || raw
     }
 
     const categories = [
         {
             name: 'Food Tour',
+            value: 'FoodTour',
             icon: (
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
                     <path d="M3 11H21L19 20H5L3 11Z" />
@@ -78,6 +92,7 @@ export default function CountryDetails({
         },
         {
             name: 'When Visiting',
+            value: 'whenVisting',
             icon: (
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
                     <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -89,6 +104,7 @@ export default function CountryDetails({
         },
         {
             name: 'Ship Cruise',
+            value: 'ShipCrusie',
             icon: (
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
                     <path d="M4 16c2 1 4 4 8 4s6-3 8-4" />
@@ -101,6 +117,7 @@ export default function CountryDetails({
         },
         {
             name: 'Memorable Tour',
+            value: 'MemorableTour',
             icon: (
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
                     <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" />
@@ -109,6 +126,7 @@ export default function CountryDetails({
         },
         {
             name: 'Summer Visit',
+            value: 'SummerVisit',
             icon: (
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
                     <circle cx="12" cy="12" r="5" />
@@ -125,6 +143,7 @@ export default function CountryDetails({
         },
         {
             name: 'Day Tour',
+            value: 'DayTour',
             icon: (
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
                     <path d="M2 20h20L15 6l-5 10L8 12 2 20z" />
@@ -139,7 +158,8 @@ export default function CountryDetails({
             const expCat = normalizeCategory(exp?.category)
             const target = normalizeCategory(selectedCategory)
             if (!target) return true
-            return expCat === target || expCat.includes(target) || target.includes(expCat)
+            if (!expCat) return false
+            return expCat === target || expCat.includes(target)
         })
         : experiences
 
@@ -215,8 +235,8 @@ export default function CountryDetails({
                 const allActivities = Array.isArray(response.data) ? response.data : []
 
                 const filtered = allActivities.filter((a) => {
-                    const c = (a?.country || '').toLowerCase()
-                    const loc = (a?.location || '').toLowerCase()
+                    const c = String(a?.country?.name || a?.country || '').toLowerCase()
+                    const loc = String(a?.location || '').toLowerCase()
                     const target = (countryName || '').toLowerCase()
                     return c === target || loc.includes(target)
                 })
@@ -444,9 +464,9 @@ export default function CountryDetails({
                         {categories.map((category) => (
                             <div
                                 key={category.name}
-                                className={`country-category-card ${selectedCategory === category.name ? 'ring-2 ring-primary-brown' : ''}`}
+                                className={`country-category-card ${selectedCategory === category.value ? 'ring-2 ring-primary-brown' : ''}`}
                                 onClick={() => {
-                                    setSelectedCategory(category.name)
+                                    setSelectedCategory((prev) => (prev === category.value ? null : category.value))
                                     const el = document.getElementById('country-popular-experiences')
                                     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
                                 }}
@@ -455,7 +475,7 @@ export default function CountryDetails({
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                         e.preventDefault()
-                                        setSelectedCategory(category.name)
+                                        setSelectedCategory((prev) => (prev === category.value ? null : category.value))
                                         const el = document.getElementById('country-popular-experiences')
                                         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
                                     }

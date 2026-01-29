@@ -112,10 +112,12 @@ const AddActivity = ({ onBack }) => {
             onChange={handleChange}
             options={[
               { label: "Select a category", value: "" },
-              { label: "Wildlife", value: "Wildlife" },
-              { label: "Cultural", value: "Cultural" },
-              { label: "Adventure", value: "Adventure" },
-              { label: "Luxury", value: "Luxury" },
+              { label: "FoodTour", value: "FoodTour" },
+              { label: "whenVisting", value: "whenVisting" },
+              { label: "ShipCrusie", value: "ShipCrusie" },
+              { label: "MemorableTour", value: "MemorableTour" },
+              { label: "SummerVisit", value: "SummerVisit" },
+              { label: "DayTour", value: "DayTour" },
             ]}
           />
           <SelectField
