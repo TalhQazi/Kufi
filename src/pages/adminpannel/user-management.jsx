@@ -141,25 +141,42 @@ const UserManagement = () => {
 
   const handleSuspend = async (user) => {
     const action = user.status === "suspended" ? "restore" : "suspend";
+    const userId = user.id;
+
+    if (!userId) {
+      alert("Error: User ID is missing. Cannot update status.");
+      console.error("User object missing ID:", user);
+      return;
+    }
+
     if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
 
     try {
       const newStatus = user.status === "suspended" ? "active" : "suspended";
-      console.log(`Attempting to ${action} user ${user.id} to status: ${newStatus}`);
+      console.log(`Attempting to ${action} user. ID: ${userId}, Status: ${newStatus}`);
 
-      // Try multiple endpoint patterns based on common project structures
+      const tryPatch = async (url) => {
+        console.log(`Patching ${url}...`);
+        return await api.patch(url, { status: newStatus });
+      };
+
       try {
-        console.log("Trying /auth/users/${id}...");
-        await api.patch(`/auth/users/${user.id}`, { status: newStatus });
+        await tryPatch(`/auth/users/${userId}`);
       } catch (e) {
-        console.warn("/auth/users/${id} failed...", e.response?.data || e.message);
-        try {
-          console.log("Trying /auth/update-status/${id}...");
-          await api.patch(`/auth/update-status/${user.id}`, { status: newStatus });
-        } catch (e2) {
-          console.warn("/auth/update-status failed...", e2.response?.data || e2.message);
-          console.log("Trying /users/${id}...");
-          await api.patch(`/users/${user.id}`, { status: newStatus });
+        if (e.response?.status === 404) {
+          console.warn("404 on /auth/users/${id}, trying /auth/users/status/${id}...");
+          try {
+            await tryPatch(`/auth/users/status/${userId}`);
+          } catch (e2) {
+            if (e2.response?.status === 404 && user.email) {
+              console.warn("404 again, trying email as ID: /auth/users/${email}...");
+              await tryPatch(`/auth/users/${user.email}`);
+            } else {
+              throw e2;
+            }
+          }
+        } else {
+          throw e;
         }
       }
 
@@ -173,13 +190,35 @@ const UserManagement = () => {
   };
 
   const handleApprove = async (user) => {
+    const userId = user.id;
+    if (!userId) {
+      alert("Error: User ID is missing.");
+      return;
+    }
+
     try {
-      console.log(`Attempting to approve user ${user.id}`);
+      console.log(`Attempting to approve user ${userId}`);
+
+      const tryPatch = async (url) => {
+        return await api.patch(url, { status: 'active' });
+      };
+
       try {
-        await api.patch(`/auth/users/${user.id}`, { status: 'active' });
+        await tryPatch(`/auth/users/${userId}`);
       } catch (e) {
-        console.warn("/auth/users/${id} failed for approval, trying /auth/update-status/${id}...", e.response?.data || e.message);
-        await api.patch(`/auth/update-status/${user.id}`, { status: 'active' });
+        if (e.response?.status === 404) {
+          try {
+            await tryPatch(`/auth/users/status/${userId}`);
+          } catch (e2) {
+            if (e2.response?.status === 404 && user.email) {
+              await tryPatch(`/auth/users/${user.email}`);
+            } else {
+              throw e2;
+            }
+          }
+        } else {
+          throw e;
+        }
       }
 
       alert(`Supplier ${user.name} approved!`);
