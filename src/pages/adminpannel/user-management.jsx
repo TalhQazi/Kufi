@@ -145,30 +145,49 @@ const UserManagement = () => {
 
     try {
       const newStatus = user.status === "suspended" ? "active" : "suspended";
-      // Trying common endpoint patterns
+      console.log(`Attempting to ${action} user ${user.id} to status: ${newStatus}`);
+
+      // Try multiple endpoint patterns based on common project structures
       try {
-        await api.patch(`/auth/update-status/${user.id}`, { status: newStatus });
+        console.log("Trying /auth/users/${id}...");
+        await api.patch(`/auth/users/${user.id}`, { status: newStatus });
       } catch (e) {
-        console.warn("/auth/update-status failed, trying /auth/users/status...", e);
-        await api.patch(`/auth/users/status/${user.id}`, { status: newStatus });
+        console.warn("/auth/users/${id} failed...", e.response?.data || e.message);
+        try {
+          console.log("Trying /auth/update-status/${id}...");
+          await api.patch(`/auth/update-status/${user.id}`, { status: newStatus });
+        } catch (e2) {
+          console.warn("/auth/update-status failed...", e2.response?.data || e2.message);
+          console.log("Trying /users/${id}...");
+          await api.patch(`/users/${user.id}`, { status: newStatus });
+        }
       }
 
       alert(`User ${action}ed successfully`);
       fetchUsers();
     } catch (error) {
-      console.error("Error updating user status:", error);
-      alert("Failed to update status");
+      console.error("Final error updating user status:", error);
+      const errorMsg = error.response?.data?.message || error.message || "Unknown error";
+      alert(`Failed to update status: ${errorMsg}`);
     }
   };
 
   const handleApprove = async (user) => {
     try {
-      await api.patch(`/auth/update-status/${user.id}`, { status: 'active' });
+      console.log(`Attempting to approve user ${user.id}`);
+      try {
+        await api.patch(`/auth/users/${user.id}`, { status: 'active' });
+      } catch (e) {
+        console.warn("/auth/users/${id} failed for approval, trying /auth/update-status/${id}...", e.response?.data || e.message);
+        await api.patch(`/auth/update-status/${user.id}`, { status: 'active' });
+      }
+
       alert(`Supplier ${user.name} approved!`);
       fetchUsers();
     } catch (error) {
       console.error("Error approving supplier:", error);
-      alert("Failed to approve supplier");
+      const errorMsg = error.response?.data?.message || error.message || "Unknown error";
+      alert(`Failed to approve supplier: ${errorMsg}`);
     }
   };
 
