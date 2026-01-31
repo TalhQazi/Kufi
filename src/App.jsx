@@ -125,29 +125,36 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPopState, setIsPopState] = useState(false)
 
-  // Listen to browser back/forward buttons
+  // Listen to browser back/forward buttons and hash changes
   useEffect(() => {
-    const handlePopState = (event) => {
-      const newPage = event.state?.page || 'home'
-      setIsPopState(true)
-      setPage(newPage)
+    const handleNavigationChange = (event) => {
+      // For popstate, the state might have the page, for hashchange we parse it
+      const newPage = (event.type === 'popstate' ? event.state?.page : window.location.hash.slice(1)) || 'home';
+
+      console.log(`Navigation change detected (${event.type}): ${newPage}`);
+      setIsPopState(true);
+      setPage(newPage);
 
       // Update our internal history tracking
-      const pageIndex = history.indexOf(newPage)
+      const pageIndex = history.indexOf(newPage);
       if (pageIndex !== -1) {
-        setCurrentIndex(pageIndex)
+        setCurrentIndex(pageIndex);
       }
-    }
+    };
 
-    window.addEventListener('popstate', handlePopState)
+    window.addEventListener('popstate', handleNavigationChange);
+    window.addEventListener('hashchange', handleNavigationChange);
 
     // Set initial state if not already set
     if (!window.history.state) {
-      window.history.replaceState({ page: page }, '', `#${page}`)
+      window.history.replaceState({ page: page }, '', `#${page}`);
     }
 
-    return () => window.removeEventListener('popstate', handlePopState)
-  }, [history, page])
+    return () => {
+      window.removeEventListener('popstate', handleNavigationChange);
+      window.removeEventListener('hashchange', handleNavigationChange);
+    };
+  }, [history, page]);
 
   const handleLogout = () => {
     // Clear any stored session data

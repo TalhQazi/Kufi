@@ -144,16 +144,20 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                                             <p className="text-xs text-slate-500 truncate">{currentUser.email}</p>
                                         </div>
 
-                                        {currentUser.role === 'admin' && (
+                                        {(currentUser.role === 'admin' || currentUser.role === 'supplier') && (
                                             <button
                                                 onClick={() => {
-                                                    window.location.hash = '#admin'
-                                                    setProfileDropdownOpen(false)
+                                                    if (currentUser.role === 'admin') {
+                                                        window.location.hash = '#admin';
+                                                    } else {
+                                                        window.location.hash = '#supplier';
+                                                    }
+                                                    setProfileDropdownOpen(false);
                                                 }}
                                                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                                             >
                                                 <FiSettings size={16} className="text-[#A67C52]" />
-                                                <span>Admin Dashboard</span>
+                                                <span>{currentUser.role === 'admin' ? 'Admin Dashboard' : 'Supplier Dashboard'}</span>
                                             </button>
                                         )}
 

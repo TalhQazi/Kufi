@@ -64,12 +64,16 @@ const StatCard = ({
   icon: Icon,
   iconBg,
   iconColor,
+  onClick,
 }) => {
   const changeColor = positive ? "text-emerald-500" : "text-red-500";
   const arrow = positive ? "▲" : "▼";
 
   return (
-    <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 px-4 sm:px-5 py-3 sm:py-4">
+    <div
+      className={`bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 px-4 sm:px-5 py-3 sm:py-4 transition-all ${onClick ? 'cursor-pointer hover:shadow-md hover:border-[#704b24]/30' : ''}`}
+      onClick={onClick}
+    >
       <div className="flex items-start justify-between">
         <div
           className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center ${iconBg}`}
@@ -256,9 +260,20 @@ const Dashboard = ({ onNavigate }) => {
 
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
-        {statsData.map((item) => (
-          <StatCard key={item.title} {...item} />
-        ))}
+        {statsData.map((item) => {
+          let targetPage = null;
+          if (item.title === "Total Users") targetPage = "User Management";
+          if (item.title === "Revenue") targetPage = "Payments & Finance";
+          if (item.title === "Bookings") targetPage = "Activity";
+
+          return (
+            <StatCard
+              key={item.title}
+              {...item}
+              onClick={targetPage ? () => onNavigate?.(targetPage) : undefined}
+            />
+          );
+        })}
       </div>
 
       {/* Charts row */}
