@@ -23,67 +23,38 @@ ChartJS.register(
   Legend
 );
 
-const stats = [
-  {
-    title: "Total Users",
-    value: "12,543",
-    change: "+12.5%",
-    positive: true,
-    icon: Users,
-    iconBg: "bg-blue-100",
-    iconColor: "text-blue-600",
-  },
-  {
-    title: "Active Listings",
-    value: "1,234",
-    change: "+8.2%",
-    positive: true,
-    icon: Trello,
-    iconBg: "bg-emerald-100",
-    iconColor: "text-emerald-500",
-  },
-  {
-    title: "Revenue",
-    value: "$67,890",
-    change: "+23.1%",
-    positive: true,
-    icon: DollarSign,
-    iconBg: "bg-purple-100",
-    iconColor: "text-purple-600",
-  },
-  {
-    title: "Bookings",
-    value: "892",
-    change: "-3.2%",
-    positive: false,
-    icon: BookOpen,
-    iconBg: "bg-orange-100",
-    iconColor: "text-orange-500",
-  },
+const defaultStats = [
+  { title: "Total Users", value: "...", change: "0%", positive: true, icon: Users, iconBg: "bg-blue-100", iconColor: "text-blue-600" },
+  { title: "Active Listings", value: "...", change: "0%", positive: true, icon: Trello, iconBg: "bg-emerald-100", iconColor: "text-emerald-500" },
+  { title: "Revenue", value: "...", change: "0%", positive: true, icon: DollarSign, iconBg: "bg-purple-100", iconColor: "text-purple-600" },
+  { title: "Bookings", value: "...", change: "0%", positive: true, icon: BookOpen, iconBg: "bg-orange-100", iconColor: "text-orange-500" },
 ];
 
-const recentActivity = [
-  {
-    action: "New supplier registration",
-    user: "John Doe",
-    time: "5 minutes ago",
-  },
-  {
-    action: "Listing approved",
-    user: "Jane Smith",
-    time: "12 minutes ago",
-  },
-  {
-    action: "Payment processed",
-    user: "Mike Johnson",
-    time: "1 hour ago",
-  },
-  {
-    action: "Review reported",
-    user: "Sarah Williams",
-    time: "2 hours ago",
-  },
-];
+const revenueData = {
+  labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+  datasets: [{
+    label: "Revenue",
+    data: [0, 0, 0, 0, 0, 0],
+    borderColor: "#3b82f6",
+    backgroundColor: "rgba(59, 130, 246, 0.15)",
+    fill: true,
+    tension: 0.35,
+    pointRadius: 4,
+    pointBackgroundColor: "#3b82f6"
+  }],
+};
+
+const bookingsData = {
+  labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  datasets: [{
+    label: "Bookings",
+    data: [0, 0, 0, 0, 0, 0, 0],
+    backgroundColor: "#10b981",
+    borderRadius: 4
+  }],
+};
+
+const recentActivity = [];
 
 const StatCard = ({
   title,
@@ -117,21 +88,6 @@ const StatCard = ({
   );
 };
 
-const revenueData = {
-  labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-  datasets: [
-    {
-      label: "Revenue",
-      data: [45000, 52000, 48000, 61000, 55000, 67000],
-      borderColor: "#3b82f6",
-      backgroundColor: "rgba(59, 130, 246, 0.15)",
-      tension: 0.35,
-      fill: true,
-      pointRadius: 4,
-      pointBackgroundColor: "#3b82f6",
-    },
-  ],
-};
 
 const revenueOptions = {
   responsive: true,
@@ -168,17 +124,6 @@ const revenueOptions = {
   },
 };
 
-const bookingsData = {
-  labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-  datasets: [
-    {
-      label: "Bookings",
-      data: [45, 52, 47, 61, 58, 73, 69],
-      backgroundColor: "#10b981",
-      borderRadius: 4,
-    },
-  ],
-};
 
 const bookingsOptions = {
   responsive: true,
@@ -240,8 +185,8 @@ const QuickActionButton = ({ icon: Icon, label, bgColor, onClick }) => (
 );
 
 const Dashboard = ({ onNavigate }) => {
-  const [statsData, setStatsData] = useState(stats);
-  const [activityData, setActivityData] = useState(recentActivity);
+  const [statsData, setStatsData] = useState(defaultStats);
+  const [activityData, setActivityData] = useState([]);
   const [revData, setRevData] = useState(revenueData);
   const [bookData, setBookData] = useState(bookingsData);
   const [loading, setLoading] = useState(true);

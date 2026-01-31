@@ -4,32 +4,6 @@ import api from "../../api";
 
 const tabs = ["All Users", "All Suppliers", "Active", "Suspended", "Disputes", "Reviews"];
 
-const users = [
-  {
-    name: "John Doe",
-    email: "john@example.com",
-    type: "Traveler",
-    joinDate: "2025-01-15",
-    activity: "12 bookings",
-    status: "active",
-  },
-  {
-    name: "Jane Smith",
-    email: "jane@example.com",
-    type: "Supplier",
-    joinDate: "2025-11-20",
-    activity: "8 listings",
-    status: "active",
-  },
-  {
-    name: "Mike Johnson",
-    email: "mike@example.com",
-    type: "Traveler",
-    joinDate: "2025-02-10",
-    activity: "5 bookings",
-    status: "suspended",
-  },
-];
 
 const StatusBadge = ({ status }) => {
   const isActive = status === "active";
@@ -59,27 +33,43 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/auth/users'); // Assuming this endpoint exists based on /auth/login
-      // Handle the data format (it might be response.data or response.data.users)
-      const data = Array.isArray(response.data) ? response.data : (response.data.users || []);
+      console.log("Fetching users...");
 
-      // Transform backend user to frontend user format if needed
+      // Try multiple potential endpoints
+      let response;
+      try {
+        response = await api.get('/auth/users');
+        console.log("Fetched from /auth/users:", response.data);
+      } catch (e) {
+        console.warn("/auth/users failed, trying /users...", e);
+        try {
+          response = await api.get('/users');
+          console.log("Fetched from /users:", response.data);
+        } catch (e2) {
+          console.warn("/users failed, trying /admin/users...", e2);
+          response = await api.get('/admin/users');
+          console.log("Fetched from /admin/users:", response.data);
+        }
+      }
+
+      const data = Array.isArray(response.data) ? response.data : (response.data.users || response.data.allUsers || []);
+
       const transformedUsers = data.map(u => ({
-        id: u._id,
-        name: u.name,
-        email: u.email,
-        type: u.role === 'supplier' ? 'Supplier' : 'Traveler',
+        id: u._id || u.id,
+        name: u.name || u.username || 'Unknown',
+        email: u.email || 'N/A',
+        type: (u.role && u.role.toLowerCase() === 'supplier') ? 'Supplier' : 'Traveler',
         joinDate: u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : 'N/A',
         activity: u.activity || '0 bookings',
-        status: u.status || 'active',
-        role: u.role
+        status: (u.status || 'active').toLowerCase(),
+        role: u.role || 'user'
       }));
 
+      console.log("Transformed users:", transformedUsers);
       setUserList(transformedUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
-      // alert("Failed to fetch users from backend");
-      // Fallback to empty list or dummy data if absolutely necessary, but better to show error
+      alert("Failed to fetch users. Check console for details.");
     } finally {
       setLoading(false);
     }
@@ -96,8 +86,8 @@ const UserManagement = () => {
             : user.status === activeTab.toLowerCase();
       const matchesQuery =
         !normalizedQuery ||
-        user.name.toLowerCase().includes(normalizedQuery) ||
-        user.email.toLowerCase().includes(normalizedQuery);
+        (user.name && user.name.toLowerCase().includes(normalizedQuery)) ||
+        (user.email && user.email.toLowerCase().includes(normalizedQuery));
       return matchesStatus && matchesQuery;
     });
   }, [activeTab, query, userList]);
@@ -231,10 +221,9 @@ const UserManagement = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-sm font-semibold shrink-0">
-                            {user.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
+                            {user.name && typeof user.name === 'string'
+                              ? user.name.split(/\s+/).filter(Boolean).map((n) => n[0]).join("").toUpperCase()
+                              : "U"}
                           </div>
                           <div>
                             <p className="font-semibold text-slate-900 leading-none">{user.name}</p>
@@ -391,10 +380,9 @@ const UserManagement = () => {
               <div key={user.email} className="bg-white border border-gray-100 rounded-2xl p-4 space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-sm font-semibold shrink-0">
-                    {user.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
+                    {user.name && typeof user.name === 'string'
+                      ? user.name.split(/\s+/).filter(Boolean).map((n) => n[0]).join("").toUpperCase()
+                      : "U"}
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-slate-900 truncate">{user.name}</p>
