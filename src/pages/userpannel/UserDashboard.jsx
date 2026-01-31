@@ -123,7 +123,8 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                                 setDropdown(false)
                                             }}
                                         >
-                                            MY REQUESTS
+                                            {currentUser.role === 'admin' ? 'ADMIN DASHBOARD' :
+                                                currentUser.role === 'supplier' ? 'SUPPLIER DASHBOARD' : 'MY REQUESTS'}
                                         </div>
                                         <div
                                             className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"

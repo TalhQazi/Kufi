@@ -120,6 +120,21 @@ export default function App() {
     navigateTo('blog-detail')
   }
 
+  const handleProfileClick = () => {
+    if (!currentUser) {
+      setShowModal('login')
+      return
+    }
+    const role = currentUser.role || localStorage.getItem('userRole')
+    if (role === 'admin') {
+      navigateTo('admin')
+    } else if (role === 'supplier') {
+      navigateTo('supplier')
+    } else {
+      navigateTo('user-profile')
+    }
+  }
+
   // Navigation history state (for custom buttons)
   const [history, setHistory] = useState([getInitialPage()])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -264,7 +279,7 @@ export default function App() {
         onActivityClick={handleActivityClick}
         onCategoryClick={handleCategoryClick}
         onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
+        onProfileClick={handleProfileClick}
         onSettingsClick={() => navigateTo('traveler-profile')}
         onSendRequest={() => navigateTo('travel-booking')}
         onBack={goBack}
@@ -291,7 +306,7 @@ export default function App() {
         selectedCityName={selectedCityName}
         onLogout={handleLogout}
         onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
+        onProfileClick={handleProfileClick}
         onActivityClick={handleActivityClick}
         onBlogClick={handleBlogClick}
         onBack={goBack}
@@ -306,7 +321,7 @@ export default function App() {
         categoryName={selectedCategoryName}
         onLogout={handleLogout}
         onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
+        onProfileClick={handleProfileClick}
         onActivityClick={handleActivityClick}
         onBack={goBack}
         onHomeClick={() => navigateTo('home')}
@@ -326,7 +341,7 @@ export default function App() {
         onItineraryClick={handleItineraryClick}
         onHomeClick={() => navigateTo('home')}
         onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
+        onProfileClick={handleProfileClick}
         onSettingsClick={() => navigateTo('traveler-profile')}
         onCountryClick={handleCountryClick}
       />
@@ -342,7 +357,7 @@ export default function App() {
         canGoBack={canGoBack}
         canGoForward={canGoForward}
         onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
+        onProfileClick={handleProfileClick}
         onSettingsClick={() => navigateTo('traveler-profile')}
         onActivityClick={handleActivityClick}
         onAddToList={(activityData) => handleAddToList(activityData)}
@@ -359,7 +374,7 @@ export default function App() {
         canGoBack={canGoBack}
         canGoForward={canGoForward}
         onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
+        onProfileClick={handleProfileClick}
         onSettingsClick={() => navigateTo('traveler-profile')}
         selectedActivities={selectedActivities}
         hideHeaderFooter={true}
@@ -403,7 +418,7 @@ export default function App() {
         onRequestAdjustment={() => alert('Adjustment request sent!')}
         onLogout={handleLogout}
         onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={() => navigateTo('user-profile')}
+        onProfileClick={handleProfileClick}
         onSettingsClick={() => navigateTo('traveler-profile')}
         onHomeClick={() => navigateTo('home')}
       />
@@ -413,7 +428,7 @@ export default function App() {
       <TravelerProfile
         onBack={goBack}
         onLogout={handleLogout}
-        onProfileClick={() => navigateTo('user-profile')}
+        onProfileClick={handleProfileClick}
         onSettingsClick={() => navigateTo('traveler-profile')}
         onHomeClick={() => navigateTo('home')}
       />
@@ -430,7 +445,7 @@ export default function App() {
         onBlogClick={handleBlogClick}
         currentUser={currentUser}
         onLogout={handleLogout}
-        onProfileClick={() => navigateTo('user-profile')}
+        onProfileClick={handleProfileClick}
         hideHeaderFooter={true}
       />
     )
@@ -454,7 +469,7 @@ export default function App() {
         onSigninClick={handleOpenLogin}
         currentUser={currentUser}
         onLogout={handleLogout}
-        onProfileClick={() => navigateTo('user-profile')}
+        onProfileClick={handleProfileClick}
       />
 
       <main className="flex-grow">
