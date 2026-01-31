@@ -35,20 +35,21 @@ const UserManagement = () => {
       setLoading(true);
       console.log("Fetching users...");
 
-      // Try multiple potential endpoints
+      // Try multiple potential endpoints, starting with the verified /admin prefix
       let response;
       try {
-        response = await api.get('/auth/users');
-        console.log("Fetched from /auth/users:", response.data);
+        console.log("Trying /admin/users...");
+        response = await api.get('/admin/users');
+        console.log("Fetched from /admin/users:", response.data);
       } catch (e) {
-        console.warn("/auth/users failed, trying /users...", e);
+        console.warn("/admin/users failed, trying /auth/users...", e);
         try {
+          response = await api.get('/auth/users');
+          console.log("Fetched from /auth/users:", response.data);
+        } catch (e2) {
+          console.warn("/auth/users failed, trying /users...", e2);
           response = await api.get('/users');
           console.log("Fetched from /users:", response.data);
-        } catch (e2) {
-          console.warn("/users failed, trying /admin/users...", e2);
-          response = await api.get('/admin/users');
-          console.log("Fetched from /admin/users:", response.data);
         }
       }
 
@@ -144,41 +145,25 @@ const UserManagement = () => {
     const userId = user.id;
 
     if (!userId) {
-      alert("Error: User ID is missing. Cannot update status.");
-      console.error("User object missing ID:", user);
+      alert("Error: User ID is missing.");
       return;
     }
 
     if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
 
     try {
-      const newStatus = user.status === "suspended" ? "active" : "suspended";
-      console.log(`Attempting to ${action} user. ID: ${userId}, Status: ${newStatus}`);
+      console.log(`Attempting to ${action} user. ID: ${userId}`);
 
-      const tryUpdate = async () => {
-        // Try the verified admin endpoints found in probe
-        try {
-          console.log("Trying /admin/update-status/${userId}...");
-          return await api.patch(`/admin/update-status/${userId}`, { status: newStatus });
-        } catch (e) {
-          console.warn("/admin/update-status failed, trying /admin/suspend/${userId}...");
-          try {
-            return await api.patch(`/admin/suspend/${userId}`, { status: newStatus });
-          } catch (e2) {
-            console.warn("/admin/suspend failed, trying /auth/users/${userId}...");
-            return await api.patch(`/auth/users/${userId}`, { status: newStatus });
-          }
-        }
-      };
-
-      await tryUpdate();
+      // Verified correct route from backend code: /api/admin/users/:userId/toggle
+      await api.patch(`/admin/users/${userId}/toggle`);
 
       alert(`User ${action}ed successfully`);
       fetchUsers();
     } catch (error) {
-      console.error("Final error updating user status:", error);
+      console.error("Error updating user status:", error);
+      const status = error.response?.status;
       const errorMsg = error.response?.data?.message || error.message || "Unknown error";
-      alert(`Failed to update status: ${errorMsg}`);
+      alert(`Failed to update status: ${errorMsg} (Status: ${status})`);
     }
   };
 
@@ -192,29 +177,16 @@ const UserManagement = () => {
     try {
       console.log(`Attempting to approve user ${userId}`);
 
-      const tryApprove = async () => {
-        try {
-          console.log("Trying /admin/approve/${userId}...");
-          return await api.patch(`/admin/approve/${userId}`, { status: 'active' });
-        } catch (e) {
-          console.warn("/admin/approve failed, trying /admin/update-status/${userId}...");
-          try {
-            return await api.patch(`/admin/update-status/${userId}`, { status: 'active' });
-          } catch (e2) {
-            console.warn("/admin/update-status failed, trying /auth/users/${userId}...");
-            return await api.patch(`/auth/users/${userId}`, { status: 'active' });
-          }
-        }
-      };
-
-      await tryApprove();
+      // Verified correct route from backend code: /api/admin/users/:userId/approve
+      await api.patch(`/admin/users/${userId}/approve`);
 
       alert(`Supplier ${user.name} approved!`);
       fetchUsers();
     } catch (error) {
       console.error("Error approving supplier:", error);
+      const status = error.response?.status;
       const errorMsg = error.response?.data?.message || error.message || "Unknown error";
-      alert(`Failed to approve supplier: ${errorMsg}`);
+      alert(`Failed to approve supplier: ${errorMsg} (Status: ${status})`);
     }
   };
 
