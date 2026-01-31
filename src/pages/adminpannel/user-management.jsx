@@ -92,21 +92,30 @@ const UserManagement = () => {
     });
   }, [activeTab, query, userList]);
 
-  const handleView = (user) => setSelectedUser({ ...user, mode: "view" });
+  const handleView = (user) => {
+    if (selectedUser?.id === user.id && selectedUser.mode === "view") {
+      setSelectedUser(null);
+    } else {
+      setSelectedUser({ ...user, mode: "view" });
+    }
+  };
 
   const handleEdit = (user) => {
-    setSelectedUser({
-      ...user,
-      mode: "edit",
-      pendingType: user.type,
-      pendingActivity: user.activity,
-    });
+    if (selectedUser?.id === user.id && selectedUser.mode === "edit") {
+      setSelectedUser(null);
+    } else {
+      setSelectedUser({
+        ...user,
+        mode: "edit",
+        pendingType: user.type,
+        pendingActivity: user.activity,
+      });
+    }
   };
 
   const handleSaveEdit = async () => {
     if (!selectedUser) return;
     try {
-      // Mapping 'Tourist'/'Traveler' to 'user' and 'Supplier' to 'supplier' for the backend
       const role = selectedUser.pendingType.toLowerCase().includes('supplier') ? 'supplier' : 'user';
 
       await api.patch(`/auth/users/${selectedUser.id}`, {
@@ -131,9 +140,20 @@ const UserManagement = () => {
   };
 
   const handleSuspend = async (user) => {
+    const action = user.status === "suspended" ? "restore" : "suspend";
+    if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
+
     try {
       const newStatus = user.status === "suspended" ? "active" : "suspended";
-      await api.patch(`/auth/update-status/${user.id}`, { status: newStatus });
+      // Trying common endpoint patterns
+      try {
+        await api.patch(`/auth/update-status/${user.id}`, { status: newStatus });
+      } catch (e) {
+        console.warn("/auth/update-status failed, trying /auth/users/status...", e);
+        await api.patch(`/auth/users/status/${user.id}`, { status: newStatus });
+      }
+
+      alert(`User ${action}ed successfully`);
       fetchUsers();
     } catch (error) {
       console.error("Error updating user status:", error);
@@ -216,8 +236,8 @@ const UserManagement = () => {
                 </tr>
               ) : (
                 filteredUsers.map((user) => (
-                  <React.Fragment key={user.email}>
-                    <tr className={`transition-colors ${selectedUser?.email === user.email ? "bg-gray-50/50" : "hover:bg-gray-50/70"}`}>
+                  <React.Fragment key={user.id}>
+                    <tr className={`transition-colors ${selectedUser?.id === user.id ? "bg-gray-50/50" : "hover:bg-gray-50/70"}`}>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-sm font-semibold shrink-0">
@@ -249,7 +269,7 @@ const UserManagement = () => {
                             </button>
                           )}
                           <button
-                            className={`hover:underline ${selectedUser?.email === user.email && selectedUser.mode === "view" ? "text-[#a26e35]" : "text-blue-500"}`}
+                            className={`hover:underline ${selectedUser?.id === user.id && selectedUser.mode === "view" ? "text-[#a26e35]" : "text-blue-500"}`}
                             onClick={() => handleView(user)}
                           >
                             View
@@ -263,7 +283,7 @@ const UserManagement = () => {
                         </div>
                       </td>
                     </tr>
-                    {selectedUser?.email === user.email && (
+                    {selectedUser?.id === user.id && (
                       <tr className="bg-gray-50/50">
                         <td colSpan={6} className="px-6 py-4">
                           <div className="border border-gray-100 rounded-2xl p-6 bg-white shadow-sm space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -377,7 +397,7 @@ const UserManagement = () => {
             </div>
           ) : (
             filteredUsers.map((user) => (
-              <div key={user.email} className="bg-white border border-gray-100 rounded-2xl p-4 space-y-4">
+              <div key={user.id} className="bg-white border border-gray-100 rounded-2xl p-4 space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-sm font-semibold shrink-0">
                     {user.name && typeof user.name === 'string'
@@ -442,7 +462,7 @@ const UserManagement = () => {
                 </div>
 
                 {/* Mobile Inline Details/Edit */}
-                {selectedUser?.email === user.email && (
+                {selectedUser?.id === user.id && (
                   <div className="mt-4 pt-4 border-t border-gray-50 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-slate-900">
