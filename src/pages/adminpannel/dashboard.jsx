@@ -24,10 +24,10 @@ ChartJS.register(
 );
 
 const defaultStats = [
-  { title: "Total Users", value: "...", change: "0%", positive: true, icon: Users, iconBg: "bg-blue-100", iconColor: "text-blue-600" },
-  { title: "Active Listings", value: "...", change: "0%", positive: true, icon: Trello, iconBg: "bg-emerald-100", iconColor: "text-emerald-500" },
-  { title: "Revenue", value: "...", change: "0%", positive: true, icon: DollarSign, iconBg: "bg-purple-100", iconColor: "text-purple-600" },
-  { title: "Bookings", value: "...", change: "0%", positive: true, icon: BookOpen, iconBg: "bg-orange-100", iconColor: "text-orange-500" },
+  { title: "Total Users", value: "...", change: "Live", positive: true, icon: Users, iconBg: "bg-blue-100", iconColor: "text-blue-600" },
+  { title: "Products", value: "...", change: "Live", positive: true, icon: Trello, iconBg: "bg-emerald-100", iconColor: "text-emerald-500" },
+  { title: "Total Points", value: "...", change: "Live", positive: true, icon: DollarSign, iconBg: "bg-purple-100", iconColor: "text-purple-600" },
+  { title: "Total Scans", value: "...", change: "Live", positive: true, icon: BookOpen, iconBg: "bg-orange-100", iconColor: "text-orange-500" },
 ];
 
 const revenueData = {
@@ -201,40 +201,46 @@ const Dashboard = ({ onNavigate }) => {
         setLoading(true);
         const results = await Promise.allSettled([
           api.get('/admin/stats'),
-          api.get('/admin/activity'),
-          api.get('/admin/revenue-trend'),
-          api.get('/admin/bookings-trend')
+          api.get('/admin/analytics'),
+          api.get('/admin/updates')
         ]);
 
         if (results[0].status === 'fulfilled' && results[0].value.data) {
           const s = results[0].value.data;
           setStatsData(prev => prev.map(item => {
-            if (item.title === "Total Users") return { ...item, value: s.totalUsers?.toLocaleString() || item.value, change: s.usersChange || item.change };
-            if (item.title === "Active Listings") return { ...item, value: s.activeListings?.toLocaleString() || item.value, change: s.listingsChange || item.change };
-            if (item.title === "Revenue") return { ...item, value: `$${s.totalRevenue?.toLocaleString()}` || item.value, change: s.revenueChange || item.change };
-            if (item.title === "Bookings") return { ...item, value: s.totalBookings?.toLocaleString() || item.value, change: s.bookingsChange || item.change };
+            if (item.title === "Total Users") return { ...item, value: s.userCount?.toLocaleString() || "0" };
+            if (item.title === "Products") return { ...item, value: s.productCount?.toLocaleString() || "0" };
+            if (item.title === "Total Points") return { ...item, value: s.totalPoints?.toLocaleString() || "0" };
+            if (item.title === "Total Scans") return { ...item, value: s.scanCount?.toLocaleString() || "0" };
             return item;
           }));
         }
 
         if (results[1].status === 'fulfilled' && results[1].value.data) {
-          setActivityData(results[1].value.data.activities || results[1].value.data);
+          const analytics = results[1].value.data;
+          const labels = analytics.map(a => a.day);
+          const data = analytics.map(a => a.count);
+
+          setRevData(prev => ({
+            ...prev,
+            labels: labels,
+            datasets: [{ ...prev.datasets[0], data: data, label: 'Daily Scans' }]
+          }));
+
+          setBookData(prev => ({
+            ...prev,
+            labels: labels,
+            datasets: [{ ...prev.datasets[0], data: data, label: 'Engagement' }]
+          }));
         }
 
         if (results[2].status === 'fulfilled' && results[2].value.data) {
-          setRevData(prev => ({
-            ...prev,
-            labels: results[2].value.data.labels || prev.labels,
-            datasets: [{ ...prev.datasets[0], data: results[2].value.data.data || prev.datasets[0].data }]
-          }));
-        }
-
-        if (results[3].status === 'fulfilled' && results[3].value.data) {
-          setBookData(prev => ({
-            ...prev,
-            labels: results[3].value.data.labels || prev.labels,
-            datasets: [{ ...prev.datasets[0], data: results[3].value.data.data || prev.datasets[0].data }]
-          }));
+          const updates = results[2].value.data;
+          setActivityData(updates.map(u => ({
+            action: u.title,
+            user: u.type || 'System Update',
+            time: new Date(u.createdAt).toLocaleDateString()
+          })));
         }
       } catch (error) {
         console.error("Dashboard fetch error:", error);
