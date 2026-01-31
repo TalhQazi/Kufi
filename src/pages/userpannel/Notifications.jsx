@@ -235,7 +235,12 @@ export default function Notifications({ onLogout, onBack, onHomeClick, onNotific
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                            ))
+                        ) : (
+                            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
+                                <p className="text-slate-500">No notifications yet.</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* System Notifications */}
