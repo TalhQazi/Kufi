@@ -155,30 +155,23 @@ const UserManagement = () => {
       const newStatus = user.status === "suspended" ? "active" : "suspended";
       console.log(`Attempting to ${action} user. ID: ${userId}, Status: ${newStatus}`);
 
-      const tryPatch = async (url) => {
-        console.log(`Patching ${url}...`);
-        return await api.patch(url, { status: newStatus });
+      const tryUpdate = async () => {
+        // Try the verified admin endpoints found in probe
+        try {
+          console.log("Trying /admin/update-status/${userId}...");
+          return await api.patch(`/admin/update-status/${userId}`, { status: newStatus });
+        } catch (e) {
+          console.warn("/admin/update-status failed, trying /admin/suspend/${userId}...");
+          try {
+            return await api.patch(`/admin/suspend/${userId}`, { status: newStatus });
+          } catch (e2) {
+            console.warn("/admin/suspend failed, trying /auth/users/${userId}...");
+            return await api.patch(`/auth/users/${userId}`, { status: newStatus });
+          }
+        }
       };
 
-      try {
-        await tryPatch(`/auth/users/${userId}`);
-      } catch (e) {
-        if (e.response?.status === 404) {
-          console.warn("404 on /auth/users/${id}, trying /auth/users/status/${id}...");
-          try {
-            await tryPatch(`/auth/users/status/${userId}`);
-          } catch (e2) {
-            if (e2.response?.status === 404 && user.email) {
-              console.warn("404 again, trying email as ID: /auth/users/${email}...");
-              await tryPatch(`/auth/users/${user.email}`);
-            } else {
-              throw e2;
-            }
-          }
-        } else {
-          throw e;
-        }
-      }
+      await tryUpdate();
 
       alert(`User ${action}ed successfully`);
       fetchUsers();
@@ -199,27 +192,22 @@ const UserManagement = () => {
     try {
       console.log(`Attempting to approve user ${userId}`);
 
-      const tryPatch = async (url) => {
-        return await api.patch(url, { status: 'active' });
+      const tryApprove = async () => {
+        try {
+          console.log("Trying /admin/approve/${userId}...");
+          return await api.patch(`/admin/approve/${userId}`, { status: 'active' });
+        } catch (e) {
+          console.warn("/admin/approve failed, trying /admin/update-status/${userId}...");
+          try {
+            return await api.patch(`/admin/update-status/${userId}`, { status: 'active' });
+          } catch (e2) {
+            console.warn("/admin/update-status failed, trying /auth/users/${userId}...");
+            return await api.patch(`/auth/users/${userId}`, { status: 'active' });
+          }
+        }
       };
 
-      try {
-        await tryPatch(`/auth/users/${userId}`);
-      } catch (e) {
-        if (e.response?.status === 404) {
-          try {
-            await tryPatch(`/auth/users/status/${userId}`);
-          } catch (e2) {
-            if (e2.response?.status === 404 && user.email) {
-              await tryPatch(`/auth/users/${user.email}`);
-            } else {
-              throw e2;
-            }
-          }
-        } else {
-          throw e;
-        }
-      }
+      await tryApprove();
 
       alert(`Supplier ${user.name} approved!`);
       fetchUsers();
