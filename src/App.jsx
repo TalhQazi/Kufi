@@ -457,6 +457,14 @@ export default function App() {
     return <AdminApp initialPage="Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('home')} />
   }
 
+  if (page === 'admin-profile') {
+    return <AdminApp initialPage="Profile" onLogout={handleLogout} onHomeClick={() => navigateTo('home')} />
+  }
+
+  if (page === 'admin-settings') {
+    return <AdminApp initialPage="Settings" onLogout={handleLogout} onHomeClick={() => navigateTo('home')} />
+  }
+
   if (page === 'supplier') {
     return <AdminApp initialPage="Supplier Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('home')} />
   }

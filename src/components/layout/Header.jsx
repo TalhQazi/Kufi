@@ -163,9 +163,16 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
 
                                         <button
                                             onClick={() => {
-                                                if (onProfileClick) onProfileClick();
-                                                else window.location.hash = '#user-profile';
-                                                setProfileDropdownOpen(false)
+                                                if (currentUser.role === 'admin') {
+                                                    window.location.hash = '#admin-profile';
+                                                    setProfileDropdownOpen(false);
+                                                } else if (onProfileClick) {
+                                                    onProfileClick();
+                                                    setProfileDropdownOpen(false);
+                                                } else {
+                                                    window.location.hash = '#user-profile';
+                                                    setProfileDropdownOpen(false)
+                                                }
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                                         >
@@ -173,24 +180,26 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                                             <span>My Profile</span>
                                         </button>
 
-                                        <button
-                                            onClick={() => {
-                                                window.location.hash = '#itinerary-view'
-                                                setProfileDropdownOpen(false)
-                                            }}
-                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                                        >
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#A67C52]">
-                                                <path d="M9 11l3 3L22 4" />
-                                                <path d="M22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9" />
-                                            </svg>
-                                            <span>My Requests</span>
-                                        </button>
+                                        {currentUser.role !== 'admin' && (
+                                            <button
+                                                onClick={() => {
+                                                    window.location.hash = '#itinerary-view'
+                                                    setProfileDropdownOpen(false)
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                            >
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#A67C52]">
+                                                    <path d="M9 11l3 3L22 4" />
+                                                    <path d="M22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 1 2-2h9" />
+                                                </svg>
+                                                <span>My Requests</span>
+                                            </button>
+                                        )}
 
                                         <button
                                             onClick={() => {
                                                 if (currentUser.role === 'admin') {
-                                                    window.location.hash = '#admin';
+                                                    window.location.hash = '#admin-settings';
                                                 } else if (currentUser.role === 'supplier') {
                                                     window.location.hash = '#supplier';
                                                 } else {

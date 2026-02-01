@@ -7,8 +7,11 @@ const AdminProfile = () => {
         name: 'Admin User',
         email: 'admin@kufi.com',
         phone: '',
-        role: 'Administrator'
+        phone: '',
+        role: 'Administrator',
+        image: ''
     });
+    const fileInputRef = React.useRef(null);
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -36,6 +39,17 @@ const AdminProfile = () => {
         }
     };
 
+    const handleImageUpload = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setProfile(prev => ({ ...prev, image: reader.result }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
         try {
@@ -43,7 +57,8 @@ const AdminProfile = () => {
             await api.put('/admin/profile', {
                 name: profile.name,
                 email: profile.email,
-                phone: profile.phone
+                phone: profile.phone,
+                image: profile.image // Send updated image
             });
             alert('Profile updated successfully!');
         } catch (error) {
@@ -88,12 +103,26 @@ const AdminProfile = () => {
                 <div className="md:col-span-1 space-y-6">
                     <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col items-center text-center shadow-sm">
                         <div className="relative">
-                            <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-3xl font-bold text-[#704b24] border-2 border-white shadow-md mb-3">
-                                {profile.name?.charAt(0) || 'A'}
+                            <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center text-3xl font-bold text-[#704b24] border-2 border-white shadow-md mb-3 overflow-hidden">
+                                {profile.image ? (
+                                    <img src={profile.image} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    profile.name?.charAt(0) || 'A'
+                                )}
                             </div>
-                            <button className="absolute bottom-2 right-0 p-1.5 bg-[#704b24] text-white rounded-full hover:bg-[#5a3c1d] transition-colors shadow-sm">
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="absolute bottom-2 right-0 p-1.5 bg-[#704b24] text-white rounded-full hover:bg-[#5a3c1d] transition-colors shadow-sm"
+                            >
                                 <Upload className="w-3.5 h-3.5" />
                             </button>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleImageUpload}
+                                className="hidden"
+                                accept="image/*"
+                            />
                         </div>
                         <h2 className="font-bold text-slate-900 text-lg">{profile.name}</h2>
                         <p className="text-sm text-gray-500">{profile.email}</p>
