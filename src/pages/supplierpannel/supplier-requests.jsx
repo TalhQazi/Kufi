@@ -21,22 +21,34 @@ const SupplierRequests = ({ darkMode }) => {
   const [acceptedRequestId, setAcceptedRequestId] = useState(null);
   const [itineraryRequestId, setItineraryRequestId] = useState(null);
 
+  const fetchRequests = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.get('/bookings/supplier?status=pending');
+      const data = response.data.bookings || [];
+      setRequests(data);
+      if (data.length > 0) setSelectedId(data[0].id || data[0]._id);
+    } catch (error) {
+      console.error("Error fetching supplier requests:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        setIsLoading(true);
-        const response = await api.get('/bookings/supplier?status=pending');
-        const data = response.data.bookings || [];
-        setRequests(data);
-        if (data.length > 0) setSelectedId(data[0].id || data[0]._id);
-      } catch (error) {
-        console.error("Error fetching supplier requests:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchRequests();
   }, []);
+
+  const handleStatusUpdate = async (id, status) => {
+    try {
+      await api.patch(`/bookings/${id}/status`, { status });
+      alert(`Request ${status} successfully`);
+      fetchRequests();
+    } catch (error) {
+      console.error(`Error updating status to ${status}:`, error);
+      alert(`Failed to ${status} request`);
+    }
+  };
 
   const selected = requests.find((r) => (r.id || r._id) === selectedId) || (requests.length > 0 ? requests[0] : null);
   const itineraryRequest =
@@ -62,7 +74,6 @@ const SupplierRequests = ({ darkMode }) => {
   if (view === "itinerary" && itineraryRequest) {
     return (
       <div className={`space-y-6 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
-        {/* Hero banner */}
         <div className="overflow-hidden rounded-3xl bg-gradient-to-tr from-[#1f2933] via-[#4b5563] to-[#9ca3af] relative h-40 sm:h-48 flex items-end">
           <img
             src="https://images.pexels.com/photos/5700446/pexels-photo-5700446.jpeg?auto=compress&cs=tinysrgb&w=1200"
@@ -84,7 +95,6 @@ const SupplierRequests = ({ darkMode }) => {
           </div>
         </div>
 
-        {/* Traveler overview + CTA */}
         <div className="space-y-4">
           <div className={`rounded-3xl border transition-colors duration-300 px-6 py-5 shadow-sm ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
             <h2 className={`mb-3 text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
@@ -128,7 +138,6 @@ const SupplierRequests = ({ darkMode }) => {
           </button>
         </div>
 
-        {/* Bottom bar */}
         <div className={`flex flex-col gap-3 border-t pt-4 mt-2 sm:flex-row sm:items-center sm:justify-between transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`}>
           <button
             type="button"
@@ -149,7 +158,6 @@ const SupplierRequests = ({ darkMode }) => {
 
   return (
     <div className={`grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2.1fr)_minmax(280px,0.9fr)] transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
-      {/* Left: requests list */}
       <div className="space-y-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
@@ -226,13 +234,20 @@ const SupplierRequests = ({ darkMode }) => {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      handleStatusUpdate(req.id || req._id, 'Confirmed');
                       setAcceptedRequestId(req.id || req._id);
                     }}
                     className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors"
                   >
                     <span>Accept</span>
                   </button>
-                  <button className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-rose-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-600 transition-colors">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStatusUpdate(req.id || req._id, 'Cancelled');
+                    }}
+                    className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-rose-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-600 transition-colors"
+                  >
                     <span>Reject</span>
                   </button>
                 </div>

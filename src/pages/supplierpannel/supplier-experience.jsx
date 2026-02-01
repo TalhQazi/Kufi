@@ -231,15 +231,29 @@ const ExperiencesListing = ({ darkMode, experiences, onAddExperience, onEditExpe
                     /person
                   </span>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEditExperience?.(exp);
-                  }}
-                  className={`inline-flex items-center justify-center rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors ${darkMode ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
-                >
-                  Edit
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditExperience?.(exp);
+                    }}
+                    className={`inline-flex items-center justify-center rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors ${darkMode ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      {/* We need to pass delete handler down or move it up */ }
+                      if (window.confirm("Delete this experience?")) {
+                        api.delete(`/activities/${exp._id || exp.id}`).then(() => window.location.reload());
+                      }
+                    }}
+                    className={`inline-flex items-center justify-center rounded-full border border-rose-200 px-4 py-1.5 text-xs font-semibold text-rose-500 hover:bg-rose-50 transition-colors ${darkMode ? "bg-rose-950/20 border-rose-900/30 hover:bg-rose-900/40" : ""}`}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -249,12 +263,57 @@ const ExperiencesListing = ({ darkMode, experiences, onAddExperience, onEditExpe
   );
 };
 
-const CreateExperienceForm = ({ darkMode, onBack, experience }) => {
+const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    title: experience?.title || "",
+    location: experience?.location || "",
+    days: experience?.days || 1,
+    nights: experience?.nights || 0,
+    capacity: experience?.capacity || 12,
+    category: experience?.category || "",
+    description: experience?.description || "",
+    price: experience?.price || "",
+    image: experience?.image || experience?.imageUrl || ""
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setIsSubmitting(true);
+      if (experience) {
+        await api.put(`/activities/${experience._id || experience.id}`, formData);
+        alert("Experience updated successfully!");
+      } else {
+        await api.post('/activities', formData);
+        alert("Experience published successfully!");
+      }
+      onSuccess?.();
+    } catch (error) {
+      console.error("Error saving experience:", error);
+      alert("Failed to save experience");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, image: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
-    <>
+    <form onSubmit={handleSubmit}>
       <div className={`mb-6 rounded-2xl border px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
         <div className="flex items-center gap-4">
           <button
+            type="button"
             onClick={onBack}
             className={`p-2 rounded-lg transition-colors ${darkMode ? "hover:bg-slate-800 text-slate-400" : "hover:bg-gray-100 text-gray-600"}`}
             title="Go back"
@@ -272,9 +331,6 @@ const CreateExperienceForm = ({ darkMode, onBack, experience }) => {
             </p>
           </div>
         </div>
-        <button className={`self-start sm:self-auto rounded-full px-4 sm:px-5 py-2 text-xs font-semibold transition-colors ${darkMode ? "bg-slate-800 text-slate-300" : "bg-[#f5f5f7] text-gray-600"}`}>
-          Experience Details
-        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.1fr)_minmax(260px,0.9fr)] gap-5">
@@ -285,102 +341,138 @@ const CreateExperienceForm = ({ darkMode, onBack, experience }) => {
               <div className="space-y-1.5">
                 <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Experience Title</label>
                 <input
+                  required
                   type="text"
-                  defaultValue={experience?.title || ""}
-                  placeholder="Enter a captivating title for your experience"
-                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-600" : "bg-white border-gray-200 text-gray-700 placeholder:text-gray-400"}`}
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Enter a captivating title"
+                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-600" : "bg-white border-gray-200 text-gray-700"}`}
                 />
               </div>
               <div className="space-y-1.5">
                 <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Destination</label>
                 <input
+                  required
                   type="text"
-                  defaultValue={experience?.location || ""}
-                  placeholder="City, Country or Region"
-                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-600" : "bg-white border-gray-200 text-gray-700 placeholder:text-gray-400"}`}
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  placeholder="City, Country"
+                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-600" : "bg-white border-gray-200 text-gray-700"}`}
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="space-y-1.5">
                   <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Days</label>
                   <input
                     type="number"
-                    defaultValue={experience?.days || 1}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
+                    value={formData.days}
+                    onChange={(e) => setFormData({ ...formData, days: e.target.value })}
+                    className={`w-full rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Nights</label>
                   <input
                     type="number"
-                    defaultValue={experience?.nights || 0}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
+                    value={formData.nights}
+                    onChange={(e) => setFormData({ ...formData, nights: e.target.value })}
+                    className={`w-full rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Max Group Size</label>
+                  <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Price ($)</label>
+                  <input
+                    required
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    className={`w-full rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Capacity</label>
                   <input
                     type="number"
-                    defaultValue={experience?.capacity || 12}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
+                    value={formData.capacity}
+                    onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                    className={`w-full rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Category</label>
-                <div className="relative">
-                  <select className={`w-full appearance-none rounded-lg border px-3 py-2 pr-8 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-white border-gray-200 text-gray-500"}`}>
-                    <option value="">{experience?.category || "Select a category"}</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                </div>
+                <input
+                  type="text"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  placeholder="e.g. Adventure, Relax, Cultural"
+                  className={`w-full rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
+                />
               </div>
               <div className="space-y-2">
                 <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Cover Image</label>
-                {experience ? (
-                  <div className="relative h-40 w-full overflow-hidden rounded-2xl">
-                    <img src={experience.image || experience.imageUrl || ""} alt="" className="h-full w-full object-cover" />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                      <button className="bg-white/90 text-gray-800 px-4 py-1.5 rounded-full text-xs font-bold shadow-xl hover:bg-white transition-colors">Change Photo</button>
+                <div className={`rounded-2xl border border-dashed p-4 text-center ${darkMode ? "bg-slate-800/50 border-slate-700" : "bg-gray-50 border-gray-300"}`}>
+                  {formData.image && (
+                    <div className="mb-3 h-40 w-full overflow-hidden rounded-xl">
+                      <img src={formData.image} alt="" className="h-full w-full object-cover" />
                     </div>
-                  </div>
-                ) : (
-                  <div className={`rounded-2xl border border-dashed transition-colors px-6 py-8 text-center text-xs ${darkMode ? "bg-slate-800/50 border-slate-700 text-slate-500" : "bg-gray-50 border-gray-300 text-gray-500"}`}>
-                    <p className={`mb-3 font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Upload Cover Photo</p>
-                    <button className={`inline-flex items-center justify-center rounded-lg border px-4 py-2 text-xs font-semibold transition-colors ${darkMode ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"}`}>Browse Files</button>
-                  </div>
-                )}
+                  )}
+                  <input
+                    type="file"
+                    id="exp-image"
+                    className="hidden"
+                    onChange={handleImageChange}
+                    accept="image/*"
+                  />
+                  <label
+                    htmlFor="exp-image"
+                    className="inline-flex cursor-pointer items-center justify-center rounded-lg border bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    {formData.image ? "Change Photo" : "Upload Photo"}
+                  </label>
+                </div>
               </div>
             </div>
           </div>
           <div className={`rounded-2xl border px-5 py-5 space-y-4 transition-colors ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
-            <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-gray-900"}`}>Experience Description</h2>
-            <div className="space-y-3">
-              <textarea
-                rows={4}
-                defaultValue={experience?.description || ""}
-                placeholder="Provide a detailed description of your experience..."
-                className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-600" : "bg-white border-gray-200 text-gray-700 placeholder:text-gray-400"}`}
-              />
-            </div>
-            <div className={`mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:justify-end transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`}>
-              <button onClick={onBack} className={`w-full sm:w-auto rounded-full border px-4 py-2 text-xs font-semibold transition-colors ${darkMode ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}>Cancel</button>
-              <button onClick={onBack} className="w-full sm:w-auto rounded-full bg-[#a26e35] px-5 py-2 text-xs font-semibold text-white hover:bg-[#8b5e2d] transition-colors">{experience ? "Update Experience" : "Publish Experience"}</button>
+            <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-gray-900"}`}>Description</h2>
+            <textarea
+              rows={4}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Describe the experience..."
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
+            />
+            <div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={onBack}
+                className={`w-full sm:w-auto rounded-full border px-4 py-2 text-xs font-semibold ${darkMode ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-white border-gray-200 text-gray-700"}`}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full sm:w-auto rounded-full bg-[#a26e35] px-5 py-2 text-xs font-semibold text-white hover:bg-[#8b5e2d] disabled:opacity-50"
+              >
+                {isSubmitting ? "Saving..." : experience ? "Update Experience" : "Publish Experience"}
+              </button>
             </div>
           </div>
         </div>
         <aside className="space-y-4">
           <div className={`rounded-2xl border px-5 py-5 space-y-4 transition-colors ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
-            <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-gray-900"}`}>Summary</h2>
-            <div className={`h-32 rounded-xl border border-dashed flex items-center justify-center text-[11px] overflow-hidden transition-colors ${darkMode ? "bg-slate-800/50 border-slate-700 text-slate-500" : "bg-gray-50 border-gray-300 text-gray-400"}`}>
-              {(experience?.image || experience?.imageUrl) ? <img src={experience.image || experience.imageUrl} className="w-full h-full object-cover" alt="" /> : "No cover image"}
+            <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-gray-900"}`}>Live Preview</h2>
+            <div className={`aspect-video rounded-xl border border-dashed flex items-center justify-center text-[10px] overflow-hidden ${darkMode ? "bg-slate-800/50 border-slate-700 text-slate-500" : "bg-gray-50 border-gray-300 text-gray-400"}`}>
+              {formData.image ? <img src={formData.image} className="w-full h-full object-cover" alt="" /> : "No image"}
             </div>
-            <p className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-gray-900"}`}>{experience?.title || "Untitled"}</p>
-            <button className={`mt-4 w-full rounded-full border px-4 py-2 text-xs font-semibold transition-colors ${darkMode ? "bg-slate-800 border-slate-700 text-[#a26e35] hover:bg-slate-700" : "bg-white border-gray-200 text-[#a26e35] hover:bg-gray-50"}`}>Preview</button>
+            <p className={`text-xs font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{formData.title || "Untitled Experience"}</p>
+            <p className="text-[10px] text-[#a26e35] font-semibold">${formData.price || "0"}</p>
           </div>
         </aside>
       </div>
-    </>
+    </form>
   );
 };
 
@@ -411,20 +503,6 @@ const SupplierExperience = ({ darkMode, view = 'list', onViewChange, navigateTo 
       </div>
     );
   }
-
-  if (view === "create" || view === "edit") {
-    return (
-      <CreateExperienceForm
-        darkMode={darkMode}
-        experience={view === "edit" ? selectedExperience : null}
-        onBack={() => {
-          setSelectedExperience(null);
-          onViewChange?.("list");
-        }}
-      />
-    );
-  }
-
   if (view === "details" && selectedExperience) {
     return (
       <ExperienceDetails
@@ -436,6 +514,39 @@ const SupplierExperience = ({ darkMode, view = 'list', onViewChange, navigateTo 
         }}
         onBookNow={() => {
           navigateTo?.("Booking");
+        }}
+      />
+    );
+  }
+
+  const handleDeleteExperience = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this experience?")) return;
+    try {
+      await api.delete(`/activities/${id}`);
+      alert("Experience deleted successfully!");
+      // Refresh list
+      const response = await api.get('/activities/supplier');
+      setExperiences(response.data || []);
+    } catch (error) {
+      console.error("Error deleting experience:", error);
+      alert("Failed to delete experience");
+    }
+  };
+
+  if (view === "create" || view === "edit") {
+    return (
+      <CreateExperienceForm
+        darkMode={darkMode}
+        experience={view === "edit" ? selectedExperience : null}
+        onBack={() => {
+          setSelectedExperience(null);
+          onViewChange?.("list");
+        }}
+        onSuccess={() => {
+          setSelectedExperience(null);
+          onViewChange?.("list");
+          // Refresh list - would be better to fetch again
+          api.get('/activities/supplier').then(res => setExperiences(res.data || []));
         }}
       />
     );

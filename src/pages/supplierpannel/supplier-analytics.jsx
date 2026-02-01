@@ -181,9 +181,21 @@ const SupplierAnalytics = ({ darkMode }) => {
       {/* Top stats */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {[
-          { label: "Total Revenue", value: "$42,750", trend: "+15.3% from last month" },
-          { label: "Total Bookings", value: "291", trend: "+8.2% from last month" },
-          { label: "Average Rating", value: "4.8", trend: "+0.2 from last month" },
+          {
+            label: "Total Revenue",
+            value: analyticsData?.totalRevenue ? `$${analyticsData.totalRevenue}` : "$0",
+            trend: analyticsData?.revenueTrend_percent || "0% from last month"
+          },
+          {
+            label: "Total Bookings",
+            value: analyticsData?.totalBookings || "0",
+            trend: analyticsData?.bookingsTrend_percent || "0% from last month"
+          },
+          {
+            label: "Average Rating",
+            value: analyticsData?.avgRating || "0.0",
+            trend: analyticsData?.ratingTrend || "No change"
+          },
         ].map((stat, i) => (
           <div key={i} className={`rounded-2xl border px-5 py-4 transition-colors ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
             <p className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-500" : "text-gray-500"}`}>{stat.label}</p>

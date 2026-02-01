@@ -1,36 +1,82 @@
-import React, { useRef, useState } from "react";
-import { Check } from "lucide-react";
+import React, { useRef, useState, useEffect } from "react";
+import { Check, Upload, Mail, Phone, MapPin, Info, Building } from "lucide-react";
+import api from "../../api";
 
 const SupplierProfile = ({ darkMode }) => {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = useState({
-    businessName: "Adventure Tours Co.",
-    contactEmail: "contact@adventuretours.com",
-    phoneNumber: "+1 (555) 123-4567",
-    businessAddress: "Lorem ipsum dolor sit amet consectetur.",
-    aboutBusiness:
-      "Lorem ipsum dolor sit amet consectetur. Varius gravida purus nibh elit viverra vel sit ultrices praesent.",
+    businessName: "",
+    contactEmail: "",
+    phoneNumber: "",
+    businessAddress: "",
+    aboutBusiness: "",
+    image: ""
   });
 
-  const [documents, setDocuments] = useState([
-    {
-      id: 1,
-      name: "Business_License.pdf",
-      status: "Verified",
-      meta: "Verified • Uploaded 2 months ago",
-    },
-    {
-      id: 2,
-      name: "Insurance_Certificate.pdf",
-      status: "Verified",
-      meta: "Verified • Uploaded 2 months ago",
-    },
-  ]);
+  const [documents, setDocuments] = useState([]);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true);
+        // Using common profile endpoint or supplier specific one if exists
+        const res = await api.get('/auth/me'); // Check /auth/me for current user data
+        const user = res.data;
+
+        setForm({
+          businessName: user.name || "",
+          contactEmail: user.email || "",
+          phoneNumber: user.phone || "",
+          businessAddress: user.address || "",
+          aboutBusiness: user.about || "",
+          image: user.image || ""
+        });
+
+        // Fetch specific supplier details if available
+        try {
+          const supplierRes = await api.get('/supplier/profile');
+          if (supplierRes.data) {
+            setForm(prev => ({
+              ...prev,
+              ...supplierRes.data
+            }));
+            setDocuments(supplierRes.data.documents || []);
+          }
+        } catch (e) {
+          console.log("Supplier specific profile not found, using auth data");
+        }
+      } catch (error) {
+        console.error("Error fetching supplier profile:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const fileInputRef = useRef(null);
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleToggleEdit = async () => {
+    if (isEditing) {
+      try {
+        setIsSaving(true);
+        await api.put('/supplier/profile', form);
+        alert("Profile updated successfully!");
+      } catch (error) {
+        console.error("Error updating supplier profile:", error);
+        alert("Failed to update profile");
+      } finally {
+        setIsSaving(false);
+        setIsEditing(false);
+      }
+    } else {
+      setIsEditing(true);
+    }
   };
 
   const handleUploadClick = () => {
@@ -42,6 +88,11 @@ const SupplierProfile = ({ darkMode }) => {
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setForm(prev => ({ ...prev, image: reader.result }));
+    };
+    reader.readAsDataURL(file);
 
     const now = new Date();
     const meta = `Pending review • Uploaded ${now.toLocaleDateString()}`;
@@ -59,6 +110,14 @@ const SupplierProfile = ({ darkMode }) => {
     event.target.value = "";
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a26e35]"></div>
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-6 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
       {/* Top bar: title + button */}
@@ -71,13 +130,14 @@ const SupplierProfile = ({ darkMode }) => {
         </div>
 
         <button
-          onClick={() => setIsEditing(!isEditing)}
+          onClick={handleToggleEdit}
+          disabled={isSaving}
           className={`w-full sm:w-auto rounded-full px-6 py-2.5 text-xs font-semibold shadow-sm transition-all ${isEditing
             ? "bg-emerald-600 text-white hover:bg-emerald-700"
             : "bg-[#a26e35] text-white hover:bg-[#8b5e2d]"
-            }`}
+            } ${isSaving ? "opacity-70 cursor-not-allowed" : ""}`}
         >
-          {isEditing ? "Save Changes" : "Edit Profile"}
+          {isSaving ? "Saving..." : isEditing ? "Save Changes" : "Edit Profile"}
         </button>
       </div>
 

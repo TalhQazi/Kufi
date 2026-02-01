@@ -42,23 +42,25 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
           api.get('/bookings/supplier?limit=5')
         ]);
 
-        setStats(statsRes.data.overview || [
-          { label: "Total Revenue", value: "$0", delta: "0%", icon: DollarSign },
-          { label: "Active Bookings", value: "0", delta: "0", icon: CalendarDays },
-          { label: "Average Rating", value: "0.0", delta: "0.0", icon: Star },
-          { label: "Experiences", value: "0", delta: "0", icon: Briefcase },
-        ]);
+        const data = statsRes.data;
+        const mappedStats = data.overview && Array.isArray(data.overview) ? data.overview : [
+          { label: "Total Revenue", value: data.totalRevenue ? `$${data.totalRevenue}` : "$0", delta: data.revenueTrend || "0%", icon: DollarSign },
+          { label: "Active Bookings", value: data.activeBookings || "0", delta: data.bookingsTrend || "0", icon: CalendarDays },
+          { label: "Average Rating", value: data.avgRating || "0.0", delta: data.ratingTrend || "0.0", icon: Star },
+          { label: "Experiences", value: data.totalExperiences || "0", delta: "New", icon: Briefcase },
+        ];
+        setStats(mappedStats);
 
         setRecentBookings(bookingsRes.data.bookings || []);
 
-        setTravelerStats(statsRes.data.travelerStats || [
-          { label: "Total Pending Requests", value: 0, icon: Clock3 },
-          { label: "Accepted Requests", value: 0, icon: Check },
-          { label: "Rejected Requests", value: 0, icon: XIcon },
-        ]);
+        const mappedTravelerStats = data.travelerStats && Array.isArray(data.travelerStats) ? data.travelerStats : [
+          { label: "Total Pending Requests", value: data.pendingRequests || 0, icon: Clock3 },
+          { label: "Accepted Requests", value: data.acceptedRequests || 0, icon: Check },
+          { label: "Rejected Requests", value: data.rejectedRequests || 0, icon: XIcon },
+        ];
+        setTravelerStats(mappedTravelerStats);
       } catch (error) {
         console.error("Error fetching supplier dashboard data:", error);
-        // Fallback stats to keep UI functional
         setStats([
           { label: "Total Revenue", value: "$0", delta: "0%", icon: DollarSign },
           { label: "Active Bookings", value: "0", delta: "0", icon: CalendarDays },
@@ -221,13 +223,15 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                     >
                       <div>
                         <p className={`text-sm font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-slate-900"}`}>
-                          {booking.title}
+                          {booking.experience || booking.title}
                         </p>
                         <p className={`mt-1 text-xs transition-colors duration-300 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
-                          {booking.subtitle}
+                          {booking.name} • {booking.guests} Guests
                         </p>
                       </div>
-                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-600">
+                      <span className={`rounded-full px-3 py-1 text-[11px] font-medium ${booking.status === 'Confirmed' || booking.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' :
+                          booking.status === 'Pending' ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-500'
+                        }`}>
                         {booking.status}
                       </span>
                     </div>
@@ -332,10 +336,18 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
             darkMode={darkMode}
             onResumeDraft={(draft) => {
               navigateTo("Experience", false);
-              setExperienceView("create");
+              setExperienceView("edit");
+              // We need to pass the selected experience here
             }}
-            onRemoveDraft={(id) => {
-              console.log("Removing draft:", id);
+            onRemoveDraft={async (id) => {
+              if (window.confirm("Remove this draft?")) {
+                try {
+                  await api.delete(`/activities/drafts/${id}`);
+                  // Dashboard will naturally re-render when section changes or we can trigger refresh
+                } catch (e) {
+                  console.error("Error removing draft:", e);
+                }
+              }
             }}
           />
         )}
