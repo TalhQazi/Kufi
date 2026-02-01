@@ -189,7 +189,13 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
 
                                         <button
                                             onClick={() => {
-                                                window.location.hash = '#traveler-profile'
+                                                if (currentUser.role === 'admin') {
+                                                    window.location.hash = '#admin';
+                                                } else if (currentUser.role === 'supplier') {
+                                                    window.location.hash = '#supplier';
+                                                } else {
+                                                    window.location.hash = '#traveler-profile';
+                                                }
                                                 setProfileDropdownOpen(false)
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
@@ -270,7 +276,13 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                                     </button>
                                     <button
                                         onClick={() => {
-                                            window.location.hash = '#traveler-profile'
+                                            if (currentUser.role === 'admin') {
+                                                window.location.hash = '#admin';
+                                            } else if (currentUser.role === 'supplier') {
+                                                window.location.hash = '#supplier';
+                                            } else {
+                                                window.location.hash = '#traveler-profile';
+                                            }
                                             setMobileMenuOpen(false)
                                         }}
                                         className="flex items-center gap-3 py-2 px-1 text-slate-700 font-medium"
