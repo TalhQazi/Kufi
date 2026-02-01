@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Bell, ChevronDown, Settings, LogOut, Moon, Sun } from "lucide-react";
 import ProfilePic from "../../../components/ui/ProfilePic";
 
-const Header = ({ onBellClick, onLogout, onMenuClick, isDarkMode, onThemeToggle }) => {
+const Header = ({ onBellClick, onLogout, onMenuClick, isDarkMode, onThemeToggle, onProfileClick, onSettingsClick }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -76,10 +76,22 @@ const Header = ({ onBellClick, onLogout, onMenuClick, isDarkMode, onThemeToggle 
 
           {showDropdown && (
             <div className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg border py-2 z-50 ${isDarkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"}`}>
-              <div className={`px-4 py-2 text-xs font-semibold cursor-pointer ${isDarkMode ? "text-gray-300 hover:bg-gray-800" : "text-gray-600 hover:bg-gray-50"}`}>
+              <div
+                className={`px-4 py-2 text-xs font-semibold cursor-pointer ${isDarkMode ? "text-gray-300 hover:bg-gray-800" : "text-gray-600 hover:bg-gray-50"}`}
+                onClick={() => {
+                  onProfileClick();
+                  setShowDropdown(false);
+                }}
+              >
                 Profile
               </div>
-              <div className={`px-4 py-2 text-xs font-semibold cursor-pointer ${isDarkMode ? "text-gray-300 hover:bg-gray-800" : "text-gray-600 hover:bg-gray-50"}`}>
+              <div
+                className={`px-4 py-2 text-xs font-semibold cursor-pointer ${isDarkMode ? "text-gray-300 hover:bg-gray-800" : "text-gray-600 hover:bg-gray-50"}`}
+                onClick={() => {
+                  onSettingsClick();
+                  setShowDropdown(false);
+                }}
+              >
                 Settings
               </div>
               <div className={`border-t my-1 ${isDarkMode ? "border-gray-800" : "border-gray-200"}`}></div>

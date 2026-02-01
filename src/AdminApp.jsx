@@ -12,6 +12,8 @@ import SupplierDashboard from './pages/supplierpannel/supplier-dashboard'
 import NotificationsBooking from './pages/adminpannel/notifications-booking'
 import CountryManagement from './pages/adminpannel/CountryManagement'
 import CityManagement from './pages/adminpannel/CityManagement'
+import AdminProfile from './pages/adminpannel/AdminProfile'
+import AdminSettings from './pages/adminpannel/AdminSettings'
 import './App.css'
 
 
@@ -41,7 +43,10 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
     if (activePage === 'Supplier Dashboard') return <SupplierDashboard onLogout={onLogout} onHomeClick={onHomeClick} />
     if (activePage === 'Booking Notifications') return <NotificationsBooking />
     if (activePage === 'Manage Countries') return <CountryManagement />
+    if (activePage === 'Manage Countries') return <CountryManagement />
     if (activePage === 'Manage Cities') return <CityManagement />
+    if (activePage === 'Profile') return <AdminProfile />
+    if (activePage === 'Settings') return <AdminSettings />
     return <Dashboard />
 
   }
@@ -67,6 +72,8 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
             onMenuClick={toggleSidebar}
             isDarkMode={isDarkMode}
             onThemeToggle={toggleDarkMode}
+            onProfileClick={() => setActivePage('Profile')}
+            onSettingsClick={() => setActivePage('Settings')}
           />
         )}
 
