@@ -5,6 +5,7 @@ import api from "../../api";
 const SupplierProfile = ({ darkMode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
     businessName: "",
     contactEmail: "",

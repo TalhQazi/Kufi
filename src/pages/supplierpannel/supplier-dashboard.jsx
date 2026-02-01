@@ -31,30 +31,49 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
   const [stats, setStats] = useState(null);
   const [recentBookings, setRecentBookings] = useState([]);
   const [travelerStats, setTravelerStats] = useState(null);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [experiences, setExperiences] = useState([]);
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchSupplierDashboard = async () => {
       try {
         setIsLoading(true);
-        const [statsRes, bookingsRes] = await Promise.all([
+        const [statsRes, bookingsRes, activitiesRes, pendingRes] = await Promise.all([
           api.get('/analytics/supplier'),
-          api.get('/bookings/supplier?limit=5')
+          api.get('/bookings/supplier?limit=5'),
+          api.get('/activities/supplier'),
+          api.get('/bookings/supplier?status=pending'),
         ]);
 
         const data = statsRes.data;
+        const experiencesList = Array.isArray(activitiesRes.data) ? activitiesRes.data : (activitiesRes.data?.activities || activitiesRes.data?.data || []);
+        const totalExperiences = data.totalExperiences ?? experiencesList.length;
+
         const mappedStats = data.overview && Array.isArray(data.overview) ? data.overview : [
           { label: "Total Revenue", value: data.totalRevenue ? `$${data.totalRevenue}` : "$0", delta: data.revenueTrend || "0%", icon: DollarSign },
-          { label: "Active Bookings", value: data.activeBookings || "0", delta: data.bookingsTrend || "0", icon: CalendarDays },
+          { label: "Active Bookings", value: data.activeBookings ?? String((bookingsRes.data?.bookings || []).length), delta: data.bookingsTrend || "0", icon: CalendarDays },
           { label: "Average Rating", value: data.avgRating || "0.0", delta: data.ratingTrend || "0.0", icon: Star },
-          { label: "Experiences", value: data.totalExperiences || "0", delta: "New", icon: Briefcase },
+          { label: "Experiences", value: String(totalExperiences), delta: "New", icon: Briefcase },
         ];
         setStats(mappedStats);
 
-        setRecentBookings(bookingsRes.data.bookings || []);
+        setRecentBookings(bookingsRes.data?.bookings || []);
 
+        const pendingList = pendingRes.data?.bookings || [];
+        setPendingRequests(pendingList);
+        if (pendingList.length === 0) {
+          setSelectedRequestId(null);
+        } else {
+          setSelectedRequestId((prev) => (prev && pendingList.some((r) => (r.id || r._id) === prev) ? prev : (pendingList[0].id || pendingList[0]._id)));
+        }
+
+        setExperiences(experiencesList);
+
+        const pendingCount = pendingList.length;
         const mappedTravelerStats = data.travelerStats && Array.isArray(data.travelerStats) ? data.travelerStats : [
-          { label: "Total Pending Requests", value: data.pendingRequests || 0, icon: Clock3 },
+          { label: "Total Pending Requests", value: data.pendingRequests ?? pendingCount, icon: Clock3 },
           { label: "Accepted Requests", value: data.acceptedRequests || 0, icon: Check },
           { label: "Rejected Requests", value: data.rejectedRequests || 0, icon: XIcon },
         ];
@@ -72,6 +91,8 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
           { label: "Accepted Requests", value: 0, icon: Check },
           { label: "Rejected Requests", value: 0, icon: XIcon },
         ]);
+        setPendingRequests([]);
+        setExperiences([]);
       } finally {
         setIsLoading(false);
       }
@@ -311,14 +332,47 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
               </div>
 
               <div className={`mb-4 rounded-xl sm:rounded-2xl px-3 py-2 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900" : "bg-white"}`}>
-                <div className={`flex items-center justify-between rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm transition-colors duration-300 ${darkMode ? "bg-slate-800 text-slate-300" : "bg-[#f7f1e7] text-gray-700"}`}>
-                  <span>Select Traveler Request</span>
-                  <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
-                </div>
+                <select
+                  value={selectedRequestId || ""}
+                  onChange={(e) => setSelectedRequestId(e.target.value || null)}
+                  className={`w-full flex items-center justify-between rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#a26e35]/40 ${darkMode ? "bg-slate-800 text-slate-300 border border-slate-700" : "bg-[#f7f1e7] text-gray-700 border border-gray-200"}`}
+                >
+                  <option value="">Select Traveler Request</option>
+                  {pendingRequests.map((req) => {
+                    const id = req.id || req._id;
+                    return (
+                      <option key={id} value={id}>
+                        {req.experience || req.title || req.name || "Request"} – {req.name || req.travelerName || "Traveler"} ({req.guests ?? "—"} guests)
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
 
-              <div className={`rounded-xl sm:rounded-2xl border px-3 sm:px-4 py-8 sm:py-10 text-center text-[10px] sm:text-xs transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800 text-slate-500" : "bg-white border-gray-100 text-gray-400"}`}>
-                Please select a traveler request to view details
+              <div className={`rounded-xl sm:rounded-2xl border px-3 sm:px-4 py-6 sm:py-8 transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+                {selectedRequestId && pendingRequests.find((r) => (r.id || r._id) === selectedRequestId) ? (
+                  (() => {
+                    const req = pendingRequests.find((r) => (r.id || r._id) === selectedRequestId);
+                    return (
+                      <div className="space-y-3 text-xs sm:text-sm">
+                        <p className={`font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>{req.experience || req.title || "—"}</p>
+                        <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Traveler: {req.name || req.travelerName || "—"}</p>
+                        <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Guests: {req.guests ?? "—"}</p>
+                        {req.date && <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Date: {req.date}</p>}
+                        <button
+                          onClick={() => navigateTo("Requests")}
+                          className="mt-2 rounded-lg bg-[#a26e35] text-white px-4 py-2 text-xs font-semibold hover:bg-[#8b5e2d] transition-colors"
+                        >
+                          Manage in Requests
+                        </button>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <p className={`text-center py-4 text-[10px] sm:text-xs ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
+                    {pendingRequests.length === 0 ? "No pending traveler requests" : "Please select a traveler request to view details"}
+                  </p>
+                )}
               </div>
             </div>
           </>
