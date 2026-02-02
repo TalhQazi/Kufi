@@ -167,6 +167,7 @@ export default function CountryDetails({
     const [blogs, setBlogs] = useState([])
     const [displayedTestimonials, setDisplayedTestimonials] = useState([])
     const [displayedBlogs, setDisplayedBlogs] = useState([])
+    const [contentLoading, setContentLoading] = useState(true)
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
 
     const fallbackTestimonials = [
@@ -252,6 +253,7 @@ export default function CountryDetails({
 
         const fetchTestimonialsAndBlogs = async () => {
             try {
+                setContentLoading(true)
                 const [feedRes, blogRes] = await Promise.all([
                     api.get('/feedbacks'),
                     api.get('/blogs')
@@ -262,7 +264,7 @@ export default function CountryDetails({
                 setTestimonials(fetchedTestimonials)
                 setBlogs(fetchedBlogs)
 
-                const testimonialsPool = [...fetchedTestimonials, ...fallbackTestimonials]
+                const normalizedTestimonials = fetchedTestimonials
                     .map((t, idx) => ({
                         id: t?._id || t?.id || `t-${idx}`,
                         rating: t?.rating || 5,
@@ -271,9 +273,9 @@ export default function CountryDetails({
                     }))
                     .filter(t => t.text)
 
-                setDisplayedTestimonials(pickRandomItems(testimonialsPool, 2))
+                setDisplayedTestimonials(pickRandomItems(normalizedTestimonials, 2))
 
-                const normalizedBlogs = (fetchedBlogs.length > 0 ? fetchedBlogs : fallbackBlogs).map((b, idx) => ({
+                const normalizedBlogs = fetchedBlogs.map((b, idx) => ({
                     id: b?._id || b?.id || `b-${idx}`,
                     title: b?.title || 'Travel Blog',
                     date: b?.date || (b?.createdAt ? new Date(b.createdAt).toLocaleDateString() : ''),
@@ -283,8 +285,10 @@ export default function CountryDetails({
                 setDisplayedBlogs(pickRandomItems(normalizedBlogs, 2))
             } catch (error) {
                 console.error("Error fetching testimonials or blogs:", error);
-                setDisplayedTestimonials(pickRandomItems(fallbackTestimonials, 2))
-                setDisplayedBlogs(pickRandomItems(fallbackBlogs, 2))
+                setDisplayedTestimonials([])
+                setDisplayedBlogs([])
+            } finally {
+                setContentLoading(false)
             }
         }
 
@@ -302,11 +306,19 @@ export default function CountryDetails({
 
     const profileImage = getProfileImage();
 
+    const isPageLoading = Boolean(citiesLoading || isLoading || contentLoading)
+
     return (
         <div className="country-details">
+            {isPageLoading ? (
+                <div className="min-h-screen w-full flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
+                </div>
+            ) : (
+                <>
             {/* Navigation */}
-            {!hideHeaderFooter && (
-                <nav className="country-navbar">
+                    {!hideHeaderFooter && (
+                        <nav className="country-navbar">
                     <div className="country-navbar-inner">
                         <div className="country-logo">
                             <button
@@ -384,8 +396,8 @@ export default function CountryDetails({
                             </div>
                         </div>
                     </div>
-                </nav>
-            )}
+                        </nav>
+                    )}
 
             {/* Hero Section */}
             <section className="country-hero">
@@ -532,38 +544,44 @@ export default function CountryDetails({
                 <section className="country-feedback">
                     <h2 className="country-section-title">Best Feedback From Clients</h2>
                     <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:gap-5">
-                        {displayedTestimonials.map((testimonial, idx) => (
-                            <div
-                                key={testimonial.id}
-                                className="bg-white rounded-[18px] px-6 py-5 shadow-[0_16px_30px_rgba(15,23,42,0.10)] border border-slate-100 w-full sm:w-[320px] lg:w-[310px] min-h-[200px]"
-                            >
-                                <div className="flex gap-1 text-[#FFB21E] mb-3">
-                                    {[...Array(5)].map((_, i) => (
-                                        <svg
-                                            key={`${testimonial.id}-star-${i}`}
-                                            className={`w-3.5 h-3.5 ${i < (Number(testimonial.rating) || 0) ? 'fill-current' : 'fill-slate-200'}`}
-                                            viewBox="0 0 20 20"
-                                        >
-                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                        </svg>
-                                    ))}
-                                </div>
-
-                                <p className="m-0 text-slate-600 text-[13px] leading-relaxed">
-                                    “{testimonial.text}”
-                                </p>
-
-                                <div className="mt-4 flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
-                                        {(testimonial.author || 'C').charAt(0)}
+                        {displayedTestimonials.length > 0 ? (
+                            displayedTestimonials.map((testimonial, idx) => (
+                                <div
+                                    key={testimonial.id}
+                                    className="bg-white rounded-[18px] px-6 py-5 shadow-[0_16px_30px_rgba(15,23,42,0.10)] border border-slate-100 w-full sm:w-[320px] lg:w-[310px] min-h-[200px]"
+                                >
+                                    <div className="flex gap-1 text-[#FFB21E] mb-3">
+                                        {[...Array(5)].map((_, i) => (
+                                            <svg
+                                                key={`${testimonial.id}-star-${i}`}
+                                                className={`w-3.5 h-3.5 ${i < (Number(testimonial.rating) || 0) ? 'fill-current' : 'fill-slate-200'}`}
+                                                viewBox="0 0 20 20"
+                                            >
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                            </svg>
+                                        ))}
                                     </div>
-                                    <div className="min-w-0">
-                                        <h4 className="m-0 text-xs font-bold text-slate-900 truncate">{testimonial.author}</h4>
-                                        <p className="m-0 text-[9px] text-slate-400 font-bold uppercase tracking-[0.22em] leading-none mt-1 truncate">CLIENT</p>
+
+                                    <p className="m-0 text-slate-600 text-[13px] leading-relaxed">
+                                        “{testimonial.text}”
+                                    </p>
+
+                                    <div className="mt-4 flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
+                                            {(testimonial.author || 'C').charAt(0)}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h4 className="m-0 text-xs font-bold text-slate-900 truncate">{testimonial.author}</h4>
+                                            <p className="m-0 text-[9px] text-slate-400 font-bold uppercase tracking-[0.22em] leading-none mt-1 truncate">CLIENT</p>
+                                        </div>
                                     </div>
                                 </div>
+                            ))
+                        ) : (
+                            <div className="w-full py-12 text-center text-slate-500">
+                                No reviews yet.
                             </div>
-                        ))}
+                        )}
                     </div>
                 </section>
 
@@ -571,43 +589,51 @@ export default function CountryDetails({
                 <section className="country-blog">
                     <h2 className="country-section-title">Latest Travel Blog</h2>
                     <div className="country-blog-grid">
-                        {displayedBlogs.map((blog) => (
-                            <div
-                                key={blog.id}
-                                className="country-blog-card"
-                                onClick={() => {
-                                    if (onBlogClick && blog?.id) onBlogClick(blog.id)
-                                }}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault()
+                        {displayedBlogs.length > 0 ? (
+                            displayedBlogs.map((blog) => (
+                                <div
+                                    key={blog.id}
+                                    className="country-blog-card"
+                                    onClick={() => {
                                         if (onBlogClick && blog?.id) onBlogClick(blog.id)
-                                    }
-                                }}
-                            >
-                                <img src={blog.image} alt={blog.title} className="country-blog-image" />
-                                <div className="country-blog-content">
-                                    <h3 className="country-blog-title">{blog.title}</h3>
-                                    <p className="country-blog-date">{blog.date}</p>
-                                    <button
-                                        className="country-blog-btn"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
+                                    }}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault()
                                             if (onBlogClick && blog?.id) onBlogClick(blog.id)
-                                        }}
-                                    >
-                                        Read More
-                                    </button>
+                                        }
+                                    }}
+                                >
+                                    <img src={blog.image} alt={blog.title} className="country-blog-image" />
+                                    <div className="country-blog-content">
+                                        <h3 className="country-blog-title">{blog.title}</h3>
+                                        <p className="country-blog-date">{blog.date}</p>
+                                        <button
+                                            className="country-blog-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                if (onBlogClick && blog?.id) onBlogClick(blog.id)
+                                            }}
+                                        >
+                                            Read More
+                                        </button>
+                                    </div>
                                 </div>
+                            ))
+                        ) : (
+                            <div className="col-span-full py-20 text-center text-slate-500">
+                                No blogs yet.
                             </div>
-                        ))}
+                        )}
                     </div>
                 </section>
             </main>
 
-            {!hideHeaderFooter && <Footer />}
+                    {!hideHeaderFooter && <Footer />}
+                </>
+            )}
         </div>
     )
 }
