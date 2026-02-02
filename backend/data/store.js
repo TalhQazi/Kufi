@@ -7,6 +7,13 @@ const store = {
   // Supplier id from JWT; all data is scoped to this when using auth
   defaultSupplierId: 'supplier-1',
 
+  // Users (traveler accounts) - in production: fetch from your Users collection/table
+  users: [
+    { _id: 'user-1', name: 'John Doe', email: 'john@example.com', avatar: '/assets/profile-avatar.jpeg', phone: '' },
+    { _id: 'user-2', name: 'Jane Smith', email: 'jane@example.com', avatar: '/assets/profile-avatar.jpeg', phone: '' },
+    { _id: 'user-3', name: 'Alex Lee', email: 'alex@example.com', avatar: '/assets/profile-avatar.jpeg', phone: '' },
+  ],
+
   activities: [
     {
       _id: 'act-1',
@@ -38,7 +45,7 @@ const store = {
       id: 'book-1',
       experience: 'Mountain Trek Experience',
       title: 'Mountain Trek Experience',
-      name: 'John Doe',
+      userId: 'user-1',
       guests: 2,
       status: 'Confirmed',
       date: '2025-02-15',
@@ -49,7 +56,7 @@ const store = {
       id: 'book-2',
       experience: 'City Food Tour',
       title: 'City Food Tour',
-      name: 'Jane Smith',
+      userId: 'user-2',
       guests: 4,
       status: 'Pending',
       date: '2025-02-20',
@@ -60,7 +67,7 @@ const store = {
       id: 'book-3',
       experience: 'Mountain Trek Experience',
       title: 'Mountain Trek Experience',
-      name: 'Alex Lee',
+      userId: 'user-3',
       guests: 1,
       status: 'Completed',
       date: '2025-01-10',
@@ -123,7 +130,19 @@ function getBookings(supplierId, { limit, status } = {}) {
   if (limit) {
     list = list.slice(0, Number(limit));
   }
-  return list;
+  // Populate traveler details from users table/collection
+  return list.map((b) => {
+    const userId = b.userId || b.travelerId || b.user || b.customerId;
+    const user = (store.users || []).find((u) => u._id === userId || u.id === userId) || null;
+    return {
+      ...b,
+      user,
+      // backward-compat convenience fields (some UIs still read these)
+      name: b.name || user?.name,
+      email: b.email || user?.email,
+      avatar: b.avatar || user?.avatar,
+    };
+  });
 }
 
 function getDrafts(supplierId) {

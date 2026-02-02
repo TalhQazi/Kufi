@@ -32,15 +32,16 @@ const SupplierRequests = ({ darkMode }) => {
       const normalized = list.map((r) => ({
         ...r,
         id: r.id ?? r._id,
-        name: r.name ?? r.travelerName ?? r.userName ?? "—",
-        email: r.email ?? r.contactEmail ?? r.travelerEmail ?? "",
+        // Prefer populated user fields from database join/populate
+        name: r.user?.name ?? r.name ?? r.travelerName ?? r.userName ?? "—",
+        email: r.user?.email ?? r.email ?? r.contactEmail ?? r.travelerEmail ?? "",
         experience: r.experience ?? r.title ?? r.activity ?? "",
         location: r.location ?? r.destination ?? r.experience ?? "",
         date: r.date ?? r.dateRange ?? r.startDate ?? "",
         guests: r.guests ?? r.travelers ?? r.pax ?? 0,
         amount: r.amount ?? r.totalAmount ?? r.price ?? "",
         status: r.status ?? "Pending",
-        avatar: r.avatar ?? r.image ?? r.profileImage ?? "",
+        avatar: r.user?.avatar ?? r.avatar ?? r.image ?? r.profileImage ?? "",
       }));
       setRequests(normalized);
       if (normalized.length > 0) {
