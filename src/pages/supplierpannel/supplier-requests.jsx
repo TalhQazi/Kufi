@@ -27,7 +27,12 @@ const SupplierRequests = ({ darkMode }) => {
       setIsLoading(true);
       // Uses supplier bookings endpoint from backend; it may return all statuses
       const response = await api.get("/supplier/bookings");
-      const raw = response.data?.bookings ?? response.data?.data ?? response.data;
+      // Be flexible with backend response shapes: {bookings}, {requests}, {data}, or array
+      const raw =
+        response.data?.bookings ??
+        response.data?.requests ??
+        response.data?.data ??
+        response.data;
       const list = Array.isArray(raw) ? raw : [];
       // Normalize for DB fields (id/_id, name, email, experience, location, date, guests, etc.)
       const normalized = list.map((r) => ({
@@ -44,13 +49,15 @@ const SupplierRequests = ({ darkMode }) => {
         status: r.status ?? "Pending",
         avatar: r.user?.avatar ?? r.avatar ?? r.image ?? r.profileImage ?? "",
       }));
-      // Frontend safety: show only pending requests, even if backend returns other statuses
+      // Frontend safety: prefer only pending, but if nothing matches, show all
       const pendingOnly = normalized.filter(
-        (r) => String(r.status || "").toLowerCase() === "pending"
+        (r) => String(r.status || "").trim().toLowerCase() === "pending"
       );
-      setRequests(pendingOnly);
-      if (pendingOnly.length > 0) {
-        setSelectedId(pendingOnly[0].id ?? pendingOnly[0]._id);
+      const finalList = pendingOnly.length > 0 ? pendingOnly : normalized;
+
+      setRequests(finalList);
+      if (finalList.length > 0) {
+        setSelectedId(finalList[0].id ?? finalList[0]._id);
       } else {
         setSelectedId(null);
       }
