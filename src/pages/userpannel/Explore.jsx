@@ -31,6 +31,47 @@ export default function Explore({
   const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {}
   const dropdownRef = useRef(null)
 
+  const normalizeCategory = (value) => {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '')
+      .trim()
+  }
+
+  const backendCategoryAliases = {
+    foodtour: 'foodtour',
+    daytour: 'daytour',
+    summervisit: 'summervisit',
+    memorabletour: 'memorabletour',
+    shipcurise: 'shipcurise',
+    whenvisiting: 'whenvisiting'
+  }
+
+  const exploreToBackendCategories = {
+    culture: ['whenvisiting'],
+    sightseeing: ['memorabletour'],
+    families: ['daytour'],
+    foodanddrink: ['foodtour'],
+    adventure: ['memorabletour'],
+    intheair: ['summervisit'],
+    onthewater: ['shipcurise'],
+    entertainment: ['whenvisiting'],
+    seasonal: ['summervisit'],
+    wellness: ['memorabletour'],
+    learning: ['daytour', 'shipcurise'],
+    luxury: ['memorabletour', 'shipcurise'],
+    dates: ['whenvisiting', 'daytour']
+  }
+
+  const getBackendCategoryKeysForFilter = (filterName) => {
+    if (!filterName) return null
+    const normalizedFilter = normalizeCategory(filterName)
+    const mapped = exploreToBackendCategories[normalizedFilter]
+    if (Array.isArray(mapped) && mapped.length > 0) return mapped
+    const maybeBackend = backendCategoryAliases[normalizedFilter]
+    return maybeBackend ? [maybeBackend] : null
+  }
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -56,11 +97,13 @@ export default function Explore({
         const data = Array.isArray(response.data) ? response.data : []
         setAllActivities(data)
 
-        if (selectedCategory) {
-          setFilteredActivities(data.filter(a => a.category === selectedCategory))
-        } else {
-          setFilteredActivities(data)
+        const keys = getBackendCategoryKeysForFilter(selectedCategory)
+        if (keys && keys.length > 0) {
+          setFilteredActivities(data.filter(a => keys.includes(normalizeCategory(a?.category))))
+          return
         }
+
+        setFilteredActivities(data)
       } catch (error) {
         console.error("Error fetching activities:", error)
       } finally {
@@ -71,11 +114,13 @@ export default function Explore({
   }, [])
 
   useEffect(() => {
-    if (selectedCategory) {
-      setFilteredActivities(allActivities.filter(a => a.category === selectedCategory))
-    } else {
-      setFilteredActivities(allActivities)
+    const keys = getBackendCategoryKeysForFilter(selectedCategory)
+    if (keys && keys.length > 0) {
+      setFilteredActivities(allActivities.filter(a => keys.includes(normalizeCategory(a?.category))))
+      return
     }
+
+    setFilteredActivities(allActivities)
   }, [selectedCategory, allActivities])
 
   const handleLocalCategoryClick = (categoryName) => {
