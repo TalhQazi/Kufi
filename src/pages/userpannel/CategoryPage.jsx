@@ -41,12 +41,86 @@ export default function CategoryPage({
 
     // Category data - can be made dynamic
     const categoryInfo = {
+        "Culture": {
+            subtitle: "Explore traditions, heritage, and stories that shape destinations.",
+            description: "Dive into local culture through iconic landmarks, museums, art, history walks, and authentic community experiences designed to help you connect with the heart of a place.",
+            heroImage: '/assets/camping-hero.jpg'
+        },
+        "Sightseeing": {
+            subtitle: "Discover must-see places and picture-perfect highlights.",
+            description: "From famous viewpoints to hidden gems, explore curated sightseeing experiences that capture the best of each destination—ideal for first-time visitors and explorers alike.",
+            heroImage: '/assets/camping-hero.jpg'
+        },
+        "Families": {
+            subtitle: "Family-friendly experiences packed with comfort and fun.",
+            description: "Plan memorable family days with experiences designed for all ages—safe, engaging, and easy to enjoy together, with flexible options and helpful support.",
+            heroImage: '/assets/camping-hero.jpg'
+        },
+        "Food and Drink": {
+            subtitle: "Taste local flavors and discover signature dishes.",
+            description: "Enjoy food tours, tasting experiences, cooking classes, and café discoveries. Perfect for travelers who love cuisine, culture, and unforgettable dining moments.",
+            heroImage: '/assets/camping-hero.jpg'
+        },
+        "Adventure": {
+            subtitle: "Thrilling experiences for the bold and curious.",
+            description: "Chase adrenaline with outdoor adventures, hikes, off-road rides, and unique activities. Carefully selected to balance excitement with safety and quality.",
+            heroImage: '/assets/camping-hero.jpg'
+        },
+        "In the Air": {
+            subtitle: "See the world from above with unforgettable views.",
+            description: "Experience aerial activities like scenic flights and other sky-high adventures. Capture breathtaking perspectives and add a premium highlight to your trip.",
+            heroImage: '/assets/camping-hero.jpg'
+        },
+        "On the water": {
+            subtitle: "Cruise, sail, and explore beautiful waterscapes.",
+            description: "Relax on boats, explore coastlines, and enjoy water-based activities. A perfect blend of leisure and discovery for every kind of traveler.",
+            heroImage: '/assets/camping-hero.jpg'
+        },
+        "Entertainment": {
+            subtitle: "Shows, attractions, and lively experiences to enjoy.",
+            description: "From events and attractions to unique entertainment picks, discover activities that keep your itinerary exciting and full of memorable moments.",
+            heroImage: '/assets/camping-hero.jpg'
+        },
+        "Seasonal": {
+            subtitle: "Limited-time experiences made for the season.",
+            description: "Explore seasonal highlights such as festivals, special tours, and weather-perfect activities—curated to match the best time to visit.",
+            heroImage: '/assets/camping-hero.jpg'
+        },
+        "Wellness": {
+            subtitle: "Slow down, recharge, and travel with balance.",
+            description: "Choose relaxing and wellness-focused experiences—from peaceful escapes to rejuvenating activities—crafted to help you feel refreshed during your journey.",
+            heroImage: '/assets/camping-hero.jpg'
+        },
+        "Learning": {
+            subtitle: "Learn something new while you travel.",
+            description: "Hands-on learning experiences that go beyond sightseeing—workshops, local crafts, guided sessions, and cultural learning designed to enrich your trip.",
+            heroImage: '/assets/camping-hero.jpg'
+        },
+        "Luxury": {
+            subtitle: "Premium experiences with elevated comfort.",
+            description: "Indulge in high-end activities and curated experiences with exceptional service, comfort, and exclusivity—crafted for travelers who want the best.",
+            heroImage: '/assets/camping-hero.jpg'
+        },
+        "Dates": {
+            subtitle: "Romantic experiences made for two.",
+            description: "Plan meaningful moments together with date-friendly experiences—romantic views, cozy activities, and memorable outings tailored for couples.",
+            heroImage: '/assets/camping-hero.jpg'
+        },
         "Camping Adventures": {
             subtitle: "Discover unique outdoor stays and adventure escapes.",
             description: "Experience the magic of sleeping under the stars in some of the world's most breathtaking landscapes. Our curated camping adventures combine comfort with wilderness, offering everything from luxury glamping to authentic backcountry experiences.",
             heroImage: '/assets/camping-hero.jpg'
         },
         // Add more categories as needed
+    }
+
+    const pickRandomItems = (arr, count) => {
+        const list = Array.isArray(arr) ? [...arr] : []
+        for (let i = list.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1))
+            ;[list[i], list[j]] = [list[j], list[i]]
+        }
+        return list.slice(0, count)
     }
 
     const normalizeCategory = (value) => {
@@ -72,9 +146,10 @@ export default function CategoryPage({
                     return cat === target || cat.includes(target) || target.includes(cat)
                 })
 
-                setExperiences(filtered)
+                const pool = filtered.length > 0 ? filtered : all
+                setExperiences(pickRandomItems(pool, 4))
 
-                const derivedRecommended = filtered.slice(0, 3).map((a, idx) => {
+                const derivedRecommended = pickRandomItems(pool, 3).map((a, idx) => {
                     const city = a?.city?.name || a?.city || ''
                     const country = a?.country?.name || a?.country || a?.location || ''
                     const location = [city, country].filter(Boolean).join(', ')

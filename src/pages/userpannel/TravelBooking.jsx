@@ -9,6 +9,53 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
     const dropdownRef = useRef(null)
     const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {}
 
+    const normalizeCountryKey = (value) => {
+        return String(value || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '')
+            .trim()
+    }
+
+    const getActivityCountryLabel = (activity) => {
+        return String(activity?.country || activity?.location || activity?.countryName || '').trim()
+    }
+
+    const availableCountries = (() => {
+        const map = new Map()
+        ;(selectedActivities || []).forEach((a) => {
+            const label = getActivityCountryLabel(a)
+            const key = normalizeCountryKey(label)
+            if (!key) return
+            if (!map.has(key)) map.set(key, label)
+        })
+        return Array.from(map.entries())
+            .map(([key, label]) => ({ key, label }))
+            .sort((a, b) => a.label.localeCompare(b.label))
+    })()
+
+    const [selectedCountryKey, setSelectedCountryKey] = useState('')
+
+    useEffect(() => {
+        if (availableCountries.length === 1) {
+            setSelectedCountryKey(availableCountries[0].key)
+            return
+        }
+
+        if (availableCountries.length > 1) {
+            const stillValid = availableCountries.some(c => c.key === selectedCountryKey)
+            if (!stillValid) setSelectedCountryKey('')
+            return
+        }
+
+        setSelectedCountryKey('')
+    }, [availableCountries.length])
+
+    const filteredSelectedActivities = selectedCountryKey
+        ? (selectedActivities || []).filter((a) => normalizeCountryKey(getActivityCountryLabel(a)) === selectedCountryKey)
+        : []
+
+    const selectedCountryLabel = availableCountries.find(c => c.key === selectedCountryKey)?.label || ''
+
     const [formData, setFormData] = useState({
         firstName: currentUser.firstName || '',
         lastName: currentUser.lastName || '',
@@ -24,9 +71,20 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         withTransport: true,
         budget: '',
         additionalOptions: false,
-        activities: selectedActivities.map(a => a.id || a._id)
+        activities: []
     })
     const [countries, setCountries] = useState([])
+
+    useEffect(() => {
+        const ids = (filteredSelectedActivities || [])
+            .map(a => a?.id || a?._id)
+            .filter(Boolean)
+
+        setFormData(prev => ({
+            ...prev,
+            activities: ids
+        }))
+    }, [selectedCountryKey, selectedActivities])
 
     useEffect(() => {
         const fetchCountries = async () => {
@@ -70,26 +128,71 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                 return
             }
 
-            const activities = (selectedActivities || [])
+            if (availableCountries.length > 1 && !selectedCountryKey) {
+                alert('Please select one country for your trip list.')
+                return
+            }
+
+            const activities = (filteredSelectedActivities || [])
                 .map(a => a?.id || a?._id)
                 .filter(Boolean)
 
+            if (activities.length === 0) {
+                alert('Please select at least one activity.')
+                return
+            }
+
+            const name = `${formData.firstName || ''} ${formData.lastName || ''}`.trim()
+            const experience = (filteredSelectedActivities || [])
+                .map(a => a?.title)
+                .filter(Boolean)
+                .join(', ')
+
             const payload = {
                 ...formData,
+                name,
                 travelers: travelersParsed,
+                guests: travelersParsed,
                 activities,
+                country: selectedCountryLabel,
+                location: selectedCountryLabel || formData.cities,
+                experience,
+                amount: formData.budget,
                 userId: currentUser?._id || currentUser?.id,
             }
 
             if (!payload.userId) delete payload.userId
             if (!payload.cities) delete payload.cities
+            if (!payload.name) delete payload.name
+            if (!payload.location) delete payload.location
+            if (!payload.experience) delete payload.experience
+            if (!payload.amount) delete payload.amount
 
             console.log('Booking submitted:', payload)
             await api.post('/bookings', payload)
             setShowSuccess(true)
         } catch (error) {
-            console.error("Error submitting booking:", error)
-            alert("Failed to submit booking. Please try again.")
+            const status = error?.response?.status
+            const data = error?.response?.data
+            const message =
+                (typeof data === 'string' && data) ||
+                data?.message ||
+                data?.error ||
+                error?.message ||
+                'Failed to submit booking.'
+
+            console.error('Error submitting booking:', {
+                status,
+                data,
+                error
+            })
+
+            if (status === 401 || status === 403) {
+                alert('Your session is not authorized. Please login again and then submit booking.')
+                return
+            }
+
+            alert(`${message}${status ? ` (Status: ${status})` : ''}`)
         }
     }
 
@@ -225,9 +328,31 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                         {/* My List */}
                         <div className="mb-8 p-4 bg-beige/30 rounded-xl border border-primary-brown/10">
                             <h2 className="text-sm font-bold text-primary-brown mb-3 uppercase tracking-wider">My Trip List</h2>
+
+                            {availableCountries.length > 1 && (
+                                <div className="mb-3">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-2">
+                                        Select Country
+                                    </label>
+                                    <select
+                                        value={selectedCountryKey}
+                                        onChange={(e) => setSelectedCountryKey(e.target.value)}
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm text-slate-700 bg-white"
+                                    >
+                                        <option value="">Select one country</option>
+                                        {availableCountries.map((c) => (
+                                            <option key={c.key} value={c.key}>{c.label}</option>
+                                        ))}
+                                    </select>
+                                    <p className="mt-2 text-[11px] text-slate-500 italic">
+                                        You can not travel more than one country at a time please select one country
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="space-y-3">
-                                {selectedActivities.length > 0 ? (
-                                    selectedActivities.map((activity, idx) => (
+                                {filteredSelectedActivities.length > 0 ? (
+                                    filteredSelectedActivities.map((activity, idx) => (
                                         <div key={activity.id || idx} className="flex items-center justify-between gap-3">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 shadow-sm border border-white">
@@ -239,7 +364,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                                 </div>
                                                 <div className="min-w-0">
                                                     <h3 className="text-sm font-semibold text-slate-900 truncate">{activity.title}</h3>
-                                                    <p className="text-[10px] text-slate-500 uppercase font-medium">{activity.location || activity.country}</p>
+                                                    <p className="text-[10px] text-slate-500 uppercase font-medium">{getActivityCountryLabel(activity)}</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-1.5 text-primary-brown text-[10px] font-bold">
@@ -252,7 +377,11 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-xs text-slate-500 italic py-2">No activities selected in your trip list.</p>
+                                    <p className="text-xs text-slate-500 italic py-2">
+                                        {selectedActivities.length > 0 && availableCountries.length > 1 && !selectedCountryKey
+                                            ? 'Please select a country to view activities.'
+                                            : 'No activities selected in your trip list.'}
+                                    </p>
                                 )}
                             </div>
                         </div>
