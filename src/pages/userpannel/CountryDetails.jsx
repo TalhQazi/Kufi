@@ -316,11 +316,11 @@ export default function CountryDetails({
                 </div>
             ) : (
                 <>
-            {/* Navigation */}
+                    {/* Navigation */}
                     {!hideHeaderFooter && (
                         <nav className="country-navbar">
-                    <div className="country-navbar-inner">
-                        <div className="country-logo">
+                            <div className="country-navbar-inner">
+                                <div className="country-logo">
                             <button
                                 onClick={() => {
                                     if (onHomeClick) {
@@ -332,7 +332,7 @@ export default function CountryDetails({
                             >
                                 <img src="/assets/navbar.png" alt="Kufi Travel" className="country-logo-image" />
                             </button>
-                        </div>
+                                </div>
 
 
                         <div className="country-navbar-right">
@@ -395,7 +395,7 @@ export default function CountryDetails({
                                 )}
                             </div>
                         </div>
-                    </div>
+                            </div>
                         </nav>
                     )}
 
