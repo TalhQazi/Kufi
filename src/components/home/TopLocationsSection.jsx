@@ -1,86 +1,33 @@
-import { useRef, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Card from '../ui/Card'
 import api from '../../api'
 
 export default function TopLocationsSection({ onCountryClick }) {
-    const scrollRef = useRef(null)
-    const isDown = useRef(false)
-    const startX = useRef(0)
-    const scrollLeftAtStart = useRef(0)
-    const [locations, setLocations] = useState([])
+    const [cities, setCities] = useState([])
     const [loading, setLoading] = useState(true)
+    const [visibleCount, setVisibleCount] = useState(4)
 
     useEffect(() => {
-        const fetchCountries = async () => {
+        const fetchCities = async () => {
             try {
-                const response = await api.get('/countries')
-                setLocations(response.data || [])
+                const response = await api.get('/cities')
+                setCities(response.data || [])
             } catch (error) {
-                console.error("Error fetching locations:", error)
+                console.error("Error fetching cities:", error)
             } finally {
                 setLoading(false)
             }
         }
-        fetchCountries()
+        fetchCities()
     }, [])
 
     useEffect(() => {
-        const slider = scrollRef.current
-        if (!slider) return
+        setVisibleCount(4)
+    }, [cities.length])
 
-        let hasMoved = false
-
-        const handleMouseDown = (e) => {
-            // Don't interfere with button clicks
-            if (e.target.closest('button')) return
-
-            isDown.current = true
-            hasMoved = false
-            startX.current = e.pageX - slider.offsetLeft
-            scrollLeftAtStart.current = slider.scrollLeft
-        }
-
-        const handleMouseLeave = () => {
-            isDown.current = false
-            slider.classList.remove('active-scroll')
-        }
-
-        const handleMouseUp = () => {
-            isDown.current = false
-            slider.classList.remove('active-scroll')
-        }
-
-        const handleMouseMove = (e) => {
-            if (!isDown.current) return
-
-            const x = e.pageX - slider.offsetLeft
-            const distance = Math.abs(x - startX.current)
-
-            // Only start dragging if moved more than 5px
-            if (distance > 5 && !hasMoved) {
-                hasMoved = true
-                slider.classList.add('active-scroll')
-            }
-
-            if (hasMoved) {
-                e.preventDefault()
-                const walk = (x - startX.current) * 2 // Scroll speed
-                slider.scrollLeft = scrollLeftAtStart.current - walk
-            }
-        }
-
-        slider.addEventListener('mousedown', handleMouseDown)
-        slider.addEventListener('mouseleave', handleMouseLeave)
-        slider.addEventListener('mouseup', handleMouseUp)
-        slider.addEventListener('mousemove', handleMouseMove)
-
-        return () => {
-            slider.removeEventListener('mousedown', handleMouseDown)
-            slider.removeEventListener('mouseleave', handleMouseLeave)
-            slider.removeEventListener('mouseup', handleMouseUp)
-            slider.removeEventListener('mousemove', handleMouseMove)
-        }
-    }, [])
+    const total = Array.isArray(cities) ? cities.length : 0
+    const visibleCities = Array.isArray(cities) ? cities.slice(0, visibleCount) : []
+    const hasMore = visibleCount < total
 
     return (
         <section id="top-locations" className="bg-gradient-to-b from-white to-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
@@ -94,22 +41,19 @@ export default function TopLocationsSection({ onCountryClick }) {
                     </p>
                 </div>
 
-                <div
-                    ref={scrollRef}
-                    className="flex overflow-x-auto gap-6 hide-scrollbar pb-6 snap-x snap-mandatory cursor-grab active:cursor-grabbing select-none"
-                >
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {loading ? (
-                        <div className="w-full py-10 flex justify-center">
+                        <div className="col-span-full py-10 flex justify-center">
                             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#a67c52]"></div>
                         </div>
                     ) : (
-                        locations.map((item, index) => (
-                            <div key={item._id || index} className="min-w-[280px] sm:min-w-[320px] flex-shrink-0 snap-start">
+                        visibleCities.map((item, index) => (
+                            <div key={item?._id || `${item?.name}-${index}`} className="w-full">
                                 <Card
                                     variant="destination"
-                                    image={item.image || item.imageUrl || item.Picture || '/assets/dest-1.jpeg'}
-                                    title={item.name}
-                                    location={item.description?.substring(0, 30)}
+                                    image={item?.image || item?.imageUrl || item?.Picture || '/assets/dest-1.jpeg'}
+                                    title={item?.name}
+                                    location={item?.country?.name || item?.country || ''}
                                     rating="4.4"
                                     className="rounded-[20px] shadow-card-hover"
                                     imageClassName="h-64 sm:h-[280px]"
@@ -123,6 +67,24 @@ export default function TopLocationsSection({ onCountryClick }) {
                         ))
                     )}
                 </div>
+
+                {!loading && total > 4 && (
+                    <div className="mt-10 flex justify-center">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (hasMore) {
+                                    setVisibleCount((prev) => Math.min(prev + 4, total))
+                                } else {
+                                    setVisibleCount(4)
+                                }
+                            }}
+                            className="bg-[#a67c52] text-white px-10 py-3.5 rounded-full font-semibold hover:bg-[#8f643e] transition-all shadow-md active:scale-95 text-lg"
+                        >
+                            {hasMore ? 'Show More' : 'Show Less'}
+                        </button>
+                    </div>
+                )}
             </div>
         </section>
     )

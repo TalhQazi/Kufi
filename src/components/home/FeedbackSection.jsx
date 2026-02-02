@@ -1,16 +1,18 @@
 import api from "../../api";
 import { useState, useRef, useEffect } from 'react';
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 export default function FeedbackSection() {
     const scrollRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
-    const [startX, setStartX] = useState(0);
-    const [scrollLeftState, setScrollLeftState] = useState(0);
+    const startXRef = useRef(0);
+    const scrollLeftRef = useRef(0);
 
     const handleMouseDown = (e) => {
+        if (!scrollRef.current) return
         setIsDragging(true);
-        setStartX(e.pageX - scrollRef.current.offsetLeft);
-        setScrollLeftState(scrollRef.current.scrollLeft);
+        startXRef.current = e.pageX - scrollRef.current.offsetLeft;
+        scrollLeftRef.current = scrollRef.current.scrollLeft;
     };
 
     const handleMouseUp = () => {
@@ -22,12 +24,29 @@ export default function FeedbackSection() {
     };
 
     const handleMouseMove = (e) => {
-        if (!isDragging) return;
+        if (!isDragging || !scrollRef.current) return;
         e.preventDefault();
         const x = e.pageX - scrollRef.current.offsetLeft;
-        const walk = (x - startX) * 2; // Scroll speed
-        scrollRef.current.scrollLeft = scrollLeftState - walk;
+        const walk = (x - startXRef.current) * 2; // Scroll speed
+        scrollRef.current.scrollLeft = scrollLeftRef.current - walk;
     };
+
+    const handleTouchStart = (e) => {
+        if (!scrollRef.current) return
+        const touch = e.touches?.[0]
+        if (!touch) return
+        startXRef.current = touch.pageX - scrollRef.current.offsetLeft
+        scrollLeftRef.current = scrollRef.current.scrollLeft
+    }
+
+    const handleTouchMove = (e) => {
+        if (!scrollRef.current) return
+        const touch = e.touches?.[0]
+        if (!touch) return
+        const x = touch.pageX - scrollRef.current.offsetLeft
+        const walk = (x - startXRef.current) * 1.5
+        scrollRef.current.scrollLeft = scrollLeftRef.current - walk
+    }
 
     const [feedbackItems, setFeedbackItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -79,10 +98,33 @@ export default function FeedbackSection() {
             nameLabel: 'CLIENT',
             avatar: '/assets/boy2.jif',
         },
+        {
+            id: 'fallback-5',
+            text: 'The whole process was easy and transparent. We got exactly what was promised and more.',
+            name: 'Mariam Noor',
+            nameLabel: 'TRAVELER',
+            avatar: '/assets/girl1.jif',
+        },
+        {
+            id: 'fallback-6',
+            text: 'Great communication and quick updates. The itinerary was well-balanced and enjoyable.',
+            name: 'Bilal Sheikh',
+            nameLabel: 'CLIENT',
+            avatar: '/assets/boy1.jif',
+        },
+        {
+            id: 'fallback-7',
+            text: 'Highly recommended! Clean UI, easy booking, and the suggestions were truly helpful.',
+            name: 'Hira Malik',
+            nameLabel: 'TRAVELER',
+            avatar: '/assets/girl2.jif',
+        },
     ];
 
-    const rightSideReviews = (Array.isArray(feedbackItems) && feedbackItems.length > 0 ? feedbackItems : fallbackReviews)
-        .slice(0, 3)
+    const rightSideReviews = (!isLoading && Array.isArray(feedbackItems) && feedbackItems.length > 0
+        ? [...feedbackItems, ...fallbackReviews]
+        : (!isLoading ? fallbackReviews : []))
+        .slice(0, 6)
         .map((item) => ({
             id: item?._id || item?.id,
             text: item?.text || item?.message || item?.feedback || item?.comment || '',
@@ -92,31 +134,15 @@ export default function FeedbackSection() {
             rating: Number(item?.rating) || 5,
         }));
 
-    // Handle Infinite Scroll Loop Positioning
     useEffect(() => {
-        if (scrollRef.current) {
-            const container = scrollRef.current;
-            const singleSectionWidth = container.scrollWidth / 3;
-            // Shift to the middle section and add a slight offset to center the first card on the picture
-            const offset = 50; // Fine-tune this based on desired overlap
-            container.scrollLeft = singleSectionWidth - offset;
-        }
-    }, []);
+        if (!scrollRef.current) return
+        scrollRef.current.scrollLeft = 0
+    }, [isLoading])
 
-    const handleScroll = () => {
-        if (scrollRef.current) {
-            const container = scrollRef.current;
-            const singleSectionWidth = container.scrollWidth / 3;
-
-            if (container.scrollLeft <= 0) {
-                // Jump to the start of the second section
-                container.scrollLeft = singleSectionWidth;
-            } else if (container.scrollLeft >= singleSectionWidth * 2) {
-                // Jump back to the start of the second section
-                container.scrollLeft = singleSectionWidth;
-            }
-        }
-    };
+    const scrollByAmount = (amount) => {
+        if (!scrollRef.current) return
+        scrollRef.current.scrollBy({ left: amount, behavior: 'smooth' })
+    }
 
     return (
         <section className="bg-white py-20 px-4 sm:px-8 lg:px-20 relative overflow-hidden">
@@ -173,47 +199,79 @@ export default function FeedbackSection() {
 
                     {/* Right Side Reviews */}
                     <div className="w-full lg:flex-1">
-                        <div className="flex flex-col sm:flex-row lg:flex-row lg:flex-nowrap gap-4 sm:gap-5 lg:gap-6 lg:items-stretch lg:overflow-visible lg:pt-20">
-                            {rightSideReviews.map((item, idx) => (
-                                <div
-                                    key={item.id}
-                                    className={`bg-white rounded-[18px] px-6 py-5 shadow-[0_16px_30px_rgba(15,23,42,0.10)] border border-slate-100 w-full sm:w-[320px] lg:w-[310px] min-h-[200px] shrink-0 ${idx === 0 ? 'lg:-ml-24 lg:z-20' : 'lg:z-10'}`}
+                        {isLoading ? (
+                            <div className="mt-10 flex items-center justify-center min-h-[220px]">
+                                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#9B6F40]"></div>
+                            </div>
+                        ) : rightSideReviews.length > 0 ? (
+                            <div className="relative mt-6 w-full">
+                                <button
+                                    type="button"
+                                    onClick={() => scrollByAmount(-360)}
+                                    className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white border border-slate-200 shadow-sm flex items-center justify-center"
                                 >
-                                    <div className="flex gap-1 text-[#FFB21E] mb-3">
-                                        {[...Array(5)].map((_, i) => (
-                                            <svg
-                                                key={i}
-                                                className={`w-3.5 h-3.5 ${i < item.rating ? 'fill-current' : 'fill-slate-200'}`}
-                                                viewBox="0 0 20 20"
-                                            >
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                            </svg>
-                                        ))}
-                                    </div>
+                                    <span className="sr-only">Previous</span>
+                                    <FiChevronLeft size={18} className="text-slate-700" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => scrollByAmount(360)}
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white border border-slate-200 shadow-sm flex items-center justify-center"
+                                >
+                                    <span className="sr-only">Next</span>
+                                    <FiChevronRight size={18} className="text-slate-700" />
+                                </button>
 
-                                    <p className="m-0 text-slate-600 text-[13px] leading-relaxed">
-                                        “{item.text}”
-                                    </p>
-
-                                    <div className="mt-4 flex items-center gap-3">
-                                        <img
-                                            src={item.avatar}
-                                            alt={item.name}
-                                            className="w-9 h-9 rounded-full object-cover"
-                                            onError={(e) => { e.target.src = '/assets/profile-avatar.jpeg' }}
-                                        />
-                                        <div className="min-w-0">
-                                            <h4 className="m-0 text-xs font-bold text-slate-900 truncate">{item.name}</h4>
-                                            <p className="m-0 text-[9px] text-slate-400 font-bold uppercase tracking-[0.22em] leading-none mt-1 truncate">{item.nameLabel}</p>
+                                <div
+                                    ref={scrollRef}
+                                    className="flex gap-4 sm:gap-5 overflow-x-auto hide-scrollbar cursor-grab active:cursor-grabbing select-none w-full px-12"
+                                    onMouseDown={handleMouseDown}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseLeave}
+                                    onMouseMove={handleMouseMove}
+                                    onTouchStart={handleTouchStart}
+                                    onTouchMove={handleTouchMove}
+                                >
+                                    {rightSideReviews.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="bg-white rounded-[18px] px-6 py-5 shadow-[0_16px_30px_rgba(15,23,42,0.10)] border border-slate-100 w-[320px] min-h-[200px] shrink-0"
+                                        >
+                                        <div className="flex gap-1 text-[#FFB21E] mb-3">
+                                            {[...Array(5)].map((_, i) => (
+                                                <svg
+                                                    key={i}
+                                                    className={`w-3.5 h-3.5 ${i < item.rating ? 'fill-current' : 'fill-slate-200'}`}
+                                                    viewBox="0 0 20 20"
+                                                >
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                </svg>
+                                            ))}
                                         </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
 
-                        {isLoading && (
-                            <div className="mt-6 text-sm text-slate-400">
-                                Loading reviews...
+                                        <p className="m-0 text-slate-600 text-[13px] leading-relaxed">
+                                            “{item.text}”
+                                        </p>
+
+                                        <div className="mt-4 flex items-center gap-3">
+                                            <img
+                                                src={item.avatar}
+                                                alt={item.name}
+                                                className="w-9 h-9 rounded-full object-cover"
+                                                onError={(e) => { e.target.src = '/assets/profile-avatar.jpeg' }}
+                                            />
+                                            <div className="min-w-0">
+                                                <h4 className="m-0 text-xs font-bold text-slate-900 truncate">{item.name}</h4>
+                                                <p className="m-0 text-[9px] text-slate-400 font-bold uppercase tracking-[0.22em] leading-none mt-1 truncate">{item.nameLabel}</p>
+                                            </div>
+                                        </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="mt-10 flex items-center justify-center min-h-[220px] text-sm text-slate-400">
+                                No reviews yet.
                             </div>
                         )}
                     </div>
