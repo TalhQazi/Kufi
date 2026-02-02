@@ -278,28 +278,36 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [countries, setCountries] = useState([]);
   const [cities, setCities] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [selectedCountryId, setSelectedCountryId] = useState(experience?.countryId || "");
   const [selectedCityId, setSelectedCityId] = useState(experience?.cityId || "");
   const [destLoading, setDestLoading] = useState(true);
 
+  // Categories from website (same as homepage CategoriesSection)
+  const websiteCategories = [
+    "Culture",
+    "Sightseeing",
+    "Families",
+    "Food and Drink",
+    "Adventure",
+    "In the Air",
+    "On the water",
+    "Entertainment",
+    "Seasonal",
+  ];
+
   useEffect(() => {
-    const fetchCountriesAndCategories = async () => {
+    const fetchCountries = async () => {
       try {
         setDestLoading(true);
-        const [countriesRes, categoriesRes] = await Promise.all([
-          api.get('/countries').catch(() => ({ data: [] })),
-          api.get('/categories').catch(() => ({ data: [] }))
-        ]);
+        const countriesRes = await api.get('/countries').catch(() => ({ data: [] }));
         setCountries(Array.isArray(countriesRes.data) ? countriesRes.data : []);
-        setCategories(Array.isArray(categoriesRes.data) ? categoriesRes.data : []);
       } catch (err) {
-        console.error("Error fetching countries/categories:", err);
+        console.error("Error fetching countries:", err);
       } finally {
         setDestLoading(false);
       }
     };
-    fetchCountriesAndCategories();
+    fetchCountries();
   }, []);
 
   useEffect(() => {
@@ -510,15 +518,15 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Category (from database)</label>
+                <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Category (from website)</label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
                 >
                   <option value="">Select category</option>
-                  {categories.map((cat) => (
-                    <option key={cat._id || cat.id} value={cat.name}>{cat.name}</option>
+                  {websiteCategories.map((name) => (
+                    <option key={name} value={name}>{name}</option>
                   ))}
                 </select>
               </div>
