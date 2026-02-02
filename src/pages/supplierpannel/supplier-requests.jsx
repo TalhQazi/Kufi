@@ -262,13 +262,16 @@ const SupplierRequests = ({ darkMode }) => {
               <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t transition-colors pt-4" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
                 <button
                   type="button"
+                  disabled={req.status !== 'Confirmed' && acceptedRequestId !== (req.id || req._id)}
                   onClick={(e) => {
                     e.stopPropagation();
-                    // Allow proceeding if either just accepted or already confirmed/pending
                     setItineraryRequestId(req.id || req._id);
                     setView("itinerary");
                   }}
-                  className={`inline-flex w-full lg:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all bg-[#a26e35] text-white shadow-sm hover:bg-[#8b5e2d]`}
+                  className={`inline-flex w-full lg:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${(req.status === 'Confirmed' || acceptedRequestId === (req.id || req._id))
+                    ? "bg-[#a26e35] text-white shadow-sm hover:bg-[#8b5e2d]"
+                    : (darkMode ? "bg-slate-800 text-slate-600 cursor-not-allowed" : "bg-gray-100 text-gray-400 cursor-not-allowed")
+                    }`}
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   <span>Proceed To Create Itinerary</span>
