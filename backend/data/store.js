@@ -70,6 +70,31 @@ const store = {
 
   drafts: [],
 
+  // Countries, cities, categories (from DB in production)
+  countries: [
+    { _id: 'country-1', name: 'Pakistan', image: '' },
+    { _id: 'country-2', name: 'UAE', image: '' },
+    { _id: 'country-3', name: 'Turkey', image: '' },
+  ],
+  cities: [
+    { _id: 'city-1', name: 'Islamabad', country: 'country-1' },
+    { _id: 'city-2', name: 'Lahore', country: 'country-1' },
+    { _id: 'city-3', name: 'Karachi', country: 'country-1' },
+    { _id: 'city-4', name: 'Dubai', country: 'country-2' },
+    { _id: 'city-5', name: 'Abu Dhabi', country: 'country-2' },
+    { _id: 'city-6', name: 'Istanbul', country: 'country-3' },
+  ],
+  categories: [
+    { _id: 'cat-1', name: 'Culture' },
+    { _id: 'cat-2', name: 'Sightseeing' },
+    { _id: 'cat-3', name: 'Adventure' },
+    { _id: 'cat-4', name: 'Food and Drink' },
+    { _id: 'cat-5', name: 'Families' },
+    { _id: 'cat-6', name: 'Nature' },
+    { _id: 'cat-7', name: 'Religious' },
+    { _id: 'cat-8', name: 'Luxury' },
+  ],
+
   // Supplier profile (in-memory; replace with DB)
   supplierProfile: {
     businessName: '',
@@ -190,6 +215,22 @@ function updateSupplierProfile(body) {
   return store.supplierProfile;
 }
 
+function getCountries() {
+  return store.countries || [];
+}
+
+function getCities(countryId) {
+  const list = store.cities || [];
+  if (countryId) {
+    return list.filter((c) => (c.country && c.country.toString()) === (countryId && countryId.toString()));
+  }
+  return list;
+}
+
+function getCategories() {
+  return store.categories || [];
+}
+
 function getAnalytics(supplierId) {
   const activities = getActivities(supplierId);
   const bookings = getBookings(supplierId);
@@ -256,4 +297,7 @@ module.exports = {
   getAuthMe,
   getSupplierProfile,
   updateSupplierProfile,
+  getCountries,
+  getCities,
+  getCategories,
 };

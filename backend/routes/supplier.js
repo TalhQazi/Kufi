@@ -18,9 +18,47 @@ const {
   getAuthMe,
   getSupplierProfile,
   updateSupplierProfile,
+  getCountries,
+  getCities,
+  getCategories,
 } = require('../data/store');
 
 const router = express.Router();
+
+// ——— Countries, cities, categories (for supplier add-experience destination & category) ———
+// GET /api/countries
+router.get('/countries', (req, res) => {
+  try {
+    const countries = getCountries();
+    res.json(Array.isArray(countries) ? countries : []);
+  } catch (err) {
+    console.error('GET /countries', err);
+    res.status(500).json({ error: 'Failed to fetch countries' });
+  }
+});
+
+// GET /api/cities — optional ?country=id to filter by country
+router.get('/cities', (req, res) => {
+  try {
+    const countryId = req.query.country || undefined;
+    const cities = getCities(countryId);
+    res.json(Array.isArray(cities) ? cities : []);
+  } catch (err) {
+    console.error('GET /cities', err);
+    res.status(500).json({ error: 'Failed to fetch cities' });
+  }
+});
+
+// GET /api/categories
+router.get('/categories', (req, res) => {
+  try {
+    const categories = getCategories();
+    res.json(Array.isArray(categories) ? categories : []);
+  } catch (err) {
+    console.error('GET /categories', err);
+    res.status(500).json({ error: 'Failed to fetch categories' });
+  }
+});
 
 // GET /api/analytics/supplier — dashboard stats + analytics page data
 router.get('/analytics/supplier', (req, res) => {

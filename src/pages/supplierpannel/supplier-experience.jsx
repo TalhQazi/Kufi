@@ -276,6 +276,86 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
     image: experience?.image || experience?.imageUrl || ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [countries, setCountries] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCountryId, setSelectedCountryId] = useState(experience?.countryId || "");
+  const [selectedCityId, setSelectedCityId] = useState(experience?.cityId || "");
+  const [destLoading, setDestLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCountriesAndCategories = async () => {
+      try {
+        setDestLoading(true);
+        const [countriesRes, categoriesRes] = await Promise.all([
+          api.get('/countries').catch(() => ({ data: [] })),
+          api.get('/categories').catch(() => ({ data: [] }))
+        ]);
+        setCountries(Array.isArray(countriesRes.data) ? countriesRes.data : []);
+        setCategories(Array.isArray(categoriesRes.data) ? categoriesRes.data : []);
+      } catch (err) {
+        console.error("Error fetching countries/categories:", err);
+      } finally {
+        setDestLoading(false);
+      }
+    };
+    fetchCountriesAndCategories();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedCountryId) {
+      setCities([]);
+      setSelectedCityId("");
+      return;
+    }
+    const fetchCities = async () => {
+      try {
+        const response = await api.get(`/cities?country=${encodeURIComponent(selectedCountryId)}`);
+        const list = Array.isArray(response.data) ? response.data : [];
+        setCities(list);
+        if (!list.some((c) => (c._id || c.id) === selectedCityId)) {
+          setSelectedCityId("");
+        }
+      } catch (err) {
+        console.error("Error fetching cities:", err);
+        setCities([]);
+        setSelectedCityId("");
+      }
+    };
+    fetchCities();
+  }, [selectedCountryId]);
+
+  // When editing: try to preselect country & city from experience.location (e.g. "Lahore, Pakistan")
+  useEffect(() => {
+    if (!experience?.location || !countries.length) return;
+    const parts = String(experience.location).split(",").map((s) => s.trim());
+    const countryName = parts[parts.length - 1];
+    const cityName = parts[0];
+    if (!countryName) return;
+    const country = countries.find((c) => (c.name || "").toLowerCase() === countryName.toLowerCase());
+    if (country && !selectedCountryId) {
+      setSelectedCountryId(country._id || country.id);
+    }
+  }, [countries, experience?.location]);
+
+  useEffect(() => {
+    if (!experience?.location || !cities.length) return;
+    const parts = String(experience.location).split(",").map((s) => s.trim());
+    const cityName = parts[0];
+    const city = cities.find((c) => (c.name || "").toLowerCase() === (cityName || "").toLowerCase());
+    if (city && !selectedCityId) {
+      setSelectedCityId(city._id || city.id);
+    }
+  }, [cities, experience?.location]);
+
+  useEffect(() => {
+    if (!selectedCityId || !selectedCountryId || !cities.length || !countries.length) return;
+    const city = cities.find((c) => (c._id || c.id) === selectedCityId);
+    const country = countries.find((c) => (c._id || c.id) === selectedCountryId);
+    if (city && country) {
+      setFormData((prev) => ({ ...prev, location: `${city.name}, ${country.name}` }));
+    }
+  }, [selectedCityId, selectedCountryId, cities, countries]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -349,16 +429,46 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
                   className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-600" : "bg-white border-gray-200 text-gray-700"}`}
                 />
               </div>
-              <div className="space-y-1.5">
-                <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Destination</label>
-                <input
-                  required
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="City, Country"
-                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-600" : "bg-white border-gray-200 text-gray-700"}`}
-                />
+              <div className="space-y-3">
+                <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Destination (Country & City from database)</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <span className={`text-[10px] ${darkMode ? "text-slate-500" : "text-gray-500"}`}>Country</span>
+                    <select
+                      required
+                      value={selectedCountryId}
+                      onChange={(e) => {
+                        setSelectedCountryId(e.target.value);
+                        setSelectedCityId("");
+                      }}
+                      disabled={destLoading}
+                      className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
+                    >
+                      <option value="">Select country</option>
+                      {countries.map((c) => (
+                        <option key={c._id || c.id} value={c._id || c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <span className={`text-[10px] ${darkMode ? "text-slate-500" : "text-gray-500"}`}>City</span>
+                    <select
+                      required
+                      value={selectedCityId}
+                      onChange={(e) => setSelectedCityId(e.target.value)}
+                      disabled={!selectedCountryId || destLoading}
+                      className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
+                    >
+                      <option value="">{selectedCountryId ? "Select city" : "Select country first"}</option>
+                      {cities.map((city) => (
+                        <option key={city._id || city.id} value={city._id || city.id}>{city.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                {formData.location && (
+                  <p className={`text-[10px] ${darkMode ? "text-slate-500" : "text-gray-500"}`}>Destination: {formData.location}</p>
+                )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="space-y-1.5">
@@ -400,14 +510,17 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Category</label>
-                <input
-                  type="text"
+                <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Category (from database)</label>
+                <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="e.g. Adventure, Relax, Cultural"
-                  className={`w-full rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
-                />
+                  className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
+                >
+                  <option value="">Select category</option>
+                  {categories.map((cat) => (
+                    <option key={cat._id || cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Cover Image</label>
