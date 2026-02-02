@@ -17,38 +17,51 @@ const SupplierProfile = ({ darkMode }) => {
 
   const [documents, setDocuments] = useState([]);
 
+  // Normalize profile object from API (database) – support camelCase or snake_case
+  const normalizeProfile = (data) => {
+    if (!data || typeof data !== "object") return {};
+    return {
+      businessName: data.businessName ?? data.business_name ?? data.name ?? "",
+      contactEmail: data.contactEmail ?? data.contact_email ?? data.email ?? "",
+      phoneNumber: data.phoneNumber ?? data.phone_number ?? data.phone ?? "",
+      businessAddress: data.businessAddress ?? data.business_address ?? data.address ?? "",
+      aboutBusiness: data.aboutBusiness ?? data.about_business ?? data.about ?? "",
+      image: data.image ?? data.avatar ?? data.profileImage ?? "",
+    };
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setIsLoading(true);
-        // Using common profile endpoint or supplier specific one if exists
-        const res = await api.get('/auth/me'); // Check /auth/me for current user data
-        const user = res.data;
+        // 1. Get current user from database (auth/me)
+        const res = await api.get("/auth/me");
+        const rawUser = res.data?.user ?? res.data;
+        const userFields = normalizeProfile(rawUser);
 
-        setForm({
-          businessName: user.name || "",
-          contactEmail: user.email || "",
-          phoneNumber: user.phone || "",
-          businessAddress: user.address || "",
-          aboutBusiness: user.about || "",
-          image: user.image || ""
-        });
+        setForm((prev) => ({
+          ...prev,
+          ...userFields,
+        }));
 
-        // Fetch specific supplier details if available
+        // 2. Get supplier profile from database (supplier/profile) – name, contact email, etc.
         try {
-          const supplierRes = await api.get('/supplier/profile');
-          if (supplierRes.data) {
-            setForm(prev => ({
+          const supplierRes = await api.get("/supplier/profile");
+          const rawProfile = supplierRes.data?.profile ?? supplierRes.data;
+          if (rawProfile && typeof rawProfile === "object") {
+            const profileFields = normalizeProfile(rawProfile);
+            setForm((prev) => ({
               ...prev,
-              ...supplierRes.data
+              ...profileFields,
             }));
-            setDocuments(supplierRes.data.documents || []);
+            const docs = supplierRes.data?.documents ?? rawProfile?.documents;
+            setDocuments(Array.isArray(docs) ? docs : []);
           }
         } catch (e) {
-          console.log("Supplier specific profile not found, using auth data");
+          // Supplier profile optional; keep auth/me data
         }
       } catch (error) {
-        console.error("Error fetching supplier profile:", error);
+        console.error("Error fetching supplier profile from database:", error);
       } finally {
         setIsLoading(false);
       }
@@ -66,14 +79,23 @@ const SupplierProfile = ({ darkMode }) => {
     if (isEditing) {
       try {
         setIsSaving(true);
-        await api.put('/supplier/profile', form);
+        // Save to database – name, contact email, phone, address, about, image
+        const payload = {
+          businessName: form.businessName,
+          contactEmail: form.contactEmail,
+          phoneNumber: form.phoneNumber,
+          businessAddress: form.businessAddress,
+          aboutBusiness: form.aboutBusiness,
+          image: form.image,
+        };
+        await api.put("/supplier/profile", payload);
         alert("Profile updated successfully!");
+        setIsEditing(false);
       } catch (error) {
         console.error("Error updating supplier profile:", error);
         alert("Failed to update profile");
       } finally {
         setIsSaving(false);
-        setIsEditing(false);
       }
     } else {
       setIsEditing(true);

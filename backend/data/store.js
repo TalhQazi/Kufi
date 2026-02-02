@@ -194,6 +194,7 @@ function deleteDraft(draftId, supplierId) {
   return false;
 }
 
+// Auth/me: from database – current user (name, email, phone, address, about, image)
 function getAuthMe() {
   return {
     id: store.defaultSupplierId,
@@ -206,6 +207,7 @@ function getAuthMe() {
   };
 }
 
+// Supplier profile: from database – name, contact email, phone, address, about, image, documents
 function getSupplierProfile() {
   return { ...store.supplierProfile };
 }
