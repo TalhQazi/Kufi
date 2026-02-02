@@ -16,7 +16,9 @@ api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('authToken');
         if (token) {
+            // Support both common auth header styles used by different backends
             config.headers.Authorization = `Bearer ${token}`;
+            config.headers['x-auth-token'] = token;
         }
         return config;
     },
