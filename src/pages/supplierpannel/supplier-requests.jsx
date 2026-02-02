@@ -35,20 +35,32 @@ const SupplierRequests = ({ darkMode }) => {
         response.data;
       const list = Array.isArray(raw) ? raw : [];
       // Normalize for DB fields (id/_id, name, email, experience, location, date, guests, etc.)
-      const normalized = list.map((r) => ({
-        ...r,
-        id: r.id ?? r._id,
-        // Prefer populated user fields from database join/populate
-        name: r.user?.name ?? r.name ?? r.travelerName ?? r.userName ?? "—",
-        email: r.user?.email ?? r.email ?? r.contactEmail ?? r.travelerEmail ?? "",
-        experience: r.experience ?? r.title ?? r.activity ?? "",
-        location: r.location ?? r.destination ?? r.experience ?? "",
-        date: r.date ?? r.dateRange ?? r.startDate ?? "",
-        guests: r.guests ?? r.travelers ?? r.pax ?? 0,
-        amount: r.amount ?? r.totalAmount ?? r.price ?? "",
-        status: r.status ?? "Pending",
-        avatar: r.user?.avatar ?? r.avatar ?? r.image ?? r.profileImage ?? "",
-      }));
+      const normalized = list.map((r) => {
+        // Calculate experience titles from items
+        const experienceTitles = r.items
+          ? r.items.map(item => item.activity?.title || item.title).filter(Boolean).join(', ')
+          : (r.experience || r.title || r.activity || "");
+
+        // Calculate total guests
+        const totalGuests = r.items
+          ? r.items.reduce((sum, item) => sum + (item.travelers || 0), 0)
+          : (r.guests ?? r.travelers ?? r.pax ?? 0);
+
+        return {
+          ...r,
+          id: r.id ?? r._id,
+          // Prefer populated user fields, then contactDetails, then fallback
+          name: r.user?.name ?? (r.contactDetails?.firstName ? `${r.contactDetails.firstName} ${r.contactDetails.lastName || ''}`.trim() : (r.name ?? r.travelerName ?? r.userName ?? "—")),
+          email: r.user?.email ?? r.contactDetails?.email ?? r.email ?? r.contactEmail ?? r.travelerEmail ?? "",
+          experience: experienceTitles,
+          location: r.tripDetails?.country ?? r.location ?? r.destination ?? "—",
+          date: r.date ?? r.dateRange ?? r.startDate ?? "Flexible",
+          guests: totalGuests || 1,
+          amount: r.tripDetails?.budget ?? r.amount ?? r.totalAmount ?? r.price ?? "N/A",
+          status: r.status ?? "Pending",
+          avatar: r.user?.avatar ?? r.avatar ?? r.image ?? r.profileImage ?? "",
+        };
+      });
       // Frontend safety: prefer only pending, but if nothing matches, show all
       const pendingOnly = normalized.filter(
         (r) => String(r.status || "").trim().toLowerCase() === "pending"

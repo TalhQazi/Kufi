@@ -15,7 +15,32 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
           api.get('/bookings/supplier'),
           api.get('/activities/drafts')
         ]);
-        setBookings(bookingsRes.data.bookings || []);
+        const rawBookings = bookingsRes.data.bookings || bookingsRes.data || [];
+
+        const list = Array.isArray(rawBookings) ? rawBookings : [];
+        const normalized = list.map((r) => {
+          const experienceTitles = r.items
+            ? r.items.map(item => item.activity?.title || item.title).filter(Boolean).join(', ')
+            : (r.experience || r.title || r.activity || "");
+
+          const totalGuests = r.items
+            ? r.items.reduce((sum, item) => sum + (item.travelers || 0), 0)
+            : (r.guests ?? r.travelers ?? r.pax ?? 0);
+
+          return {
+            ...r,
+            id: r.id ?? r._id,
+            name: r.user?.name ?? (r.contactDetails?.firstName ? `${r.contactDetails.firstName} ${r.contactDetails.lastName || ''}`.trim() : (r.name ?? r.travelerName ?? r.userName ?? "—")),
+            experience: experienceTitles,
+            guests: totalGuests || 1,
+            amount: r.tripDetails?.budget ?? r.amount ?? r.totalAmount ?? r.price ?? "N/A",
+            date: r.date ?? r.createdAt?.split('T')[0] ?? "Flexible",
+            status: r.status ?? "Pending",
+            code: r.code ?? (r._id ? r._id.substring(r._id.length - 6).toUpperCase() : "BK-000")
+          };
+        });
+
+        setBookings(normalized);
         setDrafts(draftsRes.data.drafts || []);
       } catch (error) {
         console.error("Error fetching supplier bookings:", error);

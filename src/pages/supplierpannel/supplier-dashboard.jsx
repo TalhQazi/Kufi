@@ -60,10 +60,32 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
         ];
         setStats(mappedStats);
 
-        setRecentBookings(bookingsRes.data?.bookings || []);
+        const normalizeBooking = (r) => {
+          const experienceTitles = r.items
+            ? r.items.map(item => item.activity?.title || item.title).filter(Boolean).join(', ')
+            : (r.experience || r.title || r.activity || "");
 
-        const pendingList = pendingRes.data?.bookings || [];
+          const totalGuests = r.items
+            ? r.items.reduce((sum, item) => sum + (item.travelers || 0), 0)
+            : (r.guests ?? r.travelers ?? r.pax ?? 0);
+
+          return {
+            ...r,
+            id: r.id ?? r._id,
+            name: r.user?.name ?? (r.contactDetails?.firstName ? `${r.contactDetails.firstName} ${r.contactDetails.lastName || ''}`.trim() : (r.name ?? r.travelerName ?? r.userName ?? "—")),
+            experience: experienceTitles,
+            guests: totalGuests || 1,
+            status: r.status ?? "Pending"
+          };
+        };
+
+        const rawRecent = bookingsRes.data?.bookings || [];
+        setRecentBookings(rawRecent.map(normalizeBooking));
+
+        const rawPending = pendingRes.data?.bookings || [];
+        const pendingList = rawPending.map(normalizeBooking);
         setPendingRequests(pendingList);
+
         if (pendingList.length === 0) {
           setSelectedRequestId(null);
         } else {
@@ -252,7 +274,7 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                         </p>
                       </div>
                       <span className={`rounded-full px-3 py-1 text-[11px] font-medium ${booking.status === 'Confirmed' || booking.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' :
-                          booking.status === 'Pending' ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-500'
+                        booking.status === 'Pending' ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-500'
                         }`}>
                         {booking.status}
                       </span>
