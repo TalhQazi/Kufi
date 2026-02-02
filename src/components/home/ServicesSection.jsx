@@ -110,11 +110,11 @@ export default function ServicesSection({ onServiceClick }) {
                         <div
                             key={service.id}
                             className="flex flex-col items-center gap-3 group cursor-pointer"
-                            onClick={() => {
-                                if (onServiceClick && service.categoryKey) {
-                                    onServiceClick(service.categoryKey)
-                                }
-                            }}
+                            // onClick={() => {
+                            //     if (onServiceClick && service.categoryKey) {
+                            //         onServiceClick(service.categoryKey)
+                            //     }
+                            // }}
                         >
                             <div className="mb-2">
                                 {service.icon}

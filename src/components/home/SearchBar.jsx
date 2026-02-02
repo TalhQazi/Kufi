@@ -67,7 +67,7 @@ export default function SearchBar({ onSearch }) {
                             const matched = countries.find((c) => (c?.name || '').toLowerCase() === (val || '').toLowerCase())
                             setSelectedCountryObj(matched || null)
                         }}
-                        placeholder="Pakistan"
+                        placeholder="Country"
                         options={countries.map(c => ({ value: c.name.toLowerCase(), label: c.name }))}
                         inputClassName="!bg-slate-50 !border-slate-300 !text-base !font-medium !text-slate-700 !h-[48px] !rounded-lg"
                         labelClassName="!text-sm !text-slate-700 !mb-2 !font-normal"
