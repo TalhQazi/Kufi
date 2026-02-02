@@ -5,9 +5,9 @@ import { FiMapPin, FiCalendar, FiBriefcase, FiUsers } from 'react-icons/fi'
 import api from '../../api'
 
 export default function SearchBar({ onSearch }) {
-    const [city, setCity] = useState('')
-    const [cities, setCities] = useState([])
-    const [selectedCityObj, setSelectedCityObj] = useState(null)
+    const [country, setCountry] = useState('')
+    const [countries, setCountries] = useState([])
+    const [selectedCountryObj, setSelectedCountryObj] = useState(null)
     const today = new Date().toISOString().split('T')[0]
     const [arrivalDate, setArrivalDate] = useState(today)
     const [departureDate, setDepartureDate] = useState(today)
@@ -27,22 +27,22 @@ export default function SearchBar({ onSearch }) {
     }, [arrivalDate, departureDate, today])
 
     useEffect(() => {
-        const fetchCities = async () => {
+        const fetchCountries = async () => {
             try {
-                const response = await api.get('/cities')
-                setCities(response.data || [])
+                const response = await api.get('/countries')
+                setCountries(response.data || [])
             } catch (error) {
-                console.error("Error fetching cities:", error)
+                console.error("Error fetching countries:", error)
             }
         }
-        fetchCities()
+        fetchCountries()
     }, [])
 
     const handleSubmit = (event) => {
         event.preventDefault()
         if (onSearch) {
             onSearch({
-                city: selectedCityObj,
+                country: selectedCountryObj,
                 arrivalDate,
                 departureDate,
                 travelers,
@@ -60,15 +60,15 @@ export default function SearchBar({ onSearch }) {
                     <Input
                         label="Where do you want to visit ?"
                         icon={<FiMapPin className="text-slate-500 text-lg" />}
-                        value={city}
+                        value={country}
                         onChange={(e) => {
                             const val = e.target.value
-                            setCity(val)
-                            const matched = cities.find((c) => (c?.name || '').toLowerCase() === (val || '').toLowerCase())
-                            setSelectedCityObj(matched || null)
+                            setCountry(val)
+                            const matched = countries.find((c) => (c?.name || '').toLowerCase() === (val || '').toLowerCase())
+                            setSelectedCountryObj(matched || null)
                         }}
-                        placeholder="Dubai"
-                        options={cities.map(c => ({ value: c.name.toLowerCase(), label: c.name }))}
+                        placeholder="Pakistan"
+                        options={countries.map(c => ({ value: c.name.toLowerCase(), label: c.name }))}
                         inputClassName="!bg-slate-50 !border-slate-300 !text-base !font-medium !text-slate-700 !h-[48px] !rounded-lg"
                         labelClassName="!text-sm !text-slate-700 !mb-2 !font-normal"
                     />

@@ -482,6 +482,7 @@ export default function App() {
         onHomeClick={() => navigateTo('home')}
         onSignupClick={handleOpenRegister}
         onSigninClick={handleOpenLogin}
+        onExploreClick={() => navigateTo('explore')}
         onCategoryClick={handleCategoryClick}
         onCountryClick={handleCountryClick}
         onActivityClick={handleActivityClick}

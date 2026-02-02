@@ -11,7 +11,7 @@ import BlogSection from '../../components/home/BlogSection'
 import FeedbackSection from '../../components/home/FeedbackSection'
 import Footer from '../../components/layout/Footer'
 
-export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick, onCountryClick, onHomeClick, currentUser, onLogout, onProfileClick, onMyRequestsClick, onSettingsClick, onActivityClick, onBlogClick, onServiceClick, hideHeaderFooter = false }) {
+export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick, onCountryClick, onHomeClick, onExploreClick, currentUser, onLogout, onProfileClick, onMyRequestsClick, onSettingsClick, onActivityClick, onBlogClick, onServiceClick, hideHeaderFooter = false }) {
     return (
         <>
             {!hideHeaderFooter && (
@@ -27,10 +27,10 @@ export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick
                 />
             )}
             <div className="relative">
-                <HeroSection onSignupClick={onSignupClick} onCountryClick={onCountryClick} />
+                <HeroSection onSignupClick={onSignupClick} onCountryClick={onCountryClick} onExploreClick={onExploreClick} />
                 <SearchBar onSearch={(payload) => {
-                    if (onCountryClick && payload?.city) {
-                        onCountryClick(payload.city)
+                    if (onCountryClick && payload?.country) {
+                        onCountryClick(payload.country)
                     }
                 }} />
             </div>

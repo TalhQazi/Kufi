@@ -4,7 +4,7 @@ import { FaPlay, FaBookmark, FaStar } from 'react-icons/fa'
 import { FiChevronRight, FiChevronLeft } from 'react-icons/fi'
 import api from '../../api'
 
-export default function HeroSection({ onSignupClick, onCountryClick }) {
+export default function HeroSection({ onSignupClick, onCountryClick, onExploreClick }) {
     const [countries, setCountries] = useState([])
     const [loading, setLoading] = useState(true)
     const [idx, setIdx] = useState(0)
@@ -150,15 +150,24 @@ export default function HeroSection({ onSignupClick, onCountryClick }) {
                             variant="primary"
                             className="!bg-[#A67C52] !text-white !rounded-full !px-10 !py-3.5 hover:!bg-[#8e6a45] !shadow-lg hover:!shadow-xl active:!scale-[0.98]"
                             onClick={() => {
+                                if (onExploreClick) {
+                                    onExploreClick()
+                                    return
+                                }
                                 const el = document.getElementById('destinations')
                                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
                             }}
                         >
                             Let's Explore
                         </Button>
-                        <button className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+                        <a
+                            href="https://youtu.be/MyqhDKNig88?si=dMT9Wk4KRM4ELGRj"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                        >
                             <FaPlay size={14} className="ml-1" />
-                        </button>
+                        </a>
                     </div>
                 </section>
 
