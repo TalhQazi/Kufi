@@ -40,6 +40,7 @@ export default function App() {
   const [selectedItineraryId, setSelectedItineraryId] = useState(null)
   const [selectedCityName, setSelectedCityName] = useState(null)
   const [selectedBlogId, setSelectedBlogId] = useState(null)
+  const [exploreInitialCategory, setExploreInitialCategory] = useState(null)
 
   // Helper functions for dynamic navigation
   const handleActivityClick = (id) => {
@@ -107,6 +108,12 @@ export default function App() {
   const handleItineraryClick = (id) => {
     setSelectedItineraryId(id)
     navigateTo('itinerary-view')
+  }
+
+  const handleServiceClick = (categoryKey) => {
+    if (!categoryKey) return
+    setExploreInitialCategory(categoryKey)
+    navigateTo('explore')
   }
 
   const handleBlogClick = (id) => {
@@ -287,6 +294,7 @@ export default function App() {
         canGoBack={canGoBack}
         canGoForward={canGoForward}
         onHomeClick={() => navigateTo('home')}
+        initialCategory={exploreInitialCategory}
         hideHeaderFooter={true}
       />
     )
@@ -446,6 +454,7 @@ export default function App() {
         currentUser={currentUser}
         onLogout={handleLogout}
         onProfileClick={handleProfileClick}
+        onServiceClick={handleServiceClick}
         hideHeaderFooter={true}
       />
     )

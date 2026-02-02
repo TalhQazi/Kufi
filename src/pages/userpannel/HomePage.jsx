@@ -11,7 +11,7 @@ import BlogSection from '../../components/home/BlogSection'
 import FeedbackSection from '../../components/home/FeedbackSection'
 import Footer from '../../components/layout/Footer'
 
-export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick, onCountryClick, onHomeClick, currentUser, onLogout, onProfileClick, onActivityClick, onBlogClick, hideHeaderFooter = false }) {
+export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick, onCountryClick, onHomeClick, currentUser, onLogout, onProfileClick, onActivityClick, onBlogClick, onServiceClick, hideHeaderFooter = false }) {
     return (
         <>
             {!hideHeaderFooter && (
@@ -38,7 +38,7 @@ export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick
             <TopActivitiesSection onActivityClick={onActivityClick} />
             <BookingSystemSection />
             <FeedbackSection />
-            <ServicesSection />
+            <ServicesSection onServiceClick={onServiceClick} />
             <BlogSection onBlogClick={onBlogClick} />
             {!hideHeaderFooter && <Footer />}
         </>

@@ -1,8 +1,9 @@
-export default function ServicesSection() {
+export default function ServicesSection({ onServiceClick }) {
     const services = [
         {
             id: 1,
-            label: 'Different Constraints',
+            label: 'Food Tour',
+            categoryKey: 'foodtour',
             icon: (
                 <svg width="60" height="60" viewBox="0 0 24 24" fill="none" className="stroke-[#A67C52]" strokeWidth="1.2">
                     {/* Globe with pins */}
@@ -21,7 +22,8 @@ export default function ServicesSection() {
         },
         {
             id: 2,
-            label: 'Food Tour',
+            label: 'Day Tour',
+            categoryKey: 'daytour',
             icon: (
                 <svg width="60" height="60" viewBox="0 0 24 24" fill="none" className="stroke-[#A67C52]" strokeWidth="1.2">
                     {/* Cloche */}
@@ -34,7 +36,8 @@ export default function ServicesSection() {
         },
         {
             id: 3,
-            label: 'Ship Cruise',
+            label: 'Summer Visit',
+            categoryKey: 'summervisit',
             icon: (
                 <svg width="60" height="60" viewBox="0 0 24 24" fill="none" className="stroke-[#A67C52]" strokeWidth="1.2">
                     {/* Ship Front */}
@@ -48,7 +51,8 @@ export default function ServicesSection() {
         },
         {
             id: 4,
-            label: 'Mountains Tour',
+            label: 'Memorable Tour',
+            categoryKey: 'memorabletour',
             icon: (
                 <svg width="60" height="60" viewBox="0 0 24 24" fill="none" className="stroke-[#A67C52]" strokeWidth="1.2">
                     {/* Mountains */}
@@ -63,7 +67,8 @@ export default function ServicesSection() {
         },
         {
             id: 5,
-            label: 'Summer Rest',
+            label: 'Ship Curise',
+            categoryKey: 'shipcurise',
             icon: (
                 <svg width="60" height="60" viewBox="0 0 24 24" fill="none" className="stroke-[#A67C52]" strokeWidth="1.2">
                     {/* Umbrella */}
@@ -80,7 +85,8 @@ export default function ServicesSection() {
         },
         {
             id: 6,
-            label: 'Bus Tour',
+            label: 'When Visiting',
+            categoryKey: 'whenvisiting',
             icon: (
                 <svg width="60" height="60" viewBox="0 0 24 24" fill="none" className="stroke-[#A67C52]" strokeWidth="1.2">
                     {/* Bus Front */}
@@ -101,7 +107,15 @@ export default function ServicesSection() {
             <div className="max-w-[1240px] mx-auto">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 sm:gap-8 text-center">
                     {services.map((service) => (
-                        <div key={service.id} className="flex flex-col items-center gap-3 group">
+                        <div
+                            key={service.id}
+                            className="flex flex-col items-center gap-3 group cursor-pointer"
+                            onClick={() => {
+                                if (onServiceClick && service.categoryKey) {
+                                    onServiceClick(service.categoryKey)
+                                }
+                            }}
+                        >
                             <div className="mb-2">
                                 {service.icon}
                             </div>
