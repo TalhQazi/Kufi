@@ -33,6 +33,9 @@ export default function ActivityDetail({
 
     useEffect(() => {
         const loadData = async () => {
+            setActivity(null)
+            setSimilarActivities([])
+
             if (!activityId) {
                 setIsLoading(false)
                 return
@@ -95,6 +98,8 @@ export default function ActivityDetail({
                 }
             } catch (error) {
                 console.error("Error loading activity details:", error)
+                setActivity(null)
+                setSimilarActivities([])
             } finally {
                 setIsLoading(false)
             }
@@ -126,27 +131,41 @@ export default function ActivityDetail({
 
     return (
         <div className="bg-white min-h-screen">
-            {/* Header */}
-            {!hideHeaderFooter && (
-                <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
-                    <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-1">
-                            <button
-                                onClick={() => {
-                                    if (onHomeClick) {
-                                        onHomeClick()
-                                    } else {
-                                        window.location.hash = '#home'
-                                    }
-                                }}
-                                className="cursor-pointer hover:opacity-80 transition-opacity"
-                            >
-                                <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
-                            </button>
-                        </div>
+            {isLoading ? (
+                <div className="min-h-screen w-full flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
+                </div>
+            ) : !activityId ? (
+                <div className="min-h-screen w-full flex items-center justify-center text-slate-500">
+                    No activity selected.
+                </div>
+            ) : !activity ? (
+                <div className="min-h-screen w-full flex items-center justify-center text-slate-500">
+                    Activity not found.
+                </div>
+            ) : (
+                <>
+                    {/* Header */}
+                    {!hideHeaderFooter && (
+                        <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
+                            <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => {
+                                            if (onHomeClick) {
+                                                onHomeClick()
+                                            } else {
+                                                window.location.hash = '#home'
+                                            }
+                                        }}
+                                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                                    >
+                                        <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
+                                    </button>
+                                </div>
 
 
-                        <div className="flex items-center gap-2 sm:gap-4">
+                                <div className="flex items-center gap-2 sm:gap-4">
                             <button
                                 className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                                 onClick={() => onNotificationClick && onNotificationClick()}
@@ -256,7 +275,7 @@ export default function ActivityDetail({
                                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                                     <circle cx="12" cy="10" r="3" />
                                 </svg>
-                                <span className="whitespace-nowrap">{activityLocation || 'Location'}</span>
+                                <span className="whitespace-nowrap">{activityLocation || '—'}</span>
                             </div>
                             <div className="flex items-center gap-1">
                                 <span className="text-gold">★</span>
@@ -506,8 +525,10 @@ export default function ActivityDetail({
                         </div>
                     </aside>
                 </div>
-            </main>
-            {!hideHeaderFooter && <Footer />}
+                    </main>
+                    {!hideHeaderFooter && <Footer />}
+                </>
+            )}
         </div>
     )
 }
