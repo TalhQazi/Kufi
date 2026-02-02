@@ -21,15 +21,37 @@ const SupplierRequests = ({ darkMode }) => {
   const [acceptedRequestId, setAcceptedRequestId] = useState(null);
   const [itineraryRequestId, setItineraryRequestId] = useState(null);
 
+  // Load requests from database (GET /bookings/supplier?status=pending)
   const fetchRequests = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/bookings/supplier?status=pending');
-      const data = response.data.bookings || [];
-      setRequests(data);
-      if (data.length > 0) setSelectedId(data[0].id || data[0]._id);
+      const response = await api.get("/bookings/supplier", { params: { status: "pending" } });
+      const raw = response.data?.bookings ?? response.data?.data ?? response.data;
+      const list = Array.isArray(raw) ? raw : [];
+      // Normalize for DB fields (id/_id, name, email, experience, location, date, guests, etc.)
+      const normalized = list.map((r) => ({
+        ...r,
+        id: r.id ?? r._id,
+        name: r.name ?? r.travelerName ?? r.userName ?? "—",
+        email: r.email ?? r.contactEmail ?? r.travelerEmail ?? "",
+        experience: r.experience ?? r.title ?? r.activity ?? "",
+        location: r.location ?? r.destination ?? r.experience ?? "",
+        date: r.date ?? r.dateRange ?? r.startDate ?? "",
+        guests: r.guests ?? r.travelers ?? r.pax ?? 0,
+        amount: r.amount ?? r.totalAmount ?? r.price ?? "",
+        status: r.status ?? "Pending",
+        avatar: r.avatar ?? r.image ?? r.profileImage ?? "",
+      }));
+      setRequests(normalized);
+      if (normalized.length > 0) {
+        setSelectedId(normalized[0].id ?? normalized[0]._id);
+      } else {
+        setSelectedId(null);
+      }
     } catch (error) {
-      console.error("Error fetching supplier requests:", error);
+      console.error("Error fetching supplier requests from database:", error);
+      setRequests([]);
+      setSelectedId(null);
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +129,7 @@ const SupplierRequests = ({ darkMode }) => {
                   <MapPin className="h-3.5 w-3.5 text-emerald-500" />
                   Destination
                 </p>
-                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.location || itineraryRequest.experience}</p>
+                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.location || itineraryRequest.experience || "—"}</p>
               </div>
 
               <div className="space-y-1">
@@ -115,7 +137,7 @@ const SupplierRequests = ({ darkMode }) => {
                   <CalendarDays className="h-3.5 w-3.5 text-emerald-500" />
                   Dates
                 </p>
-                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.dateRange || itineraryRequest.date}</p>
+                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.dateRange || itineraryRequest.date || "—"}</p>
               </div>
 
               <div className="space-y-1">
@@ -123,7 +145,7 @@ const SupplierRequests = ({ darkMode }) => {
                   <Users className="h-3.5 w-3.5 text-emerald-500" />
                   Travelers
                 </p>
-                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.travelers || itineraryRequest.guests} Adults</p>
+                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.guests ?? itineraryRequest.travelers ?? 0} Adults</p>
               </div>
             </div>
           </div>
