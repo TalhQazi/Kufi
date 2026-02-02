@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Check, Upload, Mail, Phone, MapPin, Info, Building } from "lucide-react";
-import api from "../../api";
 
 const SupplierProfile = ({ darkMode }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -17,7 +16,7 @@ const SupplierProfile = ({ darkMode }) => {
 
   const [documents, setDocuments] = useState([]);
 
-  // Normalize profile object from API (database) – support camelCase or snake_case
+  // Normalize profile object (from DB via login user), support camelCase or snake_case
   const normalizeProfile = (data) => {
     if (!data || typeof data !== "object") return {};
     return {
@@ -34,34 +33,17 @@ const SupplierProfile = ({ darkMode }) => {
     const fetchProfile = async () => {
       try {
         setIsLoading(true);
-        // 1. Get current user from database (auth/me)
-        const res = await api.get("/auth/me");
-        const rawUser = res.data?.user ?? res.data;
+        // Load supplier profile details from login user stored in localStorage (fetched from DB at login)
+        const stored = localStorage.getItem("currentUser");
+        const rawUser = stored ? JSON.parse(stored) : null;
         const userFields = normalizeProfile(rawUser);
 
         setForm((prev) => ({
           ...prev,
           ...userFields,
         }));
-
-        // 2. Get supplier profile from database (supplier/profile) – name, contact email, etc.
-        try {
-          const supplierRes = await api.get("/supplier/profile");
-          const rawProfile = supplierRes.data?.profile ?? supplierRes.data;
-          if (rawProfile && typeof rawProfile === "object") {
-            const profileFields = normalizeProfile(rawProfile);
-            setForm((prev) => ({
-              ...prev,
-              ...profileFields,
-            }));
-            const docs = supplierRes.data?.documents ?? rawProfile?.documents;
-            setDocuments(Array.isArray(docs) ? docs : []);
-          }
-        } catch (e) {
-          // Supplier profile optional; keep auth/me data
-        }
       } catch (error) {
-        console.error("Error fetching supplier profile from database:", error);
+        console.error("Error loading supplier profile from stored user:", error);
       } finally {
         setIsLoading(false);
       }
