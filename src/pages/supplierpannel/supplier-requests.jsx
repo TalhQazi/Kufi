@@ -52,6 +52,7 @@ const SupplierRequests = ({ darkMode }) => {
           // Prefer populated user fields, then contactDetails, then fallback
           name: r.user?.name ?? (r.contactDetails?.firstName ? `${r.contactDetails.firstName} ${r.contactDetails.lastName || ''}`.trim() : (r.name ?? r.travelerName ?? r.userName ?? "—")),
           email: r.user?.email ?? r.contactDetails?.email ?? r.email ?? r.contactEmail ?? r.travelerEmail ?? "",
+          phone: r.user?.phone ?? r.contactDetails?.phone ?? r.phone ?? "N/A",
           experience: experienceTitles,
           location: r.tripDetails?.country ?? r.location ?? r.destination ?? "—",
           date: r.date ?? r.dateRange ?? r.startDate ?? "Flexible",
@@ -59,6 +60,7 @@ const SupplierRequests = ({ darkMode }) => {
           amount: r.tripDetails?.budget ?? r.amount ?? r.totalAmount ?? r.price ?? "N/A",
           status: r.status ?? "Pending",
           avatar: r.user?.avatar ?? r.avatar ?? r.image ?? r.profileImage ?? "",
+          preferences: r.preferences || {},
         };
       });
       // Frontend safety: prefer only pending, but if nothing matches, show all
@@ -328,9 +330,59 @@ const SupplierRequests = ({ darkMode }) => {
                 <span className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${darkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-50 text-emerald-600"}`}>
                   <Mail className="h-4 w-4" />
                 </span>
-                <div>
-                  <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-500"}`}>Email</p>
-                  <p className={`text-xs transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{selected.email || "N/A"}</p>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-[10px] uppercase tracking-wider font-semibold transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>Email</p>
+                  <p className={`text-xs font-medium truncate transition-colors ${darkMode ? "text-slate-200" : "text-slate-700"}`}>{selected.email || "N/A"}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${darkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-50 text-blue-600"}`}>
+                  <Phone className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-[10px] uppercase tracking-wider font-semibold transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>Phone</p>
+                  <p className={`text-xs font-medium truncate transition-colors ${darkMode ? "text-slate-200" : "text-slate-700"}`}>{selected.phone || "N/A"}</p>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-dashed transition-colors" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
+                <p className={`text-[10px] uppercase tracking-wider font-bold mb-3 ${darkMode ? "text-amber-500/80" : "text-[#a26e35]"}`}>Trip Overview</p>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/30 p-2 rounded-lg">
+                    <span className={darkMode ? "text-slate-400" : "text-gray-500"}>Destination</span>
+                    <span className={`font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>{selected.location}</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/30 p-2 rounded-lg">
+                    <span className={darkMode ? "text-slate-400" : "text-gray-500"}>Travelers</span>
+                    <span className={`font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>{selected.guests} PAX</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/30 p-2 rounded-lg">
+                    <span className={darkMode ? "text-slate-400" : "text-gray-500"}>Budget</span>
+                    <span className={`font-semibold text-emerald-500`}>{selected.amount}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-dashed transition-colors" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
+                <p className={`text-[10px] uppercase tracking-wider font-bold mb-3 ${darkMode ? "text-amber-500/80" : "text-[#a26e35]"}`}>Preferences</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className={`flex flex-col gap-1 p-2 rounded-xl border ${selected.preferences?.includeHotel || selected.preferences?.hotelIncluded ? "bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-900/30 dark:text-emerald-400" : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-500"}`}>
+                    <span className="font-bold">Hotel</span>
+                    <span className="text-[9px] uppercase">{(selected.preferences?.includeHotel || selected.preferences?.hotelIncluded) ? "Requested" : "No"}</span>
+                  </div>
+                  <div className={`flex flex-col gap-1 p-2 rounded-xl border ${selected.preferences?.vegetarian ? "bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-900/30 dark:text-emerald-400" : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-500"}`}>
+                    <span className="font-bold">Veg Only</span>
+                    <span className="text-[9px] uppercase">{selected.preferences?.vegetarian ? "Yes" : "No"}</span>
+                  </div>
+                  <div className={`flex flex-col gap-1 p-2 rounded-xl border ${selected.preferences?.foodAllGood ? "bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-900/30 dark:text-emerald-400" : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-500"}`}>
+                    <span className="font-bold">Food</span>
+                    <span className="text-[9px] uppercase">{selected.preferences?.foodAllGood ? "All Good" : "Standard"}</span>
+                  </div>
+                  <div className={`flex flex-col gap-1 p-2 rounded-xl border ${selected.preferences?.hotelOwn ? "bg-amber-50 border-amber-100 text-amber-700 dark:bg-amber-900/20 dark:border-amber-900/30 dark:text-amber-400" : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-500"}`}>
+                    <span className="font-bold">Own Hotel</span>
+                    <span className="text-[9px] uppercase">{selected.preferences?.hotelOwn ? "Yes" : "No"}</span>
+                  </div>
                 </div>
               </div>
             </div>
