@@ -21,11 +21,12 @@ const SupplierRequests = ({ darkMode }) => {
   const [acceptedRequestId, setAcceptedRequestId] = useState(null);
   const [itineraryRequestId, setItineraryRequestId] = useState(null);
 
-  // Load requests from database (GET /bookings/supplier?status=pending)
+  // Load requests from database (GET /supplier/bookings) and keep only status === "pending"
   const fetchRequests = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get("/bookings/supplier", { params: { status: "pending" } });
+      // Uses supplier bookings endpoint from backend; it may return all statuses
+      const response = await api.get("/supplier/bookings");
       const raw = response.data?.bookings ?? response.data?.data ?? response.data;
       const list = Array.isArray(raw) ? raw : [];
       // Normalize for DB fields (id/_id, name, email, experience, location, date, guests, etc.)
@@ -43,9 +44,13 @@ const SupplierRequests = ({ darkMode }) => {
         status: r.status ?? "Pending",
         avatar: r.user?.avatar ?? r.avatar ?? r.image ?? r.profileImage ?? "",
       }));
-      setRequests(normalized);
-      if (normalized.length > 0) {
-        setSelectedId(normalized[0].id ?? normalized[0]._id);
+      // Frontend safety: show only pending requests, even if backend returns other statuses
+      const pendingOnly = normalized.filter(
+        (r) => String(r.status || "").toLowerCase() === "pending"
+      );
+      setRequests(pendingOnly);
+      if (pendingOnly.length > 0) {
+        setSelectedId(pendingOnly[0].id ?? pendingOnly[0]._id);
       } else {
         setSelectedId(null);
       }
