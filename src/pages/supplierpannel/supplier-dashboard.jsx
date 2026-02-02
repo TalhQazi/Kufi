@@ -43,7 +43,8 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
         const [statsRes, bookingsRes, activitiesRes, pendingRes] = await Promise.all([
           api.get('/analytics/supplier'),
           api.get('/bookings/supplier?limit=5'),
-          api.get('/activities/supplier'),
+          // Match backend supplier activities route on Vercel
+          api.get('/supplier/activities'),
           api.get('/bookings/supplier?status=pending'),
         ]);
 

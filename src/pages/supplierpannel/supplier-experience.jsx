@@ -606,7 +606,8 @@ const SupplierExperience = ({ darkMode, view = 'list', onViewChange, navigateTo 
     const fetchExperiences = async () => {
       try {
         setIsLoading(true);
-        const response = await api.get('/activities/supplier');
+        // Match backend supplier activities route on Vercel
+        const response = await api.get('/supplier/activities');
         setExperiences(response.data || []);
       } catch (error) {
         console.error("Error fetching supplier experiences:", error);
@@ -646,7 +647,7 @@ const SupplierExperience = ({ darkMode, view = 'list', onViewChange, navigateTo 
       await api.delete(`/activities/${id}`);
       alert("Experience deleted successfully!");
       // Refresh list
-      const response = await api.get('/activities/supplier');
+      const response = await api.get('/supplier/activities');
       setExperiences(response.data || []);
     } catch (error) {
       console.error("Error deleting experience:", error);
@@ -667,7 +668,7 @@ const SupplierExperience = ({ darkMode, view = 'list', onViewChange, navigateTo 
           setSelectedExperience(null);
           onViewChange?.("list");
           // Refresh list - would be better to fetch again
-          api.get('/activities/supplier').then(res => setExperiences(res.data || []));
+          api.get('/supplier/activities').then(res => setExperiences(res.data || []));
         }}
       />
     );
