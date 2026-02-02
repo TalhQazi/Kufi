@@ -5,7 +5,7 @@ import api from '../../api'
 import Footer from '../../components/layout/Footer'
 import ProfilePic from '../../components/ui/ProfilePic'
 
-export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, canGoForward, onExploreClick, onItineraryClick, onHomeClick, onNotificationClick, onProfileClick, onSettingsClick, onCountryClick, hideHeaderFooter = false }) {
+export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, canGoForward, onExploreClick, onItineraryClick, onHomeClick, onNotificationClick, onProfileClick, onMyProfileClick, onMyRequestsClick, onSettingsClick, onCountryClick, hideHeaderFooter = false }) {
     const [dropdown, setDropdown] = useState(false)
     const [tripRequests, setTripRequests] = useState([])
     const [countries, setCountries] = useState([])
@@ -119,7 +119,20 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                         <div
                                             className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
                                             onClick={() => {
-                                                if (onProfileClick) onProfileClick()
+                                                if (onMyProfileClick) onMyProfileClick()
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            MY PROFILE
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onMyRequestsClick) {
+                                                    onMyRequestsClick()
+                                                } else if (onProfileClick) {
+                                                    onProfileClick()
+                                                }
                                                 setDropdown(false)
                                             }}
                                         >

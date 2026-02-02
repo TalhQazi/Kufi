@@ -41,6 +41,7 @@ export default function App() {
   const [selectedCityName, setSelectedCityName] = useState(null)
   const [selectedBlogId, setSelectedBlogId] = useState(null)
   const [exploreInitialCategory, setExploreInitialCategory] = useState(null)
+  const [travelerProfileInitialTab, setTravelerProfileInitialTab] = useState(null)
 
   // Helper functions for dynamic navigation
   const handleActivityClick = (id) => {
@@ -140,6 +141,33 @@ export default function App() {
     } else {
       navigateTo('user-profile')
     }
+  }
+
+  const handleMyRequestsClick = () => {
+    if (!currentUser) {
+      setShowModal('login')
+      return
+    }
+    setTravelerProfileInitialTab(null)
+    navigateTo('user-profile')
+  }
+
+  const handleMyProfileClick = () => {
+    if (!currentUser) {
+      setShowModal('login')
+      return
+    }
+    setTravelerProfileInitialTab('Personal Info')
+    navigateTo('traveler-profile')
+  }
+
+  const handleSettingsClick = () => {
+    if (!currentUser) {
+      setShowModal('login')
+      return
+    }
+    setTravelerProfileInitialTab('Settings')
+    navigateTo('traveler-profile')
   }
 
   // Navigation history state (for custom buttons)
@@ -286,8 +314,10 @@ export default function App() {
         onActivityClick={handleActivityClick}
         onCategoryClick={handleCategoryClick}
         onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={handleProfileClick}
-        onSettingsClick={() => navigateTo('traveler-profile')}
+        onProfileClick={handleMyRequestsClick}
+        onMyProfileClick={handleMyProfileClick}
+        onMyRequestsClick={handleMyRequestsClick}
+        onSettingsClick={handleSettingsClick}
         onSendRequest={() => navigateTo('travel-booking')}
         onBack={goBack}
         onForward={goForward}
@@ -349,9 +379,12 @@ export default function App() {
         onItineraryClick={handleItineraryClick}
         onHomeClick={() => navigateTo('home')}
         onNotificationClick={() => setShowNotifications(true)}
-        onProfileClick={handleProfileClick}
-        onSettingsClick={() => navigateTo('traveler-profile')}
+        onProfileClick={handleMyRequestsClick}
+        onMyProfileClick={handleMyProfileClick}
+        onMyRequestsClick={handleMyRequestsClick}
+        onSettingsClick={handleSettingsClick}
         onCountryClick={handleCountryClick}
+        hideHeaderFooter={true}
       />
     )
 
@@ -436,9 +469,11 @@ export default function App() {
       <TravelerProfile
         onBack={goBack}
         onLogout={handleLogout}
-        onProfileClick={handleProfileClick}
-        onSettingsClick={() => navigateTo('traveler-profile')}
+        onProfileClick={handleMyRequestsClick}
+        onSettingsClick={handleSettingsClick}
         onHomeClick={() => navigateTo('home')}
+        initialTab={travelerProfileInitialTab}
+        hideHeaderFooter={true}
       />
     )
 
@@ -453,7 +488,9 @@ export default function App() {
         onBlogClick={handleBlogClick}
         currentUser={currentUser}
         onLogout={handleLogout}
-        onProfileClick={handleProfileClick}
+        onProfileClick={handleMyProfileClick}
+        onMyRequestsClick={handleMyRequestsClick}
+        onSettingsClick={handleSettingsClick}
         onServiceClick={handleServiceClick}
         hideHeaderFooter={true}
       />
@@ -486,7 +523,9 @@ export default function App() {
         onSigninClick={handleOpenLogin}
         currentUser={currentUser}
         onLogout={handleLogout}
-        onProfileClick={handleProfileClick}
+        onProfileClick={handleMyProfileClick}
+        onMyRequestsClick={handleMyRequestsClick}
+        onSettingsClick={handleSettingsClick}
       />
 
       <main className="flex-grow">

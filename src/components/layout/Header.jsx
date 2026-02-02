@@ -4,7 +4,7 @@ import { FiPhone, FiUser, FiSettings, FiLogOut, FiChevronDown } from 'react-icon
 import { HiMenu, HiX } from 'react-icons/hi'
 import ProfilePic from '../ui/ProfilePic'
 
-export default function Header({ onSignupClick, onSigninClick, onHomeClick, currentUser, onLogout, onProfileClick }) {
+export default function Header({ onSignupClick, onSigninClick, onHomeClick, currentUser, onLogout, onProfileClick, onMyRequestsClick, onSettingsClick }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
     const [activeSection, setActiveSection] = useState('home')
@@ -183,7 +183,11 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                                         {currentUser.role !== 'admin' && (
                                             <button
                                                 onClick={() => {
-                                                    window.location.hash = '#itinerary-view'
+                                                    if (onMyRequestsClick) {
+                                                        onMyRequestsClick()
+                                                    } else {
+                                                        window.location.hash = '#itinerary-view'
+                                                    }
                                                     setProfileDropdownOpen(false)
                                                 }}
                                                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
@@ -203,7 +207,11 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                                                 } else if (currentUser.role === 'supplier') {
                                                     window.location.hash = '#supplier';
                                                 } else {
-                                                    window.location.hash = '#traveler-profile';
+                                                    if (onSettingsClick) {
+                                                        onSettingsClick()
+                                                    } else {
+                                                        window.location.hash = '#traveler-profile';
+                                                    }
                                                 }
                                                 setProfileDropdownOpen(false)
                                             }}

@@ -12,6 +12,8 @@ export default function Explore({
   onActivityClick,
   onNotificationClick,
   onProfileClick,
+  onMyProfileClick,
+  onMyRequestsClick,
   onSendRequest,
   onBack,
   onForward,
@@ -322,7 +324,22 @@ export default function Explore({
                     <div
                       className="px-4 py-2 text-xs font-semibold text-primary-brown hover:bg-slate-50 cursor-pointer"
                       onClick={() => {
-                        onProfileClick && onProfileClick()
+                        if (onMyProfileClick) {
+                          onMyProfileClick()
+                        }
+                        setDropdown(false)
+                      }}
+                    >
+                      MY PROFILE
+                    </div>
+                    <div
+                      className="px-4 py-2 text-xs font-semibold text-primary-brown hover:bg-slate-50 cursor-pointer"
+                      onClick={() => {
+                        if (onMyRequestsClick) {
+                          onMyRequestsClick()
+                        } else if (onProfileClick) {
+                          onProfileClick()
+                        }
                         setDropdown(false)
                       }}
                     >

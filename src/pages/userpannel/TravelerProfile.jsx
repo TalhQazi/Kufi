@@ -5,7 +5,7 @@ import NotificationsModal from './NotificationsModal'
 import Footer from '../../components/layout/Footer'
 import ProfilePic from '../../components/ui/ProfilePic'
 
-export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSettingsClick, onHomeClick, hideHeaderFooter = false }) {
+export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSettingsClick, onHomeClick, initialTab = null, hideHeaderFooter = false }) {
     const [activeTab, setActiveTab] = useState('Personal Info')
     const [showProfileDropdown, setShowProfileDropdown] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
@@ -67,6 +67,12 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
         }
         fetchProfile()
     }, [])
+
+    useEffect(() => {
+        if (initialTab) {
+            setActiveTab(initialTab)
+        }
+    }, [initialTab])
 
     const handleUpdateProfile = async () => {
         try {
