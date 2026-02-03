@@ -109,7 +109,7 @@ export default function ServicesSection({ onServiceClick }) {
                     {services.map((service) => (
                         <div
                             key={service.id}
-                            className="flex flex-col items-center gap-3 group cursor-pointer"
+                            className="flex flex-col items-center gap-3 group "
                             // onClick={() => {
                             //     if (onServiceClick && service.categoryKey) {
                             //         onServiceClick(service.categoryKey)

@@ -95,10 +95,10 @@ export default function Footer() {
             </div>
             <div className="flex gap-3 items-center pl-1">
               <img src="/assets/visa.svg" alt="Visa" className="h-3 brightness-0 invert opacity-90" />
-              <img src="/assets/mastercard.svg" alt="Mastercard" className="h-6" />
+              <img src="/assets/master.png" alt="Mastercard" className="h-6" />
               <img src="/assets/paypal.svg" alt="PayPal" className="h-4 bg-white px-1 py-0.5 rounded shadow-sm" />
-              <img src="/assets/amex.svg" alt="American Express" className="h-6 rounded shadow-sm bg-white p-0.5" />
-              <img src="/assets/discover.svg" alt="Discover" className="h-6 rounded shadow-sm" />
+              <img src="/assets/am.png" alt="American Express" className="h-6 rounded shadow-sm bg-white p-0.5" />
+              <img src="/assets/discover.png" alt="Discover" className="h-6 rounded shadow-sm" />
             </div>
           </div>
 

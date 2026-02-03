@@ -435,7 +435,7 @@ export default function ActivityDetail({
                     <aside className="lg:sticky lg:top-24 h-fit order-2 lg:order-2">
                         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
                             {/* Number of Travelers */}
-                            <div className="mb-6">
+                            {/* <div className="mb-6">
                                 <h3 className="text-sm font-bold text-slate-900 mb-3">Number of Travelers</h3>
                                 <div className="flex items-center justify-between border border-slate-200 rounded-lg p-3">
                                     <button
@@ -460,7 +460,7 @@ export default function ActivityDetail({
                                         +
                                     </button>
                                 </div>
-                            </div>
+                            </div> */}
 
                             {/* Optional Add-ons */}
                             <div className="mb-6">

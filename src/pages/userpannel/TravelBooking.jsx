@@ -52,7 +52,11 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
 
     const filteredSelectedActivities = selectedCountryKey
         ? (selectedActivities || []).filter((a) => normalizeCountryKey(getActivityCountryLabel(a)) === selectedCountryKey)
-        : []
+        : (selectedActivities || [])
+
+    const payloadActivities = (availableCountries.length > 1 && !selectedCountryKey)
+        ? []
+        : filteredSelectedActivities
 
     const selectedCountryLabel = availableCountries.find(c => c.key === selectedCountryKey)?.label || ''
 
@@ -76,7 +80,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
     const [countries, setCountries] = useState([])
 
     useEffect(() => {
-        const ids = (filteredSelectedActivities || [])
+        const ids = (payloadActivities || [])
             .map(a => a?.id || a?._id)
             .filter(Boolean)
 
@@ -84,7 +88,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
             ...prev,
             activities: ids
         }))
-    }, [selectedCountryKey, selectedActivities])
+    }, [selectedCountryKey, selectedActivities, availableCountries.length])
 
     useEffect(() => {
         const fetchCountries = async () => {
@@ -133,7 +137,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                 return
             }
 
-            const activities = (filteredSelectedActivities || [])
+            const activities = (payloadActivities || [])
                 .map(a => a?.id || a?._id)
                 .filter(Boolean)
 
@@ -143,7 +147,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
             }
 
             const name = `${formData.firstName || ''} ${formData.lastName || ''}`.trim()
-            const experience = (filteredSelectedActivities || [])
+            const experience = (payloadActivities || [])
                 .map(a => a?.title)
                 .filter(Boolean)
                 .join(', ')
@@ -378,9 +382,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                     ))
                                 ) : (
                                     <p className="text-xs text-slate-500 italic py-2">
-                                        {selectedActivities.length > 0 && availableCountries.length > 1 && !selectedCountryKey
-                                            ? 'Please select a country to view activities.'
-                                            : 'No activities selected in your trip list.'}
+                                        No activities selected in your trip list.
                                     </p>
                                 )}
                             </div>
@@ -475,7 +477,14 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                         <input
                                             type="checkbox"
                                             checked={formData.includeHotel}
-                                            onChange={(e) => handleChange('includeHotel', e.target.checked)}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    includeHotel: checked,
+                                                    hotelOwn: checked ? false : prev.hotelOwn,
+                                                }))
+                                            }}
                                             className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
                                         />
                                         <span className="text-sm text-slate-700">Include Hotel</span>
@@ -484,7 +493,14 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                         <input
                                             type="checkbox"
                                             checked={formData.hotelOwn}
-                                            onChange={(e) => handleChange('hotelOwn', e.target.checked)}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    hotelOwn: checked,
+                                                    includeHotel: checked ? false : prev.includeHotel,
+                                                }))
+                                            }}
                                             className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
                                         />
                                         <span className="text-sm text-slate-700">I will choose my own</span>
@@ -500,7 +516,14 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                         <input
                                             type="checkbox"
                                             checked={formData.foodAllGood}
-                                            onChange={(e) => handleChange('foodAllGood', e.target.checked)}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    foodAllGood: checked,
+                                                    vegetarian: checked ? false : prev.vegetarian,
+                                                }))
+                                            }}
                                             className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
                                         />
                                         <span className="text-sm text-slate-700">All is good</span>
@@ -509,7 +532,14 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                         <input
                                             type="checkbox"
                                             checked={formData.vegetarian}
-                                            onChange={(e) => handleChange('vegetarian', e.target.checked)}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    vegetarian: checked,
+                                                    foodAllGood: checked ? false : prev.foodAllGood,
+                                                }))
+                                            }}
                                             className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
                                         />
                                         <span className="text-sm text-slate-700">Vegetarian</span>

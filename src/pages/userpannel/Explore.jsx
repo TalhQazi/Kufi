@@ -503,7 +503,7 @@ export default function Explore({
           </section>
 
           <aside className="lg:sticky lg:top-24 h-fit order-first lg:order-last lg:ml-12">
-            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200 flex flex-col lg:max-h-[calc(100vh-8rem)]">
               <h4 className="m-0 mb-2 text-lg font-bold text-slate-900">Your Selection</h4>
               <p className="m-0 mb-6 text-sm text-slate-600">
                 <span className="font-bold text-primary-brown">{selectedActivities.length}</span>
@@ -524,7 +524,7 @@ export default function Explore({
                   </p>
                 </div>
               ) : (
-                <div className="mb-4 space-y-3">
+                <div className="mb-4 space-y-3 lg:flex-1 lg:overflow-y-auto lg:pr-2 hide-scrollbar">
                   {selectedActivities.map(activity => (
                     <div key={activity.id} className="pb-3 border-b border-slate-200 last:border-0">
                       <div className="flex items-center gap-3 mb-2">

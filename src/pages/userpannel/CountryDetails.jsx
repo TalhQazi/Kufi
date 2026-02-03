@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import api from '../../api'
 import './CountryDetails.css'
 import Footer from '../../components/layout/Footer'
+import BlogSection from '../../components/home/BlogSection'
 
 export default function CountryDetails({
     onHomeClick,
@@ -163,41 +164,13 @@ export default function CountryDetails({
         })
         : experiences
 
-    const [testimonials, setTestimonials] = useState([])
-    const [blogs, setBlogs] = useState([])
-    const [displayedTestimonials, setDisplayedTestimonials] = useState([])
-    const [displayedBlogs, setDisplayedBlogs] = useState([])
-    const [contentLoading, setContentLoading] = useState(true)
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
 
-    const fallbackTestimonials = [
-        { id: 'fb-1', rating: 5, text: 'Everything was well organized and the support was super quick. Highly recommended!', author: 'Ayesha Khan' },
-        { id: 'fb-2', rating: 5, text: 'Booking process was smooth and the itinerary was exactly as promised.', author: 'Hassan Ali' },
-        { id: 'fb-3', rating: 4, text: 'Great experience overall. Activities were premium and worth it.', author: 'Sara Ahmed' },
-        { id: 'fb-4', rating: 5, text: 'We had an amazing family trip. Excellent planning and guidance.', author: 'Usman Riaz' },
-        { id: 'fb-5', rating: 4, text: 'Very cooperative team. They adjusted our plan as per our needs.', author: 'Nimra Zahid' },
-        { id: 'fb-6', rating: 5, text: 'The destinations were beautiful and everything was on time.', author: 'Ali Raza' },
-        { id: 'fb-7', rating: 5, text: 'Loved the overall service and responsiveness. Will book again.', author: 'Fatima Noor' },
-        { id: 'fb-8', rating: 4, text: 'Good value for money and great recommendations for activities.', author: 'Bilal Ahmed' },
+    const staticReviews = [
+        { id: 'static-1', rating: 5, text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor.', author: 'Liza', role: 'LIZA' },
+        { id: 'static-2', rating: 5, text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor.', author: 'Mr. John Doe', role: 'MR. JOHN DO' },
+        { id: 'static-3', rating: 5, text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor.', author: 'Mr. John Doe', role: 'MR. JOHN DO' },
     ]
-
-    const fallbackBlogs = [
-        { id: 'blog-1', title: 'Top Tips for a Perfect Trip', date: 'Jan 2026', image: '/assets/blog1.jpeg' },
-        { id: 'blog-2', title: 'Hidden Gems You Must Visit', date: 'Jan 2026', image: '/assets/blog2.jpeg' },
-        { id: 'blog-3', title: 'How to Travel on a Smart Budget', date: 'Jan 2026', image: '/assets/blog3.jpeg' },
-        { id: 'blog-4', title: 'What to Pack for Any Trip', date: 'Jan 2026', image: '/assets/blog4.jpeg' },
-    ]
-
-    const pickRandomItems = (items, count) => {
-        const list = Array.isArray(items) ? items.filter(Boolean) : []
-        if (list.length <= count) return list
-        const shuffled = [...list]
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1))
-            ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-        }
-        return shuffled.slice(0, count)
-    }
 
     useEffect(() => {
         const fetchCountryAndCities = async () => {
@@ -251,50 +224,8 @@ export default function CountryDetails({
             }
         }
 
-        const fetchTestimonialsAndBlogs = async () => {
-            try {
-                setContentLoading(true)
-                const [feedRes, blogRes] = await Promise.all([
-                    api.get('/feedbacks'),
-                    api.get('/blogs')
-                ]);
-                const fetchedTestimonials = Array.isArray(feedRes.data) ? feedRes.data : []
-                const fetchedBlogs = Array.isArray(blogRes.data) ? blogRes.data : []
-
-                setTestimonials(fetchedTestimonials)
-                setBlogs(fetchedBlogs)
-
-                const normalizedTestimonials = fetchedTestimonials
-                    .map((t, idx) => ({
-                        id: t?._id || t?.id || `t-${idx}`,
-                        rating: t?.rating || 5,
-                        text: t?.text || t?.message || t?.comment || '',
-                        author: t?.author || t?.name || 'Client'
-                    }))
-                    .filter(t => t.text)
-
-                setDisplayedTestimonials(pickRandomItems(normalizedTestimonials, 2))
-
-                const normalizedBlogs = fetchedBlogs.map((b, idx) => ({
-                    id: b?._id || b?.id || `b-${idx}`,
-                    title: b?.title || 'Travel Blog',
-                    date: b?.date || (b?.createdAt ? new Date(b.createdAt).toLocaleDateString() : ''),
-                    image: b?.imageUrl || b?.image || b?.coverImage || '/assets/blog1.jpeg'
-                }))
-
-                setDisplayedBlogs(pickRandomItems(normalizedBlogs, 2))
-            } catch (error) {
-                console.error("Error fetching testimonials or blogs:", error);
-                setDisplayedTestimonials([])
-                setDisplayedBlogs([])
-            } finally {
-                setContentLoading(false)
-            }
-        }
-
         fetchCountryAndCities()
         fetchCountryActivities()
-        fetchTestimonialsAndBlogs()
     }, [countryName])
 
     const getProfileImage = () => {
@@ -306,7 +237,7 @@ export default function CountryDetails({
 
     const profileImage = getProfileImage();
 
-    const isPageLoading = Boolean(citiesLoading || isLoading || contentLoading)
+    const isPageLoading = Boolean(citiesLoading || isLoading)
 
     return (
         <div className="country-details">
@@ -544,8 +475,7 @@ export default function CountryDetails({
                 <section className="country-feedback">
                     <h2 className="country-section-title">Best Feedback From Clients</h2>
                     <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:gap-5">
-                        {displayedTestimonials.length > 0 ? (
-                            displayedTestimonials.map((testimonial, idx) => (
+                        {staticReviews.map((testimonial) => (
                                 <div
                                     key={testimonial.id}
                                     className="bg-white rounded-[18px] px-6 py-5 shadow-[0_16px_30px_rgba(15,23,42,0.10)] border border-slate-100 w-full sm:w-[320px] lg:w-[310px] min-h-[200px]"
@@ -572,63 +502,16 @@ export default function CountryDetails({
                                         </div>
                                         <div className="min-w-0">
                                             <h4 className="m-0 text-xs font-bold text-slate-900 truncate">{testimonial.author}</h4>
-                                            <p className="m-0 text-[9px] text-slate-400 font-bold uppercase tracking-[0.22em] leading-none mt-1 truncate">CLIENT</p>
+                                            <p className="m-0 text-[9px] text-slate-400 font-bold uppercase tracking-[0.22em] leading-none mt-1 truncate">{testimonial.role}</p>
                                         </div>
                                     </div>
                                 </div>
-                            ))
-                        ) : (
-                            <div className="w-full py-12 text-center text-slate-500">
-                                No reviews yet.
-                            </div>
-                        )}
+                            ))}
                     </div>
                 </section>
 
                 {/* Travel Blog */}
-                <section className="country-blog">
-                    <h2 className="country-section-title">Latest Travel Blog</h2>
-                    <div className="country-blog-grid">
-                        {displayedBlogs.length > 0 ? (
-                            displayedBlogs.map((blog) => (
-                                <div
-                                    key={blog.id}
-                                    className="country-blog-card"
-                                    onClick={() => {
-                                        if (onBlogClick && blog?.id) onBlogClick(blog.id)
-                                    }}
-                                    role="button"
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault()
-                                            if (onBlogClick && blog?.id) onBlogClick(blog.id)
-                                        }
-                                    }}
-                                >
-                                    <img src={blog.image} alt={blog.title} className="country-blog-image" />
-                                    <div className="country-blog-content">
-                                        <h3 className="country-blog-title">{blog.title}</h3>
-                                        <p className="country-blog-date">{blog.date}</p>
-                                        <button
-                                            className="country-blog-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                if (onBlogClick && blog?.id) onBlogClick(blog.id)
-                                            }}
-                                        >
-                                            Read More
-                                        </button>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="col-span-full py-20 text-center text-slate-500">
-                                No blogs yet.
-                            </div>
-                        )}
-                    </div>
-                </section>
+                <BlogSection onBlogClick={onBlogClick} />
             </main>
 
                     {!hideHeaderFooter && <Footer />}
