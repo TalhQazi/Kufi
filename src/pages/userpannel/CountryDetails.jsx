@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import api from '../../api'
 import './CountryDetails.css'
 import Footer from '../../components/layout/Footer'
@@ -167,10 +167,54 @@ export default function CountryDetails({
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
 
     const staticReviews = [
-        { id: 'static-1', rating: 5, text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor.', author: 'Liza', role: 'LIZA' },
-        { id: 'static-2', rating: 5, text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor.', author: 'Mr. John Doe', role: 'MR. JOHN DO' },
-        { id: 'static-3', rating: 5, text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor.', author: 'Mr. John Doe', role: 'MR. JOHN DO' },
+        { id: 'static-1', rating: 5, text: 'Seamless booking process and an absolutely unforgettable trip—highly recommend!', author: 'Liza', role: 'LIZA' },
+        { id: 'static-2', rating: 5, text: 'The best itinerary we’ve ever had; every detail was handled perfectly.', author: 'Mr. John Doe', role: 'MR. JOHN DO' },
+        { id: 'static-3', rating: 4, text: 'Professional, responsive, and found us the best deals I could not find online.', author: 'Mr.Jelly', role: 'MR.Jelly' },
+        { id: 'static-4', rating: 5, text: 'They took the stress out of travel planning so we could just enjoy the sights', author: 'Mr.Allen', role: 'MR.Allen' },
+        { id: 'static-5', rating: 5, text: 'Incredible service from start to finish—we would not book with anyone else now.', author: 'Samia Chahudary', role: 'Samia' },
+        { id: 'static-6', rating: 4, text: 'Our honeymoon was flawless thanks to the expert recommendations from this team.', author: 'Della ', role: 'Della' },
+        { id: 'static-7', rating: 5, text: 'Five-star service! They handled a last-minute flight change with total ease.', author: 'Queen Doll', role: 'Queen' },
+        { id: 'static-8', rating: 5, text: 'Hidden gems and local spots we never would have found on our own.', author: 'Saima', role: 'Saima' },
+        { id: 'static-9', rating: 5, text: 'Efficient, friendly, and truly cared about making our vacation special.', author: 'Malifa', role: 'Malifa' },
+        { id: 'static-10', rating: 4, text: 'Professional, responsive, and found us the best deals I could not find online.', author: 'Mr.Ali Hassan', role: 'Ali' },
+        { id: 'static-11', rating: 5, text: 'A world-class experience; they turned our dream vacation into a reality.', author: 'Mr.Hassan', role: 'Hassan' },
+        { id: 'static-12', rating: 4, text: 'Professional, responsive, and found us the best deals I could not find online.', author: 'Faria Sheikh', role: 'Faria' },
+        { id: 'static-13', rating: 5, text: 'Incredible service from start to finish—we would not book with anyone else now.', author: 'Nazim', role: 'Nazim' },
+
     ]
+
+    const displayedReviews = useMemo(() => {
+        const reviews = Array.isArray(staticReviews) ? staticReviews.filter(Boolean) : []
+        if (reviews.length <= 3) return reviews
+
+        const seedFromString = (value) => {
+            const str = String(value || '')
+            let hash = 2166136261
+            for (let i = 0; i < str.length; i++) {
+                hash ^= str.charCodeAt(i)
+                hash = Math.imul(hash, 16777619)
+            }
+            return hash >>> 0
+        }
+
+        const mulberry32 = (a) => {
+            return function () {
+                let t = (a += 0x6D2B79F5)
+                t = Math.imul(t ^ (t >>> 15), t | 1)
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+            }
+        }
+
+        const rng = mulberry32(seedFromString(countryName))
+        const shuffled = [...reviews]
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(rng() * (i + 1))
+            ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+        }
+
+        return shuffled.slice(0, 3)
+    }, [countryName])
 
     useEffect(() => {
         const fetchCountryAndCities = async () => {
@@ -475,7 +519,7 @@ export default function CountryDetails({
                 <section className="country-feedback">
                     <h2 className="country-section-title">Best Feedback From Clients</h2>
                     <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:gap-5">
-                        {staticReviews.map((testimonial) => (
+                        {displayedReviews.map((testimonial) => (
                                 <div
                                     key={testimonial.id}
                                     className="bg-white rounded-[18px] px-6 py-5 shadow-[0_16px_30px_rgba(15,23,42,0.10)] border border-slate-100 w-full sm:w-[320px] lg:w-[310px] min-h-[200px]"
