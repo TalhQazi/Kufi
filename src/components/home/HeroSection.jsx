@@ -4,13 +4,14 @@ import { FaPlay, FaBookmark, FaStar } from 'react-icons/fa'
 import { FiChevronRight, FiChevronLeft } from 'react-icons/fi'
 import api from '../../api'
 
-export default function HeroSection({ onSignupClick, onCountryClick, onExploreClick }) {
+export default function HeroSection({ onCountryClick, onExploreClick }) {
     const [countries, setCountries] = useState([])
     const [loading, setLoading] = useState(true)
     const [idx, setIdx] = useState(0)
     const [isPaused, setIsPaused] = useState(false)
-    const scrollRef = useRef(null)
     const [isDragging, setIsDragging] = useState(false)
+    const [isVideoOpen, setIsVideoOpen] = useState(false)
+    const scrollRef = useRef(null)
     const startX = useRef(0)
     const scrollLeft = useRef(0)
 
@@ -35,16 +36,21 @@ export default function HeroSection({ onSignupClick, onCountryClick, onExploreCl
 
     // Auto-scroll effect (one picture at a time)
     useEffect(() => {
-        if (isPaused || isDragging) return
+        if (isPaused || isDragging || countries.length === 0) return
+        const timer = setInterval(() => {
+            next()
+        }, 3000)
+        return () => clearInterval(timer)
+    }, [isPaused, isDragging, countries.length, idx])
 
-        const autoScroll = setInterval(() => {
-            if (scrollRef.current) {
-                scrollRef.current.scrollBy({ left: cardWidth, behavior: 'smooth' })
-            }
-        }, 5000) // Slide every 5 seconds
-
-        return () => clearInterval(autoScroll)
-    }, [isPaused, isDragging, cardWidth])
+    useEffect(() => {
+        if (!isVideoOpen) return
+        const onKeyDown = (e) => {
+            if (e.key === 'Escape') setIsVideoOpen(false)
+        }
+        document.addEventListener('keydown', onKeyDown)
+        return () => document.removeEventListener('keydown', onKeyDown)
+    }, [isVideoOpen])
 
     // Center scroll on mount or when countries load
     useEffect(() => {
@@ -160,14 +166,14 @@ export default function HeroSection({ onSignupClick, onCountryClick, onExploreCl
                         >
                             Let's Explore
                         </Button>
-                        <a
-                            href="https://youtu.be/MyqhDKNig88?si=dMT9Wk4KRM4ELGRj"
-                            target="_blank"
-                            rel="noreferrer"
+                        <button
+                            type="button"
+                            onClick={() => setIsVideoOpen(true)}
                             className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                            aria-label="Play video"
                         >
                             <FaPlay size={14} className="ml-1" />
-                        </a>
+                        </button>
                     </div>
                 </section>
 
@@ -290,6 +296,40 @@ export default function HeroSection({ onSignupClick, onCountryClick, onExploreCl
                     </div>
                 </section>
             </main>
+
+            {isVideoOpen && (
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70"
+                    onMouseDown={(e) => {
+                        if (e.target === e.currentTarget) setIsVideoOpen(false)
+                    }}
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <div className="relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden shadow-2xl">
+                        <button
+                            type="button"
+                            onClick={() => setIsVideoOpen(false)}
+                            className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+                            aria-label="Close video"
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M18 6L6 18M6 6l12 12" />
+                            </svg>
+                        </button>
+
+                        <div className="relative w-full aspect-video">
+                            <iframe
+                                className="absolute inset-0 w-full h-full"
+                                src="https://www.youtube.com/embed/MyqhDKNig88?autoplay=1&rel=0&modestbranding=1"
+                                title="Kufi Travel Video"
+                                allow="autoplay; encrypted-media; picture-in-picture"
+                                allowFullScreen
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
