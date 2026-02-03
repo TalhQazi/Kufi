@@ -369,7 +369,7 @@ export default function ActivityDetail({
                                         : 'text-slate-600 hover:text-slate-900'
                                         }`}
                                 >
-                                    Reviews ({activityReviewsCount ?? 0})
+                                    Reviews 
                                     {activeTab === 'reviews' && (
                                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600"></div>
                                     )}
