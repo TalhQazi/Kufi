@@ -336,7 +336,6 @@ export default function ActivityDetail({
                             <div className="flex items-center gap-1">
                                 <span className="text-gold">★</span>
                                 <span className="font-semibold text-slate-900">{activityRating ?? '—'}</span>
-                                <span className="hidden sm:inline">({activityReviewsCount ?? '—'} reviews)</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <svg width="14" height="14" className="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
