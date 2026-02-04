@@ -9,6 +9,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
     const [dropdown, setDropdown] = useState(false)
     const [tripRequests, setTripRequests] = useState([])
     const [countries, setCountries] = useState([])
+    const [cities, setCities] = useState([])
     const [isLoading, setIsLoading] = useState(true)
     const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {}
     const dropdownRef = useRef(null)
@@ -34,12 +35,14 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
         const fetchDashboardData = async () => {
             try {
                 setIsLoading(true)
-                const [itinerariesRes, countriesRes] = await Promise.all([
+                const [itinerariesRes, countriesRes, citiesRes] = await Promise.all([
                     api.get('/itineraries').catch(() => ({ data: [] })),
-                    api.get('/countries').catch(() => ({ data: [] }))
+                    api.get('/countries').catch(() => ({ data: [] })),
+                    api.get('/cities').catch(() => ({ data: [] }))
                 ])
                 setTripRequests(itinerariesRes.data || [])
                 setCountries(countriesRes.data || [])
+                setCities(citiesRes.data || [])
             } catch (error) {
                 console.error("Error fetching dashboard data:", error)
             } finally {
@@ -49,8 +52,138 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
         fetchDashboardData()
     }, [])
 
-    const upcomingTrips = tripRequests.filter(req => req.status === 'Payment Completed' || req.status === 'Completed').slice(0, 2)
-    const suggestedDestinations = Array.isArray(countries) ? countries.slice(0, 3) : []
+    const normalizeItineraries = (items) => {
+        const list = Array.isArray(items) ? items : []
+        return list.map((r) => {
+            const id = r?._id || r?.id
+            const title = r?.title || r?.tripData?.title || r?.experience || 'Trip Request'
+            const destination =
+                r?.destination ||
+                r?.location ||
+                r?.tripData?.location ||
+                r?.country ||
+                r?.tripData?.country ||
+                '—'
+            const createdAt = r?.createdAt || r?.date || r?.updatedAt
+            const status = r?.status || r?.tripStatus || 'Pending'
+            const imageUrl = r?.imageUrl || r?.image || r?.tripData?.imageUrl || '/assets/dest-1.jpeg'
+
+            const userId =
+                r?.userId ||
+                r?.user?._id ||
+                r?.user?.id ||
+                r?.user ||
+                r?.travelerId ||
+                r?.customerId
+            const email = r?.email || r?.user?.email || r?.contactDetails?.email
+
+            return {
+                ...r,
+                id,
+                title,
+                destination,
+                createdAt,
+                status,
+                imageUrl,
+                _userId: userId,
+                _email: email,
+            }
+        })
+    }
+
+    const myTripRequests = React.useMemo(() => {
+        const normalized = normalizeItineraries(tripRequests)
+        const currentUserId = currentUser?._id || currentUser?.id
+        const currentEmail = (currentUser?.email || '').toLowerCase()
+
+        const filtered = normalized.filter((r) => {
+            const requestUserId = r?._userId
+            const requestEmail = (r?._email || '').toLowerCase()
+            if (currentUserId && requestUserId) return String(requestUserId) === String(currentUserId)
+            if (currentEmail && requestEmail) return requestEmail === currentEmail
+            return false
+        })
+
+        return filtered.length > 0 ? filtered : normalized
+    }, [tripRequests, currentUser?._id, currentUser?.id, currentUser?.email])
+
+    const upcomingTrips = myTripRequests
+        .filter(req => {
+            const s = String(req.status || '').toLowerCase()
+            return s === 'payment completed' || s === 'completed' || s === 'accepted'
+        })
+        .slice(0, 2)
+
+    const normalizeCountryKey = (value) => {
+        return String(value || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '')
+            .trim()
+    }
+
+    const countryImageByKey = React.useMemo(() => {
+        const map = new Map()
+
+        const list = Array.isArray(cities) ? cities : []
+        list.forEach((c) => {
+            const countryLabel = c?.country?.name || c?.country
+            const key = normalizeCountryKey(countryLabel)
+            if (!key) return
+            const img = c?.image || c?.imageUrl || c?.Picture || c?.images?.[0]
+            if (!img) return
+            if (!map.has(key)) map.set(key, img)
+        })
+
+        return map
+    }, [cities])
+
+    const resolveDestinationImage = (dest) => {
+        return (
+            dest?.image ||
+            dest?.imageUrl ||
+            dest?.Picture ||
+            dest?.images?.[0] ||
+            dest?.coverImage ||
+            dest?.thumbnail ||
+            countryImageByKey.get(normalizeCountryKey(dest?.name)) ||
+            '/assets/dest-1.jpeg'
+        )
+    }
+
+    const suggestedDestinations = React.useMemo(() => {
+        const list = Array.isArray(countries) ? countries.filter(Boolean) : []
+        if (list.length <= 3) return list
+
+        const shuffled = [...list]
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1))
+            ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+        }
+
+        const picked = []
+        const seenImages = new Set()
+
+        for (const item of shuffled) {
+            if (picked.length >= 3) break
+            const img = resolveDestinationImage(item)
+            const key = String(img || '')
+            if (!key) continue
+            if (seenImages.has(key)) continue
+            seenImages.add(key)
+            picked.push(item)
+        }
+
+        if (picked.length >= 3) return picked
+
+        // If not enough unique images exist, fill remaining slots.
+        for (const item of shuffled) {
+            if (picked.length >= 3) break
+            if (picked.includes(item)) continue
+            picked.push(item)
+        }
+
+        return picked.slice(0, 3)
+    }, [countries, cities])
 
     const getStatusStyles = (status) => {
         switch (status?.toLowerCase()) {
@@ -244,18 +377,18 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                         </div>
 
                         <div className="flex flex-col gap-4 md:gap-6">
-                            {tripRequests.length > 0 ? (
-                                tripRequests.map((trip) => {
+                            {myTripRequests.length > 0 ? (
+                                myTripRequests.map((trip) => {
                                     const styles = getStatusStyles(trip.status);
                                     return (
                                         <div
-                                            key={trip._id || trip.id}
+                                            key={trip.id || trip._id}
                                             className="bg-white rounded-xl md:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-6 hover:shadow-md transition-shadow cursor-pointer"
-                                            onClick={() => onItineraryClick && onItineraryClick(trip._id || trip.id)}
+                                            onClick={() => onItineraryClick && onItineraryClick(trip.id || trip._id)}
                                         >
                                             <div className="w-full md:w-48 h-40 sm:h-48 md:h-auto shrink-0">
                                                 <img
-                                                    src={trip.imageUrl || trip.image || '/assets/dest-1.jpeg'}
+                                                    src={trip.imageUrl}
                                                     alt={trip.title}
                                                     className="w-full h-full object-cover rounded-lg md:rounded-xl"
                                                 />
@@ -272,14 +405,14 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                                 <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
                                                     <div className="flex items-center gap-1">
                                                         <FiMapPin className="shrink-0" />
-                                                        <span className="truncate">{trip.destination || trip.location || 'Various Locations'}</span>
+                                                        <span className="truncate">{trip.destination}</span>
                                                     </div>
                                                 </div>
 
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
                                                     <div className="flex items-center gap-2">
                                                         <FiCalendar className="text-gray-400 shrink-0" />
-                                                        <span>Requested: {new Date(trip.createdAt).toLocaleDateString()}</span>
+                                                        <span>Requested: {trip.createdAt ? new Date(trip.createdAt).toLocaleDateString() : '—'}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -309,8 +442,8 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                 {upcomingTrips.length > 0 ? (
                                     upcomingTrips.map((trip) => (
                                         <div
-                                            key={trip._id || trip.id}
-                                            onClick={() => onItineraryClick && onItineraryClick(trip._id || trip.id)}
+                                            key={trip.id || trip._id}
+                                            onClick={() => onItineraryClick && onItineraryClick(trip.id || trip._id)}
                                             className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
                                         >
                                             <div className="h-32 rounded-lg overflow-hidden mb-3">
@@ -342,11 +475,11 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                     suggestedDestinations.map((dest) => (
                                         <div
                                             key={dest._id || dest.id}
-                                            onClick={() => onCountryClick && onCountryClick(dest._id || dest.id)}
+                                            onClick={() => onCountryClick && onCountryClick(dest)}
                                             className="relative rounded-xl overflow-hidden h-40 cursor-pointer group"
                                         >
                                             <img
-                                                src={dest.imageUrl || dest.image || '/assets/activity1.jpeg'}
+                                                src={resolveDestinationImage(dest)}
                                                 alt={dest.name}
                                                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                             />
