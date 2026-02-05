@@ -523,6 +523,52 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                     <span className={darkMode ? "text-slate-400" : "text-gray-500"}>Destination</span>
                     <span className={`font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>{selected.location}</span>
                   </div>
+
+                  <div className={`rounded-xl border p-2 transition-colors ${darkMode ? "bg-slate-800/30 border-slate-800" : "bg-gray-50/50 border-gray-100"}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={darkMode ? "text-slate-400" : "text-gray-500"}>Experiences</span>
+                      <span className={`text-[10px] font-semibold ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                        {Array.isArray(selected?.items) ? selected.items.length : 0}
+                      </span>
+                    </div>
+
+                    {Array.isArray(selected?.items) && selected.items.length > 0 ? (
+                      <div className="space-y-2">
+                        {selected.items.map((item, idx) => {
+                          const title = item?.activity?.title || item?.title || `Experience ${idx + 1}`;
+                          const image =
+                            item?.activity?.imageUrl ||
+                            item?.activity?.images?.[0] ||
+                            item?.activity?.image ||
+                            item?.imageUrl ||
+                            item?.image ||
+                            "/assets/dest-1.jpeg";
+                          const travelers = item?.travelers;
+                          return (
+                            <div
+                              key={item?._id || item?.id || `${title}-${idx}`}
+                              className={`flex items-center gap-2 rounded-lg border p-2 transition-colors ${darkMode ? "bg-slate-900/30 border-slate-800" : "bg-white border-gray-100"}`}
+                            >
+                              <img
+                                src={image}
+                                alt={title}
+                                className="h-9 w-10 rounded-lg object-cover shrink-0"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className={`text-[11px] font-semibold truncate ${darkMode ? "text-white" : "text-slate-900"}`}>{title}</p>
+                                <p className={`text-[10px] truncate ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
+                                  {typeof travelers === 'number' ? `${travelers} Traveler${travelers === 1 ? '' : 's'}` : ""}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className={`text-[11px] ${darkMode ? "text-slate-500" : "text-gray-400"}`}>No experiences selected</p>
+                    )}
+                  </div>
+
                   <div className="flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/30 p-2 rounded-lg">
                     <span className={darkMode ? "text-slate-400" : "text-gray-500"}>Travelers</span>
                     <span className={`font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>{selected.guests} PAX</span>
