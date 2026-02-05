@@ -35,14 +35,44 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
         const fetchDashboardData = async () => {
             try {
                 setIsLoading(true)
-                const [itinerariesRes, countriesRes, citiesRes] = await Promise.all([
-                    api.get('/itineraries').catch(() => ({ data: [] })),
+                const fetchBookingsFromBestEndpoint = async () => {
+                    const currentUserId = currentUser?._id || currentUser?.id
+                    const currentEmail = String(currentUser?.email || '').trim()
+                    const currentPhone = String(currentUser?.phone || '').trim()
+
+                    const endpoints = [
+                        // Backend (kufi_backend_New1) supports GET /api/bookings/user/:userId
+                        currentUserId ? `/bookings/user/${encodeURIComponent(String(currentUserId))}` : null,
+                        '/bookings',
+                    ].filter(Boolean)
+
+                    for (const url of endpoints) {
+                        try {
+                            const res = await api.get(url)
+                            const raw =
+                                res?.data?.bookings ??
+                                res?.data?.requests ??
+                                res?.data?.data ??
+                                res?.data
+                            const list = Array.isArray(raw) ? raw : []
+                            if (list.length > 0) return list
+                        } catch (err) {
+                            // Try next endpoint
+                            continue
+                        }
+                    }
+                    return []
+                }
+
+                const [rawBookings, countriesRes, citiesRes] = await Promise.all([
+                    fetchBookingsFromBestEndpoint(),
                     api.get('/countries').catch(() => ({ data: [] })),
                     api.get('/cities').catch(() => ({ data: [] }))
                 ])
-                setTripRequests(itinerariesRes.data || [])
-                setCountries(countriesRes.data || [])
-                setCities(citiesRes.data || [])
+
+                setTripRequests(Array.isArray(rawBookings) ? rawBookings : [])
+                setCountries(countriesRes?.data || [])
+                setCities(citiesRes?.data || [])
             } catch (error) {
                 console.error("Error fetching dashboard data:", error)
             } finally {
@@ -56,17 +86,37 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
         const list = Array.isArray(items) ? items : []
         return list.map((r) => {
             const id = r?._id || r?.id
-            const title = r?.title || r?.tripData?.title || r?.experience || 'Trip Request'
+            const title =
+                (Array.isArray(r?.items) && r.items.length > 0
+                    ? r.items
+                        .map((item) => item?.activity?.title || item?.title)
+                        .filter(Boolean)
+                        .join(', ')
+                    : '') ||
+                r?.experience ||
+                r?.title ||
+                r?.tripData?.title ||
+                'Trip Request'
             const destination =
+                r?.tripDetails?.country ||
+                r?.country ||
                 r?.destination ||
                 r?.location ||
                 r?.tripData?.location ||
-                r?.country ||
                 r?.tripData?.country ||
                 '—'
             const createdAt = r?.createdAt || r?.date || r?.updatedAt
             const status = r?.status || r?.tripStatus || 'Pending'
-            const imageUrl = r?.imageUrl || r?.image || r?.tripData?.imageUrl || '/assets/dest-1.jpeg'
+            const imageUrl =
+                r?.imageUrl ||
+                r?.image ||
+                r?.items?.[0]?.activity?.imageUrl ||
+                r?.items?.[0]?.activity?.images?.[0] ||
+                r?.items?.[0]?.activity?.image ||
+                r?.items?.[0]?.imageUrl ||
+                r?.items?.[0]?.image ||
+                r?.tripData?.imageUrl ||
+                '/assets/dest-1.jpeg'
 
             const userId =
                 r?.userId ||
@@ -76,6 +126,9 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                 r?.travelerId ||
                 r?.customerId
             const email = r?.email || r?.user?.email || r?.contactDetails?.email
+            const phone = r?.phone || r?.user?.phone || r?.contactDetails?.phone
+            const guests = r?.guests ?? r?.travelers ?? r?.pax
+            const amount = r?.tripDetails?.budget ?? r?.amount ?? r?.totalAmount ?? r?.price
 
             return {
                 ...r,
@@ -87,6 +140,9 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                 imageUrl,
                 _userId: userId,
                 _email: email,
+                _phone: phone,
+                guests,
+                amount,
             }
         })
     }
@@ -95,17 +151,33 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
         const normalized = normalizeItineraries(tripRequests)
         const currentUserId = currentUser?._id || currentUser?.id
         const currentEmail = (currentUser?.email || '').toLowerCase()
+        const currentPhone = String(currentUser?.phone || '').trim()
 
         const filtered = normalized.filter((r) => {
-            const requestUserId = r?._userId
+            const requestUserIdRaw = r?._userId
+            const requestUserId =
+                requestUserIdRaw?._id ||
+                requestUserIdRaw?.id ||
+                requestUserIdRaw
             const requestEmail = (r?._email || '').toLowerCase()
-            if (currentUserId && requestUserId) return String(requestUserId) === String(currentUserId)
-            if (currentEmail && requestEmail) return requestEmail === currentEmail
-            return false
+            const requestPhone = String(r?._phone || '').trim()
+
+            const idMatch = Boolean(
+                currentUserId &&
+                requestUserId &&
+                String(requestUserId) === String(currentUserId)
+            )
+            const emailMatch = Boolean(currentEmail && requestEmail && requestEmail === currentEmail)
+            const phoneMatch = Boolean(currentPhone && requestPhone && requestPhone === currentPhone)
+
+            return idMatch || emailMatch || phoneMatch
         })
 
-        return filtered.length > 0 ? filtered : normalized
-    }, [tripRequests, currentUser?._id, currentUser?.id, currentUser?.email])
+        // If we have a logged-in user identity, never fall back to showing other users' requests.
+        if (currentUserId || currentEmail || currentPhone) return filtered
+
+        return normalized
+    }, [tripRequests, currentUser?._id, currentUser?.id, currentUser?.email, currentUser?.phone])
 
     const upcomingTrips = myTripRequests
         .filter(req => {
@@ -190,7 +262,11 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
             case 'completed':
             case 'payment completed':
             case 'accepted':
+            case 'confirmed':
                 return { color: 'bg-emerald-100 text-emerald-700', icon: <FaCreditCard /> };
+            case 'cancelled':
+            case 'canceled':
+                return { color: 'bg-rose-100 text-rose-700', icon: <FaClock /> };
             case 'supplier replied back':
             case 'ready':
                 return { color: 'bg-green-100 text-green-700', icon: <FaCheckCircle /> };
@@ -199,6 +275,20 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
             default:
                 return { color: 'bg-yellow-100 text-yellow-700', icon: <FaClock /> };
         }
+    }
+
+    const getStatusLabel = (status) => {
+        const s = String(status || '').trim().toLowerCase()
+        if (s === 'accepted') return 'Accepted by Supplier'
+        if (s === 'confirmed') return 'Accepted by Supplier'
+        if (s === 'supplier replied back') return 'Supplier Replied'
+        if (s === 'ready') return 'Ready'
+        if (s === 'payment completed') return 'Payment Completed'
+        if (s === 'completed') return 'Completed'
+        if (s === 'cancelled' || s === 'canceled') return 'Cancelled'
+        if (s === 'pending review') return 'Pending Review'
+        if (s === 'pending') return 'Pending'
+        return status || 'Pending'
     }
 
     if (isLoading) {
@@ -355,9 +445,9 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_350px] gap-8">
                     {/* Left Column - Trip Requests */}
-                    <div>
+                    <div className="min-w-0">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
                             <h2 className="text-xl md:text-2xl font-bold text-gray-900">My Trip Requests</h2>
 
@@ -380,40 +470,58 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                             {myTripRequests.length > 0 ? (
                                 myTripRequests.map((trip) => {
                                     const styles = getStatusStyles(trip.status);
+                                    const statusLabel = getStatusLabel(trip.status)
                                     return (
                                         <div
                                             key={trip.id || trip._id}
-                                            className="bg-white rounded-xl md:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-3 sm:gap-4 md:gap-6 hover:shadow-md transition-shadow cursor-pointer"
-                                            onClick={() => onItineraryClick && onItineraryClick(trip.id || trip._id)}
+                                            className="bg-white w-full max-w-full overflow-hidden rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 hover:shadow-md transition-shadow"
                                         >
-                                            <div className="w-full md:w-48 h-40 sm:h-48 md:h-auto shrink-0">
+                                            <div className="w-full sm:w-44 h-28 sm:h-32 shrink-0 rounded-xl overflow-hidden">
                                                 <img
                                                     src={trip.imageUrl}
                                                     alt={trip.title}
-                                                    className="w-full h-full object-cover rounded-lg md:rounded-xl"
+                                                    className="w-full h-full object-cover"
                                                 />
                                             </div>
-                                            <div className="flex-1 py-1 md:py-2">
-                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
-                                                    <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">{trip.title}</h3>
-                                                    <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 w-fit ${styles.color}`}>
+
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                                    <div className="min-w-0">
+                                                        <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 truncate">{trip.title}</h3>
+                                                        <p className="mt-1 text-xs text-gray-500 flex items-center gap-1.5">
+                                                            <FiMapPin className="shrink-0" />
+                                                            <span className="truncate">{trip.destination}</span>
+                                                        </p>
+                                                    </div>
+
+                                                    <span className={`px-3 py-1.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-2 w-fit ${styles.color}`}>
                                                         {styles.icon}
-                                                        <span className="whitespace-nowrap">{trip.status || 'Pending'}</span>
+                                                        <span className="whitespace-nowrap">{statusLabel}</span>
                                                     </span>
                                                 </div>
 
-                                                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
-                                                    <div className="flex items-center gap-1">
-                                                        <FiMapPin className="shrink-0" />
-                                                        <span className="truncate">{trip.destination}</span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
+                                                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-gray-600">
                                                     <div className="flex items-center gap-2">
                                                         <FiCalendar className="text-gray-400 shrink-0" />
                                                         <span>Requested: {trip.createdAt ? new Date(trip.createdAt).toLocaleDateString() : '—'}</span>
                                                     </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <FiUser className="text-gray-400 shrink-0" />
+                                                        <span>Travelers: {trip.guests ?? '—'}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-3 flex items-center justify-between gap-3">
+                                                    <p className="m-0 text-xs font-semibold text-gray-900">
+                                                        {trip.amount ? `$${trip.amount}` : ''}
+                                                    </p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onItineraryClick && onItineraryClick(trip)}
+                                                        className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors"
+                                                    >
+                                                        View Request Details
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>

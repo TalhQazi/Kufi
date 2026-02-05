@@ -13,18 +13,24 @@ import {
 } from "lucide-react";
 import SupplierGenerateItinerary from "./supplier-generate-itinerary";
 
-const SupplierRequests = ({ darkMode }) => {
+const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookings }) => {
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
   const [view, setView] = useState("list"); // 'list' | 'itinerary' | 'generate'
-  const [acceptedRequestId, setAcceptedRequestId] = useState(null);
   const [itineraryRequestId, setItineraryRequestId] = useState(null);
+  const [resumeItineraryDraft, setResumeItineraryDraft] = useState(null);
 
-  // Load requests from database (GET /supplier/bookings) and keep only status === "pending"
-  const fetchRequests = async () => {
+  const formatStatusLabel = (value) => {
+    const v = String(value || "").trim().toLowerCase();
+    if (!v) return "Pending";
+    return v.charAt(0).toUpperCase() + v.slice(1);
+  };
+
+  // Load requests from database (GET /supplier/bookings)
+  const fetchRequests = async ({ silent = false } = {}) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       // Uses supplier bookings endpoint from backend; it may return all statuses
       const response = await api.get("/supplier/bookings");
       // Be flexible with backend response shapes: {bookings}, {requests}, {data}, or array
@@ -58,31 +64,39 @@ const SupplierRequests = ({ darkMode }) => {
           date: r.date ?? r.dateRange ?? r.startDate ?? "Flexible",
           guests: totalGuests || 1,
           amount: r.tripDetails?.budget ?? r.amount ?? r.totalAmount ?? r.price ?? "N/A",
-          status: r.status ?? "Pending",
+          status: String(r.status || "pending").trim().toLowerCase(),
           avatar: r.user?.avatar ?? r.avatar ?? r.image ?? r.profileImage ?? "",
           preferences: r.preferences || {},
         };
       });
       // Frontend safety: prefer only pending, but if nothing matches, show all
-      const pendingOnly = normalized.filter(
-        (r) => String(r.status || "").trim().toLowerCase() === "pending"
-      );
-      const finalList = pendingOnly.length > 0 ? pendingOnly : normalized;
+      const finalList = [...normalized].sort((a, b) => {
+        const aPending = String(a.status || '').trim().toLowerCase() === 'pending'
+        const bPending = String(b.status || '').trim().toLowerCase() === 'pending'
+        if (aPending === bPending) return 0
+        return aPending ? -1 : 1
+      });
 
       setRequests(finalList);
 
       // If none selected yet, pick the first one
-      if (finalList.length > 0) {
-        setSelectedId(prev => (prev && finalList.some(r => (r.id || r._id) === prev) ? prev : (finalList[0].id || finalList[0]._id)));
-      } else {
-        setSelectedId(null);
+      if (!silent) {
+        if (finalList.length > 0) {
+          setSelectedId((prev) =>
+            prev && finalList.some((r) => (r.id || r._id) === prev)
+              ? prev
+              : (finalList[0].id || finalList[0]._id)
+          );
+        } else {
+          setSelectedId(null);
+        }
       }
     } catch (error) {
       console.error("Error fetching supplier requests from database:", error);
       setRequests([]);
-      setSelectedId(null);
+      if (!silent) setSelectedId(null);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -90,20 +104,70 @@ const SupplierRequests = ({ darkMode }) => {
     fetchRequests();
   }, []);
 
+  useEffect(() => {
+    if (!resumeDraft) return;
+    setResumeItineraryDraft(resumeDraft);
+
+    const snap = resumeDraft?.payload?.requestSnapshot;
+    const snapId = snap?._id || snap?.id;
+
+    if (snap && snapId) {
+      setItineraryRequestId(snapId);
+      setSelectedId(snapId);
+    } else if (resumeDraft?.requestId) {
+      setItineraryRequestId(resumeDraft.requestId);
+      setSelectedId(resumeDraft.requestId);
+    }
+
+    setView("generate");
+    onDraftConsumed?.();
+  }, [resumeDraft, onDraftConsumed]);
+
   const handleStatusUpdate = async (id, status) => {
     try {
-      await api.patch(`/bookings/${id}/status`, { status });
-      alert(`Request ${status} successfully`);
-      fetchRequests();
+      const normalizedStatus = String(status || "").trim().toLowerCase();
+      // Optimistic update so the request stays visible and Proceed can enable immediately.
+      setRequests((prev) =>
+        prev.map((r) => ((r.id || r._id) === id ? { ...r, status: normalizedStatus } : r))
+      );
+      await api.patch(`/bookings/${id}/status`, { status: normalizedStatus });
+      fetchRequests({ silent: true });
     } catch (error) {
       console.error(`Error updating status to ${status}:`, error);
-      alert(`Failed to ${status} request`);
+      fetchRequests({ silent: true });
     }
+  };
+
+  const getRequestImages = (req) => {
+    const images = [];
+    const push = (v) => {
+      if (!v) return;
+      const url = String(v).trim();
+      if (!url) return;
+      if (!images.includes(url)) images.push(url);
+    };
+
+    if (Array.isArray(req?.items)) {
+      req.items.forEach((item) => {
+        push(item?.activity?.imageUrl);
+        push(item?.activity?.image);
+        if (Array.isArray(item?.activity?.images)) item.activity.images.forEach(push);
+        push(item?.imageUrl);
+        push(item?.image);
+        if (Array.isArray(item?.images)) item.images.forEach(push);
+      });
+    }
+
+    push(req?.imageUrl);
+    push(req?.image);
+    push(req?.avatar);
+
+    return images;
   };
 
   const selected = requests.find((r) => (r.id || r._id) === selectedId) || (requests.length > 0 ? requests[0] : null);
   const itineraryRequest =
-    requests.find((r) => (r.id || r._id) === itineraryRequestId) || selected;
+    requests.find((r) => (r.id || r._id) === itineraryRequestId) || selected || resumeItineraryDraft?.payload?.requestSnapshot || null;
 
   if (isLoading) {
     return (
@@ -117,86 +181,186 @@ const SupplierRequests = ({ darkMode }) => {
     return (
       <div className="flex flex-col items-center justify-center h-[400px] gap-4">
         <Sparkles className="h-12 w-12 text-[#a26e35] opacity-20" />
-        <p className={`text-sm ${darkMode ? "text-slate-400" : "text-gray-500"}`}>No pending requests found</p>
+        <p className={`text-sm ${darkMode ? "text-slate-400" : "text-gray-500"}`}>No requests found</p>
       </div>
     );
   }
 
   if (view === "itinerary" && itineraryRequest) {
+    const itineraryImages = getRequestImages(itineraryRequest);
+    const heroImage = itineraryImages[0] || "https://images.pexels.com/photos/5700446/pexels-photo-5700446.jpeg?auto=compress&cs=tinysrgb&w=1200";
+    const gallery = itineraryImages.slice(0, 3);
+
     return (
       <div className={`space-y-6 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
-        <div className="overflow-hidden rounded-3xl bg-gradient-to-tr from-[#1f2933] via-[#4b5563] to-[#9ca3af] relative h-40 sm:h-48 flex items-end">
+        <div className="overflow-hidden rounded-3xl relative h-44 sm:h-56 flex items-end">
           <img
-            src="https://images.pexels.com/photos/5700446/pexels-photo-5700446.jpeg?auto=compress&cs=tinysrgb&w=1200"
-            alt="City skyline"
-            className="absolute inset-0 h-full w-full object-cover opacity-60"
+            src={heroImage}
+            alt="Trip cover"
+            className="absolute inset-0 h-full w-full object-cover"
           />
-          <div className="relative w-full px-4 sm:px-6 pb-4 sm:pb-6 text-white flex flex-col gap-1 sm:gap-2">
-            <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-gray-200 flex items-center gap-1">
-              <span className="opacity-80">Dashboard</span>
+          <div className="absolute inset-0 bg-black/35" />
+          <div className="relative w-full px-4 sm:px-6 pb-4 sm:pb-6 text-white flex flex-col gap-2">
+            <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-gray-100 flex items-center gap-1">
+              <span className="opacity-90">Requests</span>
               <span className="opacity-60">/</span>
-              <span className="opacity-80">Requests</span>
+              <span className="opacity-90">Proceed</span>
             </p>
-            <h1 className="text-xl sm:text-2xl font-semibold drop-shadow-sm">
-              Proceed to Create Itinerary
-            </h1>
-            <p className="text-[10px] sm:text-xs text-gray-100 max-w-xl line-clamp-2 sm:line-clamp-none">
+            <h1 className="text-xl sm:text-2xl font-semibold drop-shadow-sm">Proceed to Create Itinerary</h1>
+            <p className="text-[10px] sm:text-xs text-gray-100 max-w-2xl">
               Review traveler preferences and choose a personalized itinerary plan.
             </p>
+            {gallery.length > 1 && (
+              <div className="mt-2 flex items-center gap-2">
+                {gallery.map((src) => (
+                  <img
+                    key={src}
+                    src={src}
+                    alt="Selected activity"
+                    className="h-10 w-14 rounded-xl object-cover ring-2 ring-white/60"
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className={`rounded-3xl border transition-colors duration-300 px-6 py-5 shadow-sm ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
-            <h2 className={`mb-3 text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-              Traveler Overview
-            </h2>
+        <div className={`rounded-3xl border transition-colors duration-300 px-6 py-5 shadow-sm ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+          <h2 className={`mb-4 text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+            Traveler Overview
+          </h2>
 
-            <div className={`grid gap-4 text-[11px] transition-colors sm:grid-cols-2 lg:grid-cols-3 ${darkMode ? "text-slate-400" : "text-gray-700"}`}>
-              <div className="space-y-1">
-                <p className={`font-semibold flex items-center gap-1.5 ${darkMode ? "text-slate-200" : "text-gray-800"}`}>
+          <div className={`grid gap-4 text-[11px] transition-colors sm:grid-cols-2 lg:grid-cols-3 ${darkMode ? "text-slate-400" : "text-gray-700"}`}>
+            <div className="space-y-1">
+              <p className={`font-semibold flex items-center gap-1.5 ${darkMode ? "text-slate-200" : "text-gray-800"}`}>
+                <MapPin className="h-3.5 w-3.5 text-emerald-500" />
+                Destination
+              </p>
+              <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                {itineraryRequest.location || itineraryRequest.experience || "—"}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <p className={`font-semibold flex items-center gap-1.5 ${darkMode ? "text-slate-200" : "text-gray-800"}`}>
+                <CalendarDays className="h-3.5 w-3.5 text-emerald-500" />
+                Dates
+              </p>
+              <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                {itineraryRequest.dateRange || itineraryRequest.date || "—"}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <p className={`font-semibold flex items-center gap-1.5 ${darkMode ? "text-slate-200" : "text-gray-800"}`}>
+                <Users className="h-3.5 w-3.5 text-emerald-500" />
+                Travelers
+              </p>
+              <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                {itineraryRequest.guests ?? itineraryRequest.travelers ?? 0} Travelers
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <p className={`font-semibold flex items-center gap-1.5 ${darkMode ? "text-slate-200" : "text-gray-800"}`}>
+                <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                Budget
+              </p>
+              <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                {itineraryRequest.amount ?? "—"}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <p className={`font-semibold flex items-center gap-1.5 ${darkMode ? "text-slate-200" : "text-gray-800"}`}>
+                <Mail className="h-3.5 w-3.5 text-emerald-500" />
+                Email
+              </p>
+              <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                {itineraryRequest.email || "—"}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <p className={`font-semibold flex items-center gap-1.5 ${darkMode ? "text-slate-200" : "text-gray-800"}`}>
+                <Phone className="h-3.5 w-3.5 text-emerald-500" />
+                Phone
+              </p>
+              <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                {itineraryRequest.phone || "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center">
+          <div className={`w-full max-w-[520px] rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+            <div className="relative h-44">
+              <img src={heroImage} alt="Trip" className="absolute inset-0 h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-black/15" />
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={itineraryRequest.avatar || "/assets/profile-avatar.jpeg"}
+                  alt={itineraryRequest.name || "Traveler"}
+                  className="h-11 w-11 rounded-full object-cover"
+                />
+                <div className="min-w-0">
+                  <p className={`text-sm font-semibold truncate transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                    {itineraryRequest.name || "—"}
+                  </p>
+                  <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                    {formatStatusLabel(itineraryRequest.status)} Request
+                  </p>
+                </div>
+              </div>
+
+              <div className={`grid grid-cols-2 gap-3 text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
+                <div className="inline-flex items-center gap-2">
                   <MapPin className="h-3.5 w-3.5 text-emerald-500" />
-                  Destination
-                </p>
-                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.location || itineraryRequest.experience || "—"}</p>
-              </div>
-
-              <div className="space-y-1">
-                <p className={`font-semibold flex items-center gap-1.5 ${darkMode ? "text-slate-200" : "text-gray-800"}`}>
-                  <CalendarDays className="h-3.5 w-3.5 text-emerald-500" />
-                  Dates
-                </p>
-                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.dateRange || itineraryRequest.date || "—"}</p>
-              </div>
-
-              <div className="space-y-1">
-                <p className={`font-semibold flex items-center gap-1.5 ${darkMode ? "text-slate-200" : "text-gray-800"}`}>
+                  <span className={`truncate ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
+                    {itineraryRequest.location || "—"}
+                  </span>
+                </div>
+                <div className="inline-flex items-center gap-2">
                   <Users className="h-3.5 w-3.5 text-emerald-500" />
-                  Travelers
-                </p>
-                <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{itineraryRequest.guests ?? itineraryRequest.travelers ?? 0} Adults</p>
+                  <span className={`${darkMode ? "text-slate-200" : "text-slate-800"}`}>
+                    {itineraryRequest.guests ?? itineraryRequest.travelers ?? 0} Travelers
+                  </span>
+                </div>
+                <div className="inline-flex items-center gap-2">
+                  <CalendarDays className="h-3.5 w-3.5 text-emerald-500" />
+                  <span className={`truncate ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
+                    {itineraryRequest.dateRange || itineraryRequest.date || "—"}
+                  </span>
+                </div>
+                <div className="inline-flex items-center gap-2">
+                  <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                  <span className={`${darkMode ? "text-slate-200" : "text-slate-800"}`}>
+                    {itineraryRequest.amount ?? "—"}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setView("generate")}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#a26e35] px-6 py-3 text-xs font-semibold text-white shadow-sm hover:bg-[#8b5e2d] transition-colors"
-          >
-            <Sparkles className="h-4 w-4" />
-            <span>Proceed to auto generate Itinerary</span>
-          </button>
         </div>
 
-        <div className={`flex flex-col gap-3 border-t pt-4 mt-2 sm:flex-row sm:items-center sm:justify-between transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <button
             type="button"
             onClick={() => setView("list")}
-            className={`inline-flex items-center justify-center rounded-full border px-5 py-2 text-xs font-medium transition-colors ${darkMode ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+            className={`inline-flex w-full sm:w-auto items-center justify-center rounded-full border px-6 py-3 text-xs font-medium transition-colors ${darkMode ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
           >
-            <span className="mr-2 rotate-180">➜</span>
             Back to Requests
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("generate")}
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-[#a26e35] px-8 py-3 text-xs font-semibold text-white shadow-sm hover:bg-[#8b5e2d] transition-colors"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>Proceed to auto generate Itinerary</span>
           </button>
         </div>
       </div>
@@ -204,7 +368,14 @@ const SupplierRequests = ({ darkMode }) => {
   }
 
   if (view === "generate") {
-    return <SupplierGenerateItinerary darkMode={darkMode} />;
+    return (
+      <SupplierGenerateItinerary
+        darkMode={darkMode}
+        request={itineraryRequest}
+        draft={resumeItineraryDraft}
+        onGoToBookings={onGoToBookings}
+      />
+    );
   }
 
   return (
@@ -237,7 +408,7 @@ const SupplierRequests = ({ darkMode }) => {
                     {req.name}
                   </p>
                   <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${darkMode ? "bg-amber-900/40 text-amber-400" : "bg-amber-50 text-amber-700"}`}>
-                    {req.status}
+                    {formatStatusLabel(req.status)}
                   </span>
                 </div>
               </div>
@@ -264,13 +435,13 @@ const SupplierRequests = ({ darkMode }) => {
               <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t transition-colors pt-4" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
                 <button
                   type="button"
-                  disabled={req.status !== 'Confirmed' && acceptedRequestId !== (req.id || req._id)}
+                  disabled={String(req.status || '').trim().toLowerCase() !== 'confirmed'}
                   onClick={(e) => {
                     e.stopPropagation();
                     setItineraryRequestId(req.id || req._id);
                     setView("itinerary");
                   }}
-                  className={`inline-flex w-full lg:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${(req.status === 'Confirmed' || acceptedRequestId === (req.id || req._id))
+                  className={`inline-flex w-full lg:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${(String(req.status || '').trim().toLowerCase() === 'confirmed')
                     ? "bg-[#a26e35] text-white shadow-sm hover:bg-[#8b5e2d]"
                     : (darkMode ? "bg-slate-800 text-slate-600 cursor-not-allowed" : "bg-gray-100 text-gray-400 cursor-not-allowed")
                     }`}
@@ -283,8 +454,7 @@ const SupplierRequests = ({ darkMode }) => {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleStatusUpdate(req.id || req._id, 'Confirmed');
-                      setAcceptedRequestId(req.id || req._id);
+                      handleStatusUpdate(req.id || req._id, 'confirmed');
                     }}
                     className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors"
                   >
@@ -293,7 +463,7 @@ const SupplierRequests = ({ darkMode }) => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleStatusUpdate(req.id || req._id, 'Cancelled');
+                      handleStatusUpdate(req.id || req._id, 'cancelled');
                     }}
                     className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-rose-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-600 transition-colors"
                   >

@@ -35,6 +35,7 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
   const [experiences, setExperiences] = useState([]);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [resumeItineraryDraft, setResumeItineraryDraft] = useState(null);
 
   useEffect(() => {
     const fetchSupplierDashboard = async () => {
@@ -412,15 +413,24 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
           <SupplierBookings
             darkMode={darkMode}
             onResumeDraft={(draft) => {
-              navigateTo("Experience", false);
-              setExperienceView("edit");
-              // We need to pass the selected experience here
+              setResumeItineraryDraft(draft || null);
+              navigateTo("Requests");
             }}
             onRemoveDraft={async (id) => {
               if (window.confirm("Remove this draft?")) {
                 try {
-                  await api.delete(`/activities/drafts/${id}`);
-                  // Dashboard will naturally re-render when section changes or we can trigger refresh
+                  const key = "kufi_supplier_itinerary_drafts";
+                  const raw = localStorage.getItem(key);
+                  const list = (() => {
+                    try {
+                      const parsed = JSON.parse(raw);
+                      return Array.isArray(parsed) ? parsed : [];
+                    } catch {
+                      return [];
+                    }
+                  })();
+                  localStorage.setItem(key, JSON.stringify(list.filter((d) => String(d?.id) !== String(id))));
+                  window.dispatchEvent(new Event("kufi_itinerary_drafts_updated"));
                 } catch (e) {
                   console.error("Error removing draft:", e);
                 }
@@ -430,7 +440,14 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
         )}
         {activeSection === "Analytics" && <SupplierAnalytics darkMode={darkMode} />}
         {activeSection === "Profile" && <SupplierProfile darkMode={darkMode} />}
-        {activeSection === "Requests" && <SupplierRequests darkMode={darkMode} />}
+        {activeSection === "Requests" && (
+          <SupplierRequests
+            darkMode={darkMode}
+            resumeDraft={resumeItineraryDraft}
+            onDraftConsumed={() => setResumeItineraryDraft(null)}
+            onGoToBookings={() => navigateTo("Booking")}
+          />
+        )}
       </div>
     </div>
   );

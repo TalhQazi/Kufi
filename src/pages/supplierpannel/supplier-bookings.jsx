@@ -7,14 +7,21 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
   const [drafts, setDrafts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const readItineraryDrafts = () => {
+    try {
+      const raw = localStorage.getItem("kufi_supplier_itinerary_drafts");
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [bookingsRes, draftsRes] = await Promise.all([
-          api.get('/bookings/supplier'),
-          api.get('/activities/drafts')
-        ]);
+        const bookingsRes = await api.get('/bookings/supplier');
         const rawBookings = bookingsRes.data.bookings || bookingsRes.data || [];
 
         const list = Array.isArray(rawBookings) ? rawBookings : [];
@@ -41,7 +48,7 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
         });
 
         setBookings(normalized);
-        setDrafts(draftsRes.data.drafts || []);
+        setDrafts(readItineraryDrafts());
       } catch (error) {
         console.error("Error fetching supplier bookings:", error);
       } finally {
@@ -49,6 +56,22 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
       }
     };
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e?.key === "kufi_supplier_itinerary_drafts") {
+        setDrafts(readItineraryDrafts());
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  useEffect(() => {
+    const onUpdated = () => setDrafts(readItineraryDrafts());
+    window.addEventListener("kufi_itinerary_drafts_updated", onUpdated);
+    return () => window.removeEventListener("kufi_itinerary_drafts_updated", onUpdated);
   }, []);
 
   const statusClass = (status) => {
@@ -277,9 +300,10 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                   </button>
                   <button
                     onClick={() => onRemoveDraft?.(draft.id)}
-                    className={`text-[11px] hover:text-rose-500 transition-colors ${darkMode ? "text-slate-600" : "text-gray-400"}`}
+                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors ${darkMode ? "border-slate-700 bg-slate-900 text-rose-400 hover:bg-slate-800" : "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"}`}
                   >
-                    🗑
+                    <span aria-hidden>🗑</span>
+                    <span>Remove</span>
                   </button>
                 </div>
               </div>

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import api from '../../api'
 import Footer from '../../components/layout/Footer'
+import ProfilePic from '../../components/ui/ProfilePic'
 
 export default function ItineraryView({
     itineraryId,
+    request,
     onBack,
     onPaymentClick,
     onRequestAdjustment,
@@ -17,7 +19,20 @@ export default function ItineraryView({
     const [dropdown, setDropdown] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
     const [loading, setLoading] = useState(true)
+    const [loadError, setLoadError] = useState(null)
     const dropdownRef = useRef(null)
+
+    const isBookingRequest = Boolean(request && (Array.isArray(request?.items) || request?.tripDetails || request?.contactDetails))
+
+    const coverImage =
+        request?.imageUrl ||
+        request?.image ||
+        request?.items?.[0]?.activity?.imageUrl ||
+        request?.items?.[0]?.activity?.images?.[0] ||
+        request?.items?.[0]?.activity?.image ||
+        request?.items?.[0]?.imageUrl ||
+        request?.items?.[0]?.image ||
+        '/assets/itinerary-hero.png'
 
     const [tripData, setTripData] = useState({
         title: "Dubai Desert Safari & City Exploration",
@@ -42,13 +57,68 @@ export default function ItineraryView({
     ])
 
     useEffect(() => {
-        const fetchItinerary = async () => {
-            if (!itineraryId) {
-                setLoading(false)
-                return
-            }
+        const loadFromBooking = () => {
+            const title =
+                (Array.isArray(request?.items) && request.items.length > 0
+                    ? request.items
+                        .map((i) => i?.activity?.title || i?.title)
+                        .filter(Boolean)
+                        .join(', ')
+                    : '') ||
+                request?.experience ||
+                request?.title ||
+                'Trip Request'
 
+            const location =
+                request?.tripDetails?.country ||
+                request?.country ||
+                request?.destination ||
+                request?.location ||
+                '—'
+
+            const budget = request?.tripDetails?.budget || request?.amount || request?.price
+            const travelers = request?.guests ?? request?.travelers ?? request?.items?.[0]?.travelers
+            const arrival = request?.tripDetails?.arrivalDate
+            const departure = request?.tripDetails?.departureDate
+
+            const dateLabel =
+                arrival || departure
+                    ? `${arrival ? new Date(arrival).toLocaleDateString() : '—'} - ${departure ? new Date(departure).toLocaleDateString() : '—'}`
+                    : request?.createdAt
+                        ? new Date(request.createdAt).toLocaleDateString()
+                        : '—'
+
+            setTripData({
+                title,
+                duration: request?.duration || '',
+                location,
+                date: dateLabel,
+                description: request?.notes || request?.message || request?.specialRequest || 'Trip request details',
+                adrenalineLevel: '',
+                category: '',
+                groupSize: travelers ? `${travelers} People` : '',
+                budget: budget ? String(budget) : '',
+                status: request?.status || 'pending',
+            })
+            setDays([])
+        }
+
+        const fetchItinerary = async () => {
             try {
+                setLoadError(null)
+
+                if (isBookingRequest) {
+                    setLoading(true)
+                    loadFromBooking()
+                    setLoading(false)
+                    return
+                }
+
+                if (!itineraryId) {
+                    setLoading(false)
+                    return
+                }
+
                 setLoading(true)
                 const response = await api.get(`/itineraries/${itineraryId}`)
                 if (response.data) {
@@ -56,6 +126,7 @@ export default function ItineraryView({
                     setDays(response.data.days || [])
                 }
             } catch (error) {
+                setLoadError(error)
                 console.error("Error fetching itinerary:", error)
             } finally {
                 setLoading(false)
@@ -63,10 +134,14 @@ export default function ItineraryView({
         }
 
         fetchItinerary()
-    }, [itineraryId])
+    }, [itineraryId, isBookingRequest, request])
 
     const handleSaveAdjustment = async () => {
         try {
+            if (!itineraryId) {
+                alert('No itinerary selected.')
+                return
+            }
             await api.patch(`/itineraries/${itineraryId}`, { tripData, days })
             alert("Adjustments saved successfully!")
             setIsEditing(false)
@@ -131,10 +206,44 @@ export default function ItineraryView({
         }
     }, [dropdown])
 
-    if (loading && itineraryId) {
+    if (loading && (itineraryId || isBookingRequest)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-white">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#A67C52]"></div>
+            </div>
+        )
+    }
+
+    if (!isBookingRequest && !itineraryId) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <div className="text-center px-6">
+                    <p className="text-slate-600">No request selected.</p>
+                    <button
+                        type="button"
+                        onClick={() => onBack && onBack()}
+                        className="mt-4 px-5 py-2 rounded-lg bg-[#A67C52] text-white text-sm font-semibold"
+                    >
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        )
+    }
+
+    if (loadError && itineraryId && !isBookingRequest) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <div className="text-center px-6">
+                    <p className="text-slate-600">Unable to load itinerary.</p>
+                    <button
+                        type="button"
+                        onClick={() => onBack && onBack()}
+                        className="mt-4 px-5 py-2 rounded-lg bg-[#A67C52] text-white text-sm font-semibold"
+                    >
+                        Go Back
+                    </button>
+                </div>
             </div>
         )
     }
@@ -236,7 +345,7 @@ export default function ItineraryView({
                 <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-20 pt-6 sm:pt-8">
                     <div className="w-full h-[200px] sm:h-[280px] md:h-[320px] relative rounded-2xl sm:rounded-3xl overflow-hidden">
                         <img
-                            src="/assets/itinerary-hero.png"
+                            src={coverImage}
                             alt="Trip Cover"
                             className="w-full h-full object-cover"
                         />

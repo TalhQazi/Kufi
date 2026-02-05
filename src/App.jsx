@@ -38,6 +38,7 @@ export default function App() {
   const [selectedCountryName, setSelectedCountryName] = useState('Italy')
   const [selectedCategoryName, setSelectedCategoryName] = useState('Camping Adventures')
   const [selectedItineraryId, setSelectedItineraryId] = useState(null)
+  const [selectedItineraryRequest, setSelectedItineraryRequest] = useState(null)
   const [selectedCityName, setSelectedCityName] = useState(null)
   const [selectedBlogId, setSelectedBlogId] = useState(null)
   const [exploreInitialCategory, setExploreInitialCategory] = useState(null)
@@ -106,8 +107,10 @@ export default function App() {
     navigateTo('category-page')
   }
 
-  const handleItineraryClick = (id) => {
-    setSelectedItineraryId(id)
+  const handleItineraryClick = (payload) => {
+    const id = payload?._id || payload?.id || payload
+    setSelectedItineraryId(id || null)
+    setSelectedItineraryRequest(payload && typeof payload === 'object' ? payload : null)
     navigateTo('itinerary-view')
   }
 
@@ -454,6 +457,7 @@ export default function App() {
     if (page === 'itinerary-view') return (
       <ItineraryView
         itineraryId={selectedItineraryId}
+        request={selectedItineraryRequest}
         onBack={goBack}
         onPaymentClick={() => navigateTo('payment')}
         onRequestAdjustment={() => alert('Adjustment request sent!')}
@@ -462,6 +466,7 @@ export default function App() {
         onProfileClick={handleProfileClick}
         onSettingsClick={() => navigateTo('traveler-profile')}
         onHomeClick={() => navigateTo('home')}
+        hideHeaderFooter={true}
       />
     )
 

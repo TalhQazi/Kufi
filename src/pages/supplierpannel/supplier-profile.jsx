@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Check, Upload, Mail, Phone, MapPin, Info, Building } from "lucide-react";
+import api from "../../api";
 
 const SupplierProfile = ({ darkMode }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -33,15 +34,19 @@ const SupplierProfile = ({ darkMode }) => {
     const fetchProfile = async () => {
       try {
         setIsLoading(true);
-        // Load supplier profile details from login user stored in localStorage (fetched from DB at login)
+        let profileFromApi = null;
+        try {
+          const res = await api.get("/auth/profile");
+          profileFromApi = res?.data || null;
+        } catch (e) {
+          profileFromApi = null;
+        }
+
         const stored = localStorage.getItem("currentUser");
         const rawUser = stored ? JSON.parse(stored) : null;
-        const userFields = normalizeProfile(rawUser);
+        const userFields = normalizeProfile(profileFromApi || rawUser);
 
-        setForm((prev) => ({
-          ...prev,
-          ...userFields,
-        }));
+        setForm((prev) => ({ ...prev, ...userFields }));
       } catch (error) {
         console.error("Error loading supplier profile from stored user:", error);
       } finally {
@@ -70,7 +75,40 @@ const SupplierProfile = ({ darkMode }) => {
           aboutBusiness: form.aboutBusiness,
           image: form.image,
         };
-        await api.put("/supplier/profile", payload);
+        const authPayload = {
+          businessName: form.businessName,
+          business_name: form.businessName,
+          name: form.businessName,
+          contactEmail: form.contactEmail,
+          contact_email: form.contactEmail,
+          email: form.contactEmail,
+          phoneNumber: form.phoneNumber,
+          phone_number: form.phoneNumber,
+          phone: form.phoneNumber,
+          businessAddress: form.businessAddress,
+          business_address: form.businessAddress,
+          address: form.businessAddress,
+          aboutBusiness: form.aboutBusiness,
+          about_business: form.aboutBusiness,
+          about: form.aboutBusiness,
+          image: form.image,
+        };
+
+        const res = await api.patch("/auth/profile", authPayload);
+
+        try {
+          const stored = localStorage.getItem("currentUser");
+          const rawUser = stored ? JSON.parse(stored) : null;
+          const serverData = res?.data?.user ?? res?.data ?? null;
+          const nextUser = {
+            ...(rawUser && typeof rawUser === "object" ? rawUser : {}),
+            ...(serverData && typeof serverData === "object" ? serverData : {}),
+            ...payload,
+          };
+          localStorage.setItem("currentUser", JSON.stringify(nextUser));
+        } catch (e) {
+          console.error("Error updating stored currentUser after profile save:", e);
+        }
         alert("Profile updated successfully!");
         setIsEditing(false);
       } catch (error) {
