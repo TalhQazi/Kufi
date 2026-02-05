@@ -56,6 +56,23 @@ export default function ItineraryView({
         }
     ])
 
+    const findItineraryForBooking = async () => {
+        const bookingKey = String(request?.id || request?._id || '')
+        if (!bookingKey) return null
+
+        try {
+            const res = await api.get('/itineraries').catch(() => ({ data: [] }))
+            const list = Array.isArray(res?.data) ? res.data : []
+            const match = list.find((it) => {
+                const candidate = String(it?.bookingId || it?.requestId || it?.booking || it?.request || it?._id || it?.id || '')
+                return candidate && candidate === bookingKey
+            })
+            return match || null
+        } catch {
+            return null
+        }
+    }
+
     useEffect(() => {
         const loadFromBooking = () => {
             const title =
@@ -110,6 +127,13 @@ export default function ItineraryView({
                 if (isBookingRequest) {
                     setLoading(true)
                     loadFromBooking()
+
+                    const match = await findItineraryForBooking()
+                    if (match) {
+                        setTripData(match.tripData || match)
+                        setDays(match.days || [])
+                    }
+
                     setLoading(false)
                     return
                 }

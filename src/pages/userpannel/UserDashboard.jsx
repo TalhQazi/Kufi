@@ -8,11 +8,32 @@ import ProfilePic from '../../components/ui/ProfilePic'
 export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, canGoForward, onExploreClick, onItineraryClick, onHomeClick, onNotificationClick, onProfileClick, onMyProfileClick, onMyRequestsClick, onSettingsClick, onCountryClick, hideHeaderFooter = false }) {
     const [dropdown, setDropdown] = useState(false)
     const [tripRequests, setTripRequests] = useState([])
+    const [userItineraries, setUserItineraries] = useState([])
     const [countries, setCountries] = useState([])
     const [cities, setCities] = useState([])
     const [isLoading, setIsLoading] = useState(true)
     const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {}
     const dropdownRef = useRef(null)
+
+    const extractItineraryList = (payload) => {
+        const raw =
+            payload?.itineraries ??
+            payload?.requests ??
+            payload?.data ??
+            payload
+
+        return Array.isArray(raw) ? raw : []
+    }
+
+    const refreshUserItineraries = async () => {
+        try {
+            const res = await api.get('/itineraries')
+            const list = extractItineraryList(res?.data)
+            setUserItineraries(list)
+        } catch {
+            // ignore
+        }
+    }
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -64,13 +85,15 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                     return []
                 }
 
-                const [rawBookings, countriesRes, citiesRes] = await Promise.all([
+                const [rawBookings, itinerariesRes, countriesRes, citiesRes] = await Promise.all([
                     fetchBookingsFromBestEndpoint(),
+                    api.get('/itineraries').catch(() => ({ data: [] })),
                     api.get('/countries').catch(() => ({ data: [] })),
                     api.get('/cities').catch(() => ({ data: [] }))
                 ])
 
                 setTripRequests(Array.isArray(rawBookings) ? rawBookings : [])
+                setUserItineraries(extractItineraryList(itinerariesRes?.data))
                 setCountries(countriesRes?.data || [])
                 setCities(citiesRes?.data || [])
             } catch (error) {
@@ -81,6 +104,40 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
         }
         fetchDashboardData()
     }, [])
+
+    useEffect(() => {
+        const onFocus = () => refreshUserItineraries()
+        const onVisibility = () => {
+            if (document.visibilityState === 'visible') refreshUserItineraries()
+        }
+
+        window.addEventListener('focus', onFocus)
+        document.addEventListener('visibilitychange', onVisibility)
+
+        const intervalId = window.setInterval(() => {
+            refreshUserItineraries()
+        }, 10000)
+
+        return () => {
+            window.removeEventListener('focus', onFocus)
+            document.removeEventListener('visibilitychange', onVisibility)
+            window.clearInterval(intervalId)
+        }
+    }, [])
+
+    const getTripKey = (trip) => {
+        return String(trip?.id || trip?._id || '')
+    }
+
+    const hasSupplierItinerary = (trip) => {
+        const bookingKey = getTripKey(trip)
+        if (!bookingKey) return false
+        const list = Array.isArray(userItineraries) ? userItineraries : []
+        return list.some((it) => {
+            const candidate = String(it?.bookingId || it?.requestId || it?.booking || it?.request || it?._id || it?.id || '')
+            return candidate && candidate === bookingKey
+        })
+    }
 
     const normalizeItineraries = (items) => {
         const list = Array.isArray(items) ? items : []
@@ -517,8 +574,25 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                                     </p>
                                                     <button
                                                         type="button"
-                                                        onClick={() => onItineraryClick && onItineraryClick(trip)}
-                                                        className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors"
+                                                        disabled={(() => {
+                                                            const status = String(trip?.status || '').trim().toLowerCase()
+                                                            const isConfirmed = status === 'confirmed' || status === 'accepted'
+                                                            return !isConfirmed
+                                                        })()}
+                                                        onClick={() => {
+                                                            const status = String(trip?.status || '').trim().toLowerCase()
+                                                            const isConfirmed = status === 'confirmed' || status === 'accepted'
+                                                            if (!isConfirmed) return
+                                                            if (!hasSupplierItinerary(trip)) alert('Supplier has not sent the itinerary yet.')
+                                                            onItineraryClick && onItineraryClick(trip)
+                                                        }}
+                                                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${(() => {
+                                                            const status = String(trip?.status || '').trim().toLowerCase()
+                                                            const ready = status === 'confirmed' || status === 'accepted'
+                                                            return ready
+                                                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                        })()}`}
                                                     >
                                                         View Request Details
                                                     </button>

@@ -1,7 +1,149 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { CalendarDays, MapPin, Users, DollarSign, Info } from "lucide-react";
+import api from "../../api";
 
 const DRAFTS_STORAGE_KEY = "kufi_supplier_itinerary_drafts";
+
+const DayCard = ({
+  day,
+  darkMode,
+  expanded,
+  onToggle,
+  dayData,
+  onUpdateDay,
+  onBrowseImage,
+  onRemoveImage,
+}) => {
+  const isExpanded = Boolean(expanded);
+  const data = dayData || { day };
+
+  return (
+    <div className={`rounded-2xl border transition-colors outline-none overflow-hidden ${darkMode ? "bg-slate-800 border-slate-700" : "bg-amber-50/40 border-amber-100"}`}>
+      <button
+        type="button"
+        onClick={() => onToggle?.(day)}
+        className={`flex w-full items-center justify-between px-4 py-3 text-xs font-semibold transition-colors ${darkMode ? "text-white hover:bg-slate-700" : "text-gray-800 hover:bg-amber-100/50"}`}
+      >
+        <span>Day {day}</span>
+        <span className={`text-lg transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>{isExpanded ? "⌃" : "⌄"}</span>
+      </button>
+
+      {isExpanded && (
+        <div className={`border-t px-4 py-4 space-y-4 text-xs transition-colors ${darkMode ? "border-slate-700" : "border-amber-100"}`}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Select Activity</p>
+              <select
+                value={data.activity || ""}
+                onChange={(e) => onUpdateDay?.(day, { activity: e.target.value })}
+                className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
+              >
+                <option value="">Select an activity</option>
+                <option value="Museum visit">Museum visit</option>
+                <option value="Seine river cruise">Seine river cruise</option>
+                <option value="City walking tour">City walking tour</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Select Location</p>
+              <select
+                value={data.location || ""}
+                onChange={(e) => onUpdateDay?.(day, { location: e.target.value })}
+                className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
+              >
+                <option value="">Select a location</option>
+                <option value="Louvre Museum">Louvre Museum</option>
+                <option value="Montmartre">Montmartre</option>
+                <option value="Notre-Dame Area">Notre-Dame Area</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Description</p>
+            <textarea
+              rows={3}
+              placeholder="Add notes or highlights about this activity..."
+              value={data.description || ""}
+              onChange={(e) => onUpdateDay?.(day, { description: e.target.value })}
+              className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white placeholder:text-slate-600" : "bg-gray-50 border-gray-200 text-gray-700 placeholder:text-gray-400"}`}
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1">
+              <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Estimated Cost</p>
+              <div className={`flex items-center rounded-lg border px-3 py-2 text-sm transition-all ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}>
+                <span className={`mr-2 transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>$</span>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  value={data.cost || ""}
+                  onChange={(e) => onUpdateDay?.(day, { cost: e.target.value })}
+                  className="w-full bg-transparent outline-none text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Start Time</p>
+              <input
+                type="time"
+                value={data.startTime || ""}
+                onChange={(e) => onUpdateDay?.(day, { startTime: e.target.value })}
+                className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white icon-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>End Time</p>
+              <input
+                type="time"
+                value={data.endTime || ""}
+                onChange={(e) => onUpdateDay?.(day, { endTime: e.target.value })}
+                className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white icon-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Image</p>
+            <div className={`rounded-xl border border-dashed transition-all overflow-hidden ${darkMode ? "bg-slate-900 border-slate-700" : "bg-gray-50 border-gray-300"}`}>
+              {data.imageDataUrl ? (
+                <div className="relative h-28 w-full">
+                  <img src={data.imageDataUrl} alt={`Day ${day}`} className="absolute inset-0 h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => onRemoveImage?.(day)}
+                    className={`absolute top-2 right-2 rounded-full px-3 py-1 text-[10px] font-semibold transition-colors ${darkMode ? "bg-slate-950/70 text-slate-200 hover:bg-slate-950" : "bg-white/80 text-gray-700 hover:bg-white"}`}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className={`flex h-24 w-full items-center justify-center text-[11px] transition-all ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
+                  <span className={`mr-1 transition-colors ${darkMode ? "text-slate-600" : "text-gray-400"}`}>📷</span>
+                  <span>Drag and drop an image, or</span>
+                  <label className="ml-1 font-semibold text-[#a26e35] hover:underline cursor-pointer" htmlFor={`day-image-${day}`}>
+                    browse
+                  </label>
+                  <input
+                    id={`day-image-${day}`}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => onBrowseImage?.(day, e.target.files?.[0])}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings }) => {
   const [expandedDays, setExpandedDays] = useState([1, 2, 3]);
@@ -157,6 +299,64 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings })
     };
   };
 
+  const buildItineraryApiPayload = () => {
+    const title = normalized.title || request?.experience || request?.title || travelDetails.destination || "Itinerary";
+    const destination = travelDetails.destination || normalized.location || "";
+    const location = travelDetails.destination || normalized.location || "";
+
+    const date = (travelDetails.startDate || travelDetails.endDate)
+      ? `${travelDetails.startDate || '—'} - ${travelDetails.endDate || '—'}`
+      : "";
+
+    const tripData = {
+      title,
+      destination,
+      location,
+      date,
+      groupSize: normalized.guests ? `${normalized.guests} People` : "",
+      budget: travelDetails.budget || normalized.budget || "",
+      description: travelDetails.preferences || "",
+    };
+
+    const days = (Array.isArray(daysData) ? daysData : []).map((d) => {
+      const label = d?.activity || `Day ${d?.day || ''}`;
+      return {
+        day: d?.day,
+        title: label,
+        image: d?.imageDataUrl || "",
+        morning: { title: "Morning", description: d?.description || "" },
+        afternoon: { title: "Afternoon", description: d?.location ? `Location: ${d.location}` : "" },
+        evening: { title: "Evening", description: d?.cost ? `Estimated Cost: ${d.cost}` : "" },
+        meta: {
+          startTime: d?.startTime || "",
+          endTime: d?.endTime || "",
+        },
+      };
+    });
+
+    const travelerUserId =
+      request?.userId ||
+      request?.user?._id ||
+      request?.user?.id ||
+      request?.user ||
+      request?.travelerId ||
+      request?.customerId ||
+      request?.requestSnapshot?.userId ||
+      "";
+
+    return {
+      userId: travelerUserId,
+      bookingId: currentRequestId || draft?.requestId || "",
+      requestId: currentRequestId || draft?.requestId || "",
+      title,
+      destination,
+      location,
+      tripData,
+      days,
+      status: "Ready",
+    };
+  };
+
   const handleSaveDraft = async () => {
     try {
       setIsSaving(true);
@@ -198,6 +398,38 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings })
       setSentSuccessMessage("");
       setDraftSavedMessage("");
       const payload = buildDraftPayload();
+
+      const apiPayload = buildItineraryApiPayload();
+      const normalizedApiPayload = {
+        ...apiPayload,
+        userId: apiPayload?.userId ? String(apiPayload.userId) : "",
+        bookingId: apiPayload?.bookingId ? String(apiPayload.bookingId) : "",
+        requestId: apiPayload?.requestId ? String(apiPayload.requestId) : "",
+      };
+
+      if (!normalizedApiPayload.userId || !normalizedApiPayload.destination || !normalizedApiPayload.title) {
+        console.warn(
+          "Skipping backend itinerary persist: missing userId/title/destination",
+          normalizedApiPayload
+        );
+        setSentSuccessMessage("Failed to send itinerary: missing traveler or trip details");
+        return;
+      }
+
+      try {
+        console.log("Sending itinerary to backend:", normalizedApiPayload);
+        await api.post("/itineraries", normalizedApiPayload);
+      } catch (e) {
+        console.error("Failed to persist itinerary to backend:", e?.response?.data || e);
+        const msg =
+          e?.response?.data?.msg ||
+          e?.response?.data?.message ||
+          e?.message ||
+          "Failed to send itinerary";
+        setSentSuccessMessage(String(msg));
+        return;
+      }
+
       const sentKey = "kufi_supplier_sent_itineraries";
       const existing = safeParseJson(localStorage.getItem(sentKey));
       const list = Array.isArray(existing) ? existing : [];
@@ -225,159 +457,8 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings })
     );
   };
 
-  const DayCard = ({ day }) => {
-    const isExpanded = expandedDays.includes(day);
-    const data = daysData.find((d) => d.day === day) || { day };
-    return (
-      <div className={`rounded-2xl border transition-colors outline-none overflow-hidden ${darkMode ? "bg-slate-800 border-slate-700" : "bg-amber-50/40 border-amber-100"}`}>
-        <button
-          onClick={() => toggleDay(day)}
-          className={`flex w-full items-center justify-between px-4 py-3 text-xs font-semibold transition-colors ${darkMode ? "text-white hover:bg-slate-700" : "text-gray-800 hover:bg-amber-100/50"}`}
-        >
-          <span>Day {day}</span>
-          <span className={`text-lg transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>{isExpanded ? "⌃" : "⌄"}</span>
-        </button>
-        {isExpanded && (
-          <div className={`border-t px-4 py-4 space-y-4 text-xs transition-colors ${darkMode ? "border-slate-700" : "border-amber-100"}`}>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Select Activity</p>
-                <select
-                  value={data.activity || ""}
-                  onChange={(e) =>
-                    setDaysData((prev) =>
-                      prev.map((d) => (d.day === day ? { ...d, activity: e.target.value } : d))
-                    )
-                  }
-                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
-                >
-                  <option value="">Select an activity</option>
-                  <option value="Museum visit">Museum visit</option>
-                  <option value="Seine river cruise">Seine river cruise</option>
-                  <option value="City walking tour">City walking tour</option>
-                </select>
-              </div>
-              <div className="space-y-1">
-                <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Select Location</p>
-                <select
-                  value={data.location || ""}
-                  onChange={(e) =>
-                    setDaysData((prev) =>
-                      prev.map((d) => (d.day === day ? { ...d, location: e.target.value } : d))
-                    )
-                  }
-                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
-                >
-                  <option value="">Select a location</option>
-                  <option value="Louvre Museum">Louvre Museum</option>
-                  <option value="Montmartre">Montmartre</option>
-                  <option value="Notre-Dame Area">Notre-Dame Area</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Description</p>
-              <textarea
-                rows={3}
-                placeholder="Add notes or highlights about this activity..."
-                value={data.description || ""}
-                onChange={(e) =>
-                  setDaysData((prev) =>
-                    prev.map((d) => (d.day === day ? { ...d, description: e.target.value } : d))
-                  )
-                }
-                className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white placeholder:text-slate-600" : "bg-gray-50 border-gray-200 text-gray-700 placeholder:text-gray-400"}`}
-              />
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="space-y-1">
-                <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Estimated Cost</p>
-                <div className={`flex items-center rounded-lg border px-3 py-2 text-sm transition-all ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}>
-                  <span className={`mr-2 transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>$</span>
-                  <input
-                    type="number"
-                    placeholder="0.00"
-                    value={data.cost || ""}
-                    onChange={(e) =>
-                      setDaysData((prev) =>
-                        prev.map((d) => (d.day === day ? { ...d, cost: e.target.value } : d))
-                      )
-                    }
-                    className="w-full bg-transparent outline-none text-sm"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Start Time</p>
-                <input
-                  type="time"
-                  value={data.startTime || ""}
-                  onChange={(e) =>
-                    setDaysData((prev) =>
-                      prev.map((d) => (d.day === day ? { ...d, startTime: e.target.value } : d))
-                    )
-                  }
-                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white icon-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
-                />
-              </div>
-              <div className="space-y-1">
-                <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>End Time</p>
-                <input
-                  type="time"
-                  value={data.endTime || ""}
-                  onChange={(e) =>
-                    setDaysData((prev) =>
-                      prev.map((d) => (d.day === day ? { ...d, endTime: e.target.value } : d))
-                    )
-                  }
-                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white icon-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Image</p>
-              <div className={`rounded-xl border border-dashed transition-all overflow-hidden ${darkMode ? "bg-slate-900 border-slate-700" : "bg-gray-50 border-gray-300"}`}>
-                {data.imageDataUrl ? (
-                  <div className="relative h-28 w-full">
-                    <img src={data.imageDataUrl} alt={`Day ${day}`} className="absolute inset-0 h-full w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDaysData((prev) => prev.map((d) => (d.day === day ? { ...d, imageDataUrl: "" } : d)))
-                      }
-                      className={`absolute top-2 right-2 rounded-full px-3 py-1 text-[10px] font-semibold transition-colors ${darkMode ? "bg-slate-950/70 text-slate-200 hover:bg-slate-950" : "bg-white/80 text-gray-700 hover:bg-white"}`}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : (
-                  <div className={`flex h-24 w-full items-center justify-center text-[11px] transition-all ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
-                    <span className={`mr-1 transition-colors ${darkMode ? "text-slate-600" : "text-gray-400"}`}>📷</span>
-                    <span>Drag and drop an image, or</span>
-                    <label
-                      className="ml-1 font-semibold text-[#a26e35] hover:underline cursor-pointer"
-                      htmlFor={`day-image-${day}`}
-                    >
-                      browse
-                    </label>
-                    <input
-                      id={`day-image-${day}`}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleBrowseImage(day, e.target.files?.[0])}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
+  const updateDay = (day, patch) => {
+    setDaysData((prev) => prev.map((d) => (d.day === day ? { ...d, ...patch } : d)));
   };
 
   return (
@@ -473,7 +554,17 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings })
             {/* Day cards */}
             <div className="space-y-2">
               {[1, 2, 3, 4, 5].map((day) => (
-                <DayCard key={day} day={day} />
+                <DayCard
+                  key={day}
+                  day={day}
+                  darkMode={darkMode}
+                  expanded={expandedDays.includes(day)}
+                  onToggle={toggleDay}
+                  dayData={daysData.find((d) => d.day === day)}
+                  onUpdateDay={updateDay}
+                  onBrowseImage={handleBrowseImage}
+                  onRemoveImage={(targetDay) => updateDay(targetDay, { imageDataUrl: "" })}
+                />
               ))}
             </div>
           </div>
