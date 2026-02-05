@@ -56,9 +56,9 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
           ...r,
           id: r.id ?? r._id,
           // Prefer populated user fields, then contactDetails, then fallback
-          name: r.user?.name ?? (r.contactDetails?.firstName ? `${r.contactDetails.firstName} ${r.contactDetails.lastName || ''}`.trim() : (r.name ?? r.travelerName ?? r.userName ?? "—")),
-          email: r.user?.email ?? r.contactDetails?.email ?? r.email ?? r.contactEmail ?? r.travelerEmail ?? "",
-          phone: r.user?.phone ?? r.contactDetails?.phone ?? r.phone ?? "N/A",
+          name: (r.contactDetails?.firstName ? `${r.contactDetails.firstName} ${r.contactDetails.lastName || ''}`.trim() : "") || r.user?.name || (r.name ?? r.travelerName ?? r.userName ?? "—"),
+          email: r.contactDetails?.email || r.user?.email || r.email || r.contactEmail || r.travelerEmail || "",
+          phone: r.contactDetails?.phone || r.user?.phone || r.phone || "N/A",
           experience: experienceTitles,
           location: r.tripDetails?.country ?? r.location ?? r.destination ?? "—",
           date: r.date ?? r.dateRange ?? r.startDate ?? "Flexible",
@@ -190,6 +190,11 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
     const itineraryImages = getRequestImages(itineraryRequest);
     const heroImage = itineraryImages[0] || "https://images.pexels.com/photos/5700446/pexels-photo-5700446.jpeg?auto=compress&cs=tinysrgb&w=1200";
     const gallery = itineraryImages.slice(0, 3);
+    const itineraryActivities = Array.isArray(itineraryRequest?.items)
+      ? itineraryRequest.items
+          .map((item) => item?.activity?.title || item?.title)
+          .filter(Boolean)
+      : [];
 
     return (
       <div className={`space-y-6 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
@@ -291,55 +296,83 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
               </p>
             </div>
           </div>
+
+          <div className="mt-5 pt-4 border-t transition-colors" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
+            <p className={`text-[10px] uppercase tracking-wider font-bold mb-3 ${darkMode ? "text-amber-500/80" : "text-[#a26e35]"}`}>
+              Activities
+            </p>
+
+            {itineraryActivities.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {itineraryActivities.map((title) => (
+                  <span
+                    key={title}
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold border transition-colors ${darkMode ? "bg-slate-800/50 border-slate-700 text-slate-200" : "bg-white border-gray-200 text-slate-700"}`}
+                  >
+                    {title}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className={`text-[11px] ${darkMode ? "text-slate-500" : "text-gray-500"}`}>No activities selected</p>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center justify-center">
-          <div className={`w-full max-w-[520px] rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
-            <div className="relative h-44">
-              <img src={heroImage} alt="Trip" className="absolute inset-0 h-full w-full object-cover" />
-              <div className="absolute inset-0 bg-black/15" />
-            </div>
-            <div className="px-5 py-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <img
-                  src={itineraryRequest.avatar || "/assets/profile-avatar.jpeg"}
-                  alt={itineraryRequest.name || "Traveler"}
-                  className="h-11 w-11 rounded-full object-cover"
-                />
-                <div className="min-w-0">
-                  <p className={`text-sm font-semibold truncate transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-                    {itineraryRequest.name || "—"}
-                  </p>
-                  <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
-                    {formatStatusLabel(itineraryRequest.status)} Request
-                  </p>
-                </div>
-              </div>
+        <div className="space-y-3">
+          <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+            Recommended Itinerary Template
+          </h2>
 
-              <div className={`grid grid-cols-2 gap-3 text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
-                <div className="inline-flex items-center gap-2">
-                  <MapPin className="h-3.5 w-3.5 text-emerald-500" />
-                  <span className={`truncate ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
-                    {itineraryRequest.location || "—"}
-                  </span>
+          <div className="flex items-center justify-center">
+            <div className={`w-full max-w-[520px] rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+              <div className="relative h-44">
+                <img src={heroImage} alt="Template" className="absolute inset-0 h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-black/15" />
+              </div>
+              <div className="px-5 py-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className={`text-sm font-semibold truncate transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                      {itineraryRequest.location || "Trip"}
+                    </p>
+                    <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                      {itineraryActivities.length > 0 ? itineraryActivities.join(', ') : '—'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className={`shrink-0 inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-semibold transition-colors ${darkMode ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-slate-700 hover:bg-gray-200"}`}
+                  >
+                    Select Template
+                  </button>
                 </div>
-                <div className="inline-flex items-center gap-2">
-                  <Users className="h-3.5 w-3.5 text-emerald-500" />
-                  <span className={`${darkMode ? "text-slate-200" : "text-slate-800"}`}>
-                    {itineraryRequest.guests ?? itineraryRequest.travelers ?? 0} Travelers
-                  </span>
-                </div>
-                <div className="inline-flex items-center gap-2">
-                  <CalendarDays className="h-3.5 w-3.5 text-emerald-500" />
-                  <span className={`truncate ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
-                    {itineraryRequest.dateRange || itineraryRequest.date || "—"}
-                  </span>
-                </div>
-                <div className="inline-flex items-center gap-2">
-                  <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-                  <span className={`${darkMode ? "text-slate-200" : "text-slate-800"}`}>
-                    {itineraryRequest.amount ?? "—"}
-                  </span>
+
+                <div className={`grid grid-cols-2 gap-3 text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
+                  <div className="inline-flex items-center gap-2">
+                    <Users className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className={`${darkMode ? "text-slate-200" : "text-slate-800"}`}>
+                      {itineraryRequest.guests ?? itineraryRequest.travelers ?? 0} Travelers
+                    </span>
+                  </div>
+                  <div className="inline-flex items-center gap-2">
+                    <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className={`${darkMode ? "text-slate-200" : "text-slate-800"}`}>
+                      {itineraryRequest.amount ?? "—"}
+                    </span>
+                  </div>
+                  <div className="inline-flex items-center gap-2">
+                    <CalendarDays className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className={`truncate ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
+                      {itineraryRequest.dateRange || itineraryRequest.date || "—"}
+                    </span>
+                  </div>
+                  <div className="inline-flex items-center gap-2">
+                    <MapPin className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className={`truncate ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
+                      {itineraryRequest.location || "—"}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

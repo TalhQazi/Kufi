@@ -155,6 +155,12 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
             const payload = {
                 ...formData,
                 name,
+                contactDetails: {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    phone: formData.phone,
+                },
                 travelers: travelersParsed,
                 guests: travelersParsed,
                 activities,
