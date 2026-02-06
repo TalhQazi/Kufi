@@ -40,6 +40,13 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
     return v.charAt(0).toUpperCase() + v.slice(1);
   };
 
+  const hasAdjustment = (req) => {
+    const card = req?.adjustmentCard;
+    if (!card) return false;
+    const fields = [card?.title, card?.description, card?.location, card?.cost, card?.imageDataUrl];
+    return fields.some((v) => String(v || "").trim());
+  };
+
   // Load requests from database (GET /supplier/bookings)
   const fetchRequests = async ({ silent = false } = {}) => {
     try {
@@ -512,9 +519,16 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                   <p className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
                     {req.name}
                   </p>
-                  <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${darkMode ? "bg-amber-900/40 text-amber-400" : "bg-amber-50 text-amber-700"}`}>
-                    {formatStatusLabel(req.status)}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${darkMode ? "bg-amber-900/40 text-amber-400" : "bg-amber-50 text-amber-700"}`}>
+                      {formatStatusLabel(req.status)}
+                    </span>
+                    {hasAdjustment(req) && (
+                      <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${darkMode ? "bg-blue-900/30 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
+                        Requested Adjustment
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -540,11 +554,15 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
               <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t transition-colors pt-4" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
                 <button
                   type="button"
-                  disabled={String(req.status || '').trim().toLowerCase() !== 'confirmed'}
+                  disabled={(() => {
+                    const normalizedStatus = String(req.status || '').trim().toLowerCase();
+                    if (hasAdjustment(req)) return false;
+                    return normalizedStatus !== 'confirmed';
+                  })()}
                   onClick={(e) => {
                     e.stopPropagation();
                     setItineraryRequestId(req.id || req._id);
-                    setView("itinerary");
+                    setView(hasAdjustment(req) ? "generate" : "itinerary");
                   }}
                   className={`inline-flex w-full lg:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${(String(req.status || '').trim().toLowerCase() === 'confirmed')
                     ? "bg-[#a26e35] text-white shadow-sm hover:bg-[#8b5e2d]"
@@ -552,7 +570,7 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                     }`}
                 >
                   <Sparkles className="h-3.5 w-3.5" />
-                  <span>Proceed To Create Itinerary</span>
+                  <span>{hasAdjustment(req) ? 'View Adjustment Itinerary' : 'Proceed To Create Itinerary'}</span>
                 </button>
                 <div className="flex items-center justify-end gap-2 w-full lg:w-auto">
                   <button

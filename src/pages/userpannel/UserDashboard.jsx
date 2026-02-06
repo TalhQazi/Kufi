@@ -210,6 +210,18 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
         const currentEmail = (currentUser?.email || '').toLowerCase()
         const currentPhone = String(currentUser?.phone || '').trim()
 
+        const readAdjustmentReplies = () => {
+            try {
+                const raw = localStorage.getItem('kufi_adjustment_replies')
+                const parsed = JSON.parse(raw)
+                return Array.isArray(parsed) ? parsed : []
+            } catch {
+                return []
+            }
+        }
+
+        const replyList = readAdjustmentReplies()
+
         const filtered = normalized.filter((r) => {
             const requestUserIdRaw = r?._userId
             const requestUserId =
@@ -229,19 +241,18 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
 
             return idMatch || emailMatch || phoneMatch
         })
-
-        // If we have a logged-in user identity, never fall back to showing other users' requests.
-        if (currentUserId || currentEmail || currentPhone) return filtered
-
-        return normalized
-    }, [tripRequests, currentUser?._id, currentUser?.id, currentUser?.email, currentUser?.phone])
-
-    const upcomingTrips = myTripRequests
-        .filter(req => {
-            const s = String(req.status || '').toLowerCase()
-            return s === 'payment completed' || s === 'completed' || s === 'accepted'
-        })
         .slice(0, 2)
+
+        return filtered.map((r) => {
+            const bookingId = String(r?.id || r?._id || '')
+            const hasReply = replyList.some((x) => String(x?.bookingId || '') === bookingId)
+            if (!hasReply) return r
+            return {
+                ...r,
+                status: 'adjustment replied',
+            }
+        })
+    }, [tripRequests, currentUser])
 
     const normalizeCountryKey = (value) => {
         return String(value || '')
@@ -314,8 +325,16 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
         return picked.slice(0, 3)
     }, [countries, cities])
 
+    const upcomingTrips = React.useMemo(() => {
+        const list = Array.isArray(myTripRequests) ? myTripRequests : []
+        const upcoming = list.filter((trip) => hasSupplierItinerary(trip))
+        return upcoming.slice(0, 3)
+    }, [myTripRequests, userItineraries])
+
     const getStatusStyles = (status) => {
         switch (status?.toLowerCase()) {
+            case 'adjustment replied':
+                return { color: 'bg-indigo-100 text-indigo-700', icon: <FaCheckCircle /> };
             case 'completed':
             case 'payment completed':
             case 'accepted':
@@ -336,6 +355,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
 
     const getStatusLabel = (status) => {
         const s = String(status || '').trim().toLowerCase()
+        if (s === 'adjustment replied') return 'Adjustment Replied'
         if (s === 'accepted') return 'Accepted by Supplier'
         if (s === 'confirmed') return 'Accepted by Supplier'
         if (s === 'supplier replied back') return 'Supplier Replied'

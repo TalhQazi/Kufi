@@ -6,6 +6,7 @@ const DRAFTS_STORAGE_KEY = "kufi_supplier_itinerary_drafts";
 
 const createEmptyDay = (day) => ({
   day,
+  isAdjustment: false,
   activity: "",
   location: "",
   description: "",
@@ -29,6 +30,8 @@ const DayCard = ({
   onUpdateDay,
   onBrowseImage,
   onRemoveImage,
+  activityOptions,
+  locationOptions,
 }) => {
   const isExpanded = Boolean(expanded);
   const data = dayData || { day };
@@ -55,9 +58,13 @@ const DayCard = ({
                 className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
               >
                 <option value="">Select an activity</option>
-                <option value="Museum visit">Museum visit</option>
-                <option value="Seine river cruise">Seine river cruise</option>
-                <option value="City walking tour">City walking tour</option>
+                {(Array.isArray(activityOptions) ? activityOptions : [])
+                  .filter(Boolean)
+                  .map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
               </select>
             </div>
 
@@ -69,9 +76,13 @@ const DayCard = ({
                 className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
               >
                 <option value="">Select a location</option>
-                <option value="Louvre Museum">Louvre Museum</option>
-                <option value="Montmartre">Montmartre</option>
-                <option value="Notre-Dame Area">Notre-Dame Area</option>
+                {(Array.isArray(locationOptions) ? locationOptions : [])
+                  .filter(Boolean)
+                  .map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>
@@ -180,6 +191,59 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
   const [isSending, setIsSending] = useState(false);
   const [draftSavedMessage, setDraftSavedMessage] = useState("");
   const [sentSuccessMessage, setSentSuccessMessage] = useState("");
+  const [previousItinerary, setPreviousItinerary] = useState(null);
+  const [prefilledFromPrevious, setPrefilledFromPrevious] = useState(false);
+
+  const requestItemMeta = useMemo(() => {
+    const list = Array.isArray(request?.items) ? request.items : [];
+    return list.map((item) => {
+      const activity = item?.activity || item || {};
+      const title =
+        activity?.title ||
+        item?.title ||
+        activity?.name ||
+        item?.name ||
+        "";
+
+      const loc =
+        activity?.country?.name ||
+        activity?.country ||
+        activity?.location ||
+        activity?.city ||
+        item?.location ||
+        request?.tripDetails?.country ||
+        request?.country ||
+        "";
+
+      return {
+        title: String(title || "").trim(),
+        location: String(loc || "").trim(),
+      };
+    });
+  }, [request]);
+
+  const activityOptions = useMemo(() => {
+    return requestItemMeta
+      .map((x) => x?.title)
+      .filter((x) => String(x || "").trim());
+  }, [requestItemMeta]);
+
+  const locationOptions = useMemo(() => {
+    const set = new Set();
+    requestItemMeta.forEach((x) => {
+      const v = String(x?.location || "").trim();
+      if (v) set.add(v);
+    });
+    return Array.from(set);
+  }, [requestItemMeta]);
+
+  const safeParseJson = (value) => {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  };
 
   const normalized = useMemo(() => {
     const location =
@@ -268,30 +332,61 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
 
     setDaysData((prev) => {
       const list = Array.isArray(prev) ? prev : [];
-      const targetLen = Math.max(1, list.length || 0);
-      const next = targetLen > 0 ? [...list] : [createEmptyDay(1)];
+      const next = list.length > 0 ? [...list] : [createEmptyDay(1)];
 
-      while (next.length < 1) next.push(createEmptyDay(next.length + 1));
-      const first = next[0] || createEmptyDay(1);
+      const activitiesCount = Array.isArray(request?.items) ? request.items.length : 0;
+      const existingAdjustmentIndex = next.findIndex((d) => Boolean(d?.isAdjustment));
+      const insertIndex = existingAdjustmentIndex >= 0
+        ? existingAdjustmentIndex
+        : Math.max(activitiesCount, next.length);
+      const desiredLen = Math.max(1, insertIndex + 1);
+      while (next.length < desiredLen) next.push(createEmptyDay(next.length + 1));
 
-      next[0] = {
-        ...first,
-        activity: activity || first.activity,
-        description: description || first.description,
-        location: location || first.location,
-        cost: cost || first.cost,
-        imageDataUrl: imageDataUrl || first.imageDataUrl,
+      const target = next[insertIndex] || createEmptyDay(insertIndex + 1);
+      next[insertIndex] = {
+        ...target,
+        isAdjustment: true,
+        activity: String(target.activity || '').trim() ? target.activity : activity,
+        description: String(target.description || '').trim() ? target.description : description,
+        location: String(target.location || '').trim() ? target.location : location,
+        cost: String(target.cost || '').trim() ? target.cost : cost,
+        imageDataUrl: target.imageDataUrl ? target.imageDataUrl : imageDataUrl,
       };
 
       return next;
     });
-  }, [request, draft]);
+  }, [request, draft, previousItinerary]);
+
+  useEffect(() => {
+    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
+    if (!Array.isArray(requestItemMeta) || requestItemMeta.length === 0) return;
+
+    setDaysData((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      if (list.length === 0) return list;
+
+      return list.map((d, idx) => {
+        const meta = requestItemMeta[idx];
+        if (!meta) return d;
+
+        const next = { ...d };
+        if (!String(next.activity || "").trim() && meta.title) next.activity = meta.title;
+        if (!String(next.location || "").trim() && meta.location) next.location = meta.location;
+        return next;
+      });
+    });
+  }, [draft, requestItemMeta]);
 
   useEffect(() => {
     if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
 
     const activitiesCount = Array.isArray(request?.items) ? request.items.length : 0;
-    const target = Math.max(1, activitiesCount || 0);
+    const card = request?.adjustmentCard;
+    const hasCard = Boolean(
+      card &&
+      [card?.title, card?.description, card?.location, card?.cost, card?.imageDataUrl].some((v) => String(v || '').trim())
+    );
+    const target = Math.max(1, (activitiesCount || 0) + (hasCard ? 1 : 0));
 
     setDaysData((prev) => {
       const list = Array.isArray(prev) ? prev : [];
@@ -323,13 +418,100 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     return Math.max(0, Math.min(1, val / max));
   };
 
-  const safeParseJson = (value) => {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return null;
+  const adjustmentCard = request?.adjustmentCard || null;
+  const hasAdjustment = (() => {
+    if (!adjustmentCard) return false;
+    const fields = [adjustmentCard?.title, adjustmentCard?.description, adjustmentCard?.location, adjustmentCard?.cost, adjustmentCard?.imageDataUrl];
+    return fields.some((v) => String(v || '').trim());
+  })();
+
+  useEffect(() => {
+    const currentId = request?._id || request?.id || request?.bookingId || request?.requestId || "";
+    if (!currentId) return;
+
+    let cancelled = false;
+    const fetchPrevious = async () => {
+      try {
+        const res = await api.get('/itineraries').catch(() => ({ data: [] }));
+        const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.itineraries) ? res.data.itineraries : []);
+        const match = (Array.isArray(list) ? list : []).find((it) => {
+          const candidate = String(it?.bookingId || it?.requestId || it?.booking || it?.request || it?._id || it?.id || '');
+          return candidate && candidate === String(currentId);
+        });
+        if (!cancelled) setPreviousItinerary(match || null);
+      } catch {
+        if (!cancelled) setPreviousItinerary(null);
+      }
+    };
+
+    fetchPrevious();
+    return () => {
+      cancelled = true;
+    };
+  }, [request]);
+
+  useEffect(() => {
+    if (prefilledFromPrevious) return;
+    if (!hasAdjustment) return;
+    if (!previousItinerary) return;
+    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
+
+    const tripData = previousItinerary?.tripData || {};
+    const destination = tripData?.destination || tripData?.location || previousItinerary?.destination || previousItinerary?.location || "";
+    const budget = tripData?.budget || previousItinerary?.budget || "";
+
+    const parseDateRange = (value) => {
+      const raw = String(value || "").trim();
+      if (!raw) return { start: "", end: "" };
+      const parts = raw.split("-").map((x) => String(x || "").trim());
+      if (parts.length < 2) return { start: "", end: "" };
+      return { start: parts[0] || "", end: parts[1] || "" };
+    };
+
+    const dateRange = parseDateRange(tripData?.date);
+
+    setTravelDetails((prev) => ({
+      ...prev,
+      destination: prev.destination || destination,
+      budget: prev.budget || budget,
+      startDate: prev.startDate || dateRange.start,
+      endDate: prev.endDate || dateRange.end,
+      preferences: prev.preferences || tripData?.description || "",
+    }));
+
+    const prevDays = Array.isArray(previousItinerary?.days) ? previousItinerary.days : [];
+
+    const stripPrefix = (value, prefix) => {
+      const raw = String(value || "");
+      const p = String(prefix || "");
+      if (!p) return raw;
+      return raw.startsWith(p) ? raw.slice(p.length).trim() : raw;
+    };
+
+    const mappedDays = prevDays.map((d, idx) => {
+      const dayNo = Number(d?.day) || idx + 1;
+      const activity = String(d?.title || "").trim();
+      const description = String(d?.morning?.description || "").trim();
+      const location = stripPrefix(d?.afternoon?.description, "Location:");
+      const cost = stripPrefix(d?.evening?.description, "Estimated Cost:");
+      const imageDataUrl = String(d?.image || "").trim();
+
+      return {
+        ...createEmptyDay(dayNo),
+        activity,
+        description,
+        location: String(location || "").trim(),
+        cost: String(cost || "").trim(),
+        imageDataUrl,
+      };
+    });
+
+    if (mappedDays.length > 0) {
+      setDaysData(mappedDays);
     }
-  };
+
+    setPrefilledFromPrevious(true);
+  }, [prefilledFromPrevious, hasAdjustment, previousItinerary, draft]);
 
   const readDrafts = () => {
     const raw = localStorage.getItem(DRAFTS_STORAGE_KEY);
@@ -352,6 +534,10 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
       setDaysData((prev) => prev.map((d) => (d.day === day ? { ...d, imageDataUrl: result } : d)));
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = (day) => {
+    setDaysData((prev) => prev.map((d) => (d.day === day ? { ...d, imageDataUrl: "" } : d)));
   };
 
   const buildDraftPayload = () => {
@@ -505,6 +691,18 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
       };
       localStorage.setItem(sentKey, JSON.stringify([record, ...list]));
 
+      if (hasAdjustment) {
+        const replyKey = 'kufi_adjustment_replies';
+        const existingReplies = safeParseJson(localStorage.getItem(replyKey));
+        const replyList = Array.isArray(existingReplies) ? existingReplies : [];
+        const bookingId = currentRequestId || draft?.requestId || "";
+        if (bookingId) {
+          const replyRecord = { bookingId: String(bookingId), repliedAt: new Date().toISOString() };
+          const nextReplies = [replyRecord, ...replyList.filter((x) => String(x?.bookingId || '') !== String(bookingId))];
+          localStorage.setItem(replyKey, JSON.stringify(nextReplies));
+        }
+      }
+
       setSentSuccessMessage("Itinerary sent to traveler");
       window.setTimeout(() => {
         onGoToBookings?.();
@@ -570,9 +768,9 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2.1fr)_minmax(260px,0.9fr)]">
-        {/* Left: travel details + itinerary days */}
-        <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2.1fr)_360px]">
+        {/* Left: main */}
+        <div className="space-y-5">
           {/* Travel details */}
           <div className={`rounded-2xl border px-5 py-5 space-y-4 transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
             <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Travel Details</h2>
@@ -634,6 +832,57 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
           <div className={`rounded-2xl border px-5 py-5 space-y-4 transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
             <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Itinerary Details</h2>
 
+            {hasAdjustment && adjustmentCard && (
+              <div className={`rounded-2xl border px-4 py-4 text-xs transition-colors ${darkMode ? "bg-slate-950/30 border-slate-800" : "bg-amber-50/40 border-amber-100"}`}>
+                <p className={`text-[11px] font-semibold mb-2 transition-colors ${darkMode ? "text-amber-300" : "text-[#a26e35]"}`}>
+                  New Adjustment Card
+                </p>
+                <div className="grid gap-3 sm:grid-cols-[120px_minmax(0,1fr)]">
+                  <div className={`h-20 w-full overflow-hidden rounded-xl border transition-colors ${darkMode ? "border-slate-800 bg-slate-900" : "border-gray-100 bg-white"}`}>
+                    {adjustmentCard.imageDataUrl ? (
+                      <img src={adjustmentCard.imageDataUrl} alt="Adjustment" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className={`h-full w-full flex items-center justify-center ${darkMode ? "text-slate-600" : "text-gray-400"}`}>
+                        No image
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1 min-w-0">
+                    <p className={`text-sm font-semibold truncate transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                      {adjustmentCard.title || '—'}
+                    </p>
+                    <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
+                      {adjustmentCard.description || '—'}
+                    </p>
+                    <div className={`flex flex-wrap gap-x-4 gap-y-1 text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
+                      <span><span className="font-semibold">Location:</span> {adjustmentCard.location || '—'}</span>
+                      <span><span className="font-semibold">Cost:</span> {adjustmentCard.cost || '—'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {hasAdjustment && previousItinerary && Array.isArray(previousItinerary?.days) && previousItinerary.days.length > 0 && (
+              <div className={`rounded-2xl border px-4 py-4 space-y-3 text-xs transition-colors ${darkMode ? "bg-slate-950/30 border-slate-800" : "bg-white border-gray-100"}`}>
+                <p className={`text-[11px] font-semibold transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                  Previous Itinerary (read-only)
+                </p>
+                <div className="space-y-2">
+                  {previousItinerary.days.slice(0, 3).map((d) => (
+                    <div key={d?.day || d?.title} className={`rounded-xl border px-3 py-2 transition-colors ${darkMode ? "border-slate-800 bg-slate-900/30" : "border-gray-100 bg-gray-50/40"}`}>
+                      <p className={`text-[11px] font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                        Day {d?.day || ''} {d?.title ? `- ${d.title}` : ''}
+                      </p>
+                      <p className={`text-[11px] mt-1 transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
+                        {d?.morning?.description || ''}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Day cards */}
             <div className="space-y-2">
               {(Array.isArray(daysData) ? daysData : []).map((d) => (
@@ -646,40 +895,42 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
                   dayData={d}
                   onUpdateDay={updateDay}
                   onBrowseImage={handleBrowseImage}
-                  onRemoveImage={(targetDay) => updateDay(targetDay, { imageDataUrl: "" })}
+                  onRemoveImage={handleRemoveImage}
+                  activityOptions={activityOptions}
+                  locationOptions={locationOptions}
                 />
               ))}
             </div>
-          </div>
 
-          {/* Add day & actions */}
-          <button
-            type="button"
-            onClick={handleAddNewDay}
-            className={`w-full rounded-2xl border border-dashed transition-colors px-5 py-3 flex items-center justify-center text-xs cursor-pointer ${darkMode ? "bg-slate-900 border-slate-800 text-slate-500 hover:bg-slate-800" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"}`}
-          >
-            <span className="mr-2 text-lg">＋</span>
-            Add New Day
-          </button>
-
-          <div className={`flex flex-col gap-3 border-t pt-4 mt-1 sm:flex-row sm:items-center sm:justify-between transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`}>
             <button
               type="button"
-              disabled={isSaving}
-              onClick={handleSaveDraft}
-              className={`inline-flex items-center justify-center rounded-full border px-6 py-2 text-xs font-medium transition-colors ${isSaving ? "opacity-70 cursor-not-allowed" : ""} ${darkMode ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+              onClick={handleAddNewDay}
+              className={`w-full rounded-2xl border border-dashed transition-colors px-5 py-3 flex items-center justify-center text-xs cursor-pointer ${darkMode ? "bg-slate-900 border-slate-800 text-slate-500 hover:bg-slate-800" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"}`}
             >
-              Save Draft
+              <span className="mr-2 text-lg">＋</span>
+              Add New Day
             </button>
-            <button
-              type="button"
-              disabled={isSending}
-              onClick={handleSendToTraveler}
-              className={`inline-flex items-center justify-center rounded-full bg-[#a26e35] px-8 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#8b5e2d] transition-colors ${isSending ? "opacity-70 cursor-not-allowed" : ""}`}
-            >
-              Send to Traveler
-            </button>
+
+            <div className={`flex flex-col gap-3 border-t pt-4 mt-1 sm:flex-row sm:items-center sm:justify-between transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`}>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={handleSaveDraft}
+                className={`inline-flex items-center justify-center rounded-full border px-6 py-2 text-xs font-medium transition-colors ${isSaving ? "opacity-70 cursor-not-allowed" : ""} ${darkMode ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+              >
+                Save Draft
+              </button>
+              <button
+                type="button"
+                disabled={isSending}
+                onClick={handleSendToTraveler}
+                className={`inline-flex items-center justify-center rounded-full bg-[#a26e35] px-8 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#8b5e2d] transition-colors ${isSending ? "opacity-70 cursor-not-allowed" : ""}`}
+              >
+                {hasAdjustment ? 'Resend It' : 'Send to Traveler'}
+              </button>
+            </div>
           </div>
+
         </div>
 
         {/* Right: itinerary summary */}

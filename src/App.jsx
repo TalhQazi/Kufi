@@ -473,6 +473,7 @@ export default function App() {
         hideHeaderFooter={true}
         onSubmit={(data) => {
           setBookingData(data)
+          setSelectedActivities([])
           navigateTo('explore')
         }}
       />
@@ -574,6 +575,7 @@ export default function App() {
     page === 'user-profile' ||
     page === 'traveler-profile' ||
     page === 'travel-booking' ||
+    page === 'explore' ||
     page === 'payment'
 
   return (
