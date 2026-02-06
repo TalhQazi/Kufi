@@ -595,19 +595,29 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                                         type="button"
                                                         disabled={(() => {
                                                             const status = String(trip?.status || '').trim().toLowerCase()
-                                                            const isConfirmed = status === 'confirmed' || status === 'accepted'
-                                                            return !isConfirmed
+                                                            const hasItinerary = hasSupplierItinerary(trip)
+                                                            const isAllowed =
+                                                                hasItinerary ||
+                                                                status === 'confirmed' ||
+                                                                status === 'accepted' ||
+                                                                status === 'adjustment replied'
+                                                            return !isAllowed
                                                         })()}
                                                         onClick={() => {
                                                             const status = String(trip?.status || '').trim().toLowerCase()
-                                                            const isConfirmed = status === 'confirmed' || status === 'accepted'
-                                                            if (!isConfirmed) return
+                                                            const hasItinerary = hasSupplierItinerary(trip)
+                                                            const isAllowed =
+                                                                hasItinerary ||
+                                                                status === 'confirmed' ||
+                                                                status === 'accepted' ||
+                                                                status === 'adjustment replied'
+                                                            if (!isAllowed) return
                                                             if (!hasSupplierItinerary(trip)) alert('Supplier has not sent the itinerary yet.')
                                                             onItineraryClick && onItineraryClick(trip)
                                                         }}
                                                         className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${(() => {
                                                             const status = String(trip?.status || '').trim().toLowerCase()
-                                                            const ready = status === 'confirmed' || status === 'accepted'
+                                                            const ready = hasSupplierItinerary(trip) || status === 'confirmed' || status === 'accepted' || status === 'adjustment replied'
                                                             return ready
                                                                 ? 'bg-blue-600 hover:bg-blue-700 text-white'
                                                                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'

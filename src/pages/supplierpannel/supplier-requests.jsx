@@ -65,6 +65,16 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
       const normalized = list.map((r) => {
         const bookingId = r.id ?? r._id;
         const adjustmentRecord = adjustments.find((x) => String(x?.bookingId || '') === String(bookingId || ''));
+
+        const pickNonEmpty = (...values) => {
+          for (const v of values) {
+            if (v === null || v === undefined) continue;
+            const s = String(v).trim();
+            if (s) return v;
+          }
+          return undefined;
+        };
+
         // Calculate experience titles from items
         const experienceTitles = r.items
           ? r.items.map(item => item.activity?.title || item.title).filter(Boolean).join(', ')
@@ -86,12 +96,22 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
           location: r.tripDetails?.country ?? r.location ?? r.destination ?? "—",
           date: r.date ?? r.dateRange ?? r.startDate ?? "Flexible",
           guests: totalGuests || 1,
-          amount: r.tripDetails?.budget ?? r.amount ?? r.totalAmount ?? r.price ?? "N/A",
+          amount: pickNonEmpty(
+            r.tripDetails?.budget,
+            r.tripDetails?.budgetUSD,
+            r.tripDetails?.totalBudget,
+            r.tripDetails?.estimatedBudget,
+            r.budget,
+            r.tripData?.budget,
+            r.amount,
+            r.totalAmount,
+            r.price
+          ) ?? "N/A",
           status: String(r.status || "pending").trim().toLowerCase(),
           avatar: r.user?.avatar ?? r.avatar ?? r.image ?? r.profileImage ?? "",
           preferences: r.preferences || {},
-          adjustmentCard: adjustmentRecord?.card || null,
-          adjustmentRequestedAt: adjustmentRecord?.createdAt || null,
+          adjustmentCard: r?.adjustmentCard || adjustmentRecord?.card || null,
+          adjustmentRequestedAt: r?.adjustmentRequestedAt || adjustmentRecord?.createdAt || null,
         };
       });
       // Frontend safety: prefer only pending, but if nothing matches, show all

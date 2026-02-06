@@ -231,6 +231,14 @@ export default function ItineraryView({
             const next = [record, ...list.filter((x) => String(x?.bookingId || '') !== bookingKey)]
             writeAdjustmentStore(next)
 
+            try {
+                await api.patch(`/bookings/${encodeURIComponent(String(bookingKey))}/adjustment`, {
+                    card: record.card,
+                })
+            } catch (e) {
+                console.error('Failed to persist adjustment request to backend:', e?.response?.data || e)
+            }
+
             alert('Adjustment request sent!')
             setIsAdjusting(false)
             onRequestAdjustment && onRequestAdjustment(record)

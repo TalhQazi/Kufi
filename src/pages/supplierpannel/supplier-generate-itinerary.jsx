@@ -458,14 +458,37 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
 
     const tripData = previousItinerary?.tripData || {};
     const destination = tripData?.destination || tripData?.location || previousItinerary?.destination || previousItinerary?.location || "";
-    const budget = tripData?.budget || previousItinerary?.budget || "";
+    const pickNonEmpty = (...values) => {
+      for (const v of values) {
+        if (v === null || v === undefined) continue;
+        const s = String(v).trim();
+        if (s) return v;
+      }
+      return "";
+    };
+
+    const budgetRaw = pickNonEmpty(
+      tripData?.budget,
+      tripData?.totalBudget,
+      tripData?.estimatedBudget,
+      tripData?.price,
+      previousItinerary?.budget,
+      previousItinerary?.tripData?.budget
+    );
+    const budget = String(budgetRaw || '').trim();
 
     const parseDateRange = (value) => {
       const raw = String(value || "").trim();
       if (!raw) return { start: "", end: "" };
-      const parts = raw.split("-").map((x) => String(x || "").trim());
-      if (parts.length < 2) return { start: "", end: "" };
-      return { start: parts[0] || "", end: parts[1] || "" };
+      if (raw.includes(' - ')) {
+        const parts = raw.split(' - ').map((x) => String(x || '').trim());
+        return { start: parts[0] || '', end: parts[1] || '' };
+      }
+
+      const match = raw.match(/(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})/);
+      if (match) return { start: match[1] || '', end: match[2] || '' };
+
+      return { start: "", end: "" };
     };
 
     const dateRange = parseDateRange(tripData?.date);
@@ -495,6 +518,8 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
       const location = stripPrefix(d?.afternoon?.description, "Location:");
       const cost = stripPrefix(d?.evening?.description, "Estimated Cost:");
       const imageDataUrl = String(d?.image || "").trim();
+      const startTime = String(d?.meta?.startTime || d?.startTime || d?.timeFrom || "").trim();
+      const endTime = String(d?.meta?.endTime || d?.endTime || d?.timeTo || "").trim();
 
       return {
         ...createEmptyDay(dayNo),
@@ -503,6 +528,8 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
         location: String(location || "").trim(),
         cost: String(cost || "").trim(),
         imageDataUrl,
+        startTime,
+        endTime,
       };
     });
 
