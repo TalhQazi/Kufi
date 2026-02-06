@@ -255,6 +255,41 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
   useEffect(() => {
     if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
 
+    const card = request?.adjustmentCard;
+    if (!card) return;
+
+    const activity = String(card?.title || '').trim();
+    const description = String(card?.description || '').trim();
+    const location = String(card?.location || '').trim();
+    const cost = String(card?.cost || '').trim();
+    const imageDataUrl = String(card?.imageDataUrl || '').trim();
+
+    if (!activity && !description && !location && !cost && !imageDataUrl) return;
+
+    setDaysData((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      const targetLen = Math.max(1, list.length || 0);
+      const next = targetLen > 0 ? [...list] : [createEmptyDay(1)];
+
+      while (next.length < 1) next.push(createEmptyDay(next.length + 1));
+      const first = next[0] || createEmptyDay(1);
+
+      next[0] = {
+        ...first,
+        activity: activity || first.activity,
+        description: description || first.description,
+        location: location || first.location,
+        cost: cost || first.cost,
+        imageDataUrl: imageDataUrl || first.imageDataUrl,
+      };
+
+      return next;
+    });
+  }, [request, draft]);
+
+  useEffect(() => {
+    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
+
     const activitiesCount = Array.isArray(request?.items) ? request.items.length : 0;
     const target = Math.max(1, activitiesCount || 0);
 

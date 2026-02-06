@@ -17,7 +17,8 @@ export default function ItineraryView({
     hideHeaderFooter = false
 }) {
     const [dropdown, setDropdown] = useState(false)
-    const [isEditing, setIsEditing] = useState(false)
+    const [isAdjusting, setIsAdjusting] = useState(false)
+    const [isSavingAdjustment, setIsSavingAdjustment] = useState(false)
     const [loading, setLoading] = useState(true)
     const [loadError, setLoadError] = useState(null)
     const dropdownRef = useRef(null)
@@ -55,6 +56,40 @@ export default function ItineraryView({
             evening: { title: "Evening", description: "Welcome dinner..." }
         }
     ])
+
+    const bookingKey = String(request?.id || request?._id || itineraryId || '')
+
+    const readAdjustmentStore = () => {
+        try {
+            const raw = localStorage.getItem('kufi_adjustment_requests')
+            const parsed = JSON.parse(raw)
+            return Array.isArray(parsed) ? parsed : []
+        } catch {
+            return []
+        }
+    }
+
+    const writeAdjustmentStore = (list) => {
+        localStorage.setItem('kufi_adjustment_requests', JSON.stringify(Array.isArray(list) ? list : []))
+    }
+
+    const [adjustmentCard, setAdjustmentCard] = useState({
+        title: '',
+        description: '',
+        location: '',
+        cost: '',
+        imageDataUrl: ''
+    })
+
+    useEffect(() => {
+        if (!bookingKey) return
+        const existing = readAdjustmentStore().find((x) => String(x?.bookingId || '') === bookingKey)
+        if (!existing?.card) return
+        setAdjustmentCard((prev) => ({
+            ...prev,
+            ...existing.card,
+        }))
+    }, [bookingKey])
 
     const findItineraryForBooking = async () => {
         const bookingKey = String(request?.id || request?._id || '')
@@ -162,17 +197,60 @@ export default function ItineraryView({
 
     const handleSaveAdjustment = async () => {
         try {
-            if (!itineraryId) {
-                alert('No itinerary selected.')
+            if (!bookingKey) {
+                alert('No request selected.')
                 return
             }
-            await api.patch(`/itineraries/${itineraryId}`, { tripData, days })
-            alert("Adjustments saved successfully!")
-            setIsEditing(false)
+
+            const cleanTitle = String(adjustmentCard.title || '').trim()
+            const cleanDescription = String(adjustmentCard.description || '').trim()
+            const cleanLocation = String(adjustmentCard.location || '').trim()
+            const cleanCost = String(adjustmentCard.cost || '').trim()
+            const cleanImage = String(adjustmentCard.imageDataUrl || '').trim()
+
+            if (!cleanTitle && !cleanDescription && !cleanLocation && !cleanCost && !cleanImage) {
+                alert('Please add at least one field (image/title/description/location/cost).')
+                return
+            }
+
+            setIsSavingAdjustment(true)
+
+            const record = {
+                bookingId: bookingKey,
+                createdAt: new Date().toISOString(),
+                card: {
+                    title: cleanTitle,
+                    description: cleanDescription,
+                    location: cleanLocation,
+                    cost: cleanCost,
+                    imageDataUrl: cleanImage,
+                },
+            }
+
+            const list = readAdjustmentStore()
+            const next = [record, ...list.filter((x) => String(x?.bookingId || '') !== bookingKey)]
+            writeAdjustmentStore(next)
+
+            alert('Adjustment request sent!')
+            setIsAdjusting(false)
+            onRequestAdjustment && onRequestAdjustment(record)
         } catch (error) {
-            console.error("Error saving adjustments:", error)
-            alert("Failed to save adjustments")
+            console.error('Error saving adjustment request:', error)
+            alert('Failed to send adjustment request')
+        } finally {
+            setIsSavingAdjustment(false)
         }
+    }
+
+    const handleAdjustmentImage = (file) => {
+        if (!file) return
+        if (!String(file.type || '').toLowerCase().startsWith('image/')) return
+        const reader = new FileReader()
+        reader.onload = () => {
+            const result = typeof reader.result === 'string' ? reader.result : ''
+            setAdjustmentCard((prev) => ({ ...prev, imageDataUrl: result }))
+        }
+        reader.readAsDataURL(file)
     }
 
     const handleTripDataChange = (field, value) => {
@@ -199,9 +277,9 @@ export default function ItineraryView({
             day: nextDayNumber,
             title: `New Adventure - Day ${nextDayNumber}`,
             image: "/assets/hero-card1.jpeg",
-            morning: { title: "Morning", description: "Describe the morning activities here..." },
-            afternoon: { title: "Afternoon", description: "Describe the afternoon activities here..." },
-            evening: { title: "Evening", description: "Describe the evening activities here..." }
+            morning: { title: "Description", description: "Describe the morning activities here..." },
+            afternoon: { title: "Location", description: "Add the location details here..." },
+            evening: { title: "Cost", description: "Add the estimated cost here..." }
         }
         setDays([...days, newDay])
     }
@@ -379,31 +457,14 @@ export default function ItineraryView({
                 <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
                     <section className="mb-8 sm:mb-10">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4">
-                            {isEditing ? (
-                                <input
-                                    type="text"
-                                    value={tripData.title}
-                                    onChange={(e) => handleTripDataChange('title', e.target.value)}
-                                    className="text-xl sm:text-2xl font-bold text-slate-900 border-b border-slate-300 focus:outline-none focus:border-[#A67C52] bg-transparent w-full sm:w-auto"
-                                />
-                            ) : (
-                                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">{tripData.title}</h2>
-                            )}
+                            <h2 className="text-xl sm:text-2xl font-bold text-slate-900">{tripData.title}</h2>
                             <div className="flex flex-wrap gap-2 sm:gap-3">
-                                <button className="px-3 sm:px-5 py-2 sm:py-2.5 bg-[#A67C52] text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#8e6a45] transition-colors flex items-center gap-2">
-                                    <svg width="14" height="14" className="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                        <polyline points="7 10 12 15 17 10" />
-                                        <line x1="12" y1="15" x2="12" y2="3" />
-                                    </svg>
-                                    <span className="hidden sm:inline">Download PDF</span>
-                                    <span className="sm:hidden">PDF</span>
-                                </button>
+                               
                                 <button
-                                    onClick={() => setIsEditing(!isEditing)}
-                                    className={`px-3 sm:px-5 py-2 sm:py-2.5 border-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap ${isEditing ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                                    onClick={() => setIsAdjusting(!isAdjusting)}
+                                    className={`px-3 sm:px-5 py-2 sm:py-2.5 border-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap ${isAdjusting ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
                                 >
-                                    {isEditing ? 'Cancel Adjustment' : (
+                                    {isAdjusting ? 'Cancel Adjustment' : (
                                         <>
                                             <span className="hidden sm:inline">Request Adjustment</span>
                                             <span className="sm:hidden">Adjust</span>
@@ -413,15 +474,91 @@ export default function ItineraryView({
                             </div>
                         </div>
 
-                        {isEditing ? (
-                            <textarea
-                                value={tripData.description}
-                                onChange={(e) => handleTripDataChange('description', e.target.value)}
-                                className="w-full text-slate-600 leading-relaxed mb-6 text-sm border border-slate-200 rounded-lg p-3 focus:outline-none focus:border-[#A67C52]"
-                                rows={4}
-                            />
-                        ) : (
-                            <p className="text-slate-600 leading-relaxed mb-6 text-sm">{tripData.description}</p>
+                        <p className="text-slate-600 leading-relaxed mb-6 text-sm">{tripData.description}</p>
+
+                        {isAdjusting && (
+                            <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
+                                <p className="text-sm font-bold text-slate-900 mb-3">Adjustment Request Card</p>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-4">
+                                    <div>
+                                        <div className="w-full h-40 rounded-xl overflow-hidden border border-slate-200 bg-white flex items-center justify-center">
+                                            {adjustmentCard.imageDataUrl ? (
+                                                <img src={adjustmentCard.imageDataUrl} alt="Adjustment" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <p className="text-xs text-slate-400">Upload image</p>
+                                            )}
+                                        </div>
+
+                                        <label className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">
+                                            <span>Choose Image</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => handleAdjustmentImage(e.target.files?.[0])}
+                                            />
+                                        </label>
+
+                                        {adjustmentCard.imageDataUrl && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setAdjustmentCard((prev) => ({ ...prev, imageDataUrl: '' }))}
+                                                className="mt-2 w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+                                            >
+                                                Remove Image
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-900 mb-1">Name</p>
+                                            <input
+                                                type="text"
+                                                value={adjustmentCard.title}
+                                                onChange={(e) => setAdjustmentCard((prev) => ({ ...prev, title: e.target.value }))}
+                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-[#A67C52]"
+                                                placeholder="e.g. Museum Visit"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-900 mb-1">Description</p>
+                                            <textarea
+                                                rows={3}
+                                                value={adjustmentCard.description}
+                                                onChange={(e) => setAdjustmentCard((prev) => ({ ...prev, description: e.target.value }))}
+                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-[#A67C52]"
+                                                placeholder="Write details for supplier..."
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-900 mb-1">Location</p>
+                                                <input
+                                                    type="text"
+                                                    value={adjustmentCard.location}
+                                                    onChange={(e) => setAdjustmentCard((prev) => ({ ...prev, location: e.target.value }))}
+                                                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-[#A67C52]"
+                                                    placeholder="e.g. Louvre Museum"
+                                                />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-900 mb-1">Cost</p>
+                                                <input
+                                                    type="text"
+                                                    value={adjustmentCard.cost}
+                                                    onChange={(e) => setAdjustmentCard((prev) => ({ ...prev, cost: e.target.value }))}
+                                                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-[#A67C52]"
+                                                    placeholder="e.g. 100"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         )}
 
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -430,16 +567,7 @@ export default function ItineraryView({
                                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                                     <circle cx="12" cy="10" r="3" />
                                 </svg>
-                                {isEditing ? (
-                                    <input
-                                        type="text"
-                                        value={tripData.location}
-                                        onChange={(e) => handleTripDataChange('location', e.target.value)}
-                                        className="text-[10px] sm:text-xs font-semibold text-slate-700 bg-transparent border-none focus:ring-0 p-0 w-full"
-                                    />
-                                ) : (
-                                    <span className="text-[10px] sm:text-xs font-semibold text-slate-700 truncate">{tripData.location}</span>
-                                )}
+                                <span className="text-[10px] sm:text-xs font-semibold text-slate-700 truncate">{tripData.location}</span>
                             </div>
 
                             <div className="flex items-center gap-2 sm:gap-3 bg-slate-50 rounded-lg p-2 sm:p-3">
@@ -447,16 +575,7 @@ export default function ItineraryView({
                                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                                     <circle cx="9" cy="7" r="4" />
                                 </svg>
-                                {isEditing ? (
-                                    <input
-                                        type="text"
-                                        value={tripData.groupSize}
-                                        onChange={(e) => handleTripDataChange('groupSize', e.target.value)}
-                                        className="text-[10px] sm:text-xs font-semibold text-slate-700 bg-transparent border-none focus:ring-0 p-0 w-full"
-                                    />
-                                ) : (
-                                    <span className="text-[10px] sm:text-xs font-semibold text-slate-700 truncate">{tripData.groupSize}</span>
-                                )}
+                                <span className="text-[10px] sm:text-xs font-semibold text-slate-700 truncate">{tripData.groupSize}</span>
                             </div>
 
                             <div className="flex items-center gap-2 sm:gap-3 bg-slate-50 rounded-lg p-2 sm:p-3">
@@ -464,16 +583,7 @@ export default function ItineraryView({
                                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                                     <path d="M16 2v4M8 2v4M3 10h18" />
                                 </svg>
-                                {isEditing ? (
-                                    <input
-                                        type="text"
-                                        value={tripData.date}
-                                        onChange={(e) => handleTripDataChange('date', e.target.value)}
-                                        className="text-[10px] sm:text-xs font-semibold text-slate-700 bg-transparent border-none focus:ring-0 p-0 w-full"
-                                    />
-                                ) : (
-                                    <span className="text-[10px] sm:text-xs font-semibold text-slate-700 truncate">{tripData.date}</span>
-                                )}
+                                <span className="text-[10px] sm:text-xs font-semibold text-slate-700 truncate">{tripData.date}</span>
                             </div>
                         </div>
                     </section>
@@ -496,27 +606,7 @@ export default function ItineraryView({
                                         </div>
 
                                         <div className="md:w-1/2 p-4 sm:p-6 relative">
-                                            {isEditing && (
-                                                <button
-                                                    onClick={() => handleRemoveDay(index)}
-                                                    className="absolute top-4 right-4 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title="Remove Day"
-                                                >
-                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                                    </svg>
-                                                </button>
-                                            )}
-                                            {isEditing ? (
-                                                <input
-                                                    type="text"
-                                                    value={day.title}
-                                                    onChange={(e) => handleDayChange(index, 'title', e.target.value)}
-                                                    className="text-base sm:text-lg font-bold text-slate-900 mb-4 sm:mb-5 border-b border-slate-200 focus:outline-none focus:border-[#A67C52] bg-transparent w-full pr-10"
-                                                />
-                                            ) : (
-                                                <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-4 sm:mb-5">{day.title}</h3>
-                                            )}
+                                            <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-4 sm:mb-5">{day.title}</h3>
 
                                             <div className="space-y-4">
                                                 {['morning', 'afternoon', 'evening'].map((time) => (
@@ -527,16 +617,8 @@ export default function ItineraryView({
                                                             {time === 'evening' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>}
                                                         </div>
                                                         <div className="flex-1">
-                                                            <p className="text-xs font-bold text-slate-900 mb-1 capitalize">{day[time]?.title || time}</p>
-                                                            {isEditing ? (
-                                                                <textarea
-                                                                    value={day[time]?.description || ''}
-                                                                    onChange={(e) => handleSubDayChange(index, time, 'description', e.target.value)}
-                                                                    className="text-xs text-slate-600 leading-relaxed w-full border border-slate-200 rounded p-1 focus:outline-none focus:border-[#A67C52]"
-                                                                />
-                                                            ) : (
-                                                                <p className="text-xs text-slate-600 leading-relaxed">{day[time]?.description || ''}</p>
-                                                            )}
+                                                            <p className="text-xs font-bold text-slate-900 mb-1">{time === 'morning' ? 'Description' : time === 'afternoon' ? 'Location' : 'Cost'}</p>
+                                                            <p className="text-xs text-slate-600 leading-relaxed">{day[time]?.description || ''}</p>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -546,19 +628,6 @@ export default function ItineraryView({
                                 </div>
                             ))}
                         </div>
-
-                        {isEditing && (
-                            <button
-                                onClick={handleAddDay}
-                                className="w-full mt-6 py-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 font-semibold hover:border-[#A67C52] hover:text-[#A67C52] hover:bg-orange-50/30 transition-all flex items-center justify-center gap-2"
-                            >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <line x1="12" y1="5" x2="12" y2="19" />
-                                    <line x1="5" y1="12" x2="19" y2="12" />
-                                </svg>
-                                Add Another Day
-                            </button>
-                        )}
                     </section>
 
                     {!hideHeaderFooter && <Footer />}
@@ -568,28 +637,29 @@ export default function ItineraryView({
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-4 px-4 sm:px-8 lg:px-20 shadow-lg z-40">
                 <div className="max-w-[1100px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="text-center sm:text-left">
-                        <p className="text-sm text-slate-500">{isEditing ? 'Editing your itinerary adjustment request...' : 'Ready to book this itinerary?'}</p>
+                        <p className="text-sm text-slate-500">{isAdjusting ? 'Creating your adjustment request...' : 'Ready to book this itinerary?'}</p>
                     </div>
                     <div className="flex gap-3 w-full sm:w-auto">
-                        {isEditing ? (
+                        {isAdjusting ? (
                             <>
                                 <button
-                                    onClick={() => setIsEditing(false)}
+                                    onClick={() => setIsAdjusting(false)}
                                     className="px-6 py-3 rounded-lg border-2 border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSaveAdjustment}
-                                    className="px-8 py-3 rounded-lg bg-[#22C55E] text-white font-semibold hover:bg-[#16A34A] shadow-lg transition-all"
+                                    disabled={isSavingAdjustment}
+                                    className={`px-8 py-3 rounded-lg text-white font-semibold shadow-lg transition-all ${isSavingAdjustment ? 'bg-slate-400 cursor-not-allowed' : 'bg-[#22C55E] hover:bg-[#16A34A]'}`}
                                 >
-                                    Save Adjustments
+                                    {isSavingAdjustment ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </>
                         ) : (
                             <>
                                 <button
-                                    onClick={() => setIsEditing(true)}
+                                    onClick={() => setIsAdjusting(true)}
                                     className="px-6 py-3 rounded-lg border-2 border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
                                 >
                                     Request Adjustment

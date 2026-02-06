@@ -509,7 +509,7 @@ export default function App() {
         request={selectedItineraryRequest}
         onBack={goBack}
         onPaymentClick={() => navigateTo('payment')}
-        onRequestAdjustment={() => alert('Adjustment request sent!')}
+        onRequestAdjustment={() => navigateTo('user-profile')}
         onLogout={handleLogout}
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={handleProfileClick}

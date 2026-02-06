@@ -21,6 +21,19 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
   const [itineraryRequestId, setItineraryRequestId] = useState(null);
   const [resumeItineraryDraft, setResumeItineraryDraft] = useState(null);
 
+  const safeParseJson = (value) => {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  };
+
+  const readAdjustmentStore = () => {
+    const parsed = safeParseJson(localStorage.getItem('kufi_adjustment_requests'));
+    return Array.isArray(parsed) ? parsed : [];
+  };
+
   const formatStatusLabel = (value) => {
     const v = String(value || "").trim().toLowerCase();
     if (!v) return "Pending";
@@ -40,8 +53,11 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
         response.data?.data ??
         response.data;
       const list = Array.isArray(raw) ? raw : [];
+      const adjustments = readAdjustmentStore();
       // Normalize for DB fields (id/_id, name, email, experience, location, date, guests, etc.)
       const normalized = list.map((r) => {
+        const bookingId = r.id ?? r._id;
+        const adjustmentRecord = adjustments.find((x) => String(x?.bookingId || '') === String(bookingId || ''));
         // Calculate experience titles from items
         const experienceTitles = r.items
           ? r.items.map(item => item.activity?.title || item.title).filter(Boolean).join(', ')
@@ -54,7 +70,7 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
 
         return {
           ...r,
-          id: r.id ?? r._id,
+          id: bookingId,
           // Prefer populated user fields, then contactDetails, then fallback
           name: (r.contactDetails?.firstName ? `${r.contactDetails.firstName} ${r.contactDetails.lastName || ''}`.trim() : "") || r.user?.name || (r.name ?? r.travelerName ?? r.userName ?? "—"),
           email: r.contactDetails?.email || r.user?.email || r.email || r.contactEmail || r.travelerEmail || "",
@@ -67,6 +83,8 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
           status: String(r.status || "pending").trim().toLowerCase(),
           avatar: r.user?.avatar ?? r.avatar ?? r.image ?? r.profileImage ?? "",
           preferences: r.preferences || {},
+          adjustmentCard: adjustmentRecord?.card || null,
+          adjustmentRequestedAt: adjustmentRecord?.createdAt || null,
         };
       });
       // Frontend safety: prefer only pending, but if nothing matches, show all
