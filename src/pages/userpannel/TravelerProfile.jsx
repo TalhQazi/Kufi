@@ -98,9 +98,8 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
     return (
         <div className="min-h-screen bg-[#F5F1EB] font-sans overflow-x-hidden">
             {/* Header */}
-            {!hideHeaderFooter && (
-                <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
-                    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
+            <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
                         {/* Left: Logo */}
                         <div className="flex items-center gap-1">
                             <button
@@ -211,7 +210,6 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                         </div>
                     </div>
                 </header>
-            )}
 
             {/* Container */}
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
@@ -219,7 +217,10 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                 {/* Header */}
                 <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">Traveler Profile</h1>
+                        <div className="flex items-center gap-2">
+                            
+                            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">Traveler Profile</h1>
+                        </div>
                         <p className="text-xs sm:text-sm text-slate-500">View traveler details, preferences, and journey history in one place.</p>
                     </div>
                     <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">

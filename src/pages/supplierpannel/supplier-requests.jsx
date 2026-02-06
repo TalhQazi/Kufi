@@ -196,6 +196,26 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
           .filter(Boolean)
       : [];
 
+    const travelerName =
+      (itineraryRequest?.contactDetails?.firstName
+        ? `${itineraryRequest.contactDetails.firstName} ${itineraryRequest.contactDetails.lastName || ''}`.trim()
+        : '') ||
+      itineraryRequest?.name ||
+      itineraryRequest?.user?.name ||
+      '—';
+
+    const travelerEmail =
+      itineraryRequest?.contactDetails?.email ||
+      itineraryRequest?.email ||
+      itineraryRequest?.user?.email ||
+      '—';
+
+    const travelerPhone =
+      itineraryRequest?.contactDetails?.phone ||
+      itineraryRequest?.phone ||
+      itineraryRequest?.user?.phone ||
+      '—';
+
     return (
       <div className={`space-y-6 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
         <div className="overflow-hidden rounded-3xl relative h-44 sm:h-56 flex items-end">
@@ -212,6 +232,9 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
               <span className="opacity-90">Proceed</span>
             </p>
             <h1 className="text-xl sm:text-2xl font-semibold drop-shadow-sm">Proceed to Create Itinerary</h1>
+            <p className="text-[11px] sm:text-xs text-gray-100 max-w-2xl">
+              Traveler: <span className="font-semibold">{travelerName}</span>
+            </p>
             <p className="text-[10px] sm:text-xs text-gray-100 max-w-2xl">
               Review traveler preferences and choose a personalized itinerary plan.
             </p>
@@ -229,6 +252,8 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
             )}
           </div>
         </div>
+
+       
 
         <div className={`rounded-3xl border transition-colors duration-300 px-6 py-5 shadow-sm ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
           <h2 className={`mb-4 text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
@@ -282,7 +307,7 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                 Email
               </p>
               <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-                {itineraryRequest.email || "—"}
+                {travelerEmail}
               </p>
             </div>
 
@@ -292,7 +317,7 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                 Phone
               </p>
               <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-                {itineraryRequest.phone || "—"}
+                {travelerPhone}
               </p>
             </div>
           </div>
@@ -318,6 +343,16 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
             )}
           </div>
         </div>
+         <div className="flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => setView("generate")}
+            className="inline-flex w-full max-w-[720px] items-center justify-center gap-2 rounded-full bg-[#a26e35] px-8 py-3 text-xs font-semibold text-white shadow-sm hover:bg-[#8b5e2d] transition-colors"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>Proceed to auto generate Itinerary</span>
+          </button>
+        </div>
 
         <div className="space-y-3">
           <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
@@ -325,27 +360,38 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
           </h2>
 
           <div className="flex items-center justify-center">
-            <div className={`w-full max-w-[520px] rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+            <div className={`w-full max-w-[460px] rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
               <div className="relative h-44">
                 <img src={heroImage} alt="Template" className="absolute inset-0 h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-black/15" />
               </div>
               <div className="px-5 py-4 space-y-3">
-                <div className="flex items-center justify-between gap-3">
+                <p className={`text-[11px] font-semibold uppercase tracking-wider ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                  Template
+                </p>
+                <div className="flex items-center gap-3">
+                  <img
+                    src={itineraryRequest.avatar || "/assets/profile-avatar.jpeg"}
+                    alt={travelerName}
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
                   <div className="min-w-0">
                     <p className={`text-sm font-semibold truncate transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-                      {itineraryRequest.location || "Trip"}
+                      {travelerName}
                     </p>
                     <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
-                      {itineraryActivities.length > 0 ? itineraryActivities.join(', ') : '—'}
+                      {formatStatusLabel(itineraryRequest.status)} Request
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className={`shrink-0 inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-semibold transition-colors ${darkMode ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-100 text-slate-700 hover:bg-gray-200"}`}
-                  >
-                    Select Template
-                  </button>
+                </div>
+
+                <div className="space-y-1">
+                  <p className={`text-[10px] uppercase tracking-wider font-bold ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
+                    Activities
+                  </p>
+                  <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                    {itineraryActivities.length > 0 ? itineraryActivities.join(', ') : '—'}
+                  </p>
                 </div>
 
                 <div className={`grid grid-cols-2 gap-3 text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
@@ -374,12 +420,19 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                     </span>
                   </div>
                 </div>
+
+                <button
+                  type="button"
+                  className={`w-full inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-semibold transition-colors ${darkMode ? "bg-slate-800 text-slate-200 hover:bg-[#a26e35]" : "bg-[#a26e35] text-white hover:bg-[#a26e35]"}`}
+                >
+                  Select Template
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-2">
           <button
             type="button"
             onClick={() => setView("list")}
@@ -407,6 +460,7 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
         request={itineraryRequest}
         draft={resumeItineraryDraft}
         onGoToBookings={onGoToBookings}
+        onBack={() => setView("itinerary")}
       />
     );
   }

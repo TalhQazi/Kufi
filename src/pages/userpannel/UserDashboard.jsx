@@ -359,112 +359,111 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
     return (
         <div className="min-h-screen bg-gray-50 font-inter">
             {/* Header */}
-            {!hideHeaderFooter && (
-                <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                            <button
-                                onClick={() => {
-                                    if (onHomeClick) {
-                                        onHomeClick()
-                                    }
-                                }}
-                                className="cursor-pointer hover:opacity-80 transition-opacity"
-                            >
-                                <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
-                            </button>
-                        </div>
+            <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => {
+                                if (onHomeClick) {
+                                    onHomeClick()
+                                }
+                            }}
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                        >
+                            <img src="/assets/navbar.png" alt="Kufi Travel" className="h-10 w-20 sm:h-[66px] sm:w-28 object-contain" />
+                        </button>
+                    </div>
 
-                        <div className="flex items-center gap-4 md:gap-6">
+                    <div className="flex items-center gap-4 md:gap-6">
+                        <button
+                            className="text-gray-500 hover:text-gray-700 relative"
+                            onClick={() => onNotificationClick && onNotificationClick()}
+                        >
+                            <FiBell size={22} />
+                            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
+                        <div className="relative" ref={dropdownRef}>
                             <button
-                                className="text-gray-500 hover:text-gray-700 relative"
-                                onClick={() => onNotificationClick && onNotificationClick()}
+                                onClick={() => setDropdown(!dropdown)}
+                                className="flex items-center gap-2 cursor-pointer"
                             >
-                                <FiBell size={22} />
-                                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                                <ProfilePic user={currentUser} size="sm" />
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6E4E" strokeWidth="2" className="hidden md:block">
+                                    <path d="M6 9l6 6 6-6" />
+                                </svg>
                             </button>
-                            <div className="relative" ref={dropdownRef}>
-                                <button
-                                    onClick={() => setDropdown(!dropdown)}
-                                    className="flex items-center gap-2 cursor-pointer"
-                                >
-                                    <ProfilePic user={currentUser} size="sm" />
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6E4E" strokeWidth="2" className="hidden md:block">
-                                        <path d="M6 9l6 6 6-6" />
-                                    </svg>
-                                </button>
 
-                                {dropdown && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
-                                        <div
-                                            className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
-                                            onClick={() => {
-                                                if (onMyProfileClick) onMyProfileClick()
-                                                setDropdown(false)
-                                            }}
-                                        >
-                                            MY PROFILE
-                                        </div>
-                                        <div
-                                            className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
-                                            onClick={() => {
-                                                if (onMyRequestsClick) {
-                                                    onMyRequestsClick()
-                                                } else if (onProfileClick) {
-                                                    onProfileClick()
-                                                }
-                                                setDropdown(false)
-                                            }}
-                                        >
-                                            {currentUser.role === 'admin' ? 'ADMIN DASHBOARD' :
-                                                currentUser.role === 'supplier' ? 'SUPPLIER DASHBOARD' : 'MY REQUESTS'}
-                                        </div>
-                                        <div
-                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                            onClick={() => {
-                                                if (onNotificationClick) onNotificationClick()
-                                                setDropdown(false)
-                                            }}
-                                        >
-                                            NOTIFICATIONS
-                                        </div>
-                                        <div
-                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                            onClick={() => {
-                                                if (onSettingsClick) onSettingsClick()
-                                                setDropdown(false)
-                                            }}
-                                        >
-                                            PAYMENTS
-                                        </div>
-                                        <div
-                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                            onClick={() => {
-                                                if (onSettingsClick) onSettingsClick()
-                                                setDropdown(false)
-                                            }}
-                                        >
-                                            SETTINGS
-                                        </div>
-                                        <div className="border-t border-slate-200 my-1"></div>
-                                        <div
-                                            className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
-                                            onClick={() => {
-                                                if (onLogout) {
-                                                    onLogout()
-                                                }
-                                                setDropdown(false)
-                                            }}
-                                        >
-                                            LOGOUT
-                                        </div>
+                            {dropdown && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onMyProfileClick) onMyProfileClick()
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        MY PROFILE
                                     </div>
-                                )}
-                            </div>
+
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onMyRequestsClick) {
+                                                onMyRequestsClick()
+                                            } else if (onProfileClick) {
+                                                onProfileClick()
+                                            }
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        {currentUser.role === 'admin' ? 'ADMIN DASHBOARD' :
+                                            currentUser.role === 'supplier' ? 'SUPPLIER DASHBOARD' : 'MY REQUESTS'}
+                                    </div>
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onNotificationClick) onNotificationClick()
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        NOTIFICATIONS
+                                    </div>
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onSettingsClick) onSettingsClick()
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        PAYMENTS
+                                    </div>
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onSettingsClick) onSettingsClick()
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        SETTINGS
+                                    </div>
+                                    <div className="border-t border-slate-200 my-1"></div>
+                                    <div
+                                        className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                                        onClick={() => {
+                                            if (onLogout) {
+                                                onLogout()
+                                            }
+                                            setDropdown(false)
+                                        }}
+                                    >
+                                        LOGOUT
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
-                </header>
-            )}
+                </div>
+            </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
                 {/* Hero Section */}

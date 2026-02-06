@@ -22,7 +22,20 @@ import Footer from './components/layout/Footer.jsx'
 export default function App() {
   // Get initial page from URL or default to 'home'
   const getInitialPage = () => {
-    const path = window.location.hash.slice(1) || 'home'
+    const rawHash = window.location.hash.slice(1)
+    const path = rawHash || 'home'
+
+    const storedUser = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('currentUser'))
+      } catch {
+        return null
+      }
+    })()
+    const role = storedUser?.role || localStorage.getItem('userRole')
+
+    if ((path === 'home' || !rawHash) && role === 'supplier') return 'supplier'
+    if ((path === 'home' || !rawHash) && role === 'admin') return 'admin'
     return path
   }
 
@@ -184,6 +197,23 @@ export default function App() {
       // For popstate, the state might have the page, for hashchange we parse it
       const newPage = (event.type === 'popstate' ? event.state?.page : window.location.hash.slice(1)) || 'home';
 
+      const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
+
+      // Keep suppliers/admins inside their dashboards unless they logout
+      if (role === 'supplier' && newPage !== 'supplier') {
+        setIsPopState(true);
+        setPage('supplier');
+        window.history.replaceState({ page: 'supplier' }, '', '#supplier')
+        return
+      }
+
+      if (role === 'admin' && !String(newPage || '').startsWith('admin')) {
+        setIsPopState(true);
+        setPage('admin');
+        window.history.replaceState({ page: 'admin' }, '', '#admin')
+        return
+      }
+
       console.log(`Navigation change detected (${event.type}): ${newPage}`);
       setIsPopState(true);
       setPage(newPage);
@@ -203,11 +233,24 @@ export default function App() {
       window.history.replaceState({ page: page }, '', `#${page}`);
     }
 
+    // Prevent supplier/admin sessions from immediately navigating out of the app on first browser back.
+    // We push one duplicate state per tab session so the first Back stays within the SPA.
+    try {
+      const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
+      const guardKey = role === 'supplier' ? 'kufi_supplier_back_guard' : role === 'admin' ? 'kufi_admin_back_guard' : ''
+      if (guardKey && !sessionStorage.getItem(guardKey)) {
+        sessionStorage.setItem(guardKey, '1')
+        window.history.pushState({ page: page }, '', `#${page}`)
+      }
+    } catch {
+      // ignore
+    }
+
     return () => {
       window.removeEventListener('popstate', handleNavigationChange);
       window.removeEventListener('hashchange', handleNavigationChange);
     };
-  }, [history, page]);
+  }, [history, page, currentUser]);
 
   const handleLogout = () => {
     // Clear any stored session data
@@ -220,6 +263,12 @@ export default function App() {
     setCurrentIndex(0)
     setPage('home')
     window.history.pushState({ page: 'home' }, '', '#home')
+    try {
+      sessionStorage.removeItem('kufi_supplier_back_guard')
+      sessionStorage.removeItem('kufi_admin_back_guard')
+    } catch {
+      // ignore
+    }
     setShowModal(null)
   }
 
@@ -506,39 +555,47 @@ export default function App() {
 
   // simple routing
   if (page === 'admin') {
-    return <AdminApp initialPage="Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('home')} />
+    return <AdminApp initialPage="Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('admin')} />
   }
 
   if (page === 'admin-profile') {
-    return <AdminApp initialPage="Profile" onLogout={handleLogout} onHomeClick={() => navigateTo('home')} />
+    return <AdminApp initialPage="Profile" onLogout={handleLogout} onHomeClick={() => navigateTo('admin')} />
   }
 
   if (page === 'admin-settings') {
-    return <AdminApp initialPage="Settings" onLogout={handleLogout} onHomeClick={() => navigateTo('home')} />
+    return <AdminApp initialPage="Settings" onLogout={handleLogout} onHomeClick={() => navigateTo('admin')} />
   }
 
   if (page === 'supplier') {
-    return <AdminApp initialPage="Supplier Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('home')} />
+    return <AdminApp initialPage="Supplier Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('supplier')} />
   }
+
+  const hideUniversalHeaderFooter =
+    page === 'user-profile' ||
+    page === 'traveler-profile' ||
+    page === 'travel-booking' ||
+    page === 'payment'
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header
-        onHomeClick={() => navigateTo('home')}
-        onSignupClick={handleOpenRegister}
-        onSigninClick={handleOpenLogin}
-        currentUser={currentUser}
-        onLogout={handleLogout}
-        onProfileClick={handleMyProfileClick}
-        onMyRequestsClick={handleMyRequestsClick}
-        onSettingsClick={handleSettingsClick}
-      />
+      {!hideUniversalHeaderFooter && (
+        <Header
+          onHomeClick={() => navigateTo('home')}
+          onSignupClick={handleOpenRegister}
+          onSigninClick={handleOpenLogin}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          onProfileClick={handleMyProfileClick}
+          onMyRequestsClick={handleMyRequestsClick}
+          onSettingsClick={handleSettingsClick}
+        />
+      )}
 
       <main className="flex-grow">
         {renderUserPage()}
       </main>
 
-      <Footer />
+      {!hideUniversalHeaderFooter && <Footer />}
 
       {showNotifications && (
         <NotificationsModal

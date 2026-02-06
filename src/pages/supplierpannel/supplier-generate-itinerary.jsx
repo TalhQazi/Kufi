@@ -4,6 +4,22 @@ import api from "../../api";
 
 const DRAFTS_STORAGE_KEY = "kufi_supplier_itinerary_drafts";
 
+const createEmptyDay = (day) => ({
+  day,
+  activity: "",
+  location: "",
+  description: "",
+  cost: "",
+  startTime: "",
+  endTime: "",
+  imageDataUrl: "",
+});
+
+const createDays = (count) => {
+  const safeCount = Math.max(1, Number(count) || 1);
+  return Array.from({ length: safeCount }, (_, idx) => createEmptyDay(idx + 1));
+};
+
 const DayCard = ({
   day,
   darkMode,
@@ -145,8 +161,13 @@ const DayCard = ({
   );
 };
 
-const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings }) => {
-  const [expandedDays, setExpandedDays] = useState([1, 2, 3]);
+const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, onBack }) => {
+  const initialActivitiesCount = Array.isArray(request?.items) ? request.items.length : 0;
+  const initialDaysCount = Math.max(1, initialActivitiesCount || 0);
+  const [expandedDays, setExpandedDays] = useState(() => {
+    const maxExpanded = Math.min(3, initialDaysCount);
+    return Array.from({ length: maxExpanded }, (_, idx) => idx + 1);
+  });
   const [travelDetails, setTravelDetails] = useState({
     destination: "",
     budget: "",
@@ -154,18 +175,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings })
     endDate: "",
     preferences: "",
   });
-  const [daysData, setDaysData] = useState(() =>
-    [1, 2, 3, 4, 5].map((day) => ({
-      day,
-      activity: "",
-      location: "",
-      description: "",
-      cost: "",
-      startTime: "",
-      endTime: "",
-      imageDataUrl: "",
-    }))
-  );
+  const [daysData, setDaysData] = useState(() => createDays(initialDaysCount));
   const [isSaving, setIsSaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [draftSavedMessage, setDraftSavedMessage] = useState("");
@@ -226,22 +236,40 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings })
   }, [request]);
 
   useEffect(() => {
-    if (draft?.payload?.travelDetails) {
-      setTravelDetails((prev) => ({ ...prev, ...draft.payload.travelDetails }));
-    } else {
-      setTravelDetails({
-        destination: normalized.location || "",
-        budget: normalized.budget || "",
-        startDate: normalized.startDate || "",
-        endDate: normalized.endDate || "",
-        preferences: normalized.preferencesText || "",
-      });
+    if (normalized.location) {
+      setTravelDetails((prev) => ({
+        ...prev,
+        destination: normalized.location,
+        budget: normalized.budget,
+        startDate: normalized.startDate,
+        endDate: normalized.endDate,
+        preferences: normalized.preferencesText,
+      }));
     }
 
     if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) {
       setDaysData(draft.payload.daysData);
     }
   }, [draft, normalized.location, normalized.budget, normalized.startDate, normalized.endDate, normalized.preferencesText]);
+
+  useEffect(() => {
+    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
+
+    const activitiesCount = Array.isArray(request?.items) ? request.items.length : 0;
+    const target = Math.max(1, activitiesCount || 0);
+
+    setDaysData((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      if (list.length >= target) return list;
+
+      const next = [...list];
+      const start = next.length + 1;
+      for (let day = start; day <= target; day += 1) {
+        next.push(createEmptyDay(day));
+      }
+      return next;
+    });
+  }, [request, draft]);
 
   const calcProgress = (payload) => {
     const td = payload?.travelDetails || {};
@@ -461,14 +489,34 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings })
     setDaysData((prev) => prev.map((d) => (d.day === day ? { ...d, ...patch } : d)));
   };
 
+  const handleAddNewDay = () => {
+    setDaysData((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      const nextDay = list.length + 1;
+      return [...list, createEmptyDay(nextDay)];
+    });
+  };
+
   return (
     <div className={`space-y-5 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
       {/* Header */}
-      <div className="flex flex-col gap-1">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
         <h1 className={`text-xl font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Generate Itinerary</h1>
         <p className={`text-sm transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
           Finalize trip details and review the budget before sending it to the traveler.
         </p>
+        </div>
+
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className={`shrink-0 inline-flex items-center justify-center rounded-full border px-5 py-2 text-xs font-semibold transition-colors ${darkMode ? "bg-slate-900 border-slate-800 text-slate-200 hover:bg-slate-800" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+          >
+            Back
+          </button>
+        )}
       </div>
 
       {draftSavedMessage && (
@@ -553,14 +601,14 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings })
 
             {/* Day cards */}
             <div className="space-y-2">
-              {[1, 2, 3, 4, 5].map((day) => (
+              {(Array.isArray(daysData) ? daysData : []).map((d) => (
                 <DayCard
-                  key={day}
-                  day={day}
+                  key={d.day}
+                  day={d.day}
                   darkMode={darkMode}
-                  expanded={expandedDays.includes(day)}
+                  expanded={expandedDays.includes(d.day)}
                   onToggle={toggleDay}
-                  dayData={daysData.find((d) => d.day === day)}
+                  dayData={d}
                   onUpdateDay={updateDay}
                   onBrowseImage={handleBrowseImage}
                   onRemoveImage={(targetDay) => updateDay(targetDay, { imageDataUrl: "" })}
@@ -570,10 +618,14 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings })
           </div>
 
           {/* Add day & actions */}
-          <div className={`rounded-2xl border border-dashed transition-colors px-5 py-3 flex items-center justify-center text-xs cursor-pointer ${darkMode ? "bg-slate-900 border-slate-800 text-slate-500 hover:bg-slate-800" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"}`}>
+          <button
+            type="button"
+            onClick={handleAddNewDay}
+            className={`w-full rounded-2xl border border-dashed transition-colors px-5 py-3 flex items-center justify-center text-xs cursor-pointer ${darkMode ? "bg-slate-900 border-slate-800 text-slate-500 hover:bg-slate-800" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"}`}
+          >
             <span className="mr-2 text-lg">＋</span>
             Add New Day
-          </div>
+          </button>
 
           <div className={`flex flex-col gap-3 border-t pt-4 mt-1 sm:flex-row sm:items-center sm:justify-between transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`}>
             <button
