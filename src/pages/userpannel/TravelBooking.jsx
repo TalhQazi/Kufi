@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import api from '../../api'
 import Footer from '../../components/layout/Footer'
 import ProfilePic from '../../components/ui/ProfilePic'
@@ -60,6 +60,37 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
 
     const selectedCountryLabel = availableCountries.find(c => c.key === selectedCountryKey)?.label || ''
 
+    const selectedTotalPrice = useMemo(() => {
+        const total = (payloadActivities || []).reduce((sum, activity) => {
+            const raw = activity?.price ?? activity?.amount ?? activity?.cost ?? 0
+            const n = Number(raw)
+            return Number.isFinite(n) ? sum + n : sum
+        }, 0)
+        return Math.max(0, total)
+    }, [payloadActivities])
+
+    const budgetRanges = useMemo(() => {
+        const total = Math.round(selectedTotalPrice)
+        if (!Number.isFinite(total) || total <= 0) return []
+
+        const step = Math.max(
+            50,
+            Math.round(total * 0.07),
+            total <= 1000 ? 100 : (total <= 3000 ? 150 : 250)
+        )
+
+        const ranges = [
+            { min: Math.max(0, total - step), max: total },
+            { min: total, max: total + step },
+            { min: total + step, max: total + (2 * step) },
+        ]
+
+        return ranges.map((r) => ({
+            value: `${r.min}-${r.max}`,
+            label: `$${r.min.toLocaleString()} - $${r.max.toLocaleString()}`,
+        }))
+    }, [selectedTotalPrice])
+
     const [formData, setFormData] = useState({
         firstName: currentUser.firstName || '',
         lastName: currentUser.lastName || '',
@@ -78,6 +109,14 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         activities: []
     })
     const [countries, setCountries] = useState([])
+
+    useEffect(() => {
+        if (budgetRanges.length === 0) return
+        const stillValid = budgetRanges.some((opt) => opt.value === formData.budget)
+        if (!stillValid) {
+            setFormData((prev) => ({ ...prev, budget: '' }))
+        }
+    }, [budgetRanges.length, selectedTotalPrice])
 
     useEffect(() => {
         const ids = (payloadActivities || [])
@@ -575,11 +614,19 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                     required
                                 >
                                     <option value="">Choose your budget range</option>
-                                    <option value="<1000">Less than $1,000</option>
-                                    <option value="1000-3000">$1,000 - $3,000</option>
-                                    <option value="3000-5000">$3,000 - $5,000</option>
-                                    <option value="5000-10000">$5,000 - $10,000</option>
-                                    <option value=">10000">More than $10,000</option>
+                                    {budgetRanges.length > 0 ? (
+                                        budgetRanges.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        ))
+                                    ) : (
+                                        <>
+                                            <option value="<1000">Less than $1,000</option>
+                                            <option value="1000-3000">$1,000 - $3,000</option>
+                                            <option value="3000-5000">$3,000 - $5,000</option>
+                                            <option value="5000-10000">$5,000 - $10,000</option>
+                                            <option value=">10000">More than $10,000</option>
+                                        </>
+                                    )}
                                 </select>
                             </div>
 
