@@ -373,7 +373,7 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
         await api.put(`/activities/${experience._id || experience.id}`, formData);
         alert("Experience updated successfully!");
       } else {
-        await api.post('/activities', formData);
+        await api.post('/supplier/activities', formData);
         alert("Experience published successfully!");
       }
       onSuccess?.();

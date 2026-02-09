@@ -32,6 +32,7 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
   const [recentBookings, setRecentBookings] = useState([]);
   const [travelerStats, setTravelerStats] = useState(null);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [allRequests, setAllRequests] = useState([]);
   const [experiences, setExperiences] = useState([]);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,25 +42,61 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
     const fetchSupplierDashboard = async () => {
       try {
         setIsLoading(true);
-        const [statsRes, bookingsRes, activitiesRes, pendingRes] = await Promise.all([
-          api.get('/analytics/supplier'),
-          api.get('/bookings/supplier?limit=5'),
-          // Match backend supplier activities route on Vercel
+        const [bookingsRes, activitiesRes] = await Promise.all([
+          api.get('/supplier/bookings'),
           api.get('/supplier/activities'),
-          api.get('/bookings/supplier?status=pending'),
         ]);
 
-        const data = statsRes.data;
-        const experiencesList = Array.isArray(activitiesRes.data) ? activitiesRes.data : (activitiesRes.data?.activities || activitiesRes.data?.data || []);
-        const totalExperiences = data.totalExperiences ?? experiencesList.length;
+        const bookingsRaw = Array.isArray(bookingsRes?.data)
+          ? bookingsRes.data
+          : (bookingsRes?.data?.bookings || bookingsRes?.data?.data || []);
+        const allBookings = Array.isArray(bookingsRaw) ? bookingsRaw : [];
 
-        const mappedStats = data.overview && Array.isArray(data.overview) ? data.overview : [
-          { label: "Total Revenue", value: data.totalRevenue ? `$${data.totalRevenue}` : "$0", delta: data.revenueTrend || "0%", icon: DollarSign },
-          { label: "Active Bookings", value: data.activeBookings ?? String((bookingsRes.data?.bookings || []).length), delta: data.bookingsTrend || "0", icon: CalendarDays },
-          { label: "Average Rating", value: data.avgRating || "0.0", delta: data.ratingTrend || "0.0", icon: Star },
-          { label: "Experiences", value: String(totalExperiences), delta: "New", icon: Briefcase },
-        ];
-        setStats(mappedStats);
+        const experiencesList = Array.isArray(activitiesRes.data)
+          ? activitiesRes.data
+          : (activitiesRes.data?.activities || activitiesRes.data?.data || []);
+
+        const normalizeStatus = (value) => String(value || '').trim().toLowerCase();
+        const statusCounts = allBookings.reduce((acc, b) => {
+          const s = normalizeStatus(b?.status);
+          acc[s] = (acc[s] || 0) + 1;
+          return acc;
+        }, {});
+
+        const totalBookings = allBookings.length;
+        const pendingCount = statusCounts.pending || 0;
+        const confirmedCount = (statusCounts.confirmed || 0) + (statusCounts.accepted || 0);
+        const rejectedCount = statusCounts.rejected || 0;
+
+        const revenueFromBudgets = allBookings.reduce((sum, b) => {
+          const status = normalizeStatus(b?.status);
+          if (status !== 'confirmed' && status !== 'accepted') return sum;
+          const budget =
+            b?.tripDetails?.budget ??
+            b?.budget ??
+            b?.amount ??
+            b?.totalAmount ??
+            b?.price ??
+            0;
+          const n = Number(budget);
+          return Number.isFinite(n) ? sum + n : sum;
+        }, 0);
+
+        const revenue = revenueFromBudgets > 0 ? revenueFromBudgets : (confirmedCount * 120);
+
+        const ratings = (Array.isArray(experiencesList) ? experiencesList : [])
+          .map((exp) => Number(exp?.rating))
+          .filter((n) => Number.isFinite(n) && n > 0);
+        const avgRating = ratings.length > 0
+          ? (ratings.reduce((sum, n) => sum + n, 0) / ratings.length).toFixed(1)
+          : '0.0';
+
+        setStats([
+          { label: "Total Revenue", value: `$${revenue}`, delta: "Live", icon: DollarSign },
+          { label: "Active Bookings", value: String(confirmedCount), delta: "Live", icon: CalendarDays },
+          { label: "Average Rating", value: String(avgRating), delta: "Live", icon: Star },
+          { label: "Experiences", value: String(experiencesList.length), delta: "Live", icon: Briefcase },
+        ]);
 
         const normalizeBooking = (r) => {
           const experienceTitles = r.items
@@ -80,28 +117,38 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
           };
         };
 
-        const rawRecent = bookingsRes.data?.bookings || [];
-        setRecentBookings(rawRecent.map(normalizeBooking));
-
-        const rawPending = pendingRes.data?.bookings || [];
-        const pendingList = rawPending.map(normalizeBooking);
+        const pendingList = allBookings
+          .filter((b) => String(b?.status || '').trim().toLowerCase() === 'pending')
+          .map(normalizeBooking);
         setPendingRequests(pendingList);
 
-        if (pendingList.length === 0) {
+        const normalizedAllRequests = allBookings.map(normalizeBooking);
+        setAllRequests(normalizedAllRequests);
+
+        const recentList = [...allBookings]
+          .sort((a, b) => {
+            const ad = new Date(a?.createdAt || 0).getTime();
+            const bd = new Date(b?.createdAt || 0).getTime();
+            return bd - ad;
+          })
+          .slice(0, 5)
+          .map(normalizeBooking);
+        setRecentBookings(recentList);
+
+        if (normalizedAllRequests.length === 0) {
           setSelectedRequestId(null);
         } else {
-          setSelectedRequestId((prev) => (prev && pendingList.some((r) => (r.id || r._id) === prev) ? prev : (pendingList[0].id || pendingList[0]._id)));
+          setSelectedRequestId((prev) => (prev && normalizedAllRequests.some((r) => (r.id || r._id) === prev) ? prev : (normalizedAllRequests[0].id || normalizedAllRequests[0]._id)));
         }
 
         setExperiences(experiencesList);
 
-        const pendingCount = pendingList.length;
-        const mappedTravelerStats = data.travelerStats && Array.isArray(data.travelerStats) ? data.travelerStats : [
-          { label: "Total Pending Requests", value: data.pendingRequests ?? pendingCount, icon: Clock3 },
-          { label: "Accepted Requests", value: data.acceptedRequests || 0, icon: Check },
-          { label: "Rejected Requests", value: data.rejectedRequests || 0, icon: XIcon },
-        ];
-        setTravelerStats(mappedTravelerStats);
+        const totalRequestsCount = normalizedAllRequests.length;
+        setTravelerStats([
+          { label: "Total Requests", value: totalRequestsCount, icon: Clock3 },
+          { label: "Accepted Requests", value: confirmedCount, icon: Check },
+          { label: "Rejected Requests", value: rejectedCount, icon: XIcon },
+        ]);
       } catch (error) {
         console.error("Error fetching supplier dashboard data:", error);
         setStats([
@@ -111,11 +158,12 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
           { label: "Experiences", value: "0", delta: "0", icon: Briefcase },
         ]);
         setTravelerStats([
-          { label: "Total Pending Requests", value: 0, icon: Clock3 },
+          { label: "Total Requests", value: 0, icon: Clock3 },
           { label: "Accepted Requests", value: 0, icon: Check },
           { label: "Rejected Requests", value: 0, icon: XIcon },
         ]);
         setPendingRequests([]);
+        setAllRequests([]);
         setExperiences([]);
       } finally {
         setIsLoading(false);
@@ -362,7 +410,7 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                   className={`w-full flex items-center justify-between rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#a26e35]/40 ${darkMode ? "bg-slate-800 text-slate-300 border border-slate-700" : "bg-[#f7f1e7] text-gray-700 border border-gray-200"}`}
                 >
                   <option value="">Select Traveler Request</option>
-                  {pendingRequests.map((req) => {
+                  {(Array.isArray(allRequests) ? allRequests : []).map((req) => {
                     const id = req.id || req._id;
                     return (
                       <option key={id} value={id}>
@@ -374,6 +422,57 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
               </div>
 
               <div className={`rounded-xl sm:rounded-2xl border px-3 sm:px-4 py-6 sm:py-8 transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+                {(() => {
+                  const list = Array.isArray(allRequests) ? allRequests : [];
+                  const selectedReq = selectedRequestId
+                    ? list.find((r) => String(r?.id || r?._id || '') === String(selectedRequestId))
+                    : null;
+
+                  if (selectedReq) {
+                    return (
+                      <div className="space-y-3 text-xs sm:text-sm">
+                        <p className={`font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>{selectedReq.experience || selectedReq.title || "—"}</p>
+                        <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Traveler: {selectedReq.name || selectedReq.travelerName || "—"}</p>
+                        <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Guests: {selectedReq.guests ?? "—"}</p>
+                        {selectedReq.date && <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Date: {selectedReq.date}</p>}
+                        <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Status: {selectedReq.status || "—"}</p>
+                        <button
+                          onClick={() => navigateTo("Requests")}
+                          className="mt-2 rounded-lg bg-[#a26e35] text-white px-4 py-2 text-xs font-semibold hover:bg-[#8b5e2d] transition-colors"
+                        >
+                          Manage in Requests
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <p className={`text-center py-4 text-[10px] sm:text-xs ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
+                      {list.length === 0 ? "No traveler requests" : "Please select a traveler request to view details"}
+                    </p>
+                  );
+                })()}
+              </div>
+
+              {/* <div className={`mb-4 rounded-xl sm:rounded-2xl px-3 py-2 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900" : "bg-white"}`}>
+                <select
+                  value={selectedRequestId || ""}
+                  onChange={(e) => setSelectedRequestId(e.target.value || null)}
+                  className={`w-full flex items-center justify-between rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#a26e35]/40 ${darkMode ? "bg-slate-800 text-slate-300 border border-slate-700" : "bg-[#f7f1e7] text-gray-700 border border-gray-200"}`}
+                >
+                  <option value="">Select Traveler Request</option>
+                  {pendingRequests.map((req) => {
+                    const id = req.id || req._id;
+                    return (
+                      <option key={id} value={id}>
+                        {req.experience || req.title || req.name || "Request"} – {req.name || req.travelerName || "Traveler"} ({req.guests ?? "—"} guests)
+                      </option>
+                    );
+                  })}
+                </select>
+              </div> */}
+
+              {/* <div className={`rounded-xl sm:rounded-2xl border px-3 sm:px-4 py-6 sm:py-8 transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
                 {selectedRequestId && pendingRequests.find((r) => (r.id || r._id) === selectedRequestId) ? (
                   (() => {
                     const req = pendingRequests.find((r) => (r.id || r._id) === selectedRequestId);
@@ -397,7 +496,7 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                     {pendingRequests.length === 0 ? "No pending traveler requests" : "Please select a traveler request to view details"}
                   </p>
                 )}
-              </div>
+              </div> */}
             </div>
           </>
         )}

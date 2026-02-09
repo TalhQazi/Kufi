@@ -31,10 +31,122 @@ const SupplierAnalytics = ({ darkMode }) => {
     const fetchAnalytics = async () => {
       try {
         setIsLoading(true);
-        const response = await api.get('/analytics/supplier');
-        setAnalyticsData(response.data);
+        const [bookingsRes, activitiesRes] = await Promise.all([
+          api.get('/supplier/bookings'),
+          api.get('/supplier/activities'),
+        ]);
+
+        const bookingsRaw = Array.isArray(bookingsRes?.data)
+          ? bookingsRes.data
+          : (bookingsRes?.data?.bookings || bookingsRes?.data?.data || []);
+        const allBookings = Array.isArray(bookingsRaw) ? bookingsRaw : [];
+
+        const activitiesRaw = Array.isArray(activitiesRes?.data)
+          ? activitiesRes.data
+          : (activitiesRes?.data?.activities || activitiesRes?.data?.data || []);
+        const allActivities = Array.isArray(activitiesRaw) ? activitiesRaw : [];
+
+        const normalizeStatus = (value) => String(value || '').trim().toLowerCase();
+
+        const confirmedBookings = allBookings.filter((b) => {
+          const s = normalizeStatus(b?.status);
+          return s === 'confirmed' || s === 'accepted';
+        });
+
+        const totalRevenue = confirmedBookings.reduce((sum, b) => {
+          const budget =
+            b?.tripDetails?.budget ??
+            b?.budget ??
+            b?.amount ??
+            b?.totalAmount ??
+            b?.price ??
+            0;
+          const n = Number(budget);
+          return Number.isFinite(n) ? sum + n : sum;
+        }, 0);
+
+        const ratings = allActivities
+          .map((a) => Number(a?.rating))
+          .filter((n) => Number.isFinite(n) && n > 0);
+        const avgRating = ratings.length > 0
+          ? (ratings.reduce((sum, n) => sum + n, 0) / ratings.length).toFixed(1)
+          : '0.0';
+
+        const monthKey = (date) => {
+          const d = date instanceof Date ? date : new Date(date);
+          if (!Number.isFinite(d.getTime())) return null;
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        };
+
+        const monthLabel = (key) => {
+          const [y, m] = String(key || '').split('-');
+          const d = new Date(Number(y), Number(m) - 1, 1);
+          if (!Number.isFinite(d.getTime())) return String(key || '');
+          return d.toLocaleString(undefined, { month: 'short' });
+        };
+
+        const getLastMonths = (count) => {
+          const now = new Date();
+          const list = [];
+          for (let i = count - 1; i >= 0; i -= 1) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            list.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+          }
+          return list;
+        };
+
+        const last6 = getLastMonths(6);
+        const revenueByMonth = confirmedBookings.reduce((acc, b) => {
+          const key = monthKey(b?.createdAt || b?.date || b?.updatedAt);
+          if (!key) return acc;
+          const budget =
+            b?.tripDetails?.budget ??
+            b?.budget ??
+            b?.amount ??
+            b?.totalAmount ??
+            b?.price ??
+            0;
+          const n = Number(budget);
+          if (!Number.isFinite(n)) return acc;
+          acc[key] = (acc[key] || 0) + n;
+          return acc;
+        }, {});
+
+        const revenueTrend = last6.map((key) => ({
+          month: monthLabel(key),
+          value: Number(revenueByMonth[key] || 0),
+        }));
+
+        const bookingsByExperienceMap = allBookings.reduce((acc, b) => {
+          const title =
+            (Array.isArray(b?.items) && b.items.length > 0
+              ? b.items.map((it) => it?.activity?.title || it?.title).filter(Boolean).join(', ')
+              : (b?.experience || b?.title || b?.activity || 'Booking'));
+          acc[title] = (acc[title] || 0) + 1;
+          return acc;
+        }, {});
+
+        const bookingsByExperience = Object.entries(bookingsByExperienceMap)
+          .map(([label, value]) => ({ label, value }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 8);
+
+        setAnalyticsData({
+          totalRevenue,
+          totalBookings: allBookings.length,
+          avgRating,
+          revenueTrend,
+          bookingsByExperience,
+        });
       } catch (error) {
         console.error("Error fetching supplier analytics:", error);
+        setAnalyticsData({
+          totalRevenue: 0,
+          totalBookings: 0,
+          avgRating: '0.0',
+          revenueTrend: [],
+          bookingsByExperience: [],
+        });
       } finally {
         setIsLoading(false);
       }
