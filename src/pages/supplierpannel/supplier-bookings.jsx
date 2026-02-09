@@ -132,7 +132,7 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
 
   return (
     <div className={`grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2.1fr)_minmax(280px,0.9fr)] transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
-      {/* Left: bookings table */}
+      {/* Left: bookings table  of the header*/}
       <div className="space-y-5">
         {/* Header */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
