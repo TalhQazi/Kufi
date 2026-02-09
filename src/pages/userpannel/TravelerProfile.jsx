@@ -11,17 +11,19 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
     const [showNotifications, setShowNotifications] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const [bookings, setBookings] = useState([])
     const [profileData, setProfileData] = useState({
-        fullName: 'Sarah Anderson',
-        email: 'sarah.anderson@email.com',
-        phone: '+1 (555) 123-4567',
-        country: 'United States',
-        dob: '1988-03-15',
-        gender: 'Female',
-        address: '123 Maple Street, Apt 4B',
-        city: 'San Francisco, CA',
-        nationality: 'American'
+        fullName: '',
+        email: '',
+        phone: '',
+        country: '',
+        dob: '',
+        gender: '',
+        address: '',
+        city: '',
+        nationality: ''
     })
+    const [wishlist, setWishlist] = useState([])
     const dropdownRef = useRef(null)
 
     // Close dropdown when clicking outside
@@ -41,26 +43,69 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
         }
     }, [showProfileDropdown])
 
+    const readWishlistStore = () => {
+        try {
+            const raw = localStorage.getItem('kufi_wishlist')
+            const parsed = JSON.parse(raw)
+            return Array.isArray(parsed) ? parsed : []
+        } catch {
+            return []
+        }
+    }
+
     useEffect(() => {
         const fetchProfile = async () => {
             try {
                 setIsLoading(true)
-                const response = await api.get('/auth/profile')
-                if (response.data) {
-                    setProfileData({
-                        fullName: response.data.fullName || '',
-                        email: response.data.email || '',
-                        phone: response.data.phone || '',
-                        country: response.data.country || '',
-                        dob: response.data.dob ? response.data.dob.split('T')[0] : '1988-03-15',
-                        gender: response.data.gender || 'Female',
-                        address: response.data.address || '',
-                        city: response.data.city || '',
-                        nationality: response.data.nationality || ''
-                    })
-                }
+
+                const storedUserRaw = localStorage.getItem('currentUser')
+                const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null
+                const currentUserId = storedUser?._id || storedUser?.id
+
+                const [profileRes, bookingsList] = await Promise.all([
+                    api.get('/auth/profile').catch(() => ({ data: null })),
+                    (async () => {
+                        const endpoints = [
+                            currentUserId ? `/bookings/user/${encodeURIComponent(String(currentUserId))}` : null,
+                            '/bookings',
+                        ].filter(Boolean)
+
+                        for (const url of endpoints) {
+                            try {
+                                const res = await api.get(url)
+                                const raw =
+                                    res?.data?.bookings ??
+                                    res?.data?.requests ??
+                                    res?.data?.data ??
+                                    res?.data
+                                const list = Array.isArray(raw) ? raw : []
+                                if (list.length > 0) return list
+                            } catch {
+                                continue
+                            }
+                        }
+                        return []
+                    })(),
+                ])
+
+                const profile = profileRes?.data || {}
+
+                setProfileData({
+                    fullName: profile.fullName || storedUser?.fullName || storedUser?.name || '',
+                    email: profile.email || storedUser?.email || '',
+                    phone: profile.phone || storedUser?.phone || '',
+                    country: profile.country || storedUser?.country || '',
+                    dob: profile.dob ? String(profile.dob).split('T')[0] : (storedUser?.dob ? String(storedUser.dob).split('T')[0] : ''),
+                    gender: profile.gender || storedUser?.gender || '',
+                    address: profile.address || storedUser?.address || '',
+                    city: profile.city || storedUser?.city || '',
+                    nationality: profile.nationality || storedUser?.nationality || ''
+                })
+
+                setBookings(Array.isArray(bookingsList) ? bookingsList : [])
+                setWishlist(readWishlistStore())
             } catch (error) {
-                console.error("Error fetching profile:", error)
+                console.error('Error fetching profile:', error)
             } finally {
                 setIsLoading(false)
             }
@@ -78,12 +123,133 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
         try {
             await api.patch('/auth/profile', profileData)
             setIsEditing(false)
+            try {
+                const storedUserRaw = localStorage.getItem('currentUser')
+                const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null
+                const nextUser = {
+                    ...(storedUser && typeof storedUser === 'object' ? storedUser : {}),
+                    ...profileData,
+                    name: profileData.fullName,
+                    fullName: profileData.fullName,
+                }
+                localStorage.setItem('currentUser', JSON.stringify(nextUser))
+            } catch {
+                // ignore
+            }
             alert("Profile updated successfully!")
         } catch (error) {
             console.error("Error updating profile:", error)
             alert("Failed to update profile. Please try again.")
         }
     }
+
+    const normalizedBookings = React.useMemo(() => {
+        const list = Array.isArray(bookings) ? bookings : []
+        return list.map((b) => {
+            const id = b?._id || b?.id
+            const createdAt = b?.createdAt || b?.date || b?.updatedAt
+            const status = String(b?.status || b?.tripStatus || 'pending')
+            const experience =
+                (Array.isArray(b?.items) && b.items.length > 0
+                    ? b.items
+                        .map((i) => i?.activity?.title || i?.title)
+                        .filter(Boolean)
+                        .join(', ')
+                    : '') ||
+                b?.experience ||
+                b?.title ||
+                'Trip'
+
+            const destination =
+                b?.tripDetails?.country ||
+                b?.country ||
+                b?.destination ||
+                b?.location ||
+                '—'
+
+            const imageUrl =
+                b?.imageUrl ||
+                b?.image ||
+                b?.items?.[0]?.activity?.imageUrl ||
+                b?.items?.[0]?.activity?.images?.[0] ||
+                b?.items?.[0]?.activity?.image ||
+                b?.items?.[0]?.imageUrl ||
+                b?.items?.[0]?.image ||
+                ''
+
+            const start = b?.tripDetails?.arrivalDate || b?.startDate || b?.arrivalDate
+            const end = b?.tripDetails?.departureDate || b?.endDate || b?.departureDate
+
+            const durationLabel = (() => {
+                if (!start || !end) return ''
+                try {
+                    const s = new Date(start)
+                    const e = new Date(end)
+                    const diffDays = Math.max(0, Math.round((e - s) / (1000 * 60 * 60 * 24)))
+                    if (!Number.isFinite(diffDays) || diffDays <= 0) return ''
+                    return `${diffDays} days`
+                } catch {
+                    return ''
+                }
+            })()
+
+            return {
+                ...b,
+                _id: id,
+                _createdAt: createdAt,
+                _status: status,
+                _experience: experience,
+                _destination: destination,
+                _imageUrl: imageUrl,
+                _startDate: start,
+                _endDate: end,
+                _durationLabel: durationLabel,
+            }
+        })
+    }, [bookings])
+
+    const tripStats = React.useMemo(() => {
+        const list = Array.isArray(normalizedBookings) ? normalizedBookings : []
+        const totalTrips = list.length
+        const inProgress = list.filter((b) => {
+            const st = String(b?._status || '').toLowerCase().trim()
+            return ['pending', 'accepted', 'confirmed', 'in progress', 'processing'].includes(st)
+        }).length
+        const wishlistCount = Array.isArray(wishlist) ? wishlist.length : 0
+        return { totalTrips, inProgress, wishlistCount }
+    }, [normalizedBookings, wishlist])
+
+    const derivedPreferences = React.useMemo(() => {
+        const list = Array.isArray(normalizedBookings) ? normalizedBookings : []
+        const destinationMap = new Map()
+        const typeMap = new Map()
+
+        list.forEach((b) => {
+            const dest = String(b?._destination || '').trim()
+            if (dest) destinationMap.set(dest, (destinationMap.get(dest) || 0) + 1)
+
+            const categories = (Array.isArray(b?.items) ? b.items : [])
+                .map((i) => i?.activity?.category || i?.activity?.type || i?.category || i?.type)
+                .filter(Boolean)
+            categories.forEach((c) => {
+                const key = String(c).trim()
+                if (!key) return
+                typeMap.set(key, (typeMap.get(key) || 0) + 1)
+            })
+        })
+
+        const preferredDestinations = Array.from(destinationMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 6)
+            .map(([label]) => label)
+
+        const preferredTripTypes = Array.from(typeMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 6)
+            .map(([label]) => label)
+
+        return { preferredDestinations, preferredTripTypes }
+    }, [normalizedBookings])
 
     const tabs = ['Personal Info', 'Preferences', 'Travel History', 'Wishlist', 'Payments', 'Settings']
 
@@ -341,15 +507,15 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                         {/* Right: Stats */}
                         <div className="flex flex-wrap sm:flex-nowrap gap-4 sm:gap-6 lg:gap-8 xl:gap-12 w-full sm:w-auto justify-between sm:justify-start">
                             <div className="text-center flex-1 sm:flex-none">
-                                <div className="text-2xl sm:text-3xl font-bold text-slate-900">12</div>
+                                <div className="text-2xl sm:text-3xl font-bold text-slate-900">{tripStats.totalTrips}</div>
                                 <div className="text-[10px] sm:text-xs text-slate-500 mt-1">Total Trips</div>
                             </div>
                             <div className="text-center flex-1 sm:flex-none">
-                                <div className="text-2xl sm:text-3xl font-bold text-slate-900">2</div>
+                                <div className="text-2xl sm:text-3xl font-bold text-slate-900">{tripStats.inProgress}</div>
                                 <div className="text-[10px] sm:text-xs text-slate-500 mt-1">In Progress</div>
                             </div>
                             <div className="text-center flex-1 sm:flex-none">
-                                <div className="text-2xl sm:text-3xl font-bold text-slate-900">8</div>
+                                <div className="text-2xl sm:text-3xl font-bold text-slate-900">{tripStats.wishlistCount}</div>
                                 <div className="text-[10px] sm:text-xs text-slate-500 mt-1">Wishlist</div>
                             </div>
                         </div>
@@ -402,7 +568,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         />
                                     ) : (
                                         <div className="text-sm sm:text-base text-slate-900 font-medium">
-                                            {new Date(profileData.dob).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                            {profileData.dob ? new Date(profileData.dob).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—'}
                                         </div>
                                     )}
                                 </div>
@@ -514,14 +680,16 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         Preferred Destinations
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        {['Europe', 'Southeast Asia', 'South America', 'Mediterranean'].map((dest) => (
-                                            <button
+                                        {derivedPreferences.preferredDestinations.length > 0 ? derivedPreferences.preferredDestinations.map((dest) => (
+                                            <span
                                                 key={dest}
-                                                className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]"
+                                                className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium"
                                             >
                                                 {dest}
-                                            </button>
-                                        ))}
+                                            </span>
+                                        )) : (
+                                            <span className="text-xs text-slate-500">No data yet</span>
+                                        )}
                                     </div>
                                 </div>
 
@@ -535,14 +703,16 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         Preferred Trip Types
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        {['Cultural', 'Adventure', 'Relaxation', 'Food & Wine'].map((type) => (
-                                            <button
+                                        {derivedPreferences.preferredTripTypes.length > 0 ? derivedPreferences.preferredTripTypes.map((type) => (
+                                            <span
                                                 key={type}
-                                                className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]"
+                                                className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium"
                                             >
                                                 {type}
-                                            </button>
-                                        ))}
+                                            </span>
+                                        )) : (
+                                            <span className="text-xs text-slate-500">No data yet</span>
+                                        )}
                                     </div>
                                 </div>
 
@@ -631,131 +801,65 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                             <h3 className="text-lg font-bold text-slate-900 mb-6">Travel History</h3>
 
                             <div className="space-y-4">
-                                {/* Travel Entry 1: Greek Islands Explorer */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
-                                    <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=200&h=200&fit=crop"
-                                            alt="Santorini, Greece"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                    <div className="flex-1 min-w-0 w-full sm:w-auto">
-                                        <h4 className="font-bold text-slate-900 mb-2">Greek Islands Explorer</h4>
-                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
-                                            <div className="flex items-center gap-1">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                    <circle cx="12" cy="10" r="3" />
-                                                </svg>
-                                                <span>Santorini, Greece</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                                    <line x1="16" y1="2" x2="16" y2="6" />
-                                                    <line x1="8" y1="2" x2="8" y2="6" />
-                                                    <line x1="3" y1="10" x2="21" y2="10" />
-                                                </svg>
-                                                <span className="hidden sm:inline">Jun 15 - Jun 25, 2024</span>
-                                                <span className="sm:hidden">Jun 15-25, 2024</span>
-                                            </div>
-                                            <span>• 10 days</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
-                                        <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
-                                            View Itinerary
-                                        </button>
-                                        <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold whitespace-nowrap text-center">
-                                            Completed
-                                        </span>
-                                    </div>
-                                </div>
+                                {normalizedBookings.length > 0 ? normalizedBookings.map((trip) => {
+                                    const createdAt = trip?._createdAt ? new Date(trip._createdAt) : null
+                                    const dateLabel = createdAt && !Number.isNaN(createdAt.valueOf())
+                                        ? createdAt.toLocaleDateString()
+                                        : '—'
+                                    const status = String(trip?._status || '').toLowerCase().trim()
+                                    const statusLabel = status || 'pending'
+                                    const statusClass = ['confirmed', 'accepted', 'completed'].includes(status)
+                                        ? 'bg-green-100 text-green-700'
+                                        : ['pending', 'processing', 'in progress'].includes(status)
+                                            ? 'bg-yellow-100 text-yellow-700'
+                                            : 'bg-slate-100 text-slate-600'
 
-                                {/* Travel Entry 2: Tropical Paradise Retreat */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
-                                    <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=200&h=200&fit=crop"
-                                            alt="Bali, Indonesia"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                    <div className="flex-1 min-w-0 w-full sm:w-auto">
-                                        <h4 className="font-bold text-slate-900 mb-2">Tropical Paradise Retreat</h4>
-                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
-                                            <div className="flex items-center gap-1">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                    <circle cx="12" cy="10" r="3" />
-                                                </svg>
-                                                <span>Bali, Indonesia</span>
+                                    return (
+                                        <div key={trip._id || trip.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
+                                            <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0 bg-slate-100">
+                                                {trip._imageUrl ? (
+                                                    <img
+                                                        src={trip._imageUrl}
+                                                        alt={trip._experience}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : null}
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                                    <line x1="16" y1="2" x2="16" y2="6" />
-                                                    <line x1="8" y1="2" x2="8" y2="6" />
-                                                    <line x1="3" y1="10" x2="21" y2="10" />
-                                                </svg>
-                                                <span className="hidden sm:inline">Dec 1 - Dec 15, 2024</span>
-                                                <span className="sm:hidden">Dec 1-15, 2024</span>
+                                            <div className="flex-1 min-w-0 w-full sm:w-auto">
+                                                <h4 className="font-bold text-slate-900 mb-2 truncate">{trip._experience}</h4>
+                                                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
+                                                    <div className="flex items-center gap-1">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                            <circle cx="12" cy="10" r="3" />
+                                                        </svg>
+                                                        <span className="truncate">{trip._destination}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                                            <line x1="16" y1="2" x2="16" y2="6" />
+                                                            <line x1="8" y1="2" x2="8" y2="6" />
+                                                            <line x1="3" y1="10" x2="21" y2="10" />
+                                                        </svg>
+                                                        <span>{dateLabel}</span>
+                                                    </div>
+                                                    {trip._durationLabel ? <span>• {trip._durationLabel}</span> : null}
+                                                </div>
                                             </div>
-                                            <span>• 14 days</span>
+                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
+                                                <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
+                                                    View Itinerary
+                                                </button>
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap text-center ${statusClass}`}>
+                                                    {statusLabel}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
-                                        <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
-                                            View Itinerary
-                                        </button>
-                                        <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold whitespace-nowrap text-center">
-                                            In Progress
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Travel Entry 3: Romantic Paris Getaway */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
-                                    <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=200&h=200&fit=crop"
-                                            alt="Paris, France"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                    <div className="flex-1 min-w-0 w-full sm:w-auto">
-                                        <h4 className="font-bold text-slate-900 mb-2">Romantic Paris Getaway</h4>
-                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
-                                            <div className="flex items-center gap-1">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                    <circle cx="12" cy="10" r="3" />
-                                                </svg>
-                                                <span>Paris, France</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                                    <line x1="16" y1="2" x2="16" y2="6" />
-                                                    <line x1="8" y1="2" x2="8" y2="6" />
-                                                    <line x1="3" y1="10" x2="21" y2="10" />
-                                                </svg>
-                                                <span className="hidden sm:inline">Apr 10 - Apr 17, 2024</span>
-                                                <span className="sm:hidden">Apr 10-17, 2024</span>
-                                            </div>
-                                            <span>• 7 days</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
-                                        <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
-                                            View Itinerary
-                                        </button>
-                                        <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold whitespace-nowrap text-center">
-                                            Completed
-                                        </span>
-                                    </div>
-                                </div>
+                                    )
+                                }) : (
+                                    <div className="py-10 text-center text-sm text-slate-500">No trips found yet</div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -769,88 +873,50 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 </svg>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                                {/* Card 1: Machu Picchu Adventure */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="relative">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1587595431973-160d0d94a8c0?w=400&h=250&fit=crop"
-                                            alt="Machu Picchu, Peru"
-                                            className="w-full h-48 object-cover rounded-t-xl"
-                                        />
-                                        <div className="absolute top-3 right-3">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#D4AF37" stroke="#D4AF37" strokeWidth="2">
-                                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div className="p-4">
-                                        <div className="text-xs text-slate-400 font-medium mb-1">Adventure</div>
-                                        <h4 className="font-bold text-slate-900 mb-2">Machu Picchu Adventure</h4>
-                                        <div className="flex items-center gap-1 text-sm text-slate-600">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
-                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                <circle cx="12" cy="10" r="3" />
-                                            </svg>
-                                            <span>Peru</span>
-                                        </div>
-                                    </div>
-                                </div>
+                            {wishlist.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                                    {wishlist.map((item, idx) => {
+                                        const title = item?.title || item?.name || item?.activityTitle || 'Wishlist Item'
+                                        const location = item?.country || item?.location || item?.destination || '—'
+                                        const category = item?.category || item?.type || item?.tag || ''
+                                        const imageUrl = item?.imageUrl || item?.image || item?.images?.[0] || ''
 
-                                {/* Card 2: Safari Experience */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="relative">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1516426122078-c23e76319801?w=400&h=250&fit=crop"
-                                            alt="Safari, Tanzania"
-                                            className="w-full h-48 object-cover rounded-t-xl"
-                                        />
-                                        <div className="absolute top-3 right-3">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#D4AF37" stroke="#D4AF37" strokeWidth="2">
-                                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div className="p-4">
-                                        <div className="text-xs text-slate-400 font-medium mb-1">Wildlife</div>
-                                        <h4 className="font-bold text-slate-900 mb-2">Safari Experience</h4>
-                                        <div className="flex items-center gap-1 text-sm text-slate-600">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
-                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                <circle cx="12" cy="10" r="3" />
-                                            </svg>
-                                            <span>Tanzania</span>
-                                        </div>
-                                    </div>
+                                        return (
+                                            <div key={item?.id || item?._id || `${title}-${idx}`} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                                <div className="relative">
+                                                    {imageUrl ? (
+                                                        <img
+                                                            src={imageUrl}
+                                                            alt={title}
+                                                            className="w-full h-48 object-cover rounded-t-xl"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-48 bg-slate-100 rounded-t-xl" />
+                                                    )}
+                                                    <div className="absolute top-3 right-3">
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#D4AF37" stroke="#D4AF37" strokeWidth="2">
+                                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                                <div className="p-4">
+                                                    {category ? <div className="text-xs text-slate-400 font-medium mb-1">{category}</div> : null}
+                                                    <h4 className="font-bold text-slate-900 mb-2 truncate">{title}</h4>
+                                                    <div className="flex items-center gap-1 text-sm text-slate-600">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
+                                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                            <circle cx="12" cy="10" r="3" />
+                                                        </svg>
+                                                        <span className="truncate">{location}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
                                 </div>
-
-                                {/* Card 3: Northern Lights Tour */}
-                                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="relative">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1531572753322-ad063cecc140?w=400&h=250&fit=crop"
-                                            alt="Northern Lights, Iceland"
-                                            className="w-full h-48 object-cover rounded-t-xl"
-                                        />
-                                        <div className="absolute top-3 right-3">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#D4AF37" stroke="#D4AF37" strokeWidth="2">
-                                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div className="p-4">
-                                        <div className="text-xs text-slate-400 font-medium mb-1">Nature</div>
-                                        <h4 className="font-bold text-slate-900 mb-2">Northern Lights Tour</h4>
-                                        <div className="flex items-center gap-1 text-sm text-slate-600">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="2">
-                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                <circle cx="12" cy="10" r="3" />
-                                            </svg>
-                                            <span>Iceland</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            ) : (
+                                <div className="py-10 text-center text-sm text-slate-500">No saved items yet</div>
+                            )}
                         </div>
                     )}
 
