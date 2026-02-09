@@ -454,49 +454,6 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                 })()}
               </div>
 
-              {/* <div className={`mb-4 rounded-xl sm:rounded-2xl px-3 py-2 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900" : "bg-white"}`}>
-                <select
-                  value={selectedRequestId || ""}
-                  onChange={(e) => setSelectedRequestId(e.target.value || null)}
-                  className={`w-full flex items-center justify-between rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#a26e35]/40 ${darkMode ? "bg-slate-800 text-slate-300 border border-slate-700" : "bg-[#f7f1e7] text-gray-700 border border-gray-200"}`}
-                >
-                  <option value="">Select Traveler Request</option>
-                  {pendingRequests.map((req) => {
-                    const id = req.id || req._id;
-                    return (
-                      <option key={id} value={id}>
-                        {req.experience || req.title || req.name || "Request"} – {req.name || req.travelerName || "Traveler"} ({req.guests ?? "—"} guests)
-                      </option>
-                    );
-                  })}
-                </select>
-              </div> */}
-
-              {/* <div className={`rounded-xl sm:rounded-2xl border px-3 sm:px-4 py-6 sm:py-8 transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
-                {selectedRequestId && pendingRequests.find((r) => (r.id || r._id) === selectedRequestId) ? (
-                  (() => {
-                    const req = pendingRequests.find((r) => (r.id || r._id) === selectedRequestId);
-                    return (
-                      <div className="space-y-3 text-xs sm:text-sm">
-                        <p className={`font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>{req.experience || req.title || "—"}</p>
-                        <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Traveler: {req.name || req.travelerName || "—"}</p>
-                        <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Guests: {req.guests ?? "—"}</p>
-                        {req.date && <p className={darkMode ? "text-slate-400" : "text-gray-600"}>Date: {req.date}</p>}
-                        <button
-                          onClick={() => navigateTo("Requests")}
-                          className="mt-2 rounded-lg bg-[#a26e35] text-white px-4 py-2 text-xs font-semibold hover:bg-[#8b5e2d] transition-colors"
-                        >
-                          Manage in Requests
-                        </button>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <p className={`text-center py-4 text-[10px] sm:text-xs ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
-                    {pendingRequests.length === 0 ? "No pending traveler requests" : "Please select a traveler request to view details"}
-                  </p>
-                )}
-              </div> */}
             </div>
           </>
         )}

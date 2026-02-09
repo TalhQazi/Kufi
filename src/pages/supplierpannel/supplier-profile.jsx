@@ -337,16 +337,21 @@ const SupplierProfile = ({ darkMode }) => {
             <h2 className={`text-sm font-semibold mb-3 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Verification Status</h2>
 
             <div className="space-y-2 text-xs">
-              {["Email", "Phone", "Business License", "Insurance"].map((item, idx) => (
+              {[
+                { label: "Email", verified: !!(form.contactEmail && form.contactEmail.includes('@')) },
+                { label: "Phone", verified: !!(form.phoneNumber && form.phoneNumber.length >= 7) },
+                { label: "Business License", verified: documents.length > 0 },
+                { label: "Business Profile", verified: !!(form.businessName && form.businessAddress) },
+              ].map((item, idx) => (
                 <div
-                  key={item}
+                  key={item.label}
                   className={`flex items-center justify-between py-1.5 transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"
                     } ${idx !== 3 ? "border-b" : ""}`}
                 >
-                  <span className={`transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>{item}</span>
-                  <span className="flex items-center gap-1 text-emerald-600 text-[11px] font-medium">
-                    <Check className="h-3.5 w-3.5" />
-                    Verified
+                  <span className={`transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>{item.label}</span>
+                  <span className={`flex items-center gap-1 text-[11px] font-medium ${item.verified ? 'text-emerald-600' : (darkMode ? 'text-slate-500' : 'text-gray-400')}`}>
+                    <Check className={`h-3.5 w-3.5 ${item.verified ? '' : 'opacity-30'}`} />
+                    {item.verified ? 'Verified' : 'Pending'}
                   </span>
                 </div>
               ))}

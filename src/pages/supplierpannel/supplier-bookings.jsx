@@ -21,14 +21,35 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const bookingsRes = await api.get('/bookings/supplier');
-        const rawBookings = bookingsRes.data.bookings || bookingsRes.data || [];
+        const bookingsRes = await api.get('/supplier/bookings');
+        const rawBookings = Array.isArray(bookingsRes?.data)
+          ? bookingsRes.data
+          : (bookingsRes?.data?.bookings || bookingsRes?.data?.data || bookingsRes?.data || []);
 
         const list = Array.isArray(rawBookings) ? rawBookings : [];
         const normalized = list.map((r) => {
           const experienceTitles = r.items
             ? r.items.map(item => item.activity?.title || item.title).filter(Boolean).join(', ')
             : (r.experience || r.title || r.activity || "");
+
+          const email =
+            r.contactDetails?.email ||
+            r.user?.email ||
+            r.email ||
+            r.contactEmail ||
+            r.travelerEmail ||
+            '';
+
+          const nameFromEmail = (() => {
+            const local = String(email || '').split('@')[0] || '';
+            const cleaned = local.replace(/[._-]+/g, ' ').trim();
+            if (!cleaned) return '';
+            return cleaned
+              .split(' ')
+              .filter(Boolean)
+              .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+              .join(' ');
+          })();
 
           const totalGuests = r.items
             ? r.items.reduce((sum, item) => sum + (item.travelers || 0), 0)
@@ -37,7 +58,21 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
           return {
             ...r,
             id: r.id ?? r._id,
-            name: r.user?.name ?? (r.contactDetails?.firstName ? `${r.contactDetails.firstName} ${r.contactDetails.lastName || ''}`.trim() : (r.name ?? r.travelerName ?? r.userName ?? "—")),
+            name: (() => {
+              const contactName = (r.contactDetails?.firstName
+                ? `${r.contactDetails.firstName} ${r.contactDetails.lastName || ''}`.trim()
+                : "");
+
+              const candidate =
+                contactName ||
+                r.user?.name ||
+                (r.name ?? r.travelerName ?? r.userName ?? '');
+
+              const clean = String(candidate || '').trim();
+              const isGeneric = !clean || clean.toLowerCase() === 'user' || clean === '—';
+              if (isGeneric) return nameFromEmail || '—';
+              return clean;
+            })(),
             experience: experienceTitles,
             guests: totalGuests || 1,
             amount: r.tripDetails?.budget ?? r.amount ?? r.totalAmount ?? r.price ?? "N/A",
@@ -142,7 +177,6 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
               <div key={row.id} className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className={`h-8 w-8 rounded-full transition-colors ${darkMode ? "bg-slate-800" : "bg-gray-200"}`} />
                     <div>
                       <p className={`font-semibold text-xs transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{row.name}</p>
                       <p className="text-[10px] text-gray-400 mt-0.5">#{row.code}</p>
@@ -190,7 +224,6 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                   >
                     <td className="px-6 py-3 text-xs">
                       <div className="flex items-center gap-3">
-                        <span className={`h-7 w-7 rounded-full transition-colors ${darkMode ? "bg-slate-800" : "bg-gray-200"}`} />
                         <span className={`transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{row.name}</span>
                       </div>
                     </td>
