@@ -53,7 +53,7 @@ export default function TopLocationsSection({ onCountryClick }) {
                                     variant="destination"
                                     image={item?.image || item?.imageUrl || item?.Picture || '/assets/dest-1.jpeg'}
                                     title={item?.name}
-                                    location={item?.country?.name || item?.country || ''}
+                                   // location={item?.country?.name || item?.country || ''}
                                     rating="4.4"
                                     className="rounded-[20px] shadow-card-hover"
                                     imageClassName="h-64 sm:h-[280px]"

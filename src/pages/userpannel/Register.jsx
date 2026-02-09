@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FaFacebookF, FaTwitter, FaInstagram, FaYoutube, FaEye, FaEyeSlash } from 'react-icons/fa'
 import { FcGoogle } from 'react-icons/fc'
 import { FiMail, FiLock, FiGlobe, FiUser, FiPhone } from 'react-icons/fi'
@@ -11,12 +11,29 @@ export default function Register({ onLoginClick, onClose }) {
         name: '',
         email: '',
         phone: '',
+        country: '',
+        city: '',
         password: '',
         confirmPassword: '',
         role: 'user',
     })
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+    const [countries, setCountries] = useState([])
+
+    useEffect(() => {
+        const fetchCountries = async () => {
+            try {
+                const response = await api.get('/countries')
+                setCountries(Array.isArray(response.data) ? response.data : [])
+            } catch (error) {
+                console.error('Error fetching countries:', error)
+                setCountries([])
+            }
+        }
+
+        fetchCountries()
+    }, [])
 
     const handleChange = (event) => {
         const { name, value } = event.target
@@ -31,11 +48,24 @@ export default function Register({ onLoginClick, onClose }) {
             return
         }
 
+        if (form.role === 'supplier') {
+            if (!String(form.country || '').trim()) {
+                alert('Please select your country.')
+                return
+            }
+            if (!String(form.city || '').trim()) {
+                alert('Please enter your city.')
+                return
+            }
+        }
+
         try {
             const response = await api.post('/auth/register', {
                 name: form.name,
                 email: form.email,
                 phone: form.phone,
+                country: form.role === 'supplier' ? form.country : undefined,
+                city: form.role === 'supplier' ? form.city : undefined,
                 password: form.password,
                 role: form.role === 'supplier' ? 'supplier' : 'user',
                 status: form.role === 'supplier' ? 'pending' : 'active',
@@ -234,7 +264,7 @@ export default function Register({ onLoginClick, onClose }) {
                                             ? 'bg-[#A67C52] text-white border-[#A67C52]'
                                             : 'bg-white text-slate-700 border-slate-300 hover:border-[#A67C52]'
                                             }`}
-                                        onClick={() => setForm((prev) => ({ ...prev, role: 'user' }))}
+                                        onClick={() => setForm((prev) => ({ ...prev, role: 'user', country: '', city: '' }))}
                                     >
                                         User
                                     </button>
@@ -250,6 +280,45 @@ export default function Register({ onLoginClick, onClose }) {
                                     </button>
                                 </div>
                             </div>
+
+                            {form.role === 'supplier' && (
+                                <>
+                                    <div className="relative group">
+                                        <div className="absolute left-0 top-3 text-[#A67C52]">
+                                            <FiGlobe size={20} />
+                                        </div>
+                                        <select
+                                            name="country"
+                                            value={form.country}
+                                            onChange={handleChange}
+                                            required
+                                            className="w-full py-3 pl-8 pr-0 border-0 border-b border-slate-300 bg-transparent focus:outline-none focus:border-[#A67C52] transition-colors text-slate-900 text-sm md:text-base"
+                                        >
+                                            <option value="">Select your country</option>
+                                            {countries.map((c) => (
+                                                <option key={c?._id || c?.name} value={c?.name || ''}>
+                                                    {c?.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="relative group">
+                                        <div className="absolute left-0 top-3 text-[#A67C52]">
+                                            <FiUser size={20} />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            name="city"
+                                            placeholder="Enter your city"
+                                            className="w-full py-3 pl-8 pr-0 border-0 border-b border-slate-300 bg-transparent focus:outline-none focus:border-[#A67C52] transition-colors text-slate-900 placeholder:text-slate-400 text-sm md:text-base"
+                                            value={form.city}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </div>
+                                </>
+                            )}
 
                             <button type="submit" className="mt-3 md:mt-4 py-3 md:py-3.5 rounded bg-[#A67C52] text-white font-bold text-base md:text-lg hover:bg-[#8e6a45] transition-colors w-full shadow-md hover:shadow-lg">
                                 Sign Up

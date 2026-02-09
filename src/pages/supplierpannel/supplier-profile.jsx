@@ -11,9 +11,13 @@ const SupplierProfile = ({ darkMode }) => {
     contactEmail: "",
     phoneNumber: "",
     businessAddress: "",
+    country: "",
+    city: "",
     aboutBusiness: "",
     image: ""
   });
+
+  const [countries, setCountries] = useState([]);
 
   const [documents, setDocuments] = useState([]);
 
@@ -25,12 +29,24 @@ const SupplierProfile = ({ darkMode }) => {
       contactEmail: data.contactEmail ?? data.contact_email ?? data.email ?? "",
       phoneNumber: data.phoneNumber ?? data.phone_number ?? data.phone ?? "",
       businessAddress: data.businessAddress ?? data.business_address ?? data.address ?? "",
+      country: data.country ?? "",
+      city: data.city ?? "",
       aboutBusiness: data.aboutBusiness ?? data.about_business ?? data.about ?? "",
       image: data.image ?? data.avatar ?? data.profileImage ?? "",
     };
   };
 
   useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const response = await api.get('/countries')
+        setCountries(Array.isArray(response.data) ? response.data : [])
+      } catch (error) {
+        console.error('Error fetching countries:', error)
+        setCountries([])
+      }
+    }
+
     const fetchProfile = async () => {
       try {
         setIsLoading(true);
@@ -53,6 +69,8 @@ const SupplierProfile = ({ darkMode }) => {
         setIsLoading(false);
       }
     };
+
+    fetchCountries();
     fetchProfile();
   }, []);
 
@@ -72,6 +90,8 @@ const SupplierProfile = ({ darkMode }) => {
           contactEmail: form.contactEmail,
           phoneNumber: form.phoneNumber,
           businessAddress: form.businessAddress,
+          country: form.country,
+          city: form.city,
           aboutBusiness: form.aboutBusiness,
           image: form.image,
         };
@@ -88,6 +108,8 @@ const SupplierProfile = ({ darkMode }) => {
           businessAddress: form.businessAddress,
           business_address: form.businessAddress,
           address: form.businessAddress,
+          country: form.country,
+          city: form.city,
           aboutBusiness: form.aboutBusiness,
           about_business: form.aboutBusiness,
           about: form.aboutBusiness,
@@ -241,6 +263,40 @@ const SupplierProfile = ({ darkMode }) => {
                   disabled={!isEditing}
                   value={form.businessAddress}
                   onChange={handleChange("businessAddress")}
+                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode
+                    ? "bg-slate-800 border-slate-700 text-white disabled:bg-slate-900/50"
+                    : "bg-gray-50 border-gray-200 text-gray-700 disabled:bg-gray-100"
+                    }`}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <p className={`font-medium transition-colors duration-300 ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Country</p>
+                <select
+                  disabled={!isEditing}
+                  value={form.country}
+                  onChange={handleChange("country")}
+                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode
+                    ? "bg-slate-800 border-slate-700 text-white disabled:bg-slate-900/50"
+                    : "bg-gray-50 border-gray-200 text-gray-700 disabled:bg-gray-100"
+                    }`}
+                >
+                  <option value="">Select your country</option>
+                  {countries.map((c) => (
+                    <option key={c?._id || c?.name} value={c?.name || ''}>
+                      {c?.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <p className={`font-medium transition-colors duration-300 ${darkMode ? "text-slate-400" : "text-gray-700"}`}>City</p>
+                <input
+                  type="text"
+                  disabled={!isEditing}
+                  value={form.city}
+                  onChange={handleChange("city")}
                   className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode
                     ? "bg-slate-800 border-slate-700 text-white disabled:bg-slate-900/50"
                     : "bg-gray-50 border-gray-200 text-gray-700 disabled:bg-gray-100"

@@ -47,10 +47,48 @@ export default function ActivityDetail({
                 const loadedActivity = activityRes?.data
                 setActivity(loadedActivity)
 
+                const normalizeCountryKey = (value) => {
+                    return String(value || '')
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]/g, '')
+                        .trim()
+                }
+
+                const getCountryLabel = (a) => {
+                    const fromLocationString = () => {
+                        const loc = String(a?.location || a?.locationName || '').trim()
+                        if (!loc) return ''
+                        const parts = loc.split(',').map(p => p.trim()).filter(Boolean)
+                        if (parts.length === 0) return ''
+                        return parts[parts.length - 1]
+                    }
+
+                    return (
+                        a?.country?.name ||
+                        a?.country?.title ||
+                        a?.country?.label ||
+                        (Array.isArray(a?.country) ? (a.country[0]?.name || a.country[0]?.title || '') : '') ||
+                        a?.city?.country?.name ||
+                        a?.city?.countryName ||
+                        a?.countryName ||
+                        a?.country ||
+                        a?.locationCountry ||
+                        a?.location?.country ||
+                        fromLocationString() ||
+                        ''
+                    )
+                }
+
+                const activeCountryKey = normalizeCountryKey(getCountryLabel(loadedActivity))
+
                 const normalizeActivities = (items) => {
                     const list = Array.isArray(items) ? items : []
                     return list
                         .filter(a => (a?._id || a?.id) && (a?._id || a?.id) !== activityId)
+                        .filter((a) => {
+                            if (!activeCountryKey) return true
+                            return normalizeCountryKey(getCountryLabel(a)) === activeCountryKey
+                        })
                         .slice(0, 4)
                         .map((a) => {
                             const id = a?._id || a?.id

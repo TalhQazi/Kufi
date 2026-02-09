@@ -42,9 +42,10 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
     const fetchSupplierDashboard = async () => {
       try {
         setIsLoading(true);
-        const [bookingsRes, activitiesRes] = await Promise.all([
+        const [bookingsRes, activitiesRes, statsRes] = await Promise.all([
           api.get('/supplier/bookings'),
           api.get('/supplier/activities'),
+          api.get('/supplier/stats').catch(() => ({ data: null })),
         ]);
 
         const bookingsRaw = Array.isArray(bookingsRes?.data)
@@ -84,17 +85,21 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
 
         const revenue = revenueFromBudgets > 0 ? revenueFromBudgets : (confirmedCount * 120);
 
+        const statsApi = statsRes?.data || {};
         const ratings = (Array.isArray(experiencesList) ? experiencesList : [])
           .map((exp) => Number(exp?.rating))
           .filter((n) => Number.isFinite(n) && n > 0);
-        const avgRating = ratings.length > 0
-          ? (ratings.reduce((sum, n) => sum + n, 0) / ratings.length).toFixed(1)
-          : '0.0';
+        const avgRatingFromActivities = ratings.length > 0
+          ? (ratings.reduce((sum, n) => sum + n, 0) / ratings.length)
+          : 0;
+        const avgRating = Number.isFinite(Number(statsApi?.avgRating))
+          ? Number(statsApi.avgRating)
+          : avgRatingFromActivities;
 
         setStats([
           { label: "Total Revenue", value: `$${revenue}`, delta: "Live", icon: DollarSign },
           { label: "Active Bookings", value: String(confirmedCount), delta: "Live", icon: CalendarDays },
-          { label: "Average Rating", value: String(avgRating), delta: "Live", icon: Star },
+          { label: "Average Rating", value: String(avgRating.toFixed(1)), delta: "Live", icon: Star },
           { label: "Experiences", value: String(experiencesList.length), delta: "Live", icon: Briefcase },
         ]);
 
