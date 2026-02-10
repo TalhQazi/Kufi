@@ -24,10 +24,10 @@ ChartJS.register(
 );
 
 const defaultStats = [
-  { title: "Total Users", value: "...", change: "Live", positive: true, icon: Users, iconBg: "bg-blue-100", iconColor: "text-blue-600" },
-  { title: "Products", value: "...", change: "Live", positive: true, icon: Trello, iconBg: "bg-emerald-100", iconColor: "text-emerald-500" },
-  { title: "Total Points", value: "...", change: "Live", positive: true, icon: DollarSign, iconBg: "bg-purple-100", iconColor: "text-purple-600" },
-  { title: "Total Scans", value: "...", change: "Live", positive: true, icon: BookOpen, iconBg: "bg-orange-100", iconColor: "text-orange-500" },
+  { title: "Total Users", value: "0", change: "Live", positive: true, icon: Users, iconBg: "bg-blue-100", iconColor: "text-blue-600" },
+  { title: "Total Activities", value: "0", change: "Live", positive: true, icon: Trello, iconBg: "bg-emerald-100", iconColor: "text-emerald-500" },
+  { title: "Total Countries", value: "0", change: "Live", positive: true, icon: DollarSign, iconBg: "bg-purple-100", iconColor: "text-purple-600" },
+  { title: "Total Cities", value: "0", change: "Live", positive: true, icon: BookOpen, iconBg: "bg-orange-100", iconColor: "text-orange-500" },
 ];
 
 const revenueData = {
@@ -195,53 +195,117 @@ const Dashboard = ({ onNavigate }) => {
   const [bookData, setBookData] = useState(bookingsData);
   const [loading, setLoading] = useState(true);
 
+  const fetchUsersCount = async () => {
+    const extractUserList = (raw) => {
+      if (Array.isArray(raw)) return raw
+      if (!raw || typeof raw !== 'object') return []
+      if (Array.isArray(raw.users)) return raw.users
+      if (Array.isArray(raw.allUsers)) return raw.allUsers
+      if (raw.data && typeof raw.data === 'object') {
+        if (Array.isArray(raw.data)) return raw.data
+        if (Array.isArray(raw.data.users)) return raw.data.users
+        if (Array.isArray(raw.data.allUsers)) return raw.data.allUsers
+        if (Array.isArray(raw.data.data)) return raw.data.data
+        if (raw.data.data && typeof raw.data.data === 'object') {
+          if (Array.isArray(raw.data.data.users)) return raw.data.data.users
+          if (Array.isArray(raw.data.data.allUsers)) return raw.data.data.allUsers
+        }
+      }
+      return []
+    }
+
+    const endpoints = ['/admin/users', '/auth/users', '/users']
+    for (const url of endpoints) {
+      try {
+        const res = await api.get(url)
+        const list = extractUserList(res?.data)
+        if (Array.isArray(list) && list.length >= 0) return list.length
+      } catch {
+        continue
+      }
+    }
+    return 0
+  }
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
+        
+        // Fetch all required data
         const results = await Promise.allSettled([
-          api.get('/admin/stats'),
-          api.get('/admin/analytics'),
-          api.get('/admin/updates')
+          fetchUsersCount(),                // Total Users
+          api.get('/activities'),           // Total Activities
+          api.get('/countries'),            // Total Countries
+          api.get('/cities'),               // Total Cities
+          api.get('/admin/analytics').catch(() => ({ data: [] })) // Analytics data
         ]);
 
-        if (results[0].status === 'fulfilled' && results[0].value.data) {
-          const s = results[0].value.data;
-          setStatsData(prev => prev.map(item => {
-            if (item.title === "Total Users") return { ...item, value: s.userCount?.toLocaleString() || "0" };
-            if (item.title === "Products") return { ...item, value: s.productCount?.toLocaleString() || "0" };
-            if (item.title === "Total Points") return { ...item, value: s.totalPoints?.toLocaleString() || "0" };
-            if (item.title === "Total Scans") return { ...item, value: s.scanCount?.toLocaleString() || "0" };
-            return item;
-          }));
+        // Process Users
+        let usersCount = 0;
+        if (results[0].status === 'fulfilled') {
+          usersCount = Number(results[0].value) || 0
         }
 
-        if (results[1].status === 'fulfilled' && results[1].value.data) {
-          const analytics = results[1].value.data;
-          const labels = analytics.map(a => a.day);
-          const data = analytics.map(a => a.count);
-
-          setRevData(prev => ({
-            ...prev,
-            labels: labels,
-            datasets: [{ ...prev.datasets[0], data: data, label: 'Daily Scans' }]
-          }));
-
-          setBookData(prev => ({
-            ...prev,
-            labels: labels,
-            datasets: [{ ...prev.datasets[0], data: data, label: 'Engagement' }]
-          }));
+        // Process Activities
+        let activitiesCount = 0;
+        if (results[1].status === 'fulfilled') {
+          const activitiesData = results[1].value.data;
+          activitiesCount = Array.isArray(activitiesData) ? activitiesData.length : (activitiesData.activities?.length || 0);
         }
 
-        if (results[2].status === 'fulfilled' && results[2].value.data) {
-          const updates = results[2].value.data;
-          setActivityData(updates.map(u => ({
-            action: u.title,
-            user: u.type || 'System Update',
-            time: new Date(u.createdAt).toLocaleDateString()
-          })));
+        // Process Countries
+        let countriesCount = 0;
+        if (results[2].status === 'fulfilled') {
+          const countriesData = results[2].value.data;
+          countriesCount = Array.isArray(countriesData) ? countriesData.length : (countriesData.countries?.length || 0);
         }
+
+        // Process Cities
+        let citiesCount = 0;
+        if (results[3].status === 'fulfilled') {
+          const citiesData = results[3].value.data;
+          citiesCount = Array.isArray(citiesData) ? citiesData.length : (citiesData.cities?.length || 0);
+        }
+
+        // Update stats with actual counts
+        setStatsData([
+          { title: "Total Users", value: usersCount.toString(), change: "Live", positive: true, icon: Users, iconBg: "bg-blue-100", iconColor: "text-blue-600" },
+          { title: "Total Activities", value: activitiesCount.toString(), change: "Live", positive: true, icon: Trello, iconBg: "bg-emerald-100", iconColor: "text-emerald-500" },
+          { title: "Total Countries", value: countriesCount.toString(), change: "Live", positive: true, icon: DollarSign, iconBg: "bg-purple-100", iconColor: "text-purple-600" },
+          { title: "Total Cities", value: citiesCount.toString(), change: "Live", positive: true, icon: BookOpen, iconBg: "bg-orange-100", iconColor: "text-orange-500" },
+        ]);
+
+        // Process Analytics data
+        if (results[4].status === 'fulfilled' && results[4].value.data) {
+          const analytics = results[4].value.data;
+          const analyticsArray = Array.isArray(analytics) ? analytics : (analytics.data || []);
+          
+          if (analyticsArray.length > 0) {
+            const labels = analyticsArray.map(a => a.day || a.date || a.label);
+            const data = analyticsArray.map(a => a.count || a.value || 0);
+
+            setRevData(prev => ({
+              ...prev,
+              labels: labels,
+              datasets: [{ ...prev.datasets[0], data: data, label: 'Daily Revenue' }]
+            }));
+
+            setBookData(prev => ({
+              ...prev,
+              labels: labels,
+              datasets: [{ ...prev.datasets[0], data: data, label: 'Daily Bookings' }]
+            }));
+          }
+        }
+
+        // Sample activity data
+        setActivityData([
+          { action: 'New User Registration', user: 'System Update', time: new Date().toLocaleDateString() },
+          { action: 'New Activity Listed', user: 'Supplier Activity', time: new Date().toLocaleDateString() },
+          { action: 'New Booking Created', user: 'User Activity', time: new Date().toLocaleDateString() },
+        ]);
+
       } catch (error) {
         console.error("Dashboard fetch error:", error);
       } finally {
@@ -269,8 +333,9 @@ const Dashboard = ({ onNavigate }) => {
         {statsData.map((item) => {
           let targetPage = null;
           if (item.title === "Total Users") targetPage = "User Management";
-          if (item.title === "Revenue") targetPage = "Payments & Finance";
-          if (item.title === "Bookings") targetPage = "Activity";
+          if (item.title === "Total Activities") targetPage = "Activity";
+          if (item.title === "Total Countries") targetPage = "Manage Countries";
+          if (item.title === "Total Cities") targetPage = "Manage Cities";
 
           return (
             <StatCard

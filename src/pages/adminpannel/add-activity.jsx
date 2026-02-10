@@ -1,8 +1,10 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Upload } from "lucide-react";
 import api from "../../api";
 
 const AddActivity = ({ onBack }) => {
+  const [countries, setCountries] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -14,13 +16,48 @@ const AddActivity = ({ onBack }) => {
     status: "active",
     price: "",
     thumbnail: "",
+    addOns: {
+      quadBiking: false,
+      campingGear: false,
+      photographyPackage: false,
+    },
   });
+
+  // Fetch countries on mount
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/countries');
+        const countriesData = Array.isArray(response.data) ? response.data : (response.data.countries || []);
+        setCountries(countriesData);
+        console.log("✅ Countries loaded:", countriesData);
+      } catch (error) {
+        console.error("❌ Error fetching countries:", error);
+        setCountries([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCountries();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? (checked ? "active" : "inactive") : value,
+    }));
+  };
+
+  const handleAddOnChange = (key) => {
+    setFormData((prev) => ({
+      ...prev,
+      addOns: {
+        ...(prev.addOns || {}),
+        [key]: !(prev.addOns && prev.addOns[key]),
+      },
     }));
   };
 
@@ -49,6 +86,7 @@ const AddActivity = ({ onBack }) => {
         title: formData.title,
         description: formData.description,
         category: formData.category,
+        country: formData.location,
         location: formData.location,
         duration: formData.duration,
         // Convert price to number if possible
@@ -57,6 +95,11 @@ const AddActivity = ({ onBack }) => {
         image: formData.thumbnail || undefined,
         // Map UI status (active/inactive) to valid enum values
         status: formData.status === "active" ? "approved" : "pending",
+        addOns: {
+          quadBiking: !!formData?.addOns?.quadBiking,
+          campingGear: !!formData?.addOns?.campingGear,
+          photographyPackage: !!formData?.addOns?.photographyPackage,
+        },
       };
 
       await api.post("/activities", payload);
@@ -131,12 +174,22 @@ const AddActivity = ({ onBack }) => {
               { label: "Challenging", value: "Challenging" },
             ]}
           />
-          <LabeledInput
+          <SelectField
             label="Location"
             name="location"
             value={formData.location}
             onChange={handleChange}
-            placeholder="City, Country"
+            disabled={loading}
+            options={[
+              { label: loading ? "Loading countries..." : "Select a country", value: "" },
+              ...countries.map((country) => {
+                const label = country.name || country.countryName || country.title
+                return {
+                  label,
+                  value: label
+                }
+              })
+            ]}
           />
           <SelectField
             label="Recommended Season"
@@ -166,6 +219,39 @@ const AddActivity = ({ onBack }) => {
             placeholder="e.g., 150"
           />
           <StatusToggle status={formData.status} onChange={handleChange} />
+        </div>
+
+        <div className="pt-2">
+          <h3 className="text-sm font-semibold text-slate-900 mb-3">Optional Add-ons</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={!!formData?.addOns?.quadBiking}
+                onChange={() => handleAddOnChange('quadBiking')}
+                className="w-4 h-4"
+              />
+              Quad Biking
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={!!formData?.addOns?.campingGear}
+                onChange={() => handleAddOnChange('campingGear')}
+                className="w-4 h-4"
+              />
+              Camping Gear
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={!!formData?.addOns?.photographyPackage}
+                onChange={() => handleAddOnChange('photographyPackage')}
+                className="w-4 h-4"
+              />
+              Photography Package
+            </label>
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
@@ -205,7 +291,7 @@ const LabeledInput = ({ label, name, value, onChange, placeholder }) => (
   </div>
 );
 
-const SelectField = ({ label, name, value, onChange, options }) => (
+const SelectField = ({ label, name, value, onChange, options, disabled }) => (
   <div>
     <label className="text-sm font-semibold text-gray-600 mb-2 block">
       {label}
@@ -214,7 +300,8 @@ const SelectField = ({ label, name, value, onChange, options }) => (
       name={name}
       value={value}
       onChange={onChange}
-      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#a26e35]/30"
+      disabled={disabled}
+      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#a26e35]/30 disabled:bg-gray-100 disabled:cursor-not-allowed"
     >
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>

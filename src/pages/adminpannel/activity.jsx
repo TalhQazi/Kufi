@@ -165,74 +165,84 @@ const Activity = ({ onAddNew }) => {
 
         {/* Mobile: Card View */}
         <div className="md:hidden space-y-4">
-          {filteredListings.map((item) => (
-            <div key={item.id} className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-3">
-              <div className="flex justify-between items-start">
-                <div className="flex items-start gap-3">
-                  {item.image && (
-                    <img
-                      src={item.image}
-                      alt={item.listing}
-                      className="w-12 h-12 rounded-lg object-cover border border-gray-200"
-                    />
-                  )}
+          {loading ? (
+            <div className="py-20 flex justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
+            </div>
+          ) : filteredListings.length === 0 ? (
+            <div className="py-10 text-center text-sm text-gray-500 bg-gray-50/30 rounded-xl border border-gray-100">
+              No listings match the selected filter.
+            </div>
+          ) : (
+            filteredListings.map((item) => (
+              <div key={item.id} className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-start gap-3">
+                    {item.image && (
+                      <img
+                        src={item.image}
+                        alt={item.listing}
+                        className="w-12 h-12 rounded-lg object-cover border border-gray-200"
+                      />
+                    )}
+                    <div>
+                      <p className="font-semibold text-slate-900 text-sm">{item.listing}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{item.provider}</p>
+                    </div>
+                  </div>
+                  <StatusBadge status={item.status} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-[11px] border-y border-gray-100 py-3">
                   <div>
-                    <p className="font-semibold text-slate-900 text-sm">{item.listing}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{item.provider}</p>
+                    <p className="text-gray-400 font-bold uppercase tracking-wider mb-0.5">Category</p>
+                    <p className="text-slate-700 font-medium">{item.category}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 font-bold uppercase tracking-wider mb-0.5">Price</p>
+                    <p className="text-[#c18c4d] font-bold">{item.price}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-gray-400 font-bold uppercase tracking-wider mb-0.5">Location</p>
+                    <p className="text-slate-700 font-medium">{item.location}</p>
                   </div>
                 </div>
-                <StatusBadge status={item.status} />
-              </div>
 
-              <div className="grid grid-cols-2 gap-2 text-[11px] border-y border-gray-100 py-3">
-                <div>
-                  <p className="text-gray-400 font-bold uppercase tracking-wider mb-0.5">Category</p>
-                  <p className="text-slate-700 font-medium">{item.category}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 font-bold uppercase tracking-wider mb-0.5">Price</p>
-                  <p className="text-[#c18c4d] font-bold">{item.price}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-gray-400 font-bold uppercase tracking-wider mb-0.5">Location</p>
-                  <p className="text-slate-700 font-medium">{item.location}</p>
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <button
+                    className="flex-1 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-bold flex items-center justify-center gap-1 hover:bg-gray-200 transition-colors"
+                    onClick={() => handleView(item.id)}
+                  >
+                    <Eye className="w-3.5 h-3.5" /> View
+                  </button>
+                  {item.status !== "approved" && (
+                    <button
+                      onClick={() => handleStatusChange(item.id, "approved")}
+                      className="flex-1 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-bold flex items-center justify-center gap-1 hover:bg-emerald-100 transition-colors"
+                    >
+                      <Check className="w-3.5 h-3.5" /> Approve
+                    </button>
+                  )}
+                  {item.status !== "rejected" && (
+                    <button
+                      onClick={() => handleStatusChange(item.id, "rejected")}
+                      className="flex-1 py-1.5 rounded-lg bg-rose-50 text-rose-600 text-xs font-bold flex items-center justify-center gap-1 hover:bg-rose-100 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" /> Reject
+                    </button>
+                  )}
+                  {item.status === "rejected" && (
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="flex-1 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center gap-1 hover:bg-black transition-colors"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
-
-              <div className="flex items-center justify-between gap-3 pt-1">
-                <button
-                  className="flex-1 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-bold flex items-center justify-center gap-1 hover:bg-gray-200 transition-colors"
-                  onClick={() => handleView(item.id)}
-                >
-                  <Eye className="w-3.5 h-3.5" /> View
-                </button>
-                {item.status !== "approved" && (
-                  <button
-                    onClick={() => handleStatusChange(item.id, "approved")}
-                    className="flex-1 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-bold flex items-center justify-center gap-1 hover:bg-emerald-100 transition-colors"
-                  >
-                    <Check className="w-3.5 h-3.5" /> Approve
-                  </button>
-                )}
-                {item.status !== "rejected" && (
-                  <button
-                    onClick={() => handleStatusChange(item.id, "rejected")}
-                    className="flex-1 py-1.5 rounded-lg bg-rose-50 text-rose-600 text-xs font-bold flex items-center justify-center gap-1 hover:bg-rose-100 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" /> Reject
-                  </button>
-                )}
-                {item.status === "rejected" && (
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="flex-1 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-bold flex items-center justify-center gap-1 hover:bg-black transition-colors"
-                  >
-                    Delete
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Desktop: Table View */}
@@ -249,68 +259,78 @@ const Activity = ({ onAddNew }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
-              {filteredListings.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50/80">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      {item.image && (
-                        <img
-                          src={item.image}
-                          alt={item.listing}
-                          className="w-12 h-12 rounded-lg object-cover border border-gray-200"
-                        />
-                      )}
-                      <div>
-                        <p className="font-semibold text-slate-900 leading-tight">{item.listing}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{item.provider}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600 hidden lg:table-cell">{item.category}</td>
-                  <td className="px-6 py-4 text-gray-600 hidden xl:table-cell">{item.location}</td>
-                  <td className="px-6 py-4 text-[#a26e35] font-semibold">{item.price}</td>
-                  <td className="px-6 py-4">
-                    <StatusBadge status={item.status} />
-                  </td>
-                  <td className="px-6 py-4 text-gray-400">
-                    <div className="flex items-center gap-3">
-                      <button
-                        className="text-[#704b24] hover:text-[#8b5c2a] transition-colors p-1.5 rounded-lg hover:bg-[#f7f1e7]"
-                        onClick={() => handleView(item.id)}
-                        aria-label="View"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(item.id, "approved")}
-                        disabled={item.status === "approved"}
-                        className={`transition-colors p-1.5 rounded-lg ${item.status === "approved" ? "opacity-30 cursor-not-allowed" : "text-emerald-500 hover:bg-emerald-50"}`}
-                        aria-label="Approve"
-                      >
-                        <Check className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(item.id, "rejected")}
-                        disabled={item.status === "rejected"}
-                        className={`transition-colors p-1.5 rounded-lg ${item.status === "rejected" ? "opacity-30 cursor-not-allowed" : "text-rose-500 hover:bg-rose-50"}`}
-                        aria-label="Reject"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="transition-colors p-1.5 rounded-lg text-rose-600 hover:bg-rose-50"
-                        aria-label="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="py-16">
+                    <div className="flex justify-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredListings.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50/80">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        {item.image && (
+                          <img
+                            src={item.image}
+                            alt={item.listing}
+                            className="w-12 h-12 rounded-lg object-cover border border-gray-200"
+                          />
+                        )}
+                        <div>
+                          <p className="font-semibold text-slate-900 leading-tight">{item.listing}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{item.provider}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 hidden lg:table-cell">{item.category}</td>
+                    <td className="px-6 py-4 text-gray-600 hidden xl:table-cell">{item.location}</td>
+                    <td className="px-6 py-4 text-[#a26e35] font-semibold">{item.price}</td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={item.status} />
+                    </td>
+                    <td className="px-6 py-4 text-gray-400">
+                      <div className="flex items-center gap-3">
+                        <button
+                          className="text-[#704b24] hover:text-[#8b5c2a] transition-colors p-1.5 rounded-lg hover:bg-[#f7f1e7]"
+                          onClick={() => handleView(item.id)}
+                          aria-label="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(item.id, "approved")}
+                          disabled={item.status === "approved"}
+                          className={`transition-colors p-1.5 rounded-lg ${item.status === "approved" ? "opacity-30 cursor-not-allowed" : "text-emerald-500 hover:bg-emerald-50"}`}
+                          aria-label="Approve"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(item.id, "rejected")}
+                          disabled={item.status === "rejected"}
+                          className={`transition-colors p-1.5 rounded-lg ${item.status === "rejected" ? "opacity-30 cursor-not-allowed" : "text-rose-500 hover:bg-rose-50"}`}
+                          aria-label="Reject"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="transition-colors p-1.5 rounded-lg text-rose-600 hover:bg-rose-50"
+                          aria-label="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-          {filteredListings.length === 0 && (
+          {!loading && filteredListings.length === 0 && (
             <div className="py-10 text-center text-sm text-gray-500 bg-gray-50/30">
               No listings match the selected filter.
             </div>

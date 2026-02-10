@@ -35,6 +35,11 @@ export default function ActivityDetail({
         const loadData = async () => {
             setActivity(null)
             setSimilarActivities([])
+            setAddOns({
+                quadBiking: false,
+                campingGear: false,
+                photographyPackage: false
+            })
 
             if (!activityId) {
                 setIsLoading(false)
@@ -147,8 +152,17 @@ export default function ActivityDetail({
     }, [activityId])
 
     const toggleAddOn = (key) => {
+        const allowed = !!activity?.addOns?.[key]
+        if (!allowed) return
         setAddOns(prev => ({ ...prev, [key]: !prev[key] }))
     }
+
+    const availableAddOns = activity?.addOns || {}
+    const hasAnyAddOns = !!(
+        availableAddOns?.quadBiking ||
+        availableAddOns?.campingGear ||
+        availableAddOns?.photographyPackage
+    )
 
     const activityImage = activity?.imageUrl || activity?.images?.[0] || activity?.image || "/assets/dest-1.jpeg"
     const activityTitle = activity?.title || "Activity"
@@ -593,46 +607,54 @@ export default function ActivityDetail({
                             </div> */}
 
                             {/* Optional Add-ons */}
-                            <div className="mb-6">
-                                <h3 className="text-sm font-bold text-slate-900 mb-3">Optional Add-ons</h3>
-                                <div className="space-y-3">
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={addOns.quadBiking}
-                                            onChange={() => toggleAddOn('quadBiking')}
-                                            className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                        />
-                                        <div>
-                                            <div className="text-sm font-medium text-slate-900">Quad Biking</div>
-                                        </div>
-                                    </label>
+                            {hasAnyAddOns && (
+                                <div className="mb-6">
+                                    <h3 className="text-sm font-bold text-slate-900 mb-3">Optional Add-ons</h3>
+                                    <div className="space-y-3">
+                                        {availableAddOns?.quadBiking && (
+                                            <label className="flex items-center gap-3 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={addOns.quadBiking}
+                                                    onChange={() => toggleAddOn('quadBiking')}
+                                                    className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
+                                                />
+                                                <div>
+                                                    <div className="text-sm font-medium text-slate-900">Quad Biking</div>
+                                                </div>
+                                            </label>
+                                        )}
 
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={addOns.campingGear}
-                                            onChange={() => toggleAddOn('campingGear')}
-                                            className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                        />
-                                        <div>
-                                            <div className="text-sm font-medium text-slate-900">Camping Gear</div>
-                                        </div>
-                                    </label>
+                                        {availableAddOns?.campingGear && (
+                                            <label className="flex items-center gap-3 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={addOns.campingGear}
+                                                    onChange={() => toggleAddOn('campingGear')}
+                                                    className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
+                                                />
+                                                <div>
+                                                    <div className="text-sm font-medium text-slate-900">Camping Gear</div>
+                                                </div>
+                                            </label>
+                                        )}
 
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={addOns.photographyPackage}
-                                            onChange={() => toggleAddOn('photographyPackage')}
-                                            className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                        />
-                                        <div>
-                                            <div className="text-sm font-medium text-slate-900">Photography Package</div>
-                                        </div>
-                                    </label>
+                                        {availableAddOns?.photographyPackage && (
+                                            <label className="flex items-center gap-3 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={addOns.photographyPackage}
+                                                    onChange={() => toggleAddOn('photographyPackage')}
+                                                    className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
+                                                />
+                                                <div>
+                                                    <div className="text-sm font-medium text-slate-900">Photography Package</div>
+                                                </div>
+                                            </label>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Add to List Button */}
                             <button
