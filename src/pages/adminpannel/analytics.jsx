@@ -94,6 +94,15 @@ const Analytics = () => {
     return { ...card, icon };
   });
 
+  const normalizedEngagementMetrics = (engagementMetrics || []).map((metric) => {
+    if (String(metric?.label || '').toLowerCase().includes('bounce')) {
+      const value = metric?.value
+      const normalizedValue = value && value !== '—' ? value : '0%'
+      return { ...metric, value: normalizedValue }
+    }
+    return metric
+  })
+
   const trafficOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -196,7 +205,7 @@ const Analytics = () => {
       <div className="bg-white rounded-2xl border border-gray-100 p-6 card-shadow">
         <h2 className="text-lg font-semibold text-slate-900">User Engagement Metrics</h2>
         <div className="mt-6 grid gap-6 md:grid-cols-3">
-          {engagementMetrics.map((metric) => (
+          {normalizedEngagementMetrics.map((metric) => (
             <div key={metric.label} className="flex items-start gap-4">
               <span className={`w-1 rounded-full h-14 ${metric.color}`} />
               <div>
@@ -216,29 +225,35 @@ const Analytics = () => {
 
         {/* Mobile: Card View */}
         <div className="md:hidden space-y-4">
-          {topListings.map((listing) => (
-            <div key={listing.listing} className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-2">
-              <p className="font-semibold text-slate-900 text-sm">{listing.listing}</p>
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <div>
-                  <p className="text-gray-400 text-[10px] uppercase tracking-wider">Views</p>
-                  <p className="text-slate-700 font-medium text-xs">{listing.views}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-[10px] uppercase tracking-wider">Bookings</p>
-                  <p className="text-slate-700 font-medium text-xs">{listing.bookings}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-[10px] uppercase tracking-wider">Revenue</p>
-                  <p className="text-[#a26e35] font-bold text-xs">{listing.revenue}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-[10px] uppercase tracking-wider">Conversion</p>
-                  <p className="text-emerald-600 font-bold text-xs">{listing.conversion}</p>
+          {topListings.length === 0 ? (
+            <div className="py-10 text-center text-sm text-gray-500 bg-gray-50/30 rounded-xl border border-gray-100">
+              No activities to show yet
+            </div>
+          ) : (
+            topListings.map((listing) => (
+              <div key={listing.listing} className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-2">
+                <p className="font-semibold text-slate-900 text-sm">{listing.listing}</p>
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div>
+                    <p className="text-gray-400 text-[10px] uppercase tracking-wider">Views</p>
+                    <p className="text-slate-700 font-medium text-xs">{listing.views}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-[10px] uppercase tracking-wider">Bookings</p>
+                    <p className="text-slate-700 font-medium text-xs">{listing.bookings}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-[10px] uppercase tracking-wider">Revenue</p>
+                    <p className="text-[#a26e35] font-bold text-xs">{listing.revenue}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-[10px] uppercase tracking-wider">Conversion</p>
+                    <p className="text-emerald-600 font-bold text-xs">{listing.conversion}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Desktop: Table View */}
@@ -254,15 +269,23 @@ const Analytics = () => {
               </tr>
             </thead>
             <tbody>
-              {topListings.map((listing) => (
-                <tr key={listing.listing} className="border-b border-gray-100 last:border-b-0">
-                  <td className="py-4 text-slate-900 font-semibold">{listing.listing}</td>
-                  <td className="py-4 text-gray-600">{listing.views}</td>
-                  <td className="py-4 text-gray-600">{listing.bookings}</td>
-                  <td className="py-4 text-gray-600">{listing.revenue}</td>
-                  <td className="py-4 text-gray-600">{listing.conversion}</td>
+              {topListings.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-10 text-center text-sm text-gray-500">
+                    No activities to show yet
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                topListings.map((listing) => (
+                  <tr key={listing.listing} className="border-b border-gray-100 last:border-b-0">
+                    <td className="py-4 text-slate-900 font-semibold">{listing.listing}</td>
+                    <td className="py-4 text-gray-600">{listing.views}</td>
+                    <td className="py-4 text-gray-600">{listing.bookings}</td>
+                    <td className="py-4 text-gray-600">{listing.revenue}</td>
+                    <td className="py-4 text-gray-600">{listing.conversion}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

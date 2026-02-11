@@ -5,15 +5,17 @@ import { Search, Clock3, User, MapPin, Info, CheckCircle2, AlertTriangle, Loader
 const tabs = [
   { label: "All", value: "all" },
   { label: "Pending", value: "pending" },
-  { label: "Accepted", value: "accepted" },
-  { label: "Rejected", value: "rejected" },
+  { label: "Transferred", value: "transferred" },
+  { label: "Expired (24h)", value: "expired" },
 ];
 
 const NotificationsBooking = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [requests, setRequests] = useState([]);
+  const [systemNotifications, setSystemNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -25,29 +27,182 @@ const NotificationsBooking = () => {
     fetchBookings();
   }, []);
 
+  const timeAgo = (date) => {
+    if (!date) return '';
+    const ts = new Date(date).getTime();
+    if (!Number.isFinite(ts)) return '';
+    const diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if (diffSec < 60) return `${diffSec}s ago`;
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    return `${diffDay}d ago`;
+  };
+
+  const normalizeBookingStatus = (raw) => {
+    const s = String(raw || 'pending').toLowerCase();
+    if (s === 'confirmed' || s === 'accepted' || s === 'approve' || s === 'approved') return 'accepted';
+    if (s === 'cancelled' || s === 'canceled' || s === 'rejected' || s === 'reject') return 'rejected';
+    return 'pending';
+  };
+
+  const detectTransferred = (req) => {
+    const transferStatus = String(req?.transferStatus || req?.transfer_state || '').toLowerCase();
+    if (transferStatus === 'transferred') return true;
+    if (req?.transferred === true) return true;
+    if (req?.isTransferred === true) return true;
+    if (req?.transferredToSupplier || req?.transferredTo) return true;
+    return false;
+  };
+
+  const detectExpired = (req) => {
+    const created = req?.createdAt ? new Date(req.createdAt).getTime() : NaN;
+    if (!Number.isFinite(created)) return false;
+    const ageHours = (Date.now() - created) / (1000 * 60 * 60);
+    return ageHours >= 24;
+  };
+
+  const getDerivedStatus = (req) => {
+    const base = normalizeBookingStatus(req?.status);
+    if (detectTransferred(req)) return 'transferred';
+    if (base === 'pending' && detectExpired(req)) return 'expired';
+    return base;
+  };
+
+  const statusLabelFromStatus = (status) => {
+    if (status === 'accepted') return 'Accepted';
+    if (status === 'rejected') return 'Rejected';
+    if (status === 'transferred') return 'Transferred';
+    if (status === 'expired') return 'Expired';
+    return 'Pending Supplier Response';
+  };
+
+  const statusColorFromStatus = (status) => {
+    if (status === 'accepted') return "bg-emerald-100 text-emerald-700";
+    if (status === 'rejected') return "bg-rose-100 text-rose-700";
+    if (status === 'transferred') return "bg-blue-100 text-blue-700";
+    if (status === 'expired') return "bg-gray-100 text-gray-700";
+    return "bg-amber-100 text-amber-700";
+  };
+
+  const tryGetBookings = async () => {
+    const candidates = [
+      '/admin/bookings',
+      '/bookings',
+      '/booking',
+      '/admin/booking',
+      '/admin/booking-requests'
+    ];
+
+    let lastErr;
+    let lastTriedPath = '';
+    for (const path of candidates) {
+      lastTriedPath = path;
+      try {
+        return await api.get(path);
+      } catch (err) {
+        lastErr = err;
+
+        const status = err?.response?.status;
+        // Only try the next candidate for "not found".
+        // For auth/server errors, stop so we surface the real issue.
+        if (status && status !== 404) {
+          err._lastTriedPath = lastTriedPath;
+          throw err;
+        }
+      }
+    }
+
+    if (lastErr) lastErr._lastTriedPath = lastTriedPath;
+    throw lastErr;
+  };
+
+  const fetchSystemActivity = async () => {
+    try {
+      const activityRes = await api.get('/admin/activity');
+      const iconMap = {
+        bell: AlertTriangle,
+        users: User,
+        userCheck: CheckCircle2,
+        clock: Clock3,
+        dollar: Info,
+        alert: AlertTriangle,
+      };
+
+      const activityFeed = Array.isArray(activityRes?.data?.activities) ? activityRes.data.activities : [];
+      const mappedSystem = activityFeed.map((item, idx) => {
+        const Icon = iconMap[item?.iconType] || AlertTriangle;
+        return {
+          id: `sys-${idx}`,
+          title: item?.title || 'System update',
+          time: item?.time || '',
+          iconBg: item?.iconBg || 'bg-slate-50 text-slate-600',
+          Icon,
+        };
+      });
+      setSystemNotifications(mappedSystem);
+    } catch (err) {
+      // Keep whatever was already on screen; avoid blanking the UI.
+      console.error('Error fetching system activity:', err);
+    }
+  };
+
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/bookings');
-      const data = Array.isArray(response.data) ? response.data : (response.data.bookings || []);
+      setErrorMsg("");
 
-      const transformed = data.map(req => ({
-        id: req._id,
-        traveler: `${req.firstName} ${req.lastName}`,
-        status: (req.status || 'pending').toLowerCase(),
-        statusLabel: req.status || 'Pending',
-        statusColor:
-          req.status === 'accepted' ? "bg-emerald-100 text-emerald-700" :
-            req.status === 'rejected' ? "bg-rose-100 text-rose-700" :
-              "bg-amber-100 text-amber-700",
-        destination: req.cities || 'N/A',
-        duration: req.duration || 'N/A',
-        received: req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'Recently',
-        autoTransfer: req.status === 'pending' ? "Auto-transfer scheduled if no response within 24 hours." : `Status: ${req.status}`,
-        email: req.email,
-        phone: req.phone,
-        travelersCount: req.travelers
-      }));
+      // Fetch activity feed independently so it can still show even if bookings fails.
+      fetchSystemActivity();
+
+      const response = await tryGetBookings();
+
+      const data = Array.isArray(response.data)
+        ? response.data
+        : (response.data.bookings || response.data.data || response.data?.results || []);
+
+      const transformed = (Array.isArray(data) ? data : []).map(req => {
+        const derivedStatus = getDerivedStatus(req);
+
+        const firstName = req.contactDetails?.firstName || req.firstName || '';
+        const lastName = req.contactDetails?.lastName || req.lastName || '';
+        const travelerName = String(`${firstName} ${lastName}`.trim() || req.name || req.user?.name || 'Traveler');
+
+        const destination =
+          req.location ||
+          req.country ||
+          req.cities ||
+          req.tripDetails?.destination ||
+          'N/A';
+
+        const duration =
+          req.tripDetails?.duration ||
+          req.duration ||
+          req.tripDetails?.days ||
+          'N/A';
+
+        const email = req.contactDetails?.email || req.email || req.user?.email;
+        const phone = req.contactDetails?.phone || req.phone;
+
+        return {
+          id: req._id,
+          traveler: travelerName,
+          status: derivedStatus,
+          statusLabel: statusLabelFromStatus(derivedStatus),
+          statusColor: statusColorFromStatus(derivedStatus),
+          destination: String(destination || 'N/A'),
+          duration: String(duration || 'N/A'),
+          received: req.createdAt ? timeAgo(req.createdAt) : 'Recently',
+          autoTransfer: derivedStatus === 'pending'
+            ? "Auto-transfer scheduled if no response within 24 hours."
+            : `Status: ${statusLabelFromStatus(derivedStatus)}`,
+          email,
+          phone,
+          travelersCount: req.travelers || req.guests || req.pax
+        };
+      });
 
       setRequests(transformed);
 
@@ -60,17 +215,41 @@ const NotificationsBooking = () => {
       });
 
     } catch (error) {
-      console.error("Error fetching bookings:", error);
+      const status = error?.response?.status;
+      const data = error?.response?.data;
+
+      const rawMessage =
+        (typeof data === 'string' && data) ||
+        data?.message ||
+        data?.error ||
+        error?.message ||
+        'Failed to load bookings.';
+
+      const looksLikeHtml = typeof rawMessage === 'string' && /<!doctype|<html/i.test(rawMessage);
+      const tried = error?._lastTriedPath ? ` (${error._lastTriedPath})` : '';
+      const message = looksLikeHtml
+        ? `Bookings endpoint not found${tried}. Please confirm backend route.`
+        : String(rawMessage);
+
+      setRequests([]);
+      setStats({ total: 0, pending: 0, accepted: 0, rejected: 0 });
+      setErrorMsg(`${message}${status ? ` (Status: ${status})` : ''}`);
+      console.error("Error fetching bookings:", { status, data, error });
     } finally {
       setLoading(false);
     }
   };
 
+  const derivedCounts = {
+    transferred: requests.filter(r => r.status === 'transferred').length,
+    expired: requests.filter(r => r.status === 'expired').length,
+  };
+
   const overviewStats = [
     { label: "Total Requests", value: stats.total },
-    { label: "Pending Replies", value: stats.pending },
-    { label: "Accepted", value: stats.accepted },
-    { label: "Rejected", value: stats.rejected },
+    { label: "Pending Supplier Replies", value: stats.pending },
+    { label: "Auto-Transferred", value: derivedCounts.transferred },
+    { label: "Expired (24h)", value: derivedCounts.expired },
   ];
 
   const filteredRequests = requests.filter((r) => {
@@ -141,6 +320,12 @@ const NotificationsBooking = () => {
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.2fr)_minmax(260px,0.9fr)] gap-5">
         {/* Requests list */}
         <div className="space-y-4">
+          {errorMsg && (
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl px-5 py-4 text-sm">
+              {errorMsg}
+            </div>
+          )}
+
           {filteredRequests.map((req) => (
             <div
               key={req.id}
@@ -189,11 +374,39 @@ const NotificationsBooking = () => {
             </div>
           ))}
 
-          {filteredRequests.length === 0 && (
+          {filteredRequests.length === 0 && !errorMsg && (
             <div className="bg-white rounded-2xl border border-dashed border-gray-200 px-5 py-12 text-center text-sm text-gray-500">
               No booking requests in this filter.
             </div>
           )}
+
+          <div className="pt-2">
+            <h2 className="text-sm font-semibold text-slate-900 mb-3">System Notifications</h2>
+            <div className="space-y-3">
+              {systemNotifications.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-dashed border-gray-200 px-5 py-10 text-center text-sm text-gray-500">
+                  No system notifications yet.
+                </div>
+              ) : (
+                systemNotifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className="flex items-center justify-between bg-white rounded-lg border border-gray-100 card-shadow px-5 h-[84px]"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`mt-0.5 h-10 w-10 rounded-2xl flex items-center justify-center ${n.iconBg}`}>
+                        <n.Icon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 leading-snug">{n.title}</p>
+                        <p className="text-xs text-gray-400 mt-1">{n.time}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Quick overview */}

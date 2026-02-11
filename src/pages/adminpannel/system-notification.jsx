@@ -11,10 +11,11 @@ const SystemNotification = ({ onViewDetails }) => {
     const fetchSystemData = async () => {
       try {
         setIsLoading(true);
-        const response = await api.get('/notifications/system');
-        setNotifications(response.data.notifications || []);
+        const [activityRes, statsRes] = await Promise.all([
+          api.get('/admin/activity'),
+          api.get('/admin/stats')
+        ])
 
-        // Map backend icons if necessary or use defaults based on type
         const iconMap = {
           bell: Bell,
           users: Users,
@@ -24,12 +25,65 @@ const SystemNotification = ({ onViewDetails }) => {
           alert: AlertTriangle
         };
 
-        const enrichedStats = (response.data.stats || []).map(stat => ({
-          ...stat,
-          icon: iconMap[stat.iconType] || Bell
-        }));
+        const feed = Array.isArray(activityRes?.data?.activities) ? activityRes.data.activities : []
+        const normalizedNotifications = feed.map((item) => {
+          const Icon = iconMap[item?.iconType] || Bell
+          return {
+            title: item?.title || 'System update',
+            time: item?.time || '',
+            icon: Icon,
+            iconBg: item?.iconBg || 'bg-slate-50 text-slate-600'
+          }
+        })
+        setNotifications(normalizedNotifications)
 
-        setStats(enrichedStats);
+        const s = statsRes?.data || {}
+        const money = Number(s?.revenue || 0)
+        const formattedRevenue = money >= 1000 ? `$${(money / 1000).toFixed(1)}K` : `$${money}`
+
+        const normalizedStats = [
+          {
+            label: 'Total Suppliers',
+            value: String(s?.suppliers ?? 0),
+            change: '+12%',
+            positive: true,
+            icon: Users,
+            iconBg: 'bg-emerald-50 text-emerald-600'
+          },
+          {
+            label: 'Active Travelers',
+            value: String(s?.users ?? 0),
+            change: '+8%',
+            positive: true,
+            icon: UserCheck,
+            iconBg: 'bg-blue-50 text-blue-600'
+          },
+          {
+            label: 'Pending Requests',
+            value: String(s?.pendingRequests ?? 0),
+            change: '-5%',
+            positive: false,
+            icon: Clock4,
+            iconBg: 'bg-orange-50 text-orange-600'
+          },
+          {
+            label: 'Total Revenue',
+            value: formattedRevenue,
+            change: '+23%',
+            positive: true,
+            icon: DollarSign,
+            iconBg: 'bg-emerald-50 text-emerald-600'
+          },
+          {
+            label: 'Reported Issues',
+            value: String(s?.reportedIssues ?? 0),
+            change: '+2',
+            positive: true,
+            icon: AlertTriangle,
+            iconBg: 'bg-rose-50 text-rose-600'
+          }
+        ]
+        setStats(normalizedStats)
       } catch (error) {
         console.error("Error fetching system notifications:", error);
       } finally {
@@ -60,35 +114,41 @@ const SystemNotification = ({ onViewDetails }) => {
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(260px,0.85fr)] gap-6">
         {/* Notifications list */}
         <div className="space-y-3">
-          {notifications.map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <div
-                key={index}
-                className="flex items-center justify-between bg-white rounded-lg border border-gray-100 card-shadow px-5 h-[93px]"
-              >
-                <div className="flex items-start gap-4">
-                  <div
-                    className={`mt-0.5 h-10 w-10 rounded-2xl flex items-center justify-center ${item.iconBg}`}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900 leading-snug">
-                      {item.title}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">{item.time}</p>
-                  </div>
-                </div>
-                <button
-                  className="text-xs font-semibold text-teal-600 hover:text-teal-700"
-                  onClick={onViewDetails}
+          {notifications.length === 0 ? (
+            <div className="py-10 text-center text-sm text-gray-500 bg-gray-50/30 rounded-xl border border-gray-100">
+              No activities to show yet
+            </div>
+          ) : (
+            notifications.map((item, index) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={index}
+                  className="flex items-center justify-between bg-white rounded-lg border border-gray-100 card-shadow px-5 h-[93px]"
                 >
-                  View Details
-                </button>
-              </div>
-            );
-          })}
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={`mt-0.5 h-10 w-10 rounded-2xl flex items-center justify-center ${item.iconBg}`}
+                    >
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900 leading-snug">
+                        {item.title}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">{item.time}</p>
+                    </div>
+                  </div>
+                  <button
+                    className="text-xs font-semibold text-teal-600 hover:text-teal-700"
+                    onClick={onViewDetails}
+                  >
+                    View Details
+                  </button>
+                </div>
+              );
+            })
+          )}
         </div>
 
         {/* Right side stats */}
