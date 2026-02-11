@@ -410,7 +410,7 @@ const Dashboard = ({ onNavigate }) => {
         />
         <QuickActionButton
           icon={Send}
-          label="Send Notifications"
+          label="System Notifications"
           bgColor="bg-[#0F766E]"
           onClick={() => onNavigate?.("System Notification")}
         />
