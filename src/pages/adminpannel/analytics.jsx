@@ -31,6 +31,13 @@ const Analytics = () => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const iconMap = {
+    Users,
+    BarChart,
+    DollarSign,
+    Percent,
+  };
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
@@ -82,6 +89,11 @@ const Analytics = () => {
 
   const { statCards, trafficData, bookingsData, engagementMetrics, topListings } = data || {};
 
+  const normalizedStatCards = (statCards || []).map((card) => {
+    const icon = typeof card?.icon === 'string' ? (iconMap[card.icon] || Users) : (card?.icon || Users);
+    return { ...card, icon };
+  });
+
   const trafficOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -109,7 +121,7 @@ const Analytics = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((card) => (
+        {normalizedStatCards.map((card) => (
           <div
             key={card.label}
             className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 flex items-center justify-between card-shadow"

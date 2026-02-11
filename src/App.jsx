@@ -46,6 +46,82 @@ export default function App() {
   const [selectedActivities, setSelectedActivities] = useState([]) // Store selected activities for user profile
   const [currentUser, setCurrentUser] = useState(JSON.parse(localStorage.getItem('currentUser')) || null)
 
+  useEffect(() => {
+    const getOrCreateSessionId = () => {
+      try {
+        const existing = localStorage.getItem('kufi_session_id')
+        if (existing) return existing
+        const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+        localStorage.setItem('kufi_session_id', id)
+        return id
+      } catch {
+        return `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      }
+    }
+
+    const sessionId = getOrCreateSessionId()
+
+    const getRole = () => {
+      const storedUser = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('currentUser'))
+        } catch {
+          return null
+        }
+      })()
+      return storedUser?.role || localStorage.getItem('userRole') || null
+    }
+
+    const getUserId = () => {
+      const storedUser = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('currentUser'))
+        } catch {
+          return null
+        }
+      })()
+      return storedUser?._id || storedUser?.id || null
+    }
+
+    const sendPageView = async () => {
+      const path = window.location.hash || '#home'
+      try {
+        await api.post('/analytics/track/pageview', {
+          sessionId,
+          path,
+          role: getRole(),
+          userId: getUserId(),
+        })
+      } catch {
+      }
+    }
+
+    sendPageView()
+    const onHash = () => sendPageView()
+    window.addEventListener('hashchange', onHash)
+
+    const intervalSeconds = 15
+    const heartbeat = async () => {
+      const path = window.location.hash || '#home'
+      try {
+        await api.post('/analytics/track/heartbeat', {
+          sessionId,
+          seconds: intervalSeconds,
+          path,
+          role: getRole(),
+          userId: getUserId(),
+        })
+      } catch {
+      }
+    }
+    const intervalId = setInterval(heartbeat, intervalSeconds * 1000)
+
+    return () => {
+      window.removeEventListener('hashchange', onHash)
+      clearInterval(intervalId)
+    }
+  }, [])
+
   // States for dynamic content
   const [selectedActivityId, setSelectedActivityId] = useState(null)
   const [selectedCountryName, setSelectedCountryName] = useState('Italy')
