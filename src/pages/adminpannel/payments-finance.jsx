@@ -36,13 +36,84 @@ const PaymentsFinance = () => {
     const fetchPayments = async () => {
       try {
         setIsLoading(true);
-        const response = await api.get('/payments/transactions');
-        setTransactions(response.data.transactions || []);
-        setSummaryData(response.data.summary || {
-          totalRevenue: "$0",
-          commissionEarned: "$0",
-          pendingPayouts: "$0",
-          transactionCount: "0"
+        const response = await api.get('/admin/bookings');
+        const raw = Array.isArray(response.data)
+          ? response.data
+          : (response.data.bookings || response.data.data || []);
+
+        const list = Array.isArray(raw) ? raw : [];
+
+        const parseAmount = (booking) => {
+          const rawBudget = booking?.tripDetails?.budget;
+          if (!rawBudget) return 0;
+          const digits = String(rawBudget).replace(/[^0-9.]/g, '');
+          const num = Number(digits);
+          return Number.isFinite(num) ? Math.max(0, num) : 0;
+        };
+
+        const formatMoney = (value) => {
+          const n = Number(value) || 0;
+          return `$${n.toLocaleString()}`;
+        };
+
+        const deriveStatus = (bookingStatus) => {
+          const s = String(bookingStatus || 'pending').toLowerCase();
+          if (s === 'confirmed' || s === 'completed') return 'completed';
+          if (s === 'cancelled' || s === 'canceled' || s === 'failed') return 'failed';
+          return 'pending';
+        };
+
+        const mappedTransactions = list.map((b, idx) => {
+          const amountNumber = parseAmount(b);
+          const commissionNumber = Math.round(amountNumber * 0.1); // 10% placeholder
+
+          const titles = Array.isArray(b.items)
+            ? b.items.map(it => it.activity?.title || it.title).filter(Boolean).join(', ')
+            : '';
+
+          const userName = (() => {
+            const cd = b.contactDetails || {};
+            const full = `${cd.firstName || ''} ${cd.lastName || ''}`.trim();
+            if (full) return full;
+            if (b.user && typeof b.user === 'object' && b.user.name) return b.user.name;
+            return 'Traveler';
+          })();
+
+          const created = b.createdAt ? new Date(b.createdAt) : null;
+          const dateStr = created && !isNaN(created.getTime())
+            ? created.toISOString().split('T')[0]
+            : '';
+
+          const status = deriveStatus(b.status);
+
+          return {
+            id: b.code || (b._id ? `TXN-${String(b._id).slice(-6).toUpperCase()}` : `TXN-${idx + 1}`),
+            user: userName,
+            listing: titles || 'Custom itinerary',
+            amount: formatMoney(amountNumber),
+            commission: formatMoney(commissionNumber),
+            date: dateStr,
+            status,
+          };
+        });
+
+        const totals = list.reduce((acc, b) => {
+          const amount = parseAmount(b);
+          const commission = Math.round(amount * 0.1);
+          const status = deriveStatus(b.status);
+
+          acc.totalRevenue += amount;
+          acc.commission += commission;
+          if (status === 'pending') acc.pendingPayouts += amount;
+          return acc;
+        }, { totalRevenue: 0, commission: 0, pendingPayouts: 0 });
+
+        setTransactions(mappedTransactions);
+        setSummaryData({
+          totalRevenue: formatMoney(totals.totalRevenue),
+          commissionEarned: formatMoney(totals.commission),
+          pendingPayouts: formatMoney(totals.pendingPayouts),
+          transactionCount: String(mappedTransactions.length),
         });
       } catch (error) {
         console.error("Error fetching payments data:", error);
@@ -105,6 +176,11 @@ const PaymentsFinance = () => {
 
   return (
     <div className="space-y-6">
+      {isLoading && (
+        <div className="flex h-[200px] items-center justify-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#a26e35]"></div>
+        </div>
+      )}
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">
           Payment & Finance
