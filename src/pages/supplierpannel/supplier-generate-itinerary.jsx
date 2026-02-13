@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, MapPin, Users, DollarSign, Info } from "lucide-react";
 import api from "../../api";
 
@@ -245,6 +245,112 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     }
   };
 
+  const DRAFT_IMAGES_DB = "kufi_itinerary_draft_images";
+  const DRAFT_IMAGES_STORE = "images";
+
+  const openDraftImagesDb = () => {
+    return new Promise((resolve, reject) => {
+      try {
+        const req = indexedDB.open(DRAFT_IMAGES_DB, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(DRAFT_IMAGES_STORE)) {
+            db.createObjectStore(DRAFT_IMAGES_STORE, { keyPath: "key" });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  };
+
+  const idbPutImage = async (key, dataUrl) => {
+    if (!key) return;
+    const db = await openDraftImagesDb();
+    try {
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(DRAFT_IMAGES_STORE, "readwrite");
+        const store = tx.objectStore(DRAFT_IMAGES_STORE);
+        store.put({ key, dataUrl: String(dataUrl || "") });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+    } finally {
+      db.close();
+    }
+  };
+
+  const idbGetImage = async (key) => {
+    if (!key) return "";
+    const db = await openDraftImagesDb();
+    try {
+      const record = await new Promise((resolve, reject) => {
+        const tx = db.transaction(DRAFT_IMAGES_STORE, "readonly");
+        const store = tx.objectStore(DRAFT_IMAGES_STORE);
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      return String(record?.dataUrl || "");
+    } catch {
+      return "";
+    } finally {
+      db.close();
+    }
+  };
+
+  const parseMoney = (value) => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+    const cleaned = String(value)
+      .replace(/[^0-9.\-]/g, "")
+      .trim();
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const formatMoney = (value) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "$0";
+    const abs = Math.abs(n);
+    const formatted = abs.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    return n < 0 ? `$-${formatted}` : `$${formatted}`;
+  };
+
+  const parseMoneyRange = (value) => {
+    const raw = String(value ?? "").trim();
+    if (!raw) return { min: 0, max: 0, isRange: false, hasValue: false };
+    const cleaned = raw.replace(/\$/g, "").replace(/,/g, "").trim();
+    const parts = cleaned
+      .split("-")
+      .map((x) => x.trim())
+      .filter(Boolean);
+
+    if (parts.length >= 2) {
+      const a = parseMoney(parts[0]);
+      const b = parseMoney(parts[1]);
+      return {
+        min: Math.min(a, b),
+        max: Math.max(a, b),
+        isRange: true,
+        hasValue: true,
+      };
+    }
+
+    const n = parseMoney(cleaned);
+    return { min: n, max: n, isRange: false, hasValue: Boolean(raw) };
+  };
+
+  const formatRange = ({ min, max, isRange, hasValue }) => {
+    if (!hasValue) return "$0";
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return "$0";
+    if (!isRange || min === max) return formatMoney(min);
+    return `${formatMoney(min)} - ${formatMoney(max)}`;
+  };
+
   const normalized = useMemo(() => {
     const location =
       request?.tripDetails?.country ||
@@ -299,15 +405,45 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     };
   }, [request]);
 
+  const totalBudgetValue = useMemo(() => {
+    return parseMoney(travelDetails.budget);
+  }, [travelDetails.budget]);
+
+  const clientBudgetRange = useMemo(() => {
+    return parseMoneyRange(normalized.budget);
+  }, [normalized.budget]);
+
+  const remainingBudgetDisplay = useMemo(() => {
+    const total = totalBudgetValue;
+    if (!clientBudgetRange?.hasValue) return formatMoney(total);
+
+    const min = total - clientBudgetRange.max;
+    const max = total - clientBudgetRange.min;
+    const isRange = clientBudgetRange.isRange && clientBudgetRange.min !== clientBudgetRange.max;
+    return formatRange({ min, max, isRange, hasValue: true });
+  }, [clientBudgetRange, totalBudgetValue]);
+
   useEffect(() => {
-    if (normalized.location) {
+    const draftTd = draft?.payload?.travelDetails;
+    const hasDraftTravelDetails = Boolean(
+      draftTd &&
+      [draftTd?.destination, draftTd?.budget, draftTd?.startDate, draftTd?.endDate, draftTd?.preferences]
+        .some((v) => String(v || "").trim())
+    );
+
+    if (hasDraftTravelDetails) {
       setTravelDetails((prev) => ({
         ...prev,
-        destination: normalized.location,
-        budget: normalized.budget,
-        startDate: normalized.startDate,
-        endDate: normalized.endDate,
-        preferences: normalized.preferencesText,
+        ...draftTd,
+      }));
+    } else if (normalized.location) {
+      setTravelDetails((prev) => ({
+        ...prev,
+        destination: prev.destination || normalized.location,
+        budget: prev.budget || normalized.budget,
+        startDate: prev.startDate || normalized.startDate,
+        endDate: prev.endDate || normalized.endDate,
+        preferences: prev.preferences || normalized.preferencesText,
       }));
     }
 
@@ -552,6 +688,38 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
 
   const currentRequestId = request?._id || request?.id || request?.bookingId || request?.requestId || "";
 
+  const draftIdRef = useRef("");
+  useEffect(() => {
+    if (draft?.id) {
+      draftIdRef.current = String(draft.id);
+      return;
+    }
+    if (draftIdRef.current) return;
+    const base = currentRequestId ? `draft-${currentRequestId}` : `draft-${Date.now()}`;
+    draftIdRef.current = base;
+  }, [draft?.id, currentRequestId]);
+
+  const getDraftImageKey = (draftId, day) => `${String(draftId || "")}:${String(day || "")}`;
+
+  const persistImagesToIdb = async (draftId, list) => {
+    const arr = Array.isArray(list) ? list : [];
+    const tasks = [];
+    arr.forEach((d) => {
+      const day = d?.day;
+      const img = String(d?.imageDataUrl || "").trim();
+      if (!img) return;
+      if (!img.startsWith("data:image")) return;
+      const key = getDraftImageKey(draftId, day);
+      tasks.push(idbPutImage(key, img));
+    });
+    if (tasks.length === 0) return;
+    try {
+      await Promise.all(tasks);
+    } catch {
+      // ignore
+    }
+  };
+
   const handleBrowseImage = (day, file) => {
     if (!file) return;
     if (!String(file.type || "").toLowerCase().startsWith("image/")) return;
@@ -559,19 +727,82 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     reader.onload = () => {
       const result = typeof reader.result === "string" ? reader.result : "";
       setDaysData((prev) => prev.map((d) => (d.day === day ? { ...d, imageDataUrl: result } : d)));
+      const did = draftIdRef.current;
+      if (did && result) {
+        idbPutImage(getDraftImageKey(did, day), result).catch(() => {});
+      }
     };
     reader.readAsDataURL(file);
   };
 
   const handleRemoveImage = (day) => {
     setDaysData((prev) => prev.map((d) => (d.day === day ? { ...d, imageDataUrl: "" } : d)));
+    const did = draftIdRef.current;
+    if (did) {
+      const key = getDraftImageKey(did, day);
+      openDraftImagesDb()
+        .then((db) => new Promise((resolve, reject) => {
+          const tx = db.transaction(DRAFT_IMAGES_STORE, "readwrite");
+          const store = tx.objectStore(DRAFT_IMAGES_STORE);
+          store.delete(key);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+          tx.onabort = () => reject(tx.error);
+        }).finally(() => db.close()))
+        .catch(() => {});
+    }
   };
+
+  useEffect(() => {
+    const did = draftIdRef.current;
+    if (!did) return;
+    const list = Array.isArray(draft?.payload?.daysData) ? draft.payload.daysData : [];
+    if (!Array.isArray(list) || list.length === 0) return;
+
+    let cancelled = false;
+    const restore = async () => {
+      try {
+        const tasks = list.map(async (d) => {
+          const day = d?.day;
+          if (!day) return { day, img: "" };
+          const key = getDraftImageKey(did, day);
+          const img = await idbGetImage(key);
+          return { day, img };
+        });
+        const results = await Promise.all(tasks);
+        if (cancelled) return;
+
+        setDaysData((prev) => {
+          const prevList = Array.isArray(prev) ? prev : [];
+          if (prevList.length === 0) return prevList;
+          const imgMap = new Map(results.map((r) => [String(r.day), String(r.img || "")]));
+          return prevList.map((dayObj) => {
+            const k = String(dayObj?.day);
+            const img = imgMap.get(k);
+            if (!img) return dayObj;
+            if (String(dayObj?.imageDataUrl || "").trim()) return dayObj;
+            return { ...dayObj, imageDataUrl: img };
+          });
+        });
+      } catch {
+        // ignore
+      }
+    };
+
+    restore();
+    return () => {
+      cancelled = true;
+    };
+  }, [draft]);
 
   const buildDraftPayload = () => {
     return {
       travelDetails,
-      daysData,
-      requestSnapshot: request || null,
+      daysData: (Array.isArray(daysData) ? daysData : []).map((d) => ({
+        ...d,
+        imageDataUrl: "",
+      })),
+      requestSnapshot: null,
     };
   };
 
@@ -633,40 +864,95 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     };
   };
 
+  const saveDraftInternal = async ({ showMessage, navigate } = { showMessage: true, navigate: true }) => {
+    const payload = buildDraftPayload();
+    const id = draftIdRef.current || draft?.id || `draft-${Date.now()}`;
+    const title = normalized.title || request?.experience || request?.title || travelDetails.destination || "Itinerary Draft";
+    const author = request?.name || request?.travelerName || request?.contactDetails?.firstName || "Traveler";
+
+    const draftObj = {
+      id,
+      type: "itinerary",
+      requestId: currentRequestId || draft?.requestId || "",
+      title,
+      author,
+      lastEdit: new Date().toISOString(),
+      progress: calcProgress(payload),
+      payload,
+    };
+
+    await persistImagesToIdb(id, daysData);
+
+    const existing = readDrafts();
+    const next = [draftObj, ...existing.filter((d) => d?.id !== id)];
+
+    try {
+      writeDrafts(next);
+    } catch (e) {
+      const msg = String(e?.message || "");
+      const isQuota = e?.name === "QuotaExceededError" || /quota/i.test(msg);
+      if (!isQuota) throw e;
+
+      const shrink = next.map((d) => {
+        if (d?.id !== id) return d;
+        const p = d?.payload || {};
+        const compactDays = (Array.isArray(p?.daysData) ? p.daysData : []).map((day) => ({
+          day: day?.day,
+          activity: day?.activity || "",
+          location: day?.location || "",
+          description: day?.description || "",
+          cost: day?.cost || "",
+          startTime: day?.startTime || "",
+          endTime: day?.endTime || "",
+          imageDataUrl: "",
+        }));
+        return {
+          ...d,
+          payload: {
+            travelDetails: p?.travelDetails || {},
+            daysData: compactDays,
+            requestSnapshot: null,
+          },
+        };
+      });
+
+      writeDrafts(shrink);
+    }
+
+    window.dispatchEvent(new Event("kufi_itinerary_drafts_updated"));
+
+    if (showMessage) {
+      setDraftSavedMessage("Saved to drafts");
+    }
+
+    if (navigate) {
+      window.setTimeout(() => {
+        onGoToBookings?.();
+      }, 800);
+    }
+  };
+
   const handleSaveDraft = async () => {
     try {
       setIsSaving(true);
       setDraftSavedMessage("");
       setSentSuccessMessage("");
-      const payload = buildDraftPayload();
-      const id = draft?.id || `draft-${Date.now()}`;
-      const title = normalized.title || request?.experience || request?.title || travelDetails.destination || "Itinerary Draft";
-      const author = request?.name || request?.travelerName || request?.contactDetails?.firstName || "Traveler";
-
-      const draftObj = {
-        id,
-        type: "itinerary",
-        requestId: currentRequestId || draft?.requestId || "",
-        title,
-        author,
-        lastEdit: new Date().toISOString(),
-        progress: calcProgress(payload),
-        payload,
-      };
-
-      const existing = readDrafts();
-      const next = [draftObj, ...existing.filter((d) => d?.id !== id)];
-      writeDrafts(next);
-      window.dispatchEvent(new Event("kufi_itinerary_drafts_updated"));
-
-      setDraftSavedMessage("Saved to drafts");
-      window.setTimeout(() => {
-        onGoToBookings?.();
-      }, 800);
+      await saveDraftInternal({ showMessage: true, navigate: true });
     } finally {
       setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    if (!currentRequestId && !draftIdRef.current) return;
+    if (isSaving || isSending) return;
+
+    const t = window.setTimeout(() => {
+      saveDraftInternal({ showMessage: false, navigate: false }).catch(() => {});
+    }, 700);
+
+    return () => window.clearTimeout(t);
+  }, [travelDetails, daysData, currentRequestId, isSaving, isSending]);
 
   const handleSendToTraveler = async () => {
     try {
@@ -1001,15 +1287,15 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
               <p className={`text-[11px] font-semibold mb-1 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Cost Breakdown</p>
               <div className="flex items-center justify-between">
                 <span>Total Budget</span>
-                <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{travelDetails.budget ? `$${travelDetails.budget}` : '—'}</span>
+                <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{formatMoney(totalBudgetValue)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Itinerary Cost</span>
-                <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>$1,350</span>
+                <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{formatRange(clientBudgetRange)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="opacity-70">Remaining</span>
-                <span className="font-semibold text-emerald-600">$3,650</span>
+                <span className="font-semibold text-emerald-600">{remainingBudgetDisplay}</span>
               </div>
             </div>
           </div>

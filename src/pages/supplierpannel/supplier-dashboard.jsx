@@ -234,46 +234,46 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
       />
 
       <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-y-auto">
+        <div className={`mb-4 flex items-center justify-between rounded-b-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900 border-b border-slate-800" : "bg-white"}`}>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={goBack}
+              disabled={historyIndex === 0}
+              className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${historyIndex === 0 ? "opacity-50 cursor-not-allowed" : ""} ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+            >
+              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
+            <button
+              onClick={goForward}
+              disabled={historyIndex === history.length - 1}
+              className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${historyIndex === history.length - 1 ? "opacity-50 cursor-not-allowed" : ""} ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+            >
+              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => navigateTo("Requests")}
+              className={`relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+            >
+              <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-red-500 border-2 border-white" />
+            </button>
+            <button
+              onClick={() => navigateTo("Profile")}
+              className={`hidden sm:flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            <div className="hidden sm:block">
+              <ProfilePic user={JSON.parse(localStorage.getItem('currentUser'))} size="sm" />
+            </div>
+          </div>
+        </div>
+
         {activeSection === "Dashboard" && (
           <>
-            <div className={`mb-4 flex items-center justify-between rounded-b-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900 border-b border-slate-800" : "bg-white"}`}>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={goBack}
-                  disabled={historyIndex === 0}
-                  className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${historyIndex === 0 ? "opacity-50 cursor-not-allowed" : ""} ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
-                >
-                  <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-                <button
-                  onClick={goForward}
-                  disabled={historyIndex === history.length - 1}
-                  className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${historyIndex === history.length - 1 ? "opacity-50 cursor-not-allowed" : ""} ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
-                >
-                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 sm:gap-3">
-                <button
-                  onClick={() => navigateTo("Requests")}
-                  className={`relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
-                >
-                  <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-red-500 border-2 border-white" />
-                </button>
-                <button
-                  onClick={() => navigateTo("Profile")}
-                  className={`hidden sm:flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
-                >
-                  <Settings className="w-4 h-4" />
-                </button>
-                <div className="hidden sm:block">
-                  <ProfilePic user={JSON.parse(localStorage.getItem('currentUser'))} size="sm" />
-                </div>
-              </div>
-            </div>
-
             <div className="mb-4 sm:mb-5">
               <h1 className={`text-lg sm:text-xl font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-gray-900"}`}>Dashboard</h1>
               <p className={`text-xs sm:text-sm mt-1 transition-colors duration-300 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
