@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MapPin, Plus, Trash2, Image as ImageIcon, Search, X, ChevronDown } from "lucide-react";
+import { MapPin, Plus, Trash2, Image as ImageIcon, Search, X, ChevronDown, Pencil } from "lucide-react";
 import api from "../../api";
 
 const CityManagement = () => {
@@ -8,6 +8,7 @@ const CityManagement = () => {
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [editingCityId, setEditingCityId] = useState(null);
     const [newCity, setNewCity] = useState({
         name: "",
         country: "",
@@ -48,14 +49,30 @@ const CityManagement = () => {
     const handleAddCity = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/cities', newCity);
+            if (editingCityId) {
+                await api.put(`/cities/${editingCityId}`, newCity);
+            } else {
+                await api.post('/cities', newCity);
+            }
             setShowAddModal(false);
+            setEditingCityId(null);
             setNewCity({ name: "", country: "", description: "", image: "" });
             fetchData();
         } catch (error) {
             console.error("Error adding city:", error);
             alert("Failed to add city");
         }
+    };
+
+    const handleEditCity = (city) => {
+        setEditingCityId(city?._id || null);
+        setNewCity({
+            name: city?.name || "",
+            country: city?.country || "",
+            description: city?.description || "",
+            image: city?.image || "",
+        });
+        setShowAddModal(true);
     };
 
     const handleDeleteCity = async (id) => {
@@ -151,6 +168,12 @@ const CityManagement = () => {
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <button
+                                                        onClick={() => handleEditCity(city)}
+                                                        className="p-2 text-gray-400 hover:text-[#704b24] transition-colors rounded-lg hover:bg-[#f7f1e7]"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                    <button
                                                         onClick={() => handleDeleteCity(city._id)}
                                                         className="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
                                                     >
@@ -178,8 +201,12 @@ const CityManagement = () => {
                 <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200">
                         <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                            <h2 className="text-xl font-semibold text-slate-900">Add New City</h2>
-                            <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                            <h2 className="text-xl font-semibold text-slate-900">{editingCityId ? 'Edit City' : 'Add New City'}</h2>
+                            <button onClick={() => {
+                                setShowAddModal(false)
+                                setEditingCityId(null)
+                                setNewCity({ name: "", country: "", description: "", image: "" })
+                            }} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                                 <X className="w-5 h-5 text-gray-500" />
                             </button>
                         </div>
@@ -244,7 +271,11 @@ const CityManagement = () => {
                             <div className="pt-4 flex gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => setShowAddModal(false)}
+                                    onClick={() => {
+                                        setShowAddModal(false)
+                                        setEditingCityId(null)
+                                        setNewCity({ name: "", country: "", description: "", image: "" })
+                                    }}
                                     className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-slate-600 font-medium hover:bg-gray-50 transition-all"
                                 >
                                     Cancel
@@ -253,7 +284,7 @@ const CityManagement = () => {
                                     type="submit"
                                     className="flex-1 bg-[#704b24] hover:bg-[#5a3c1d] text-white px-4 py-2.5 rounded-xl font-medium transition-all shadow-sm active:scale-95"
                                 >
-                                    Save City
+                                    {editingCityId ? 'Update City' : 'Save City'}
                                 </button>
                             </div>
                         </form>

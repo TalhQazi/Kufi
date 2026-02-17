@@ -33,9 +33,10 @@ export default function App() {
       }
     })()
     const role = storedUser?.role || localStorage.getItem('userRole')
+    const token = localStorage.getItem('authToken')
 
-    if ((path === 'home' || !rawHash) && role === 'supplier') return 'supplier'
-    if ((path === 'home' || !rawHash) && role === 'admin') return 'admin'
+    if ((path === 'home' || !rawHash) && role === 'supplier' && token) return 'supplier'
+    if ((path === 'home' || !rawHash) && role === 'admin' && token) return 'admin'
     return path
   }
 
@@ -45,6 +46,29 @@ export default function App() {
   const [bookingData, setBookingData] = useState(null) // Store booking form data
   const [selectedActivities, setSelectedActivities] = useState([]) // Store selected activities for user profile
   const [currentUser, setCurrentUser] = useState(JSON.parse(localStorage.getItem('currentUser')) || null)
+
+  const hasAuthToken = () => {
+    try {
+      return Boolean(localStorage.getItem('authToken'))
+    } catch {
+      return false
+    }
+  }
+
+  const getStoredRole = () => {
+    try {
+      const storedUser = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('currentUser'))
+        } catch {
+          return null
+        }
+      })()
+      return (storedUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
+    } catch {
+      return ''
+    }
+  }
 
   useEffect(() => {
     const getOrCreateSessionId = () => {
@@ -274,6 +298,36 @@ export default function App() {
       const newPage = (event.type === 'popstate' ? event.state?.page : window.location.hash.slice(1)) || 'home';
 
       const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
+
+      const isAdminRoute = String(newPage || '').startsWith('admin')
+      const isSupplierRoute = String(newPage || '').startsWith('supplier')
+
+      // Block direct URL/hash navigation to admin/supplier dashboards when not authenticated.
+      // If a user is logged out (no token), force them to login first.
+      if ((isAdminRoute || isSupplierRoute) && !hasAuthToken()) {
+        setIsPopState(true);
+        setPage('home');
+        setShowModal('login')
+        window.history.replaceState({ page: 'home' }, '', '#home')
+        return
+      }
+
+      // Block role mismatch (e.g. logged in as user but tries to open #admin)
+      if (isAdminRoute && getStoredRole() !== 'admin') {
+        setIsPopState(true);
+        setPage('home');
+        setShowModal('login')
+        window.history.replaceState({ page: 'home' }, '', '#home')
+        return
+      }
+
+      if (isSupplierRoute && getStoredRole() !== 'supplier') {
+        setIsPopState(true);
+        setPage('home');
+        setShowModal('login')
+        window.history.replaceState({ page: 'home' }, '', '#home')
+        return
+      }
 
       // Keep suppliers/admins inside their dashboards unless they logout
       if (role === 'supplier' && newPage !== 'supplier') {
@@ -632,18 +686,42 @@ export default function App() {
 
   // simple routing
   if (page === 'admin') {
+    const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
+    if (!hasAuthToken() || role !== 'admin') {
+      if (window.location.hash !== '#home') window.location.hash = '#home'
+      if (!showModal) setShowModal('login')
+      return renderUserPage()
+    }
     return <AdminApp initialPage="Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('admin')} />
   }
 
   if (page === 'admin-profile') {
+    const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
+    if (!hasAuthToken() || role !== 'admin') {
+      if (window.location.hash !== '#home') window.location.hash = '#home'
+      if (!showModal) setShowModal('login')
+      return renderUserPage()
+    }
     return <AdminApp initialPage="Profile" onLogout={handleLogout} onHomeClick={() => navigateTo('admin')} />
   }
 
   if (page === 'admin-settings') {
+    const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
+    if (!hasAuthToken() || role !== 'admin') {
+      if (window.location.hash !== '#home') window.location.hash = '#home'
+      if (!showModal) setShowModal('login')
+      return renderUserPage()
+    }
     return <AdminApp initialPage="Settings" onLogout={handleLogout} onHomeClick={() => navigateTo('admin')} />
   }
 
   if (page === 'supplier') {
+    const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
+    if (!hasAuthToken() || role !== 'supplier') {
+      if (window.location.hash !== '#home') window.location.hash = '#home'
+      if (!showModal) setShowModal('login')
+      return renderUserPage()
+    }
     return <AdminApp initialPage="Supplier Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('supplier')} />
   }
 

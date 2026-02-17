@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Globe, Plus, Trash2, Image as ImageIcon, Search, X } from "lucide-react";
+import { Globe, Plus, Trash2, Image as ImageIcon, Search, X, Pencil } from "lucide-react";
 import api from "../../api";
 
 const CountryManagement = () => {
@@ -7,6 +7,7 @@ const CountryManagement = () => {
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [editingCountryId, setEditingCountryId] = useState(null);
     const [newCountry, setNewCountry] = useState({
         name: "",
         description: "",
@@ -32,14 +33,29 @@ const CountryManagement = () => {
     const handleAddCountry = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/countries', newCountry);
+            if (editingCountryId) {
+                await api.put(`/countries/${editingCountryId}`, newCountry);
+            } else {
+                await api.post('/countries', newCountry);
+            }
             setShowAddModal(false);
+            setEditingCountryId(null);
             setNewCountry({ name: "", description: "", image: "" });
             fetchCountries();
         } catch (error) {
             console.error("Error adding country:", error);
             alert("Failed to add country");
         }
+    };
+
+    const handleEditCountry = (country) => {
+        setEditingCountryId(country?._id || null);
+        setNewCountry({
+            name: country?.name || "",
+            description: country?.description || "",
+            image: country?.image || country?.imageUrl || "",
+        });
+        setShowAddModal(true);
     };
 
     const handleDeleteCountry = async (id) => {
@@ -127,6 +143,12 @@ const CountryManagement = () => {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <button
+                                                    onClick={() => handleEditCountry(country)}
+                                                    className="p-2 text-gray-400 hover:text-[#704b24] transition-colors rounded-lg hover:bg-[#f7f1e7]"
+                                                >
+                                                    <Pencil className="w-4 h-4" />
+                                                </button>
+                                                <button
                                                     onClick={() => handleDeleteCountry(country._id)}
                                                     className="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
                                                 >
@@ -153,8 +175,12 @@ const CountryManagement = () => {
                 <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200">
                         <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                            <h2 className="text-xl font-semibold text-slate-900">Add New Country</h2>
-                            <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                            <h2 className="text-xl font-semibold text-slate-900">{editingCountryId ? 'Edit Country' : 'Add New Country'}</h2>
+                            <button onClick={() => {
+                                setShowAddModal(false)
+                                setEditingCountryId(null)
+                                setNewCountry({ name: "", description: "", image: "" })
+                            }} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                                 <X className="w-5 h-5 text-gray-500" />
                             </button>
                         </div>
@@ -200,7 +226,11 @@ const CountryManagement = () => {
                             <div className="pt-4 flex gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => setShowAddModal(false)}
+                                    onClick={() => {
+                                        setShowAddModal(false)
+                                        setEditingCountryId(null)
+                                        setNewCountry({ name: "", description: "", image: "" })
+                                    }}
                                     className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-slate-600 font-medium hover:bg-gray-50 transition-all"
                                 >
                                     Cancel
@@ -209,7 +239,7 @@ const CountryManagement = () => {
                                     type="submit"
                                     className="flex-1 bg-[#704b24] hover:bg-[#5a3c1d] text-white px-4 py-2.5 rounded-xl font-medium transition-all shadow-sm active:scale-95"
                                 >
-                                    Save Country
+                                    {editingCountryId ? 'Update Country' : 'Save Country'}
                                 </button>
                             </div>
                         </form>

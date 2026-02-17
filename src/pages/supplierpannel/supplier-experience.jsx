@@ -282,6 +282,9 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
   const [selectedCityId, setSelectedCityId] = useState(experience?.cityId || "");
   const [destLoading, setDestLoading] = useState(true);
 
+  const [supplierCountryName, setSupplierCountryName] = useState("");
+  const [lockedCountryId, setLockedCountryId] = useState("");
+
   // Categories from website (same as homepage CategoriesSection)
   const websiteCategories = [
     "Culture",
@@ -309,6 +312,48 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
     };
     fetchCountries();
   }, []);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('currentUser')
+      const user = stored ? JSON.parse(stored) : null
+      const name = user?.country || user?.Country || user?.profile?.country || ''
+      setSupplierCountryName(String(name || '').trim())
+    } catch {
+      setSupplierCountryName('')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (supplierCountryName) return
+    const fetchSupplierCountry = async () => {
+      try {
+        const res = await api.get('/auth/profile')
+        const name = res?.data?.country || res?.data?.user?.country || ''
+        const next = String(name || '').trim()
+        if (next) setSupplierCountryName(next)
+      } catch {
+      }
+    }
+    fetchSupplierCountry()
+  }, [supplierCountryName])
+
+  useEffect(() => {
+    if (!supplierCountryName || !countries.length) return
+    const normalized = String(supplierCountryName).trim()
+
+    const matchedById = countries.find((c) => String(c?._id || c?.id || '') === normalized)
+    const matchedByName = countries.find((c) => String(c?.name || '').toLowerCase() === normalized.toLowerCase())
+    const matched = matchedById || matchedByName
+    const matchedId = matched?._id || matched?.id || ''
+    if (!matchedId) return
+
+    setLockedCountryId(matchedId)
+    if (selectedCountryId !== matchedId) {
+      setSelectedCountryId(matchedId)
+      setSelectedCityId("")
+    }
+  }, [supplierCountryName, countries])
 
   useEffect(() => {
     if (!selectedCountryId) {
@@ -449,7 +494,7 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
                         setSelectedCountryId(e.target.value);
                         setSelectedCityId("");
                       }}
-                      disabled={destLoading}
+                      disabled={destLoading || !!lockedCountryId}
                       className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
                     >
                       <option value="">Select country</option>

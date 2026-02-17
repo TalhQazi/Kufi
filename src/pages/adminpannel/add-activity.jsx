@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Upload } from "lucide-react";
 import api from "../../api";
 
-const AddActivity = ({ onBack }) => {
+const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
   const [countries, setCountries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -16,12 +16,49 @@ const AddActivity = ({ onBack }) => {
     status: "active",
     price: "",
     thumbnail: "",
-    addOns: {
-      quadBiking: false,
-      campingGear: false,
-      photographyPackage: false,
-    },
+    addOns: [""],
   });
+
+  useEffect(() => {
+    if (!initialData) return
+    const normalizeAddOns = () => {
+      const raw = initialData.addOns
+      if (Array.isArray(raw)) {
+        const cleaned = raw.map((v) => String(v || '').trim()).filter(Boolean)
+        return cleaned.length ? cleaned : [""]
+      }
+
+      if (raw && typeof raw === 'object') {
+        const legacyMap = {
+          quadBiking: 'Quad Biking',
+          campingGear: 'Camping Gear',
+          photographyPackage: 'Photography Package',
+        }
+        const cleaned = Object.keys(legacyMap)
+          .filter((k) => !!raw[k])
+          .map((k) => legacyMap[k])
+          .filter(Boolean)
+        return cleaned.length ? cleaned : [""]
+      }
+
+      return [""]
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      title: initialData.title || initialData.name || "",
+      description: initialData.description || "",
+      category: initialData.category || "",
+      difficulty: initialData.difficulty || prev.difficulty,
+      location: initialData.location || initialData.country || "",
+      season: initialData.season || prev.season,
+      duration: initialData.duration || "",
+      status: (initialData.status === 'approved' || initialData.status === 'active') ? 'active' : 'inactive',
+      price: initialData.price != null ? String(initialData.price) : "",
+      thumbnail: initialData.thumbnail || initialData.image || "",
+      addOns: normalizeAddOns(),
+    }))
+  }, [initialData])
 
   // Fetch countries on mount
   useEffect(() => {
@@ -51,15 +88,20 @@ const AddActivity = ({ onBack }) => {
     }));
   };
 
-  const handleAddOnChange = (key) => {
-    setFormData((prev) => ({
-      ...prev,
-      addOns: {
-        ...(prev.addOns || {}),
-        [key]: !(prev.addOns && prev.addOns[key]),
-      },
-    }));
-  };
+  const handleAddOnInputChange = (index, value) => {
+    setFormData((prev) => {
+      const next = Array.isArray(prev.addOns) ? [...prev.addOns] : [""]
+      next[index] = value
+      return { ...prev, addOns: next }
+    })
+  }
+
+  const handleAddOnAppend = () => {
+    setFormData((prev) => {
+      const current = Array.isArray(prev.addOns) ? prev.addOns : [""]
+      return { ...prev, addOns: [...current, ""] }
+    })
+  }
 
   const handleThumbnailChange = (file) => {
     if (!file) return;
@@ -95,16 +137,22 @@ const AddActivity = ({ onBack }) => {
         image: formData.thumbnail || undefined,
         // Map UI status (active/inactive) to valid enum values
         status: formData.status === "active" ? "approved" : "pending",
-        addOns: {
-          quadBiking: !!formData?.addOns?.quadBiking,
-          campingGear: !!formData?.addOns?.campingGear,
-          photographyPackage: !!formData?.addOns?.photographyPackage,
-        },
+        addOns: (Array.isArray(formData.addOns) ? formData.addOns : [])
+          .map((v) => String(v || '').trim())
+          .filter(Boolean),
       };
 
-      await api.post("/activities", payload);
-      alert("Activity saved successfully!");
-      if (onBack) {
+      if (activityId) {
+        await api.put(`/activities/${activityId}`, payload);
+        alert("Activity updated successfully!");
+      } else {
+        await api.post("/activities", payload);
+        alert("Activity saved successfully!");
+      }
+
+      if (onSaved) {
+        onSaved();
+      } else if (onBack) {
         onBack();
       }
     } catch (error) {
@@ -223,34 +271,32 @@ const AddActivity = ({ onBack }) => {
 
         <div className="pt-2">
           <h3 className="text-sm font-semibold text-slate-900 mb-3">Optional Add-ons</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={!!formData?.addOns?.quadBiking}
-                onChange={() => handleAddOnChange('quadBiking')}
-                className="w-4 h-4"
-              />
-              Quad Biking
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={!!formData?.addOns?.campingGear}
-                onChange={() => handleAddOnChange('campingGear')}
-                className="w-4 h-4"
-              />
-              Camping Gear
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={!!formData?.addOns?.photographyPackage}
-                onChange={() => handleAddOnChange('photographyPackage')}
-                className="w-4 h-4"
-              />
-              Photography Package
-            </label>
+          <div className="space-y-3">
+            {(Array.isArray(formData.addOns) ? formData.addOns : [""]).map((value, idx) => {
+              const isLast = idx === (Array.isArray(formData.addOns) ? formData.addOns.length - 1 : 0)
+              const canAppend = String(value || '').trim().length > 0
+              return (
+                <div key={idx} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => handleAddOnInputChange(idx, e.target.value)}
+                    placeholder="e.g., Pickup Service"
+                    className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#a26e35]/30"
+                  />
+                  {isLast && (
+                    <button
+                      type="button"
+                      disabled={!canAppend}
+                      onClick={handleAddOnAppend}
+                      className="px-3 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
+                    >
+                      Add
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
 

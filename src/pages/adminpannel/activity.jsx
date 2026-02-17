@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { ArrowRight, Search, Eye, Check, X, Trash2 } from "lucide-react";
+import { ArrowRight, Search, Eye, Check, X, Trash2, Pencil } from "lucide-react";
 import api from "../../api";
+import AddActivity from "./add-activity";
 
 const StatusBadge = ({ status }) => {
   const styles =
@@ -24,6 +25,9 @@ const Activity = ({ onAddNew }) => {
   const [listingData, setListingData] = useState([]);
   const [viewingActivity, setViewingActivity] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
+
+  const [editingActivity, setEditingActivity] = useState(null);
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     fetchActivities();
@@ -66,6 +70,19 @@ const Activity = ({ onAddNew }) => {
       setViewLoading(false);
     }
   };
+
+  const handleEdit = async (id) => {
+    try {
+      setEditLoading(true)
+      const res = await api.get(`/activities/${id}`)
+      setEditingActivity(res.data)
+    } catch (error) {
+      console.error("Error fetching activity for edit:", error)
+      alert("Failed to load activity for edit")
+    } finally {
+      setEditLoading(false)
+    }
+  }
 
   const handleStatusChange = async (id, newStatus) => {
     try {
@@ -215,6 +232,13 @@ const Activity = ({ onAddNew }) => {
                   >
                     <Eye className="w-3.5 h-3.5" /> View
                   </button>
+                  <button
+                    className="flex-1 py-1.5 rounded-lg bg-[#f7f1e7] text-[#704b24] text-xs font-bold flex items-center justify-center gap-1 hover:bg-[#efe2cf] transition-colors"
+                    onClick={() => handleEdit(item.id)}
+                    disabled={editLoading}
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> Edit
+                  </button>
                   {item.status !== "approved" && (
                     <button
                       onClick={() => handleStatusChange(item.id, "approved")}
@@ -299,6 +323,14 @@ const Activity = ({ onAddNew }) => {
                           aria-label="View"
                         >
                           <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="text-[#704b24] hover:text-[#8b5c2a] transition-colors p-1.5 rounded-lg hover:bg-[#f7f1e7]"
+                          onClick={() => handleEdit(item.id)}
+                          aria-label="Edit"
+                          disabled={editLoading}
+                        >
+                          <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleStatusChange(item.id, "approved")}
@@ -392,6 +424,33 @@ const Activity = ({ onAddNew }) => {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingActivity && (
+        <div className="fixed inset-0 bg-black/40 z-[70] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-5xl w-full shadow-2xl max-h-[92vh] overflow-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-slate-900">Edit Activity</h2>
+              <button
+                className="text-gray-400 hover:text-gray-600 text-sm"
+                onClick={() => setEditingActivity(null)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="p-6">
+              <AddActivity
+                initialData={editingActivity}
+                activityId={editingActivity?._id || editingActivity?.id}
+                onBack={() => setEditingActivity(null)}
+                onSaved={() => {
+                  setEditingActivity(null)
+                  fetchActivities()
+                }}
+              />
             </div>
           </div>
         </div>

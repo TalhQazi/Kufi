@@ -28,6 +28,7 @@ export default function ActivityDetail({
         campingGear: false,
         photographyPackage: false
     })
+    const [selectedAddOnLabels, setSelectedAddOnLabels] = useState([])
     const [showProfileDropdown, setShowProfileDropdown] = useState(false)
     const dropdownRef = useRef(null)
 
@@ -40,6 +41,7 @@ export default function ActivityDetail({
                 campingGear: false,
                 photographyPackage: false
             })
+            setSelectedAddOnLabels([])
 
             if (!activityId) {
                 setIsLoading(false)
@@ -157,12 +159,40 @@ export default function ActivityDetail({
         setAddOns(prev => ({ ...prev, [key]: !prev[key] }))
     }
 
-    const availableAddOns = activity?.addOns || {}
-    const hasAnyAddOns = !!(
-        availableAddOns?.quadBiking ||
-        availableAddOns?.campingGear ||
-        availableAddOns?.photographyPackage
-    )
+    const toggleAddOnLabel = (label) => {
+        const normalized = String(label || '').trim()
+        if (!normalized) return
+        if (!availableAddOnLabels.includes(normalized)) return
+        setSelectedAddOnLabels((prev) => {
+            const next = Array.isArray(prev) ? [...prev] : []
+            const idx = next.indexOf(normalized)
+            if (idx >= 0) {
+                next.splice(idx, 1)
+            } else {
+                next.push(normalized)
+            }
+            return next
+        })
+    }
+
+    const rawAvailableAddOns = activity?.addOns
+    const legacyAddOnMap = {
+        quadBiking: 'Quad Biking',
+        campingGear: 'Camping Gear',
+        photographyPackage: 'Photography Package',
+    }
+
+    const availableAddOnLabels = Array.isArray(rawAvailableAddOns)
+        ? rawAvailableAddOns.map((v) => String(v || '').trim()).filter(Boolean)
+        : (rawAvailableAddOns && typeof rawAvailableAddOns === 'object')
+            ? Object.keys(legacyAddOnMap).filter((k) => !!rawAvailableAddOns[k]).map((k) => legacyAddOnMap[k])
+            : []
+
+    const availableAddOns = (rawAvailableAddOns && typeof rawAvailableAddOns === 'object' && !Array.isArray(rawAvailableAddOns))
+        ? rawAvailableAddOns
+        : {}
+
+    const hasAnyAddOns = Array.isArray(availableAddOnLabels) && availableAddOnLabels.length > 0
 
     const activityImage = activity?.imageUrl || activity?.images?.[0] || activity?.image || "/assets/dest-1.jpeg"
     const activityTitle = activity?.title || "Activity"
@@ -561,7 +591,9 @@ export default function ActivityDetail({
                                                             location: activity?.location,
                                                             image: activity?.image,
                                                             travelers: travelers,
-                                                            addOns: addOns
+                                                            addOns: Array.isArray(rawAvailableAddOns)
+                                                                ? selectedAddOnLabels
+                                                                : addOns
                                                         })
                                                     }
                                                 }}
@@ -611,7 +643,29 @@ export default function ActivityDetail({
                                 <div className="mb-6">
                                     <h3 className="text-sm font-bold text-slate-900 mb-3">Optional Add-ons</h3>
                                     <div className="space-y-3">
-                                        {availableAddOns?.quadBiking && (
+                                        {Array.isArray(rawAvailableAddOns) ? (
+                                            <div className="space-y-3">
+                                                {availableAddOnLabels.map((label, idx) => {
+                                                    const checked = Array.isArray(selectedAddOnLabels)
+                                                        ? selectedAddOnLabels.includes(label)
+                                                        : false
+
+                                                    return (
+                                                        <label key={`${label}-${idx}`} className="flex items-center gap-3 cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={checked}
+                                                                onChange={() => toggleAddOnLabel(label)}
+                                                                className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
+                                                            />
+                                                            <div>
+                                                                <div className="text-sm font-medium text-slate-900">{label}</div>
+                                                            </div>
+                                                        </label>
+                                                    )
+                                                })}
+                                            </div>
+                                        ) : availableAddOns?.quadBiking && (
                                             <label className="flex items-center gap-3 cursor-pointer">
                                                 <input
                                                     type="checkbox"
@@ -625,7 +679,7 @@ export default function ActivityDetail({
                                             </label>
                                         )}
 
-                                        {availableAddOns?.campingGear && (
+                                        {!Array.isArray(rawAvailableAddOns) && availableAddOns?.campingGear && (
                                             <label className="flex items-center gap-3 cursor-pointer">
                                                 <input
                                                     type="checkbox"
@@ -639,7 +693,7 @@ export default function ActivityDetail({
                                             </label>
                                         )}
 
-                                        {availableAddOns?.photographyPackage && (
+                                        {!Array.isArray(rawAvailableAddOns) && availableAddOns?.photographyPackage && (
                                             <label className="flex items-center gap-3 cursor-pointer">
                                                 <input
                                                     type="checkbox"
@@ -667,7 +721,9 @@ export default function ActivityDetail({
                                             location: activityLocation || 'Location',
                                             image: activityImage,
                                             travelers: travelers,
-                                            addOns: addOns
+                                            addOns: Array.isArray(rawAvailableAddOns)
+                                                ? selectedAddOnLabels
+                                                : addOns
                                         })
                                     }
                                 }}
