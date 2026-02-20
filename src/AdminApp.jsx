@@ -12,6 +12,7 @@ import SupplierDashboard from './pages/supplierpannel/supplier-dashboard'
 import NotificationsBooking from './pages/adminpannel/notifications-booking'
 import CountryManagement from './pages/adminpannel/CountryManagement'
 import CityManagement from './pages/adminpannel/CityManagement'
+import CategoryManagement from './pages/adminpannel/CategoryManagement'
 import AdminProfile from './pages/adminpannel/AdminProfile'
 import AdminSettings from './pages/adminpannel/AdminSettings'
 import './App.css'
@@ -45,6 +46,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
     if (activePage === 'Manage Countries') return <CountryManagement />
     if (activePage === 'Manage Countries') return <CountryManagement />
     if (activePage === 'Manage Cities') return <CityManagement />
+    if (activePage === 'Manage Categories') return <CategoryManagement />
     if (activePage === 'Profile') return <AdminProfile />
     if (activePage === 'Settings') return <AdminSettings />
     return <Dashboard />

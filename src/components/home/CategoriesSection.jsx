@@ -1,7 +1,39 @@
+import { useEffect, useMemo, useState } from "react";
+import api from "../../api";
+
 export default function CategoriesSection({ onCategoryClick }) {
     const iconColor = "#9B6F40"
 
-    const categories = [
+    const [categories, setCategories] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        let isMounted = true
+
+        const run = async () => {
+            try {
+                setIsLoading(true)
+                const response = await api.get('/categories')
+                const list = Array.isArray(response?.data) ? response.data : []
+                if (!isMounted) return
+                setCategories(list)
+            } catch (error) {
+                console.error('Error fetching categories:', error)
+                if (!isMounted) return
+                setCategories([])
+            } finally {
+                if (!isMounted) return
+                setIsLoading(false)
+            }
+        }
+
+        run()
+        return () => {
+            isMounted = false
+        }
+    }, [])
+
+    const staticCategories = [
         {
             name: 'Culture',
             icon: (
@@ -142,6 +174,35 @@ export default function CategoriesSection({ onCategoryClick }) {
         },
     ]
 
+    const defaultIcon = useMemo(() => {
+        return (
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.5">
+                <rect x="4" y="4" width="16" height="16" rx="3" />
+                <path d="M8 12h8" />
+                <path d="M12 8v8" />
+            </svg>
+        )
+    }, [iconColor])
+
+    const iconByName = useMemo(() => {
+        const entries = staticCategories.map(({ name, icon }) => [String(name || '').toLowerCase(), icon])
+        return Object.fromEntries(entries)
+    }, [staticCategories])
+
+    const safeCategories = useMemo(() => {
+        const list = Array.isArray(categories) ? categories : []
+        return list
+            .map((c) => {
+                const name = String(c?.name || '').trim()
+                return {
+                    id: c?._id || name,
+                    name,
+                    image: String(c?.image || '').trim(),
+                }
+            })
+            .filter((c) => Boolean(c.name))
+    }, [categories])
+
     return (
         <section className="bg-[#F5F1ED] py-16 sm:py-20 px-4 sm:px-8 lg:px-20">
             <div className="max-w-[1200px] mx-auto text-center">
@@ -153,24 +214,45 @@ export default function CategoriesSection({ onCategoryClick }) {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-y-10 gap-x-8 sm:gap-x-10">
-                    {categories.map(({ name, icon }) => (
-                        <div
-                            key={name}
-                            className="flex flex-col items-center gap-3 cursor-pointer transition-transform duration-300 hover:-translate-y-2"
-                            onClick={() => {
-                                if (onCategoryClick) {
-                                    onCategoryClick(name)
-                                }
-                            }}
-                        >
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
-                                {icon}
-                            </div>
-                            <p className="m-0 text-sm sm:text-base font-bold text-[#1a1a1a] text-center">{name}</p>
-                        </div>
-                    ))}
-                </div>
+                {isLoading ? (
+                    <div className="py-10 flex justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#704b24]"></div>
+                    </div>
+                ) : safeCategories.length === 0 ? (
+                    <div className="py-10 text-center text-sm text-slate-600">No categories found.</div>
+                ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-y-10 gap-x-8 sm:gap-x-10">
+                        {safeCategories.map(({ id, name, image }) => {
+                            const icon = iconByName[String(name || '').toLowerCase()] || defaultIcon
+                            const hasImage = Boolean(String(image || '').trim())
+                            return (
+                                <div
+                                    key={id}
+                                    className="flex flex-col items-center gap-3 cursor-pointer transition-transform duration-300 hover:-translate-y-2"
+                                    onClick={() => {
+                                        if (onCategoryClick) {
+                                            onCategoryClick(name)
+                                        }
+                                    }}
+                                >
+                                    <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                                        {hasImage ? (
+                                            <img
+                                                src={image}
+                                                alt={name}
+                                                className="w-full h-full object-contain"
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            icon
+                                        )}
+                                    </div>
+                                    <p className="m-0 text-sm sm:text-base font-bold text-[#1a1a1a] text-center">{name}</p>
+                                </div>
+                            )
+                        })}
+                    </div>
+                )}
             </div>
         </section>
     )

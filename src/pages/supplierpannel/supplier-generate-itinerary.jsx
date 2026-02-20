@@ -205,6 +205,13 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
         item?.name ||
         "";
 
+      const description =
+        activity?.description ||
+        item?.description ||
+        activity?.details ||
+        item?.details ||
+        "";
+
       const loc =
         activity?.country?.name ||
         activity?.country ||
@@ -217,6 +224,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
 
       return {
         title: String(title || "").trim(),
+        description: String(description || "").trim(),
         location: String(loc || "").trim(),
       };
     });
@@ -507,6 +515,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
 
         const next = { ...d };
         if (!String(next.activity || "").trim() && meta.title) next.activity = meta.title;
+        if (!String(next.description || "").trim() && meta.description) next.description = meta.description;
         if (!String(next.location || "").trim() && meta.location) next.location = meta.location;
         return next;
       });

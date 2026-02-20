@@ -11,6 +11,7 @@ import {
   LogOut,
   Globe,
   MapPin,
+  Tag,
 } from "lucide-react";
 
 
@@ -23,6 +24,7 @@ const navItems = [
   { label: "System Notification", icon: Bell },
   { label: "Manage Countries", icon: Globe },
   { label: "Manage Cities", icon: MapPin },
+  { label: "Manage Categories", icon: Tag },
 ];
 
 

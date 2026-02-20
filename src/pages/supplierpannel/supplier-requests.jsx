@@ -176,10 +176,23 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
   const handleStatusUpdate = async (id, status) => {
     try {
       const normalizedStatus = String(status || "").trim().toLowerCase();
-      // Optimistic update so the request stays visible and Proceed can enable immediately.
-      setRequests((prev) =>
-        prev.map((r) => ((r.id || r._id) === id ? { ...r, status: normalizedStatus } : r))
-      );
+      // Optimistic update:
+      // - Accept keeps the request visible.
+      // - Reject removes the request from this supplier (backend re-routes to another supplier).
+      if (normalizedStatus === 'cancelled') {
+        setRequests((prev) => {
+          const next = (Array.isArray(prev) ? prev : []).filter((r) => (r.id || r._id) !== id);
+          setSelectedId((selectedPrev) => {
+            if (String(selectedPrev || '') !== String(id || '')) return selectedPrev;
+            return next.length > 0 ? (next[0].id || next[0]._id) : null;
+          });
+          return next;
+        });
+      } else {
+        setRequests((prev) =>
+          prev.map((r) => ((r.id || r._id) === id ? { ...r, status: normalizedStatus } : r))
+        );
+      }
       await api.patch(`/bookings/${id}/status`, { status: normalizedStatus });
       fetchRequests({ silent: true });
     } catch (error) {

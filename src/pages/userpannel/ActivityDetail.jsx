@@ -267,6 +267,101 @@ export default function ActivityDetail({
         return shuffled.slice(0, 3)
     }, [activityId, activityTitle, activity?.reviews])
 
+    const addToListPanel = (
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
+            {hasAnyAddOns && (
+                <div className="mb-6">
+                    <h3 className="text-sm font-bold text-slate-900 mb-3">Optional Add-ons</h3>
+                    <div className="space-y-3">
+                        {Array.isArray(rawAvailableAddOns) ? (
+                            <div className="space-y-3">
+                                {availableAddOnLabels.map((label, idx) => {
+                                    const checked = Array.isArray(selectedAddOnLabels)
+                                        ? selectedAddOnLabels.includes(label)
+                                        : false
+
+                                    return (
+                                        <label key={`${label}-${idx}`} className="flex items-center gap-3 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={checked}
+                                                onChange={() => toggleAddOnLabel(label)}
+                                                className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
+                                            />
+                                            <div>
+                                                <div className="text-sm font-medium text-slate-900">{label}</div>
+                                            </div>
+                                        </label>
+                                    )
+                                })}
+                            </div>
+                        ) : availableAddOns?.quadBiking && (
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={addOns.quadBiking}
+                                    onChange={() => toggleAddOn('quadBiking')}
+                                    className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
+                                />
+                                <div>
+                                    <div className="text-sm font-medium text-slate-900">Quad Biking</div>
+                                </div>
+                            </label>
+                        )}
+
+                        {!Array.isArray(rawAvailableAddOns) && availableAddOns?.campingGear && (
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={addOns.campingGear}
+                                    onChange={() => toggleAddOn('campingGear')}
+                                    className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
+                                />
+                                <div>
+                                    <div className="text-sm font-medium text-slate-900">Camping Gear</div>
+                                </div>
+                            </label>
+                        )}
+
+                        {!Array.isArray(rawAvailableAddOns) && availableAddOns?.photographyPackage && (
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={addOns.photographyPackage}
+                                    onChange={() => toggleAddOn('photographyPackage')}
+                                    className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
+                                />
+                                <div>
+                                    <div className="text-sm font-medium text-slate-900">Photography Package</div>
+                                </div>
+                            </label>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            <button
+                className="w-full py-3 rounded-lg text-sm font-bold bg-primary-brown text-white hover:bg-primary-dark transition-colors"
+                onClick={() => {
+                    if (onAddToList) {
+                        onAddToList({
+                            id: activity?._id || activityId,
+                            title: activityTitle,
+                            location: activityLocation || 'Location',
+                            image: activityImage,
+                            travelers: travelers,
+                            addOns: Array.isArray(rawAvailableAddOns)
+                                ? selectedAddOnLabels
+                                : addOns
+                        })
+                    }
+                }}
+            >
+                ADD TO LIST
+            </button>
+        </div>
+    )
+
     return (
         <div className="bg-white min-h-screen">
             {isLoading ? (
@@ -376,8 +471,11 @@ export default function ActivityDetail({
             {/* Main Content */}
             <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-8">
                 <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
+                    <div className="lg:hidden order-1">
+                        {addToListPanel}
+                    </div>
                     {/* Left Column */}
-                    <div>
+                    <div className="order-2 lg:order-none">
                         {/* Hero Image */}
                         <div className="relative rounded-2xl overflow-hidden mb-6">
                             <img
@@ -608,129 +706,8 @@ export default function ActivityDetail({
                     </div>
 
                     {/* Right Sidebar */}
-                    <aside className="lg:sticky lg:top-24 h-fit order-2 lg:order-2">
-                        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
-                            {/* Number of Travelers */}
-                            {/* <div className="mb-6">
-                                <h3 className="text-sm font-bold text-slate-900 mb-3">Number of Travelers</h3>
-                                <div className="flex items-center justify-between border border-slate-200 rounded-lg p-3">
-                                    <button
-                                        onClick={() => setTravelers(Math.max(1, travelers - 1))}
-                                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-600"
-                                    >
-                                        −
-                                    </button>
-                                    <div className="flex items-center gap-2">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                            <circle cx="9" cy="7" r="4" />
-                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                                        </svg>
-                                        <span className="font-semibold text-slate-900">{travelers}</span>
-                                    </div>
-                                    <button
-                                        onClick={() => setTravelers(travelers + 1)}
-                                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-600"
-                                    >
-                                        +
-                                    </button>
-                                </div>
-                            </div> */}
-
-                            {/* Optional Add-ons */}
-                            {hasAnyAddOns && (
-                                <div className="mb-6">
-                                    <h3 className="text-sm font-bold text-slate-900 mb-3">Optional Add-ons</h3>
-                                    <div className="space-y-3">
-                                        {Array.isArray(rawAvailableAddOns) ? (
-                                            <div className="space-y-3">
-                                                {availableAddOnLabels.map((label, idx) => {
-                                                    const checked = Array.isArray(selectedAddOnLabels)
-                                                        ? selectedAddOnLabels.includes(label)
-                                                        : false
-
-                                                    return (
-                                                        <label key={`${label}-${idx}`} className="flex items-center gap-3 cursor-pointer">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={checked}
-                                                                onChange={() => toggleAddOnLabel(label)}
-                                                                className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                                            />
-                                                            <div>
-                                                                <div className="text-sm font-medium text-slate-900">{label}</div>
-                                                            </div>
-                                                        </label>
-                                                    )
-                                                })}
-                                            </div>
-                                        ) : availableAddOns?.quadBiking && (
-                                            <label className="flex items-center gap-3 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={addOns.quadBiking}
-                                                    onChange={() => toggleAddOn('quadBiking')}
-                                                    className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                                />
-                                                <div>
-                                                    <div className="text-sm font-medium text-slate-900">Quad Biking</div>
-                                                </div>
-                                            </label>
-                                        )}
-
-                                        {!Array.isArray(rawAvailableAddOns) && availableAddOns?.campingGear && (
-                                            <label className="flex items-center gap-3 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={addOns.campingGear}
-                                                    onChange={() => toggleAddOn('campingGear')}
-                                                    className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                                />
-                                                <div>
-                                                    <div className="text-sm font-medium text-slate-900">Camping Gear</div>
-                                                </div>
-                                            </label>
-                                        )}
-
-                                        {!Array.isArray(rawAvailableAddOns) && availableAddOns?.photographyPackage && (
-                                            <label className="flex items-center gap-3 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={addOns.photographyPackage}
-                                                    onChange={() => toggleAddOn('photographyPackage')}
-                                                    className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                                />
-                                                <div>
-                                                    <div className="text-sm font-medium text-slate-900">Photography Package</div>
-                                                </div>
-                                            </label>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Add to List Button */}
-                            <button
-                                className="w-full py-3 rounded-lg text-sm font-bold bg-primary-brown text-white hover:bg-primary-dark transition-colors"
-                                onClick={() => {
-                                    if (onAddToList) {
-                                        onAddToList({
-                                            id: activity?._id || activityId,
-                                            title: activityTitle,
-                                            location: activityLocation || 'Location',
-                                            image: activityImage,
-                                            travelers: travelers,
-                                            addOns: Array.isArray(rawAvailableAddOns)
-                                                ? selectedAddOnLabels
-                                                : addOns
-                                        })
-                                    }
-                                }}
-                            >
-                                ADD TO LIST
-                            </button>
-                        </div>
+                    <aside className="hidden lg:block lg:sticky lg:top-24 h-fit order-2 lg:order-2">
+                        {addToListPanel}
                     </aside>
                 </div>
                     </main>

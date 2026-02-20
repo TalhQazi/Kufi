@@ -372,7 +372,7 @@ const Activity = ({ onAddNew }) => {
 
       {viewingActivity && (
         <div className="fixed inset-0 bg-black/40 z-[70] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-semibold text-slate-900">Activity Details</h2>
               <button
@@ -382,7 +382,7 @@ const Activity = ({ onAddNew }) => {
                 Close
               </button>
             </div>
-            <div className="p-6 space-y-4 text-sm text-slate-800">
+            <div className="p-6 space-y-4 text-sm text-slate-800 overflow-y-auto">
               {viewLoading ? (
                 <div className="py-6 text-center text-gray-500">Loading...</div>
               ) : (
@@ -422,6 +422,65 @@ const Activity = ({ onAddNew }) => {
                     <p className="text-[11px] text-gray-400 uppercase font-semibold mb-1">Description</p>
                     <p className="text-sm text-gray-600 whitespace-pre-line">{viewingActivity.description || 'No description provided.'}</p>
                   </div>
+
+                  {(() => {
+                    const raw = viewingActivity?.addOns
+                    if (Array.isArray(raw)) {
+                      return raw.map((v) => String(v || '').trim()).filter(Boolean)
+                    }
+                    if (raw && typeof raw === 'object') {
+                      const legacyMap = {
+                        quadBiking: 'Quad Biking',
+                        campingGear: 'Camping Gear',
+                        photographyPackage: 'Photography Package',
+                      }
+                      return Object.keys(legacyMap)
+                        .filter((k) => !!raw[k])
+                        .map((k) => legacyMap[k])
+                        .filter(Boolean)
+                    }
+                    return []
+                  })().length > 0 && (
+                    <div>
+                      <p className="text-[11px] text-gray-400 uppercase font-semibold mb-1">Optional Add-ons</p>
+                      <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
+                        {(() => {
+                          const raw = viewingActivity?.addOns
+                          if (Array.isArray(raw)) {
+                            return raw.map((v) => String(v || '').trim()).filter(Boolean)
+                          }
+                          if (raw && typeof raw === 'object') {
+                            const legacyMap = {
+                              quadBiking: 'Quad Biking',
+                              campingGear: 'Camping Gear',
+                              photographyPackage: 'Photography Package',
+                            }
+                            return Object.keys(legacyMap)
+                              .filter((k) => !!raw[k])
+                              .map((k) => legacyMap[k])
+                              .filter(Boolean)
+                          }
+                          return []
+                        })().map((text, idx) => (
+                          <li key={`addon-${idx}`}>{text}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {Array.isArray(viewingActivity?.highlights) && viewingActivity.highlights.filter((v) => String(v || '').trim()).length > 0 && (
+                    <div>
+                      <p className="text-[11px] text-gray-400 uppercase font-semibold mb-1">Highlights</p>
+                      <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
+                        {viewingActivity.highlights
+                          .map((v) => String(v || '').trim())
+                          .filter(Boolean)
+                          .map((text, idx) => (
+                            <li key={`highlight-${idx}`}>{text}</li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
                 </>
               )}
             </div>

@@ -9,6 +9,8 @@ const {
   getAnalytics,
   getBookings,
   getActivities,
+  getAllActivities,
+  getActivityById,
   getDrafts,
   updateBookingStatus,
   createActivity,
@@ -98,6 +100,31 @@ router.get('/activities/supplier', (req, res) => {
   }
 });
 
+// GET /api/activities — admin/user listing
+router.get('/activities', (req, res) => {
+  try {
+    const activities = getAllActivities();
+    res.json(Array.isArray(activities) ? activities : []);
+  } catch (err) {
+    console.error('GET /activities', err);
+    res.status(500).json({ error: 'Failed to fetch activities' });
+  }
+});
+
+// GET /api/activities/:id — activity details
+router.get('/activities/:id', (req, res) => {
+  try {
+    const activity = getActivityById(req.params.id);
+    if (!activity) {
+      return res.status(404).json({ error: 'Activity not found' });
+    }
+    res.json(activity);
+  } catch (err) {
+    console.error('GET /activities/:id', err);
+    res.status(500).json({ error: 'Failed to fetch activity details' });
+  }
+});
+
 // GET /api/activities/drafts — drafts for supplier (used by supplier-bookings page)
 router.get('/activities/drafts', (req, res) => {
   try {
@@ -170,6 +197,22 @@ router.post('/activities', (req, res) => {
   } catch (err) {
     console.error('POST /activities', err);
     res.status(500).json({ error: 'Failed to create activity' });
+  }
+});
+
+// PATCH /api/activities/:id — partial update (admin status changes)
+router.patch('/activities/:id', (req, res) => {
+  try {
+    const supplierId = getSupplierId(req);
+    const activity = updateActivity(req.params.id, req.body, supplierId);
+    if (activity) {
+      res.json(activity);
+    } else {
+      res.status(404).json({ error: 'Activity not found' });
+    }
+  } catch (err) {
+    console.error('PATCH /activities/:id', err);
+    res.status(500).json({ error: 'Failed to update activity' });
   }
 });
 

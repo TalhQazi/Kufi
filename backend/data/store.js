@@ -24,6 +24,7 @@ const store = {
       capacity: 12,
       rating: 4.8,
       image: '/assets/activity1.jpeg',
+      highlights: [],
       supplierId: 'supplier-1',
     },
     {
@@ -35,6 +36,7 @@ const store = {
       capacity: 8,
       rating: 4.6,
       image: '/assets/food-tour.jpeg',
+      highlights: [],
       supplierId: 'supplier-1',
     },
   ],
@@ -122,6 +124,22 @@ function getActivities(supplierId) {
   return store.activities.filter((a) => (a.supplierId || store.defaultSupplierId) === supplierId);
 }
 
+function getAllActivities() {
+  return (store.activities || []).map((activity) => ({
+    ...activity,
+    highlights: Array.isArray(activity?.highlights) ? activity.highlights : [],
+  }));
+}
+
+function getActivityById(activityId) {
+  const activity = (store.activities || []).find((x) => x._id === activityId || x.id === activityId) || null;
+  if (!activity) return null;
+  return {
+    ...activity,
+    highlights: Array.isArray(activity?.highlights) ? activity.highlights : [],
+  };
+}
+
 function getBookings(supplierId, { limit, status } = {}) {
   let list = store.bookings.filter((b) => (b.supplierId || store.defaultSupplierId) === supplierId);
   if (status) {
@@ -162,6 +180,9 @@ function updateBookingStatus(bookingId, status, supplierId) {
 
 function createActivity(body, supplierId) {
   const id = 'act-' + Date.now();
+  const highlights = (Array.isArray(body?.highlights) ? body.highlights : [])
+    .map((v) => String(v || '').trim())
+    .filter(Boolean);
   const activity = {
     _id: id,
     id,
@@ -172,6 +193,7 @@ function createActivity(body, supplierId) {
     capacity: body.capacity || 12,
     category: body.category || '',
     description: body.description || '',
+    highlights,
     price: body.price || '',
     image: body.image || body.imageUrl || '',
     supplierId: supplierId || store.defaultSupplierId,
@@ -185,7 +207,19 @@ function updateActivity(activityId, body, supplierId) {
     (x) => (x._id === activityId || x.id === activityId) && (x.supplierId || store.defaultSupplierId) === supplierId
   );
   if (a) {
-    Object.assign(a, body, { _id: a._id, id: a.id || a._id, supplierId: a.supplierId });
+    const nextBody = { ...(body || {}) };
+    if (Object.prototype.hasOwnProperty.call(nextBody, 'highlights')) {
+      nextBody.highlights = (Array.isArray(nextBody.highlights) ? nextBody.highlights : [])
+        .map((v) => String(v || '').trim())
+        .filter(Boolean);
+    }
+    if (Object.prototype.hasOwnProperty.call(nextBody, 'addOns')) {
+      nextBody.addOns = (Array.isArray(nextBody.addOns) ? nextBody.addOns : [])
+        .map((v) => String(v || '').trim())
+        .filter(Boolean);
+    }
+
+    Object.assign(a, nextBody, { _id: a._id, id: a.id || a._id, supplierId: a.supplierId });
     return a;
   }
   return null;
@@ -307,6 +341,8 @@ module.exports = {
   store,
   getSupplierId,
   getActivities,
+  getAllActivities,
+  getActivityById,
   getBookings,
   getDrafts,
   getAnalytics,

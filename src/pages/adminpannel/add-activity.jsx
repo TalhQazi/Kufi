@@ -17,6 +17,7 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
     price: "",
     thumbnail: "",
     addOns: [""],
+    highlights: [""],
   });
 
   useEffect(() => {
@@ -44,6 +45,15 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
       return [""]
     }
 
+    const normalizeHighlights = () => {
+      const raw = initialData.highlights
+      if (Array.isArray(raw)) {
+        const cleaned = raw.map((v) => String(v || '').trim()).filter(Boolean)
+        return cleaned.length ? cleaned : [""]
+      }
+      return [""]
+    }
+
     setFormData((prev) => ({
       ...prev,
       title: initialData.title || initialData.name || "",
@@ -57,6 +67,7 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
       price: initialData.price != null ? String(initialData.price) : "",
       thumbnail: initialData.thumbnail || initialData.image || "",
       addOns: normalizeAddOns(),
+      highlights: normalizeHighlights(),
     }))
   }, [initialData])
 
@@ -103,6 +114,21 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
     })
   }
 
+  const handleHighlightInputChange = (index, value) => {
+    setFormData((prev) => {
+      const next = Array.isArray(prev.highlights) ? [...prev.highlights] : [""]
+      next[index] = value
+      return { ...prev, highlights: next }
+    })
+  }
+
+  const handleHighlightAppend = () => {
+    setFormData((prev) => {
+      const current = Array.isArray(prev.highlights) ? prev.highlights : [""]
+      return { ...prev, highlights: [...current, ""] }
+    })
+  }
+
   const handleThumbnailChange = (file) => {
     if (!file) return;
 
@@ -138,6 +164,9 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
         // Map UI status (active/inactive) to valid enum values
         status: formData.status === "active" ? "approved" : "pending",
         addOns: (Array.isArray(formData.addOns) ? formData.addOns : [])
+          .map((v) => String(v || '').trim())
+          .filter(Boolean),
+        highlights: (Array.isArray(formData.highlights) ? formData.highlights : [])
           .map((v) => String(v || '').trim())
           .filter(Boolean),
       };
@@ -289,6 +318,37 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
                       type="button"
                       disabled={!canAppend}
                       onClick={handleAddOnAppend}
+                      className="px-3 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
+                    >
+                      Add
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="pt-2">
+          <h3 className="text-sm font-semibold text-slate-900 mb-3">Highlights</h3>
+          <div className="space-y-3">
+            {(Array.isArray(formData.highlights) ? formData.highlights : [""]).map((value, idx) => {
+              const isLast = idx === (Array.isArray(formData.highlights) ? formData.highlights.length - 1 : 0)
+              const canAppend = String(value || '').trim().length > 0
+              return (
+                <div key={idx} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => handleHighlightInputChange(idx, e.target.value)}
+                    placeholder="e.g., Stunning views"
+                    className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#a26e35]/30"
+                  />
+                  {isLast && (
+                    <button
+                      type="button"
+                      disabled={!canAppend}
+                      onClick={handleHighlightAppend}
                       className="px-3 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-100"
                     >
                       Add
