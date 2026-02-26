@@ -4,9 +4,63 @@ import api from "../../api";
 
 const DRAFTS_STORAGE_KEY = "kufi_supplier_itinerary_drafts";
 
+const parseMoney = (value) => {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const cleaned = String(value)
+    .replace(/[^0-9.\-]/g, "")
+    .trim();
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const formatMoney = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "$0";
+  const abs = Math.abs(n);
+  const formatted = abs.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  return n < 0 ? `$-${formatted}` : `$${formatted}`;
+};
+
+const parseMoneyRange = (value) => {
+  const raw = String(value ?? "").trim();
+  if (!raw) return { min: 0, max: 0, isRange: false, hasValue: false };
+  const cleaned = raw.replace(/\$/g, "").replace(/,/g, "").trim();
+  const parts = cleaned
+    .split("-")
+    .map((x) => x.trim())
+    .filter(Boolean);
+
+  if (parts.length >= 2) {
+    const a = parseMoney(parts[0]);
+    const b = parseMoney(parts[1]);
+    return {
+      min: Math.min(a, b),
+      max: Math.max(a, b),
+      isRange: true,
+      hasValue: true,
+    };
+  }
+
+  const n = parseMoney(cleaned);
+  return { min: n, max: n, isRange: false, hasValue: Boolean(raw) };
+};
+
+const formatRange = ({ min, max, isRange, hasValue }) => {
+  if (!hasValue) return "$0";
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return "$0";
+  if (!isRange || min === max) return formatMoney(min);
+  return `${formatMoney(min)} - ${formatMoney(max)}`;
+};
+
 const createEmptyDay = (day) => ({
   day,
   isAdjustment: false,
+  activities: [createEmptyActivity()],
+});
+
+const createEmptyActivity = () => ({
+  id: `act-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
   activity: "",
   location: "",
   description: "",
@@ -28,13 +82,16 @@ const DayCard = ({
   onToggle,
   dayData,
   onUpdateDay,
+  onUpdateActivity,
+  onAddActivity,
   onBrowseImage,
   onRemoveImage,
   activityOptions,
   locationOptions,
 }) => {
   const isExpanded = Boolean(expanded);
-  const data = dayData || { day };
+  const data = dayData || { day, activities: [] };
+  const activities = Array.isArray(data.activities) ? data.activities : [];
 
   return (
     <div className={`rounded-2xl border transition-colors outline-none overflow-hidden ${darkMode ? "bg-slate-800 border-slate-700" : "bg-amber-50/40 border-amber-100"}`}>
@@ -43,129 +100,167 @@ const DayCard = ({
         onClick={() => onToggle?.(day)}
         className={`flex w-full items-center justify-between px-4 py-3 text-xs font-semibold transition-colors ${darkMode ? "text-white hover:bg-slate-700" : "text-gray-800 hover:bg-amber-100/50"}`}
       >
-        <span>Day {day}</span>
+        <span>Day {day} ({activities.length} activity{activities.length !== 1 ? 'ies' : 'y'})</span>
         <span className={`text-lg transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>{isExpanded ? "⌃" : "⌄"}</span>
       </button>
 
       {isExpanded && (
         <div className={`border-t px-4 py-4 space-y-4 text-xs transition-colors ${darkMode ? "border-slate-700" : "border-amber-100"}`}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Select Activity</p>
-              <select
-                value={data.activity || ""}
-                onChange={(e) => onUpdateDay?.(day, { activity: e.target.value })}
-                className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
-              >
-                <option value="">Select an activity</option>
-                {(Array.isArray(activityOptions) ? activityOptions : [])
-                  .filter(Boolean)
-                  .map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Select Location</p>
-              <select
-                value={data.location || ""}
-                onChange={(e) => onUpdateDay?.(day, { location: e.target.value })}
-                className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
-              >
-                <option value="">Select a location</option>
-                {(Array.isArray(locationOptions) ? locationOptions : [])
-                  .filter(Boolean)
-                  .map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Description</p>
-            <textarea
-              rows={3}
-              placeholder="Add notes or highlights about this activity..."
-              value={data.description || ""}
-              onChange={(e) => onUpdateDay?.(day, { description: e.target.value })}
-              className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white placeholder:text-slate-600" : "bg-gray-50 border-gray-200 text-gray-700 placeholder:text-gray-400"}`}
-            />
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="space-y-1">
-              <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Estimated Cost</p>
-              <div className={`flex items-center rounded-lg border px-3 py-2 text-sm transition-all ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}>
-                <span className={`mr-2 transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>$</span>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={data.cost || ""}
-                  onChange={(e) => onUpdateDay?.(day, { cost: e.target.value })}
-                  className="w-full bg-transparent outline-none text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Start Time</p>
-              <input
-                type="time"
-                value={data.startTime || ""}
-                onChange={(e) => onUpdateDay?.(day, { startTime: e.target.value })}
-                className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white icon-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>End Time</p>
-              <input
-                type="time"
-                value={data.endTime || ""}
-                onChange={(e) => onUpdateDay?.(day, { endTime: e.target.value })}
-                className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white icon-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Image</p>
-            <div className={`rounded-xl border border-dashed transition-all overflow-hidden ${darkMode ? "bg-slate-900 border-slate-700" : "bg-gray-50 border-gray-300"}`}>
-              {data.imageDataUrl ? (
-                <div className="relative h-28 w-full">
-                  <img src={data.imageDataUrl} alt={`Day ${day}`} className="absolute inset-0 h-full w-full object-cover" />
+          {/* Multiple activities per day */}
+          {activities.map((act, idx) => (
+            <div key={act.id} className={`space-y-4 ${idx > 0 ? `border-t ${darkMode ? 'border-slate-700' : 'border-amber-200'} pt-4` : ''}`}>
+              {/* Activity Header */}
+              <div className={`flex items-center justify-between ${idx > 0 ? '' : '-mt-1'}`}>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-semibold ${darkMode ? 'text-amber-300' : 'text-[#a26e35]'}`}>
+                    Activity {idx + 1}
+                  </span>
+                  {act.isAutoGenerated && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${darkMode ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-700'}`}>
+                      Auto (Remaining Budget)
+                    </span>
+                  )}
+                </div>
+                {activities.length > 1 && (
                   <button
                     type="button"
-                    onClick={() => onRemoveImage?.(day)}
-                    className={`absolute top-2 right-2 rounded-full px-3 py-1 text-[10px] font-semibold transition-colors ${darkMode ? "bg-slate-950/70 text-slate-200 hover:bg-slate-950" : "bg-white/80 text-gray-700 hover:bg-white"}`}
+                    onClick={() => onUpdateActivity?.(day, act.id, null)}
+                    className={`text-[10px] px-2 py-1 rounded transition-colors ${darkMode ? 'text-red-400 hover:bg-red-900/20' : 'text-red-500 hover:bg-red-50'}`}
                   >
                     Remove
                   </button>
+                )}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Select Activity</p>
+                  <select
+                    value={act.activity || ""}
+                    onChange={(e) => onUpdateActivity?.(day, act.id, { activity: e.target.value })}
+                    className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
+                  >
+                    <option value="">Select an activity</option>
+                    {(Array.isArray(activityOptions) ? activityOptions : [])
+                      .filter(Boolean)
+                      .map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                  </select>
                 </div>
-              ) : (
-                <div className={`flex h-24 w-full items-center justify-center text-[11px] transition-all ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
-                  <span className={`mr-1 transition-colors ${darkMode ? "text-slate-600" : "text-gray-400"}`}>📷</span>
-                  <span>Drag and drop an image, or</span>
-                  <label className="ml-1 font-semibold text-[#a26e35] hover:underline cursor-pointer" htmlFor={`day-image-${day}`}>
-                    browse
-                  </label>
+
+                <div className="space-y-1">
+                  <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Select Location</p>
+                  <select
+                    value={act.location || ""}
+                    onChange={(e) => onUpdateActivity?.(day, act.id, { location: e.target.value })}
+                    className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
+                  >
+                    <option value="">Select a location</option>
+                    {(Array.isArray(locationOptions) ? locationOptions : [])
+                      .filter(Boolean)
+                      .map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Description</p>
+                <textarea
+                  rows={3}
+                  placeholder="Add notes or highlights about this activity..."
+                  value={act.description || ""}
+                  onChange={(e) => onUpdateActivity?.(day, act.id, { description: e.target.value })}
+                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white placeholder:text-slate-600" : "bg-gray-50 border-gray-200 text-gray-700 placeholder:text-gray-400"}`}
+                />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="space-y-1">
+                  <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Estimated Cost</p>
+                  <div className={`flex items-center rounded-lg border px-3 py-2 text-sm transition-all ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}>
+                    <span className={`mr-2 transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>$</span>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      value={act.cost || ""}
+                      onChange={(e) => onUpdateActivity?.(day, act.id, { cost: e.target.value })}
+                      className="w-full bg-transparent outline-none text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Start Time</p>
                   <input
-                    id={`day-image-${day}`}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => onBrowseImage?.(day, e.target.files?.[0])}
+                    type="time"
+                    value={act.startTime || ""}
+                    onChange={(e) => onUpdateActivity?.(day, act.id, { startTime: e.target.value })}
+                    className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white icon-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
                   />
                 </div>
-              )}
+
+                <div className="space-y-1">
+                  <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>End Time</p>
+                  <input
+                    type="time"
+                    value={act.endTime || ""}
+                    onChange={(e) => onUpdateActivity?.(day, act.id, { endTime: e.target.value })}
+                    className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white icon-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Image</p>
+                <div className={`rounded-xl border border-dashed transition-all overflow-hidden ${darkMode ? "bg-slate-900 border-slate-700" : "bg-gray-50 border-gray-300"}`}>
+                  {act.imageDataUrl ? (
+                    <div className="relative h-28 w-full">
+                      <img src={act.imageDataUrl} alt={`Activity ${idx + 1}`} className="absolute inset-0 h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => onRemoveImage?.(day, act.id)}
+                        className={`absolute top-2 right-2 rounded-full px-3 py-1 text-[10px] font-semibold transition-colors ${darkMode ? "bg-slate-950/70 text-slate-200 hover:bg-slate-950" : "bg-white/80 text-gray-700 hover:bg-white"}`}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className={`flex h-24 w-full items-center justify-center text-[11px] transition-all ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
+                      <span className={`mr-1 transition-colors ${darkMode ? "text-slate-600" : "text-gray-400"}`}>📷</span>
+                      <span>Drag and drop an image, or</span>
+                      <label className="ml-1 font-semibold text-[#a26e35] hover:underline cursor-pointer" htmlFor={`day-${day}-act-${act.id}`}>
+                        browse
+                      </label>
+                      <input
+                        id={`day-${day}-act-${act.id}`}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => onBrowseImage?.(day, act.id, e.target.files?.[0])}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
+          ))}
+
+          {/* Add Activity Button */}
+          <button
+            type="button"
+            onClick={() => onAddActivity?.(day)}
+            className={`w-full rounded-xl border border-dashed transition-colors px-4 py-3 flex items-center justify-center text-xs cursor-pointer ${darkMode ? "bg-slate-900/50 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-300" : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50 hover:text-gray-700"}`}
+          >
+            <span className="mr-2 text-lg">＋</span>
+            Add Activity in this day
+          </button>
         </div>
       )}
     </div>
@@ -222,10 +317,22 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
         request?.country ||
         "";
 
+      const price =
+        activity?.price ||
+        activity?.cost ||
+        activity?.amount ||
+        item?.price ||
+        item?.cost ||
+        item?.amount ||
+        activity?.budget ||
+        item?.budget ||
+        "";
+
       return {
         title: String(title || "").trim(),
         description: String(description || "").trim(),
         location: String(loc || "").trim(),
+        price: parseMoney(price),
       };
     });
   }, [request]);
@@ -310,55 +417,6 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     }
   };
 
-  const parseMoney = (value) => {
-    if (value === null || value === undefined) return 0;
-    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-    const cleaned = String(value)
-      .replace(/[^0-9.\-]/g, "")
-      .trim();
-    const n = Number(cleaned);
-    return Number.isFinite(n) ? n : 0;
-  };
-
-  const formatMoney = (value) => {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return "$0";
-    const abs = Math.abs(n);
-    const formatted = abs.toLocaleString(undefined, { maximumFractionDigits: 0 });
-    return n < 0 ? `$-${formatted}` : `$${formatted}`;
-  };
-
-  const parseMoneyRange = (value) => {
-    const raw = String(value ?? "").trim();
-    if (!raw) return { min: 0, max: 0, isRange: false, hasValue: false };
-    const cleaned = raw.replace(/\$/g, "").replace(/,/g, "").trim();
-    const parts = cleaned
-      .split("-")
-      .map((x) => x.trim())
-      .filter(Boolean);
-
-    if (parts.length >= 2) {
-      const a = parseMoney(parts[0]);
-      const b = parseMoney(parts[1]);
-      return {
-        min: Math.min(a, b),
-        max: Math.max(a, b),
-        isRange: true,
-        hasValue: true,
-      };
-    }
-
-    const n = parseMoney(cleaned);
-    return { min: n, max: n, isRange: false, hasValue: Boolean(raw) };
-  };
-
-  const formatRange = ({ min, max, isRange, hasValue }) => {
-    if (!hasValue) return "$0";
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return "$0";
-    if (!isRange || min === max) return formatMoney(min);
-    return `${formatMoney(min)} - ${formatMoney(max)}`;
-  };
-
   const normalized = useMemo(() => {
     const location =
       request?.tripDetails?.country ||
@@ -420,6 +478,21 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
   const clientBudgetRange = useMemo(() => {
     return parseMoneyRange(normalized.budget);
   }, [normalized.budget]);
+
+  const totalActivitiesCost = useMemo(() => {
+    return requestItemMeta.reduce((sum, item) => sum + (item.price || 0), 0);
+  }, [requestItemMeta]);
+
+  const userBudgetMax = useMemo(() => {
+    return clientBudgetRange.max || 0;
+  }, [clientBudgetRange]);
+
+  const remainingBudgetForAutoGen = useMemo(() => {
+    const remaining = userBudgetMax - totalActivitiesCost;
+    return remaining > 0 ? remaining : 0;
+  }, [userBudgetMax, totalActivitiesCost]);
+
+  const hasAutoGeneratedActivities = useRef(false);
 
   const remainingBudgetDisplay = useMemo(() => {
     const total = totalBudgetValue;
@@ -487,14 +560,21 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
       while (next.length < desiredLen) next.push(createEmptyDay(next.length + 1));
 
       const target = next[insertIndex] || createEmptyDay(insertIndex + 1);
+      // Add adjustment as a new activity to the existing day
+      const adjustmentActivity = {
+        id: `act-adjust-${Date.now()}`,
+        activity: activity,
+        description: description,
+        location: location,
+        cost: cost,
+        imageDataUrl: imageDataUrl,
+        startTime: "",
+        endTime: "",
+      };
       next[insertIndex] = {
         ...target,
         isAdjustment: true,
-        activity: String(target.activity || '').trim() ? target.activity : activity,
-        description: String(target.description || '').trim() ? target.description : description,
-        location: String(target.location || '').trim() ? target.location : location,
-        cost: String(target.cost || '').trim() ? target.cost : cost,
-        imageDataUrl: target.imageDataUrl ? target.imageDataUrl : imageDataUrl,
+        activities: [...(target.activities || []), adjustmentActivity],
       };
 
       return next;
@@ -514,10 +594,19 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
         if (!meta) return d;
 
         const next = { ...d };
-        if (!String(next.activity || "").trim() && meta.title) next.activity = meta.title;
-        if (!String(next.description || "").trim() && meta.description) next.description = meta.description;
-        if (!String(next.location || "").trim() && meta.location) next.location = meta.location;
-        return next;
+        const firstActivity = next.activities?.[0] || {};
+        const updatedActivities = [...(next.activities || [])];
+        
+        if (!String(firstActivity.activity || "").trim() && meta.title) {
+          updatedActivities[0] = { ...firstActivity, activity: meta.title };
+        }
+        if (!String(firstActivity.description || "").trim() && meta.description) {
+          updatedActivities[0] = { ...updatedActivities[0], description: meta.description };
+        }
+        if (!String(firstActivity.location || "").trim() && meta.location) {
+          updatedActivities[0] = { ...updatedActivities[0], location: meta.location };
+        }
+        return { ...next, activities: updatedActivities };
       });
     });
   }, [draft, requestItemMeta]);
@@ -546,6 +635,48 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     });
   }, [request, draft]);
 
+  useEffect(() => {
+    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
+    if (hasAutoGeneratedActivities.current) return;
+    
+    const remaining = remainingBudgetForAutoGen;
+    if (remaining <= 0) return;
+    
+    const days = Array.isArray(daysData) ? daysData : [];
+    if (days.length === 0) return;
+
+    setDaysData((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      if (list.length === 0) return list;
+
+      return list.map((day, idx) => {
+        if (idx !== 0) return day;
+
+        const firstActivity = day.activities?.[0];
+        if (!firstActivity) return day;
+
+        const autoActivity = {
+          id: `act-auto-${Date.now()}`,
+          activity: firstActivity.activity || requestItemMeta[0]?.title || "Additional Activity",
+          location: firstActivity.location || requestItemMeta[0]?.location || "",
+          description: firstActivity.description || requestItemMeta[0]?.description || "Auto-generated activity to utilize remaining budget",
+          cost: String(remaining),
+          startTime: "",
+          endTime: "",
+          imageDataUrl: "",
+          isAutoGenerated: true,
+        };
+
+        return {
+          ...day,
+          activities: [...day.activities, autoActivity],
+        };
+      });
+    });
+
+    hasAutoGeneratedActivities.current = true;
+  }, [draft, remainingBudgetForAutoGen, requestItemMeta, daysData]);
+
   const calcProgress = (payload) => {
     const td = payload?.travelDetails || {};
     const tdFields = [td.destination, td.budget, td.startDate, td.endDate, td.preferences];
@@ -553,11 +684,15 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
 
     const dayList = Array.isArray(payload?.daysData) ? payload.daysData : [];
     const dayScore = dayList.reduce((sum, d) => {
-      const fields = [d.activity, d.location, d.description, d.cost, d.startTime, d.endTime, d.imageDataUrl];
-      return sum + fields.filter((v) => String(v || "").trim()).length;
+      const activities = Array.isArray(d.activities) ? d.activities : [d];
+      return sum + activities.reduce((actSum, act) => {
+        const fields = [act.activity, act.location, act.description, act.cost, act.startTime, act.endTime, act.imageDataUrl];
+        return actSum + fields.filter((v) => String(v || "").trim()).length;
+      }, 0);
     }, 0);
 
-    const max = 5 + (dayList.length * 7);
+    const maxActivitiesPerDay = dayList.reduce((sum, d) => sum + (Array.isArray(d.activities) ? d.activities.length : 1), 0);
+    const max = 5 + (maxActivitiesPerDay * 7);
     const val = tdScore + dayScore;
     if (!max) return 0;
     return Math.max(0, Math.min(1, val / max));
@@ -667,14 +802,18 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
       const endTime = String(d?.meta?.endTime || d?.endTime || d?.timeTo || "").trim();
 
       return {
-        ...createEmptyDay(dayNo),
-        activity,
-        description,
-        location: String(location || "").trim(),
-        cost: String(cost || "").trim(),
-        imageDataUrl,
-        startTime,
-        endTime,
+        day: dayNo,
+        isAdjustment: false,
+        activities: [{
+          id: `act-prev-${Date.now()}-${idx}`,
+          activity,
+          description,
+          location: String(location || "").trim(),
+          cost: String(cost || "").trim(),
+          imageDataUrl,
+          startTime,
+          endTime,
+        }],
       };
     });
 
@@ -715,11 +854,14 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     const tasks = [];
     arr.forEach((d) => {
       const day = d?.day;
-      const img = String(d?.imageDataUrl || "").trim();
-      if (!img) return;
-      if (!img.startsWith("data:image")) return;
-      const key = getDraftImageKey(draftId, day);
-      tasks.push(idbPutImage(key, img));
+      const activities = Array.isArray(d?.activities) ? d.activities : [];
+      activities.forEach((act) => {
+        const img = String(act?.imageDataUrl || "").trim();
+        if (!img) return;
+        if (!img.startsWith("data:image")) return;
+        const key = getDraftImageKey(draftId, `${day}-${act.id}`);
+        tasks.push(idbPutImage(key, img));
+      });
     });
     if (tasks.length === 0) return;
     try {
@@ -729,26 +871,48 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     }
   };
 
-  const handleBrowseImage = (day, file) => {
+  const handleBrowseImage = (day, activityId, file) => {
     if (!file) return;
     if (!String(file.type || "").toLowerCase().startsWith("image/")) return;
     const reader = new FileReader();
     reader.onload = () => {
       const result = typeof reader.result === "string" ? reader.result : "";
-      setDaysData((prev) => prev.map((d) => (d.day === day ? { ...d, imageDataUrl: result } : d)));
+      setDaysData((prev) =>
+        prev.map((d) =>
+          d.day === day
+            ? {
+                ...d,
+                activities: d.activities.map((a) =>
+                  a.id === activityId ? { ...a, imageDataUrl: result } : a
+                ),
+              }
+            : d
+        )
+      );
       const did = draftIdRef.current;
       if (did && result) {
-        idbPutImage(getDraftImageKey(did, day), result).catch(() => {});
+        idbPutImage(getDraftImageKey(did, `${day}-${activityId}`), result).catch(() => {});
       }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleRemoveImage = (day) => {
-    setDaysData((prev) => prev.map((d) => (d.day === day ? { ...d, imageDataUrl: "" } : d)));
+  const handleRemoveImage = (day, activityId) => {
+    setDaysData((prev) =>
+      prev.map((d) =>
+        d.day === day
+          ? {
+              ...d,
+              activities: d.activities.map((a) =>
+                a.id === activityId ? { ...a, imageDataUrl: "" } : a
+              ),
+            }
+          : d
+      )
+    );
     const did = draftIdRef.current;
     if (did) {
-      const key = getDraftImageKey(did, day);
+      const key = getDraftImageKey(did, `${day}-${activityId}`);
       openDraftImagesDb()
         .then((db) => new Promise((resolve, reject) => {
           const tx = db.transaction(DRAFT_IMAGES_STORE, "readwrite");
@@ -771,26 +935,44 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     let cancelled = false;
     const restore = async () => {
       try {
-        const tasks = list.map(async (d) => {
+        // Build list of all activity image keys to restore
+        const imageTasks = [];
+        list.forEach((d) => {
           const day = d?.day;
-          if (!day) return { day, img: "" };
-          const key = getDraftImageKey(did, day);
-          const img = await idbGetImage(key);
-          return { day, img };
+          const activities = Array.isArray(d?.activities) ? d.activities : [];
+          activities.forEach((act) => {
+            if (act?.id && !act.imageDataUrl) {
+              const key = getDraftImageKey(did, `${day}-${act.id}`);
+              imageTasks.push({ day, activityId: act.id, key });
+            }
+          });
         });
-        const results = await Promise.all(tasks);
+        
+        const results = await Promise.all(
+          imageTasks.map(async ({ day, activityId, key }) => {
+            const img = await idbGetImage(key);
+            return { day, activityId, img };
+          })
+        );
+        
         if (cancelled) return;
 
         setDaysData((prev) => {
           const prevList = Array.isArray(prev) ? prev : [];
           if (prevList.length === 0) return prevList;
-          const imgMap = new Map(results.map((r) => [String(r.day), String(r.img || "")]));
+          
           return prevList.map((dayObj) => {
-            const k = String(dayObj?.day);
-            const img = imgMap.get(k);
-            if (!img) return dayObj;
-            if (String(dayObj?.imageDataUrl || "").trim()) return dayObj;
-            return { ...dayObj, imageDataUrl: img };
+            const dayResults = results.filter((r) => r.day === dayObj.day);
+            if (dayResults.length === 0) return dayObj;
+            
+            const updatedActivities = dayObj.activities.map((act) => {
+              const match = dayResults.find((r) => r.activityId === act.id);
+              if (!match || !match.img) return act;
+              if (String(act.imageDataUrl || "").trim()) return act;
+              return { ...act, imageDataUrl: match.img };
+            });
+            
+            return { ...dayObj, activities: updatedActivities };
           });
         });
       } catch {
@@ -834,20 +1016,24 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
       description: travelDetails.preferences || "",
     };
 
-    const days = (Array.isArray(daysData) ? daysData : []).map((d) => {
-      const label = d?.activity || `Day ${d?.day || ''}`;
-      return {
-        day: d?.day,
-        title: label,
-        image: d?.imageDataUrl || "",
-        morning: { title: "Morning", description: d?.description || "" },
-        afternoon: { title: "Afternoon", description: d?.location ? `Location: ${d.location}` : "" },
-        evening: { title: "Evening", description: d?.cost ? `Estimated Cost: ${d.cost}` : "" },
-        meta: {
-          startTime: d?.startTime || "",
-          endTime: d?.endTime || "",
-        },
-      };
+    const days = (Array.isArray(daysData) ? daysData : []).flatMap((d) => {
+      // Handle both old single-activity format and new multi-activity format
+      const activities = Array.isArray(d.activities) ? d.activities : [d];
+      return activities.map((act, idx) => {
+        const label = act.activity || `Day ${d?.day || ''} Activity ${idx + 1}`;
+        return {
+          day: d?.day,
+          title: label,
+          image: act.imageDataUrl || "",
+          morning: { title: "Morning", description: act.description || "" },
+          afternoon: { title: "Afternoon", description: act.location ? `Location: ${act.location}` : "" },
+          evening: { title: "Evening", description: act.cost ? `Estimated Cost: ${act.cost}` : "" },
+          meta: {
+            startTime: act.startTime || "",
+            endTime: act.endTime || "",
+          },
+        };
+      });
     });
 
     const travelerUserId =
@@ -905,16 +1091,22 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
       const shrink = next.map((d) => {
         if (d?.id !== id) return d;
         const p = d?.payload || {};
-        const compactDays = (Array.isArray(p?.daysData) ? p.daysData : []).map((day) => ({
-          day: day?.day,
-          activity: day?.activity || "",
-          location: day?.location || "",
-          description: day?.description || "",
-          cost: day?.cost || "",
-          startTime: day?.startTime || "",
-          endTime: day?.endTime || "",
-          imageDataUrl: "",
-        }));
+        const compactDays = (Array.isArray(p?.daysData) ? p.daysData : []).map((day) => {
+          const activities = Array.isArray(day?.activities) ? day.activities : [day];
+          return {
+            day: day?.day,
+            activities: activities.map((act) => ({
+              id: act?.id || `act-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              activity: act?.activity || "",
+              location: act?.location || "",
+              description: act?.description || "",
+              cost: act?.cost || "",
+              startTime: act?.startTime || "",
+              endTime: act?.endTime || "",
+              imageDataUrl: "",
+            })),
+          };
+        });
         return {
           ...d,
           payload: {
@@ -1042,6 +1234,38 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
 
   const updateDay = (day, patch) => {
     setDaysData((prev) => prev.map((d) => (d.day === day ? { ...d, ...patch } : d)));
+  };
+
+  const updateActivity = (day, activityId, patch) => {
+    setDaysData((prev) =>
+      prev.map((d) => {
+        if (d.day !== day) return d;
+        if (patch === null) {
+          // Remove activity
+          const remaining = d.activities.filter((a) => a.id !== activityId);
+          return { ...d, activities: remaining.length > 0 ? remaining : [createEmptyActivity()] };
+        }
+        // Update activity
+        return {
+          ...d,
+          activities: d.activities.map((a) =>
+            a.id === activityId ? { ...a, ...patch } : a
+          ),
+        };
+      })
+    );
+  };
+
+  const addActivity = (day) => {
+    setDaysData((prev) =>
+      prev.map((d) => {
+        if (d.day !== day) return d;
+        return {
+          ...d,
+          activities: [...d.activities, createEmptyActivity()],
+        };
+      })
+    );
   };
 
   const handleAddNewDay = () => {
@@ -1216,6 +1440,8 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
                   onToggle={toggleDay}
                   dayData={d}
                   onUpdateDay={updateDay}
+                  onUpdateActivity={updateActivity}
+                  onAddActivity={addActivity}
                   onBrowseImage={handleBrowseImage}
                   onRemoveImage={handleRemoveImage}
                   activityOptions={activityOptions}
@@ -1295,6 +1521,14 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
             <div className={`space-y-1 text-xs transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>
               <p className={`text-[11px] font-semibold mb-1 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Cost Breakdown</p>
               <div className="flex items-center justify-between">
+                <span>User Budget (Max)</span>
+                <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{formatMoney(userBudgetMax)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Activities Cost</span>
+                <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{formatMoney(totalActivitiesCost)}</span>
+              </div>
+              <div className="flex items-center justify-between">
                 <span>Total Budget</span>
                 <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{formatMoney(totalBudgetValue)}</span>
               </div>
@@ -1306,6 +1540,11 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
                 <span className="opacity-70">Remaining</span>
                 <span className="font-semibold text-emerald-600">{remainingBudgetDisplay}</span>
               </div>
+              {remainingBudgetForAutoGen > 0 && (
+                <div className={`mt-2 p-2 rounded-lg text-[10px] ${darkMode ? 'bg-emerald-900/20 text-emerald-400' : 'bg-emerald-50 text-emerald-700'}`}>
+                  <span className="font-semibold">Auto-generated:</span> Added activity with ${remainingBudgetForAutoGen} to utilize remaining budget
+                </div>
+              )}
             </div>
           </div>
 

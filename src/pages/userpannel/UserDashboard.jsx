@@ -63,7 +63,9 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
 
                     const endpoints = [
                         // Backend (kufi_backend_New1) supports GET /api/bookings/user/:userId
-                        currentUserId ? `/bookings/user/${encodeURIComponent(String(currentUserId))}` : null,
+                        currentUserId
+                            ? `/bookings/user/${encodeURIComponent(String(currentUserId))}${currentEmail ? `?email=${encodeURIComponent(currentEmail)}` : ''}`
+                            : null,
                         '/bookings',
                     ].filter(Boolean)
 
@@ -241,7 +243,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
 
             return idMatch || emailMatch || phoneMatch
         })
-        .slice(0, 2)
+
 
         return filtered.map((r) => {
             const bookingId = String(r?.id || r?._id || '')

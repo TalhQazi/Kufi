@@ -189,6 +189,15 @@ export default function CategoriesSection({ onCategoryClick }) {
         return Object.fromEntries(entries)
     }, [staticCategories])
 
+    const iconByKey = useMemo(() => {
+        const entries = staticCategories.map(({ name, icon }) => [String(name || ''), icon])
+        return Object.fromEntries(entries)
+    }, [staticCategories])
+
+    const isIconUrl = (value) => {
+        return /^https?:\/\//i.test(String(value || '').trim())
+    }
+
     const safeCategories = useMemo(() => {
         const list = Array.isArray(categories) ? categories : []
         return list
@@ -225,6 +234,8 @@ export default function CategoriesSection({ onCategoryClick }) {
                         {safeCategories.map(({ id, name, image }) => {
                             const icon = iconByName[String(name || '').toLowerCase()] || defaultIcon
                             const hasImage = Boolean(String(image || '').trim())
+                            const hasUrlImage = hasImage && isIconUrl(image)
+                            const builtInIcon = iconByKey[String(image || '')]
                             return (
                                 <div
                                     key={id}
@@ -236,13 +247,15 @@ export default function CategoriesSection({ onCategoryClick }) {
                                     }}
                                 >
                                     <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
-                                        {hasImage ? (
+                                        {hasUrlImage ? (
                                             <img
                                                 src={image}
                                                 alt={name}
                                                 className="w-full h-full object-contain"
                                                 loading="lazy"
                                             />
+                                        ) : builtInIcon ? (
+                                            builtInIcon
                                         ) : (
                                             icon
                                         )}

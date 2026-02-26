@@ -13,6 +13,9 @@ export default function ActivityDetail({
     onNotificationClick,
     onActivityClick,
     onAddToList,
+    selectedActivities = [],
+    onRemoveActivity,
+    onSendRequest,
     onHomeClick,
     onProfileClick,
     onSettingsClick,
@@ -211,6 +214,13 @@ export default function ActivityDetail({
             ? activity.reviewsCount
             : (Array.isArray(activity?.reviews) ? activity.reviews.length : null)
 
+    const isCurrentActivityInSelection = useMemo(() => {
+        const currentId = activity?._id || activityId
+        if (!currentId) return false
+        const list = Array.isArray(selectedActivities) ? selectedActivities : []
+        return list.some((a) => String(a?.id || a?._id || '') === String(currentId))
+    }, [selectedActivities, activity?._id, activityId])
+
     const displayedReviews = useMemo(() => {
         const normalizeReviews = (items) => {
             const list = Array.isArray(items) ? items : []
@@ -362,6 +372,72 @@ export default function ActivityDetail({
         </div>
     )
 
+    const selectionPanel = (
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
+            <h4 className="m-0 mb-2 text-lg font-bold text-slate-900">Your Selection</h4>
+            <p className="m-0 mb-6 text-sm text-slate-600">
+                <span className="font-bold text-primary-brown">{selectedActivities.length}</span>
+                <span className="ml-1">activities selected</span>
+            </p>
+
+            {selectedActivities.length === 0 ? (
+                <div className="py-8 px-4 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-beige flex items-center justify-center">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="1.5">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                            <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+                        </svg>
+                    </div>
+                    <p className="m-0 mb-2 text-sm font-semibold text-slate-900">Your selection is empty</p>
+                    <p className="m-0 text-xs text-slate-500">
+                        Add activities from the list to create your custom request
+                    </p>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    {selectedActivities.map(item => (
+                        <div key={item.id || item._id} className="pb-3 border-b border-slate-200 last:border-0">
+                            <div className="flex items-center gap-3">
+                                <img
+                                    src={item.image}
+                                    alt={item.title}
+                                    className="w-16 h-16 rounded-lg object-cover"
+                                />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-semibold text-slate-900 truncate">{item.title}</h4>
+                                    <p className="text-xs text-slate-500 truncate">{item.location}</p>
+                                </div>
+                                <button
+                                    onClick={() => onRemoveActivity && onRemoveActivity(item.id || item._id)}
+                                    className="p-1 hover:bg-red-50 rounded transition-colors"
+                                    title="Remove"
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+                                        <path d="M18 6L6 18M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <button
+                className={`w-full mt-5 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors ${selectedActivities.length === 0
+                    ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                    : 'bg-primary-brown text-white hover:bg-primary-dark'
+                    }`}
+                disabled={selectedActivities.length === 0}
+                onClick={() => onSendRequest && onSendRequest()}
+            >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                </svg>
+                Send Request
+            </button>
+        </div>
+    )
+
     return (
         <div className="bg-white min-h-screen">
             {isLoading ? (
@@ -471,8 +547,9 @@ export default function ActivityDetail({
             {/* Main Content */}
             <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-8">
                 <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
+                    {/* Mobile top: Your Selection */}
                     <div className="lg:hidden order-1">
-                        {addToListPanel}
+                        {selectionPanel}
                     </div>
                     {/* Left Column */}
                     <div className="order-2 lg:order-none">
@@ -595,6 +672,11 @@ export default function ActivityDetail({
                                         </ul>
                                     </div>
                                 )}
+
+                                {/* Optional Add-ons (mobile: after About this experience) */}
+                                <div className="lg:hidden mb-8">
+                                    {!isCurrentActivityInSelection ? addToListPanel : null}
+                                </div>
                             </div>
                         )}
 
@@ -707,7 +789,10 @@ export default function ActivityDetail({
 
                     {/* Right Sidebar */}
                     <aside className="hidden lg:block lg:sticky lg:top-24 h-fit order-2 lg:order-2">
-                        {addToListPanel}
+                        <div className="space-y-6">
+                            {!isCurrentActivityInSelection ? addToListPanel : null}
+                            {selectionPanel}
+                        </div>
                     </aside>
                 </div>
                     </main>

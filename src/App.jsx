@@ -414,7 +414,8 @@ export default function App() {
     setShowModal('register')
   }
 
-  const handleAddToList = (activity) => {
+  const handleAddToList = (activity, options = {}) => {
+    const { navigate = true } = options || {}
     const normalizedActivity = activity
       ? {
         ...activity,
@@ -431,8 +432,10 @@ export default function App() {
       if (exists) return prev
       return [...prev, normalizedActivity]
     })
-    // Navigate to explore page to show the selection
-    navigateTo('explore')
+    if (navigate) {
+      // Navigate to explore page to show the selection
+      navigateTo('explore')
+    }
   }
 
   const handleRemoveFromList = (activityId) => {
@@ -583,7 +586,10 @@ export default function App() {
         onProfileClick={handleProfileClick}
         onSettingsClick={() => navigateTo('traveler-profile')}
         onActivityClick={handleActivityClick}
-        onAddToList={(activityData) => handleAddToList(activityData)}
+        selectedActivities={selectedActivities}
+        onRemoveActivity={handleRemoveFromList}
+        onSendRequest={() => navigateTo('travel-booking')}
+        onAddToList={(activityData) => handleAddToList(activityData, { navigate: false })}
         hideHeaderFooter={true}
       />
     )

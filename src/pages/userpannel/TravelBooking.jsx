@@ -69,27 +69,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         return Math.max(0, total)
     }, [payloadActivities])
 
-    const budgetRanges = useMemo(() => {
-        const total = Math.round(selectedTotalPrice)
-        if (!Number.isFinite(total) || total <= 0) return []
 
-        const step = Math.max(
-            50,
-            Math.round(total * 0.07),
-            total <= 1000 ? 100 : (total <= 3000 ? 150 : 250)
-        )
-
-        const ranges = [
-            { min: Math.max(0, total - step), max: total },
-            { min: total, max: total + step },
-            { min: total + step, max: total + (2 * step) },
-        ]
-
-        return ranges.map((r) => ({
-            value: `${r.min}-${r.max}`,
-            label: `$${r.min.toLocaleString()} - $${r.max.toLocaleString()}`,
-        }))
-    }, [selectedTotalPrice])
 
     const [formData, setFormData] = useState({
         firstName: currentUser.firstName || '',
@@ -109,14 +89,6 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         activities: []
     })
     const [countries, setCountries] = useState([])
-
-    useEffect(() => {
-        if (budgetRanges.length === 0) return
-        const stillValid = budgetRanges.some((opt) => opt.value === formData.budget)
-        if (!stillValid) {
-            setFormData((prev) => ({ ...prev, budget: '' }))
-        }
-    }, [budgetRanges.length, selectedTotalPrice])
 
     useEffect(() => {
         const ids = (payloadActivities || [])
@@ -602,10 +574,10 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                 </div>
                             </div>
 
-                            {/* Budget */}
+                            {/* Budget Range */}
                             <div className="mb-6">
                                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                                    Select Budget <span className="text-red-500">*</span>
+                                    Choose your budget range <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     value={formData.budget}
@@ -614,20 +586,15 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                     required
                                 >
                                     <option value="">Choose your budget range</option>
-                                    {budgetRanges.length > 0 ? (
-                                        budgetRanges.map((opt) => (
-                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                        ))
-                                    ) : (
-                                        <>
-                                            <option value="<1000">Less than $1,000</option>
-                                            <option value="1000-3000">$1,000 - $3,000</option>
-                                            <option value="3000-5000">$3,000 - $5,000</option>
-                                            <option value="5000-10000">$5,000 - $10,000</option>
-                                            <option value=">10000">More than $10,000</option>
-                                        </>
-                                    )}
+                                    <option value="<1000">Less than $1,000</option>
+                                    <option value="1000-3000">$1,000 - $3,000</option>
+                                    <option value="3000-5000">$3,000 - $5,000</option>
+                                    <option value="5000-10000">$5,000 - $10,000</option>
+                                    <option value=">10000">More than $10,000</option>
                                 </select>
+                                <p className="mt-1 text-xs text-slate-500">
+                                    Based on {payloadActivities.length} selected activity{payloadActivities.length !== 1 ? 'ies' : 'y'}
+                                </p>
                             </div>
 
                             {/* Submit Button */}

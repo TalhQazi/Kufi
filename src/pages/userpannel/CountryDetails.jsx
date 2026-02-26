@@ -454,8 +454,6 @@ export default function CountryDetails({
                                 className={`country-category-card ${selectedCategory === category.value ? 'ring-2 ring-primary-brown' : ''}`}
                                 onClick={() => {
                                     setSelectedCategory((prev) => (prev === category.value ? null : category.value))
-                                    const el = document.getElementById('country-popular-experiences')
-                                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
                                 }}
                                 role="button"
                                 tabIndex={0}
@@ -463,8 +461,6 @@ export default function CountryDetails({
                                     if (e.key === 'Enter' || e.key === ' ') {
                                         e.preventDefault()
                                         setSelectedCategory((prev) => (prev === category.value ? null : category.value))
-                                        const el = document.getElementById('country-popular-experiences')
-                                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
                                     }
                                 }}
                             >
