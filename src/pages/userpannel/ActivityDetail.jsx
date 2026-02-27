@@ -208,11 +208,9 @@ export default function ActivityDetail({
         activity?.city ||
         activity?.country ||
         ""
-    const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+    const googleMapsApiKey = "YOUR_GOOGLE_MAPS_API_KEY"
     const mapQuery = encodeURIComponent(activityLocation || activityTitle || '')
-    const mapEmbedUrl = googleMapsApiKey
-        ? `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${mapQuery}`
-        : `https://www.google.com/maps?q=${mapQuery}&output=embed`
+    const mapEmbedUrl = `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${mapQuery}`
     const activityRating = typeof activity?.rating === 'number' ? activity.rating : null
     const activityReviewsCount =
         typeof activity?.reviewsCount === 'number'
