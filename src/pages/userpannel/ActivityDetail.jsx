@@ -208,6 +208,11 @@ export default function ActivityDetail({
         activity?.city ||
         activity?.country ||
         ""
+    const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+    const mapQuery = encodeURIComponent(activityLocation || activityTitle || '')
+    const mapEmbedUrl = googleMapsApiKey
+        ? `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${mapQuery}`
+        : `https://www.google.com/maps?q=${mapQuery}&output=embed`
     const activityRating = typeof activity?.rating === 'number' ? activity.rating : null
     const activityReviewsCount =
         typeof activity?.reviewsCount === 'number'
@@ -724,8 +729,30 @@ export default function ActivityDetail({
                         )}
 
                         {activeTab === 'map' && (
-                            <div className="py-8 text-center text-slate-500">
-                                <p>Map content coming soon...</p>
+                            <div className="py-6">
+                                {mapQuery ? (
+                                    <div className="w-full h-[300px] sm:h-[400px] rounded-2xl overflow-hidden shadow-md border border-slate-200">
+                                        <iframe
+                                            title="Activity location map"
+                                            src={mapEmbedUrl}
+                                            width="100%"
+                                            height="100%"
+                                            style={{ border: 0 }}
+                                            loading="lazy"
+                                            allowFullScreen
+                                            referrerPolicy="no-referrer-when-downgrade"
+                                        />
+                                    </div>
+                                ) : (
+                                    <p className="text-center text-slate-500">
+                                        No location available for this activity.
+                                    </p>
+                                )}
+                                {!googleMapsApiKey && (
+                                    <p className="mt-3 text-xs text-center text-amber-600">
+                                        Google Maps API key is not configured. Add VITE_GOOGLE_MAPS_API_KEY in your .env.local.
+                                    </p>
+                                )}
                             </div>
                         )}
 
