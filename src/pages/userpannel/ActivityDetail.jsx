@@ -208,7 +208,7 @@ export default function ActivityDetail({
         activity?.city ||
         activity?.country ||
         ""
-    const googleMapsApiKey = "YOUR_GOOGLE_MAPS_API_KEY"
+    const googleMapsApiKey = "AIzaSyAWXLVRCfHG9losAeOQjq5TiMcTDbtDeGQ"
     const mapQuery = encodeURIComponent(activityLocation || activityTitle || '')
     const mapEmbedUrl = `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${mapQuery}`
     const activityRating = typeof activity?.rating === 'number' ? activity.rating : null
