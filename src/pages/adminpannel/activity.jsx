@@ -180,7 +180,7 @@ const Activity = ({ onAddNew }) => {
           </div>
         </div>
 
-        {/* Mobile: Card View */}
+       
         <div className="md:hidden space-y-4">
           {loading ? (
             <div className="py-20 flex justify-center">
@@ -269,7 +269,7 @@ const Activity = ({ onAddNew }) => {
           )}
         </div>
 
-        {/* Desktop: Table View */}
+        
         <div className="hidden md:block overflow-hidden rounded-2xl border border-gray-100 mt-2">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">

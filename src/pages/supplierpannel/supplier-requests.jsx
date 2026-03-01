@@ -82,9 +82,17 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
           : (r.experience || r.title || r.activity || "");
 
         // Calculate total guests
-        const totalGuests = r.items
-          ? r.items.reduce((sum, item) => sum + (item.travelers || 0), 0)
-          : (r.guests ?? r.travelers ?? r.pax ?? 0);
+        const bookingLevelGuests = r.guests ?? r.travelers ?? r.pax;
+        const itemGuests = Array.isArray(r.items)
+          ? r.items
+              .map((item) => Number(item?.travelers) || 0)
+              .filter((n) => n > 0)
+          : [];
+        const fallbackItemGuests = itemGuests.length > 0 ? Math.max(...itemGuests) : 0;
+        const totalGuests =
+          (Number(bookingLevelGuests) || 0) > 0
+            ? Number(bookingLevelGuests)
+            : fallbackItemGuests;
 
         return {
           ...r,
@@ -96,6 +104,7 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
           experience: experienceTitles,
           location: r.tripDetails?.country ?? r.location ?? r.destination ?? "—",
           date: r.date ?? r.dateRange ?? r.startDate ?? "Flexible",
+          travelers: totalGuests || 1,
           guests: totalGuests || 1,
           amount: pickNonEmpty(
             r.tripDetails?.budget,

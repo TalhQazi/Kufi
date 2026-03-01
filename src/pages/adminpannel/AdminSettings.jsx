@@ -73,7 +73,7 @@ const AdminSettings = () => {
                 </button>
             </div>
 
-            {/* Admins List */}
+           
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -140,7 +140,7 @@ const AdminSettings = () => {
                 </div>
             </div>
 
-            {/* Add Admin Modal */}
+           
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200">

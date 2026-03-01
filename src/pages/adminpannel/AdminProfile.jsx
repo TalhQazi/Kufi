@@ -15,7 +15,7 @@ const AdminProfile = () => {
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Password change state
+    
     const [passwords, setPasswords] = useState({
         oldPassword: '',
         newPassword: '',
@@ -58,7 +58,7 @@ const AdminProfile = () => {
                 name: profile.name,
                 email: profile.email,
                 phone: profile.phone,
-                image: profile.image // Send updated image
+                image: profile.image 
             });
             alert('Profile updated successfully!');
         } catch (error) {
@@ -99,7 +99,7 @@ const AdminProfile = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Profile Card */}
+               
                 <div className="md:col-span-1 space-y-6">
                     <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col items-center text-center shadow-sm">
                         <div className="relative">
@@ -132,9 +132,9 @@ const AdminProfile = () => {
                     </div>
                 </div>
 
-                {/* Edit Forms */}
+               
                 <div className="md:col-span-2 space-y-6">
-                    {/* Personal Info */}
+                   
                     <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                         <div className="flex items-center gap-2 mb-6 border-b border-gray-50 pb-4">
                             <User className="w-5 h-5 text-[#704b24]" />
@@ -187,7 +187,7 @@ const AdminProfile = () => {
                         </form>
                     </div>
 
-                    {/* Change Password */}
+                  
                     <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                         <div className="flex items-center gap-2 mb-6 border-b border-gray-50 pb-4">
                             <Key className="w-5 h-5 text-[#704b24]" />

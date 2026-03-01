@@ -457,7 +457,7 @@ export default function ActivityDetail({
                 </div>
             ) : (
                 <>
-                    {/* Header */}
+                   
                     {!hideHeaderFooter && (
                         <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
                             <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
@@ -547,16 +547,16 @@ export default function ActivityDetail({
                 </nav>
             )}
 
-            {/* Main Content */}
+            
             <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-8">
                 <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
-                    {/* Mobile top: Your Selection */}
+                   
                     <div className="lg:hidden order-1">
                         {selectionPanel}
                     </div>
-                    {/* Left Column */}
+                    
                     <div className="order-2 lg:order-none">
-                        {/* Hero Image */}
+                        
                         <div className="relative rounded-2xl overflow-hidden mb-6">
                             <img
                                 src={activityImage}
@@ -565,7 +565,7 @@ export default function ActivityDetail({
                             />
                         </div>
 
-                        {/* Category Badges */}
+                        
                         {activityCategoryBadges.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-4">
                                 {activityCategoryBadges.slice(0, 3).map((badge) => (
@@ -579,12 +579,12 @@ export default function ActivityDetail({
                             </div>
                         )}
 
-                        {/* Title */}
+                       
                         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">
                             {activityTitle}
                         </h1>
 
-                        {/* Meta Info */}
+                       
                         <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 text-xs sm:text-sm text-slate-600">
                             <div className="flex items-center gap-1.5">
                                 <svg width="14" height="14" className="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -606,7 +606,7 @@ export default function ActivityDetail({
                             </div>
                         </div>
 
-                        {/* Tabs */}
+                       
                         <div className="border-b border-slate-200 mb-6 overflow-x-auto">
                             <div className="flex gap-4 sm:gap-8 min-w-max">
                                 <button
@@ -648,10 +648,10 @@ export default function ActivityDetail({
                             </div>
                         </div>
 
-                        {/* Tab Content */}
+                       
                         {activeTab === 'overview' && (
                             <div>
-                                {/* About */}
+                               
                                 <div className="mb-8">
                                     <h2 className="text-xl font-bold text-slate-900 mb-3">About this experience</h2>
                                     <p className="text-sm text-slate-600 leading-relaxed">
@@ -659,7 +659,7 @@ export default function ActivityDetail({
                                     </p>
                                 </div>
 
-                                {/* Highlights */}
+                               
                                 {Array.isArray(activity?.highlights) && activity.highlights.length > 0 && (
                                     <div className="mb-8">
                                         <h2 className="text-xl font-bold text-slate-900 mb-3">Highlights</h2>
@@ -676,7 +676,7 @@ export default function ActivityDetail({
                                     </div>
                                 )}
 
-                                {/* Optional Add-ons (mobile: after About this experience) */}
+                                
                                 <div className="lg:hidden mb-8">
                                     {!isCurrentActivityInSelection ? addToListPanel : null}
                                 </div>
@@ -754,7 +754,7 @@ export default function ActivityDetail({
                             </div>
                         )}
 
-                        {/* Similar Experience */}
+                        
                         <div className="mt-12">
                             <h2 className="text-2xl font-bold text-slate-900 mb-6">Similar Experience</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -812,7 +812,7 @@ export default function ActivityDetail({
                         </div>
                     </div>
 
-                    {/* Right Sidebar */}
+                   
                     <aside className="hidden lg:block lg:sticky lg:top-24 h-fit order-2 lg:order-2">
                         <div className="space-y-6">
                             {!isCurrentActivityInSelection ? addToListPanel : null}

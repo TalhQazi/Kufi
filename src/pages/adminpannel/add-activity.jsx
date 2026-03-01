@@ -71,7 +71,7 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
     }))
   }, [initialData])
 
-  // Fetch countries on mount
+
   useEffect(() => {
     const fetchCountries = async () => {
       try {
@@ -157,11 +157,8 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
         country: formData.location,
         location: formData.location,
         duration: formData.duration,
-        // Convert price to number if possible
         price: formData.price ? Number(formData.price) : undefined,
-        // Backend expects `image` field, use thumbnail data if provided
         image: formData.thumbnail || undefined,
-        // Map UI status (active/inactive) to valid enum values
         status: formData.status === "active" ? "approved" : "pending",
         addOns: (Array.isArray(formData.addOns) ? formData.addOns : [])
           .map((v) => String(v || '').trim())
