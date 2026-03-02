@@ -77,6 +77,8 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         email: currentUser.email || '',
         phone: currentUser.phone || '',
         travelers: '',
+        arrivalDate: '',
+        departureDate: '',
         cities: '',
         includeHotel: false,
         hotelOwn: false,
@@ -143,6 +145,19 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                 return
             }
 
+            const arrivalDate = String(formData.arrivalDate || '').trim()
+            const departureDate = String(formData.departureDate || '').trim()
+
+            if (!arrivalDate) {
+                alert('Please select arrival date.')
+                return
+            }
+
+            if (!departureDate) {
+                alert('Please select departure date.')
+                return
+            }
+
             if (availableCountries.length > 1 && !selectedCountryKey) {
                 alert('Please select one country for your trip list.')
                 return
@@ -171,6 +186,12 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                     lastName: formData.lastName,
                     email: formData.email,
                     phone: formData.phone,
+                },
+                tripDetails: {
+                    country: selectedCountryLabel,
+                    arrivalDate,
+                    departureDate,
+                    budget: formData.budget,
                 },
                 travelers: travelersParsed,
                 guests: travelersParsed,
@@ -476,6 +497,33 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                     <option value="4">4 Travelers</option>
                                     <option value="5+">5+ Travelers</option>
                                 </select>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                                        Arrival Date <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={formData.arrivalDate}
+                                        onChange={(e) => handleChange('arrivalDate', e.target.value)}
+                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                                        Departure Date <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={formData.departureDate}
+                                        onChange={(e) => handleChange('departureDate', e.target.value)}
+                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
+                                        required
+                                    />
+                                </div>
                             </div>
 
                             {/* Hotel Preferences */}

@@ -3,9 +3,8 @@
   min-height: 100vh;
 }
 
-/* Dark Mode Global Styles */
 .dark body {
-  background-color: #030712; /* gray-950 */
+  background-color: #030712; 
   color: #ffffff;
 }
 
@@ -19,16 +18,16 @@
 
 .dark .text-gray-500,
 .dark .text-gray-400 {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important; 
 }
 
 .dark .bg-white {
-  background-color: #111827 !important; /* gray-900 */
+  background-color: #111827 !important; 
 }
 
 .dark .border-gray-100,
 .dark .border-gray-200 {
-  border-color: #1f2937 !important; /* gray-800 */
+  border-color: #1f2937 !important; 
 }
 
 .dark .card-shadow {
@@ -54,7 +53,6 @@
   box-sizing: border-box;
 }
 
-/* Header */
 .hero-header {
   display: flex;
   align-items: center;
@@ -145,7 +143,6 @@
   padding-inline: 28px;
 }
 
-/* Hero main */
 .hero-main {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
@@ -215,7 +212,6 @@
   margin-left: 3px;
 }
 
-/* Right cards */
 .hero-right {
   position: relative;
   height: 310px;
@@ -302,7 +298,6 @@
   border-color: #f59e0b;
 }
 
-/* Search bar */
 
 .hero-search {
   position: relative;
@@ -358,7 +353,6 @@
   padding-inline: 32px;
 }
 
-/* Destinations section */
 .destinations {
   background-color: #f9fafb;
   padding: 64px 80px 88px;
@@ -452,7 +446,6 @@
   color: #fbbf24;
 }
 
-/* Categories section */
 .categories-section {
   background-color: #f7f3ec;
   padding: 64px 80px 80px;
@@ -531,7 +524,6 @@
   text-align: center;
 }
 
-/* Top locations section */
 .top-locations-section {
   background: linear-gradient(to bottom, #FAFAFA 0, #f9fafb 28%);
   padding: 64px 80px 88px;
@@ -618,7 +610,6 @@
   color: #fbbf24;
 }
 
-/* Top activities section */
 .top-activities-section {
   background: radial-gradient(circle at top, #fdfaf5 0, #d1b693 60%, #a9753b 100%);
   padding: 64px 80px 88px;
@@ -785,17 +776,13 @@
 
 :root {
   --primary-color: #C69C6D;
-  /* Gold/Brown from Figma */
   --primary-dark: #A67C52;
   --text-dark: #1A1A1A;
   --text-light: #FFFFFF;
   --text-gray: #666666;
   --bg-beige: #F5EFE6;
-  /* Light beige for backgrounds */
   --font-heading: 'Playfair Display', serif;
-  /* Assuming serif for headings */
   --font-body: 'Inter', sans-serif;
-  /* Assuming sans-serif for body */
 }
 
 * {
@@ -853,7 +840,6 @@ h6 {
   margin: 0 0 40px;
 }
 
-/* New Hero Styles */
 .logo-text {
   font-family: var(--font-heading);
   font-size: 20px;
@@ -895,7 +881,6 @@ h6 {
   padding: 0;
 }
 
-/* Search Bar New Styles */
 .input-with-icon {
   display: flex;
   align-items: center;
@@ -1143,7 +1128,6 @@ h6 {
   }
 }
 
-/* Feedback section */
 .feedback-section {
   background-color: #fdfaf5;
   padding: 64px 80px 88px;

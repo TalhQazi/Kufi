@@ -41,6 +41,24 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
     return v.charAt(0).toUpperCase() + v.slice(1);
   };
 
+  const formatTripDate = (value) => {
+    if (value === null || value === undefined) return "—";
+    const v = String(value || "").trim();
+    if (!v) return "—";
+
+    // Common case: ISO string e.g. 2026-03-03T00:00:00.000Z
+    const isoMatch = v.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (isoMatch?.[1]) return isoMatch[1];
+
+    // Try parsing if it's some other date-like string
+    const t = Date.parse(v);
+    if (Number.isFinite(t)) {
+      return new Date(t).toISOString().slice(0, 10);
+    }
+
+    return v;
+  };
+
   const hasAdjustment = (req) => {
     const card = req?.adjustmentCard;
     if (!card) return false;
@@ -687,6 +705,20 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                   <div className="flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/30 p-2 rounded-lg">
                     <span className={darkMode ? "text-slate-400" : "text-gray-500"}>Destination</span>
                     <span className={`font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>{selected.location}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/30 p-2 rounded-lg">
+                    <span className={darkMode ? "text-slate-400" : "text-gray-500"}>Arrival Date</span>
+                    <span className={`font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                      {formatTripDate(selected?.tripDetails?.arrivalDate)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/30 p-2 rounded-lg">
+                    <span className={darkMode ? "text-slate-400" : "text-gray-500"}>Departure Date</span>
+                    <span className={`font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                      {formatTripDate(selected?.tripDetails?.departureDate)}
+                    </span>
                   </div>
 
                   <div className={`rounded-xl border p-2 transition-colors ${darkMode ? "bg-slate-800/30 border-slate-800" : "bg-gray-50/50 border-gray-100"}`}>

@@ -20,7 +20,8 @@ import Header from './components/layout/Header.jsx'
 import Footer from './components/layout/Footer.jsx'
 
 export default function App() {
-  // Get initial page from URL or default to 'home'
+  const SELECTED_ACTIVITIES_STORAGE_KEY = 'kufi_selected_activities'
+
   const getInitialPage = () => {
     const rawHash = window.location.hash.slice(1)
     const path = rawHash || 'home'
@@ -44,8 +45,23 @@ export default function App() {
   const [showModal, setShowModal] = useState(null) // 'login' or 'register' or null
   const [showNotifications, setShowNotifications] = useState(false)
   const [bookingData, setBookingData] = useState(null) // Store booking form data
-  const [selectedActivities, setSelectedActivities] = useState([]) // Store selected activities for user profile
+  const [selectedActivities, setSelectedActivities] = useState(() => {
+    try {
+      const raw = localStorage.getItem(SELECTED_ACTIVITIES_STORAGE_KEY)
+      const parsed = raw ? JSON.parse(raw) : []
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }) // Store selected activities for user profile
   const [currentUser, setCurrentUser] = useState(JSON.parse(localStorage.getItem('currentUser')) || null)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SELECTED_ACTIVITIES_STORAGE_KEY, JSON.stringify(Array.isArray(selectedActivities) ? selectedActivities : []))
+    } catch {
+    }
+  }, [selectedActivities])
 
   const hasAuthToken = () => {
     try {
@@ -146,7 +162,6 @@ export default function App() {
     }
   }, [])
 
-  // States for dynamic content
   const [selectedActivityId, setSelectedActivityId] = useState(null)
   const [selectedCountryName, setSelectedCountryName] = useState('Italy')
   const [selectedCategoryName, setSelectedCategoryName] = useState('Camping Adventures')
@@ -157,33 +172,26 @@ export default function App() {
   const [exploreInitialCategory, setExploreInitialCategory] = useState(null)
   const [travelerProfileInitialTab, setTravelerProfileInitialTab] = useState(null)
 
-  // Helper functions for dynamic navigation
   const handleActivityClick = (id) => {
     setSelectedActivityId(id)
     navigateTo('activity-detail')
   }
 
   const handleCountryClick = async (payload) => {
-    // Accept either:
-    // - country name string
-    // - country object { name }
-    // - city object { name, country }
+    
     const maybeName = typeof payload === 'string' ? payload : payload?.name
     const maybeCountry = payload?.country
 
-    // City selection from SearchBar
     if (maybeCountry) {
       setSelectedCityName(maybeName || null)
 
       try {
-        // If country is already a string name
         if (typeof maybeCountry === 'string' && !/^[0-9a-fA-F]{24}$/.test(maybeCountry)) {
           setSelectedCountryName(maybeCountry)
           navigateTo('country-details')
           return
         }
 
-        // Otherwise resolve countryId -> countryName
         const countryId = typeof maybeCountry === 'string' ? maybeCountry : maybeCountry?._id
         if (countryId) {
           const countriesRes = await api.get('/countries')
@@ -199,7 +207,6 @@ export default function App() {
         console.error('Error resolving city country:', e)
       }
 
-      // Fallback: if we couldn't resolve country, still navigate
       if (maybeName) {
         setSelectedCountryName(maybeName)
       }
@@ -207,7 +214,6 @@ export default function App() {
       return
     }
 
-    // Country selection
     const countryName = maybeName
     if (!countryName) return
     setSelectedCityName(null)
@@ -239,7 +245,6 @@ export default function App() {
     try {
       sessionStorage.setItem('selectedBlogId', String(id))
     } catch (e) {
-      // ignore
     }
     navigateTo('blog-detail')
   }
@@ -286,15 +291,12 @@ export default function App() {
     navigateTo('traveler-profile')
   }
 
-  // Navigation history state (for custom buttons)
   const [history, setHistory] = useState([getInitialPage()])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPopState, setIsPopState] = useState(false)
 
-  // Listen to browser back/forward buttons and hash changes
   useEffect(() => {
     const handleNavigationChange = (event) => {
-      // For popstate, the state might have the page, for hashchange we parse it
       const newPage = (event.type === 'popstate' ? event.state?.page : window.location.hash.slice(1)) || 'home';
 
       const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
@@ -302,8 +304,6 @@ export default function App() {
       const isAdminRoute = String(newPage || '').startsWith('admin')
       const isSupplierRoute = String(newPage || '').startsWith('supplier')
 
-      // Block direct URL/hash navigation to admin/supplier dashboards when not authenticated.
-      // If a user is logged out (no token), force them to login first.
       if ((isAdminRoute || isSupplierRoute) && !hasAuthToken()) {
         setIsPopState(true);
         setPage('home');
@@ -312,7 +312,6 @@ export default function App() {
         return
       }
 
-      // Block role mismatch (e.g. logged in as user but tries to open #admin)
       if (isAdminRoute && getStoredRole() !== 'admin') {
         setIsPopState(true);
         setPage('home');
@@ -329,7 +328,6 @@ export default function App() {
         return
       }
 
-      // Keep suppliers/admins inside their dashboards unless they logout
       if (role === 'supplier' && newPage !== 'supplier') {
         setIsPopState(true);
         setPage('supplier');
@@ -348,7 +346,6 @@ export default function App() {
       setIsPopState(true);
       setPage(newPage);
 
-      // Update our internal history tracking
       const pageIndex = history.indexOf(newPage);
       if (pageIndex !== -1) {
         setCurrentIndex(pageIndex);
@@ -358,13 +355,10 @@ export default function App() {
     window.addEventListener('popstate', handleNavigationChange);
     window.addEventListener('hashchange', handleNavigationChange);
 
-    // Set initial state if not already set
     if (!window.history.state) {
       window.history.replaceState({ page: page }, '', `#${page}`);
     }
 
-    // Prevent supplier/admin sessions from immediately navigating out of the app on first browser back.
-    // We push one duplicate state per tab session so the first Back stays within the SPA.
     try {
       const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
       const guardKey = role === 'supplier' ? 'kufi_supplier_back_guard' : role === 'admin' ? 'kufi_admin_back_guard' : ''
@@ -373,7 +367,6 @@ export default function App() {
         window.history.pushState({ page: page }, '', `#${page}`)
       }
     } catch {
-      // ignore
     }
 
     return () => {
@@ -383,12 +376,15 @@ export default function App() {
   }, [history, page, currentUser]);
 
   const handleLogout = () => {
-    // Clear any stored session data
     localStorage.removeItem('currentUser')
     localStorage.removeItem('userRole')
     localStorage.removeItem('authToken')
+    try {
+      localStorage.removeItem(SELECTED_ACTIVITIES_STORAGE_KEY)
+    } catch {
+    }
+    setSelectedActivities([])
     setCurrentUser(null)
-    // Reset to home page and clear history
     setHistory(['home'])
     setCurrentIndex(0)
     setPage('home')
@@ -397,7 +393,6 @@ export default function App() {
       sessionStorage.removeItem('kufi_supplier_back_guard')
       sessionStorage.removeItem('kufi_admin_back_guard')
     } catch {
-      // ignore
     }
     setShowModal(null)
   }
@@ -426,14 +421,12 @@ export default function App() {
       : null
 
     setSelectedActivities(prev => {
-      // Check if activity already exists
       if (!normalizedActivity?.id) return prev
       const exists = prev.find(a => (a.id || a._id) === normalizedActivity.id)
       if (exists) return prev
       return [...prev, normalizedActivity]
     })
     if (navigate) {
-      // Navigate to explore page to show the selection
       navigateTo('explore')
     }
   }
@@ -442,22 +435,17 @@ export default function App() {
     setSelectedActivities(prev => prev.filter(a => (a.id || a._id) !== activityId))
   }
 
-  // Navigation functions
   const navigateTo = (newPage) => {
-    // Don't navigate if we're already on this page
     if (page === newPage) return
 
-    // If we're not at the end of history, remove forward history
     const newHistory = history.slice(0, currentIndex + 1)
     newHistory.push(newPage)
     setHistory(newHistory)
     setCurrentIndex(newHistory.length - 1)
     setPage(newPage)
 
-    // Update browser history
     window.history.pushState({ page: newPage }, '', `#${newPage}`)
 
-    // Scroll to top when navigating to a new page
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -468,7 +456,6 @@ export default function App() {
       setCurrentIndex(newIndex)
       setPage(prevPage)
 
-      // Use browser back if possible, otherwise manually update
       window.history.back()
     }
   }
@@ -480,7 +467,7 @@ export default function App() {
       setCurrentIndex(newIndex)
       setPage(nextPage)
 
-      // Use browser forward
+  
       window.history.forward()
     }
   }
@@ -690,7 +677,7 @@ export default function App() {
   }
 
 
-  // simple routing
+ 
   if (page === 'admin') {
     const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
     if (!hasAuthToken() || role !== 'admin') {
@@ -767,7 +754,7 @@ export default function App() {
         />
       )}
 
-      {/* Login Modal */}
+     
       {showModal === 'login' && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="relative w-full max-w-4xl h-auto max-h-[90vh] overflow-auto bg-white/95 rounded-2xl shadow-2xl">
@@ -791,7 +778,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Register Modal */}
       {showModal === 'register' && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="relative w-full max-w-4xl h-auto max-h-[90vh] overflow-auto bg-white/95 rounded-2xl shadow-2xl">

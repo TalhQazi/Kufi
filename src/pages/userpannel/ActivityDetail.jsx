@@ -224,6 +224,12 @@ export default function ActivityDetail({
         return list.some((a) => String(a?.id || a?._id || '') === String(currentId))
     }, [selectedActivities, activity?._id, activityId])
 
+    const isActivityIdInSelection = (id) => {
+        if (!id) return false
+        const list = Array.isArray(selectedActivities) ? selectedActivities : []
+        return list.some((a) => String(a?.id || a?._id || '') === String(id))
+    }
+
     const displayedReviews = useMemo(() => {
         const normalizeReviews = (items) => {
             const list = Array.isArray(items) ? items : []
@@ -354,7 +360,11 @@ export default function ActivityDetail({
             )}
 
             <button
-                className="w-full py-3 rounded-lg text-sm font-bold bg-primary-brown text-white hover:bg-primary-dark transition-colors"
+                disabled={isCurrentActivityInSelection}
+                className={`w-full py-3 rounded-lg text-sm font-bold transition-colors ${isCurrentActivityInSelection
+                    ? 'bg-primary-dark text-white cursor-not-allowed'
+                    : 'bg-primary-brown text-white hover:bg-primary-dark'
+                    }`}
                 onClick={() => {
                     if (onAddToList) {
                         onAddToList({
@@ -370,7 +380,7 @@ export default function ActivityDetail({
                     }
                 }}
             >
-                ADD TO LIST
+                {isCurrentActivityInSelection ? 'ADDED TO LIST' : 'ADD TO LIST'}
             </button>
         </div>
     )
@@ -584,6 +594,12 @@ export default function ActivityDetail({
                             {activityTitle}
                         </h1>
 
+                        {isCurrentActivityInSelection && (
+                            <div className="mb-4 inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 border border-emerald-100">
+                                <span>This activity has been added to your list.</span>
+                            </div>
+                        )}
+
                        
                         <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 text-xs sm:text-sm text-slate-600">
                             <div className="flex items-center gap-1.5">
@@ -759,6 +775,9 @@ export default function ActivityDetail({
                             <h2 className="text-2xl font-bold text-slate-900 mb-6">Similar Experience</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 {similarActivities.map((activity) => (
+                                    (() => {
+                                        const isSelected = isActivityIdInSelection(activity?.id)
+                                        return (
                                     <article
                                         key={activity.id}
                                         className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
@@ -786,9 +805,14 @@ export default function ActivityDetail({
                                                 <span className="text-xs">{activity.location}</span>
                                             </div>
                                             <button
-                                                className="w-full py-2 rounded-lg text-xs font-bold bg-beige text-primary-brown hover:bg-primary hover:text-white transition-colors"
+                                                disabled={isSelected}
+                                                className={`w-full py-2 rounded-lg text-xs font-bold transition-colors ${isSelected
+                                                    ? 'bg-primary-dark text-white cursor-not-allowed'
+                                                    : 'bg-beige text-primary-brown hover:bg-primary hover:text-white'
+                                                    }`}
                                                 onClick={(e) => {
                                                     e.stopPropagation()
+                                                    if (isSelected) return
                                                     if (onAddToList) {
                                                         onAddToList({
                                                             id: activity?.id,
@@ -803,10 +827,12 @@ export default function ActivityDetail({
                                                     }
                                                 }}
                                             >
-                                                ADD TO LIST
+                                                {isSelected ? 'ADDED TO LIST' : 'ADD TO LIST'}
                                             </button>
                                         </div>
                                     </article>
+                                        )
+                                    })()
                                 ))}
                             </div>
                         </div>
