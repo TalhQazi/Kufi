@@ -100,7 +100,7 @@ const DayCard = ({
         onClick={() => onToggle?.(day)}
         className={`flex w-full items-center justify-between px-4 py-3 text-xs font-semibold transition-colors ${darkMode ? "text-white hover:bg-slate-700" : "text-gray-800 hover:bg-amber-100/50"}`}
       >
-        <span>Day {day} ({activities.length} activity{activities.length !== 1 ? 'ies' : 'y'})</span>
+        <span>Day {day} ({activities.length} {activities.length === 1 ? 'activity' : 'activities'})</span>
         <span className={`text-lg transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>{isExpanded ? "⌃" : "⌄"}</span>
       </button>
 
@@ -268,8 +268,83 @@ const DayCard = ({
 };
 
 const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, onBack }) => {
-  const initialActivitiesCount = Array.isArray(request?.items) ? request.items.length : 0;
-  const initialDaysCount = Math.max(1, initialActivitiesCount || 0);
+  const parseDurationHours = (value) => {
+    if (value == null) return 0;
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    const s = String(value).trim().toLowerCase();
+    if (!s) return 0;
+    const match = s.match(/(\d+(?:\.\d+)?)/);
+    const n = match ? Number(match[1]) : NaN;
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, n);
+  };
+
+  const getRequestItemDurationHours = (item) => {
+    const act = item?.activity || item || {};
+    return (
+      parseDurationHours(act?.duration) ||
+      parseDurationHours(item?.duration) ||
+      parseDurationHours(act?.time) ||
+      parseDurationHours(item?.time) ||
+      0
+    );
+  };
+
+  const DAY_CAPACITY_HOURS = 10;
+  const DAY_START_MINUTES = 8 * 60;
+  const DAY_END_MINUTES = 18 * 60;
+
+  const minutesToTime = (mins) => {
+    const safe = Math.max(0, Math.round(mins));
+    const h = Math.floor(safe / 60);
+    const m = safe % 60;
+    const hh = String(h).padStart(2, '0');
+    const mm = String(m).padStart(2, '0');
+    return `${hh}:${mm}`;
+  };
+
+  const packRequestedItemsIntoDays = (items) => {
+    const list = Array.isArray(items) ? items : [];
+    const packed = [];
+
+    let currentDay = [];
+    let remaining = DAY_CAPACITY_HOURS;
+
+    const flushDay = () => {
+      packed.push(currentDay);
+      currentDay = [];
+      remaining = DAY_CAPACITY_HOURS;
+    };
+
+    list.forEach((item) => {
+      const hours = getRequestItemDurationHours(item);
+      const normalizedHours = hours > 0 ? hours : 1;
+      if (currentDay.length === 0) {
+        currentDay.push(item);
+        remaining -= normalizedHours;
+        return;
+      }
+
+      if (normalizedHours <= remaining) {
+        currentDay.push(item);
+        remaining -= normalizedHours;
+        return;
+      }
+
+      flushDay();
+      currentDay.push(item);
+      remaining -= normalizedHours;
+    });
+
+    if (currentDay.length > 0) flushDay();
+    return packed.length > 0 ? packed : [[]];
+  };
+
+  const requestItemsPackedByDay = useMemo(() => {
+    return packRequestedItemsIntoDays(request?.items);
+  }, [request]);
+
+  const initialDaysCount = Math.max(1, requestItemsPackedByDay.length || 0);
   const [expandedDays, setExpandedDays] = useState(() => {
     const maxExpanded = Math.min(3, initialDaysCount);
     return Array.from({ length: maxExpanded }, (_, idx) => idx + 1);
@@ -518,10 +593,14 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
         ...draftTd,
       }));
     } else if (normalized.location) {
+      const maxBudget = clientBudgetRange?.max
+        ? String(clientBudgetRange.max)
+        : ''
+
       setTravelDetails((prev) => ({
         ...prev,
         destination: prev.destination || normalized.location,
-        budget: prev.budget || normalized.budget,
+        budget: prev.budget || maxBudget || normalized.budget,
         startDate: prev.startDate || normalized.startDate,
         endDate: prev.endDate || normalized.endDate,
         preferences: prev.preferences || normalized.preferencesText,
@@ -531,7 +610,73 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) {
       setDaysData(draft.payload.daysData);
     }
-  }, [draft, normalized.location, normalized.budget, normalized.startDate, normalized.endDate, normalized.preferencesText]);
+  }, [draft, normalized.location, normalized.budget, normalized.startDate, normalized.endDate, normalized.preferencesText, clientBudgetRange]);
+
+  useEffect(() => {
+    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
+
+    setDaysData((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      if (list.length === 0) return list;
+
+      return list.map((day, dayIdx) => {
+        const acts = Array.isArray(day.activities) ? day.activities : [];
+        if (acts.length === 0) return day;
+
+        let cursorMinutes = DAY_START_MINUTES;
+
+        const itemForDay = Array.isArray(requestItemsPackedByDay?.[dayIdx])
+          ? requestItemsPackedByDay[dayIdx]
+          : [];
+
+        const nextActs = acts.map((act, actIdx) => {
+          const hasStart = String(act?.startTime || '').trim();
+          const hasEnd = String(act?.endTime || '').trim();
+          const hasTimes = Boolean(hasStart && hasEnd);
+
+          const sourceItem = itemForDay[actIdx];
+          const durationHours = sourceItem ? getRequestItemDurationHours(sourceItem) : 0;
+          const safeHours = durationHours > 0 ? durationHours : 1;
+          const durMinutes = Math.round(safeHours * 60);
+
+          const start = cursorMinutes;
+          const end = Math.min(start + durMinutes, DAY_END_MINUTES);
+
+          // Always advance the cursor so the *next* activity starts right after this one.
+          cursorMinutes = end;
+
+          if (hasTimes) return act;
+
+          return {
+            ...act,
+            startTime: minutesToTime(start),
+            endTime: minutesToTime(end),
+          };
+        });
+
+        return { ...day, activities: nextActs };
+      });
+    });
+  }, [draft, requestItemsPackedByDay]);
+
+  useEffect(() => {
+    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
+
+    const packedDays = Array.isArray(requestItemsPackedByDay) ? requestItemsPackedByDay : [];
+    const needed = Math.max(1, packedDays.length || 0);
+
+    setDaysData((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      if (list.length === needed) return list;
+      return createDays(needed);
+    });
+
+    setExpandedDays((prev) => {
+      const maxExpanded = Math.min(3, needed);
+      const next = Array.from({ length: maxExpanded }, (_, idx) => idx + 1);
+      return Array.isArray(prev) && prev.length ? prev : next;
+    });
+  }, [draft, requestItemsPackedByDay]);
 
   useEffect(() => {
     if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
@@ -585,36 +730,50 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
     if (!Array.isArray(requestItemMeta) || requestItemMeta.length === 0) return;
 
+    const packed = Array.isArray(requestItemsPackedByDay) ? requestItemsPackedByDay : [];
+
     setDaysData((prev) => {
       const list = Array.isArray(prev) ? prev : [];
       if (list.length === 0) return list;
 
-      return list.map((d, idx) => {
-        const meta = requestItemMeta[idx];
-        if (!meta) return d;
+      return list.map((d, dayIdx) => {
+        const itemsForDay = Array.isArray(packed[dayIdx]) ? packed[dayIdx] : [];
 
-        const next = { ...d };
-        const firstActivity = next.activities?.[0] || {};
-        const updatedActivities = [...(next.activities || [])];
-        
-        if (!String(firstActivity.activity || "").trim() && meta.title) {
-          updatedActivities[0] = { ...firstActivity, activity: meta.title };
-        }
-        if (!String(firstActivity.description || "").trim() && meta.description) {
-          updatedActivities[0] = { ...updatedActivities[0], description: meta.description };
-        }
-        if (!String(firstActivity.location || "").trim() && meta.location) {
-          updatedActivities[0] = { ...updatedActivities[0], location: meta.location };
-        }
-        return { ...next, activities: updatedActivities };
+        const metas = itemsForDay
+          .map((item) => {
+            const act = item?.activity || item || {};
+            const title = String(act?.title || item?.title || act?.name || item?.name || '').trim();
+            if (!title) return null;
+            const meta = requestItemMeta.find((m) => m?.title === title);
+            return meta || null;
+          })
+          .filter(Boolean);
+
+        const desiredCount = Math.max(1, metas.length || 0);
+        const existing = Array.isArray(d.activities) ? d.activities : [];
+        const nextActivities = Array.from({ length: desiredCount }, (_, idx) => {
+          const base = existing[idx] || createEmptyActivity();
+          const meta = metas[idx];
+          if (!meta) return base;
+
+          const patch = { ...base };
+          if (!String(patch.activity || '').trim() && meta.title) patch.activity = meta.title;
+          if (!String(patch.description || '').trim() && meta.description) patch.description = meta.description;
+          if (!String(patch.location || '').trim() && meta.location) patch.location = meta.location;
+          return patch;
+        });
+
+        return { ...d, activities: nextActivities };
       });
     });
-  }, [draft, requestItemMeta]);
+  }, [draft, requestItemMeta, requestItemsPackedByDay]);
 
   useEffect(() => {
     if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
 
-    const activitiesCount = Array.isArray(request?.items) ? request.items.length : 0;
+    const activitiesCount = Array.isArray(requestItemsPackedByDay)
+      ? requestItemsPackedByDay.length
+      : (Array.isArray(request?.items) ? request.items.length : 0);
     const card = request?.adjustmentCard;
     const hasCard = Boolean(
       card &&
@@ -633,7 +792,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
       }
       return next;
     });
-  }, [request, draft]);
+  }, [request, draft, requestItemsPackedByDay]);
 
   useEffect(() => {
     if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
@@ -1537,8 +1696,8 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
                 <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{formatRange(clientBudgetRange)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="opacity-70">Remaining</span>
-                <span className="font-semibold text-emerald-600">{remainingBudgetDisplay}</span>
+                {/* <span className="opacity-70">Remaining</span> */}
+                {/* <span className="font-semibold text-emerald-600">{remainingBudgetDisplay}</span> */}
               </div>
               {remainingBudgetForAutoGen > 0 && (
                 <div className={`mt-2 p-2 rounded-lg text-[10px] ${darkMode ? 'bg-emerald-900/20 text-emerald-400' : 'bg-emerald-50 text-emerald-700'}`}>

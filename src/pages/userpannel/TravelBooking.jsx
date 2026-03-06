@@ -7,7 +7,23 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
     const [showSuccess, setShowSuccess] = useState(false)
     const [dropdown, setDropdown] = useState(false)
     const dropdownRef = useRef(null)
-    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {}
+    const currentUser = (() => {
+        try {
+            const parsed = JSON.parse(localStorage.getItem('currentUser'))
+            return parsed && typeof parsed === 'object' ? parsed : null
+        } catch {
+            return null
+        }
+    })()
+    const isAuthenticated = (() => {
+        try {
+            const token = localStorage.getItem('authToken')
+            const id = currentUser?._id || currentUser?.id
+            return Boolean(token && id)
+        } catch {
+            return false
+        }
+    })()
 
     const normalizeCountryKey = (value) => {
         return String(value || '')
@@ -285,72 +301,83 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                         </button>
 
 
-                        <div className="relative" ref={dropdownRef}>
-                            <button
-                                onClick={() => setDropdown(!dropdown)}
-                                className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                            >
-                                <ProfilePic user={JSON.parse(localStorage.getItem('currentUser') || '{}')} size="sm" />
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                    <path d="M6 9l6 6 6-6" />
-                                </svg>
-                            </button>
+                        {isAuthenticated ? (
+                            <div className="relative" ref={dropdownRef}>
+                                <button
+                                    onClick={() => setDropdown(!dropdown)}
+                                    className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                                >
+                                    <ProfilePic user={currentUser} size="sm" />
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </button>
 
-                            {dropdown && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-primary-brown hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            onProfileClick && onProfileClick()
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        MY REQUESTS
+                                {dropdown && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-primary-brown hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                onProfileClick && onProfileClick()
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            MY REQUESTS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                onNotificationClick && onNotificationClick()
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            NOTIFICATIONS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onSettingsClick) {
+                                                    onSettingsClick()
+                                                }
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            PAYMENTS
+                                        </div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                            onClick={() => {
+                                                onSettingsClick && onSettingsClick()
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            SETTINGS
+                                        </div>
+                                        <div className="border-t border-slate-200 my-1"></div>
+                                        <div
+                                            className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                                            onClick={() => {
+                                                if (onLogout) {
+                                                    onLogout()
+                                                }
+                                                setDropdown(false)
+                                            }}
+                                        >
+                                            LOGOUT
+                                        </div>
                                     </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            onNotificationClick && onNotificationClick()
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        NOTIFICATIONS
-                                    </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onSettingsClick) {
-                                                onSettingsClick()
-                                            }
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        PAYMENTS
-                                    </div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                        onClick={() => {
-                                            onSettingsClick && onSettingsClick()
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        SETTINGS
-                                    </div>
-                                    <div className="border-t border-slate-200 my-1"></div>
-                                    <div
-                                        className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
-                                        onClick={() => {
-                                            if (onLogout) {
-                                                onLogout()
-                                            }
-                                            setDropdown(false)
-                                        }}
-                                    >
-                                        LOGOUT
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </div>
+                        ) : (
+                            <button
+                                className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors text-sm font-semibold text-primary-brown"
+                                onClick={() => {
+                                    if (onProfileClick) onProfileClick()
+                                }}
+                            >
+                                <span>Login</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </nav>

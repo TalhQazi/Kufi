@@ -35,6 +35,25 @@ export default function ActivityDetail({
     const [showProfileDropdown, setShowProfileDropdown] = useState(false)
     const dropdownRef = useRef(null)
 
+    const currentUser = (() => {
+        try {
+            const parsed = JSON.parse(localStorage.getItem('currentUser'))
+            return parsed && typeof parsed === 'object' ? parsed : null
+        } catch {
+            return null
+        }
+    })()
+
+    const isAuthenticated = (() => {
+        try {
+            const token = localStorage.getItem('authToken')
+            const id = currentUser?._id || currentUser?.id
+            return Boolean(token && id)
+        } catch {
+            return false
+        }
+    })()
+
     useEffect(() => {
         const loadData = async () => {
             setActivity(null)
@@ -488,83 +507,99 @@ export default function ActivityDetail({
 
 
                                 <div className="flex items-center gap-2 sm:gap-4">
-                            <button
-                                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                                onClick={() => onNotificationClick && onNotificationClick()}
-                            >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                                </svg>
-                            </button>
+                                    <button
+                                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                                        onClick={() => onNotificationClick && onNotificationClick()}
+                                    >
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                        </svg>
+                                    </button>
 
+                                    {isAuthenticated ? (
+                                        <div className="relative" ref={dropdownRef}>
+                                            <button
+                                                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                                                className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                                            >
+                                                <ProfilePic user={currentUser} size="sm" />
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                                    <path d="M6 9l6 6 6-6" />
+                                                </svg>
+                                            </button>
 
-                            <div className="relative" ref={dropdownRef}>
-                                <button
-                                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                                    className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                                >
-                                    <ProfilePic user={JSON.parse(localStorage.getItem('currentUser') || '{}')} size="sm" />
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                        <path d="M6 9l6 6 6-6" />
-                                    </svg>
-                                </button>
-
-                                {showProfileDropdown && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
-                                        <div
-                                            className="px-4 py-2 text-xs font-semibold text-[#A67C52] hover:bg-slate-50 cursor-pointer"
+                                            {showProfileDropdown && (
+                                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                                                    <div
+                                                        className="px-4 py-2 text-xs font-semibold text-primary-brown hover:bg-slate-50 cursor-pointer"
+                                                        onClick={() => {
+                                                            if (onProfileClick) {
+                                                                onProfileClick()
+                                                            }
+                                                            setShowProfileDropdown(false)
+                                                        }}
+                                                    >
+                                                        MY REQUESTS
+                                                    </div>
+                                                    <div
+                                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                                        onClick={() => {
+                                                            if (onNotificationClick) {
+                                                                onNotificationClick()
+                                                            }
+                                                            setShowProfileDropdown(false)
+                                                        }}
+                                                    >
+                                                        NOTIFICATIONS
+                                                    </div>
+                                                    <div
+                                                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                                        onClick={() => {
+                                                            if (onSettingsClick) {
+                                                                onSettingsClick()
+                                                            }
+                                                            setShowProfileDropdown(false)
+                                                        }}
+                                                    >
+                                                        SETTINGS
+                                                    </div>
+                                                    <div className="border-t border-slate-200 my-1"></div>
+                                                    <div
+                                                        className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                                                        onClick={() => {
+                                                            if (onLogout) {
+                                                                onLogout()
+                                                            }
+                                                            setShowProfileDropdown(false)
+                                                        }}
+                                                    >
+                                                        LOGOUT
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <button
+                                            className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg transition-colors text-sm font-semibold text-primary-brown"
                                             onClick={() => {
                                                 if (onProfileClick) onProfileClick()
-                                                setShowProfileDropdown(false)
                                             }}
                                         >
-                                            MY REQUESTS
-                                        </div>
-                                        <div
-                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                            onClick={() => {
-                                                if (onNotificationClick) onNotificationClick()
-                                                setShowProfileDropdown(false)
-                                            }}
-                                        >
-                                            NOTIFICATIONS
-                                        </div>
-                                        <div
-                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                            onClick={() => {
-                                                if (onSettingsClick) onSettingsClick()
-                                                setShowProfileDropdown(false)
-                                            }}
-                                        >
-                                            SETTINGS
-                                        </div>
-                                        <div className="border-t border-slate-200 my-1"></div>
-                                        <div
-                                            className="px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
-                                            onClick={() => {
-                                                if (onLogout) onLogout()
-                                                setShowProfileDropdown(false)
-                                            }}
-                                        >
-                                            LOGOUT
-                                        </div>
-                                    </div>
-                                )}
+                                            <span>Login</span>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </nav>
-            )}
+                        </nav>
+                    )}
 
-            
-            <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-8">
-                <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
-                   
+                    <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-8">
+                <div className="mx-auto grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 lg:gap-8">
                     <div className="lg:hidden order-1">
                         {selectionPanel}
                     </div>
-                    
+
                     <div className="order-2 lg:order-none">
                         
                         <div className="relative rounded-2xl overflow-hidden mb-6">
@@ -774,66 +809,65 @@ export default function ActivityDetail({
                         <div className="mt-12">
                             <h2 className="text-2xl font-bold text-slate-900 mb-6">Similar Experience</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {similarActivities.map((activity) => (
-                                    (() => {
-                                        const isSelected = isActivityIdInSelection(activity?.id)
-                                        return (
-                                    <article
-                                        key={activity.id}
-                                        className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                                        onClick={() => {
-                                            if (onActivityClick && activity?.id) onActivityClick(activity.id)
-                                        }}
-                                    >
-                                        <div className="relative">
-                                            <img
-                                                src={activity.image}
-                                                alt={activity.title}
-                                                className="w-full h-40 object-cover"
-                                            />
-                                            <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-primary-brown text-white text-xs font-medium">
-                                                {activity.badge}
-                                            </span>
-                                        </div>
-                                        <div className="p-3">
-                                            <h3 className="text-sm font-semibold text-slate-900 mb-2 line-clamp-2">{activity.title}</h3>
-                                            <div className="flex items-center gap-1.5 mb-3 text-slate-600">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                                                    <circle cx="12" cy="10" r="3" />
-                                                </svg>
-                                                <span className="text-xs">{activity.location}</span>
+                                {similarActivities.map((activity) => {
+                                    const isSelected = isActivityIdInSelection(activity?.id)
+
+                                    return (
+                                        <article
+                                            key={activity.id}
+                                            className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                                            onClick={() => {
+                                                if (onActivityClick && activity?.id) onActivityClick(activity.id)
+                                            }}
+                                        >
+                                            <div className="relative">
+                                                <img
+                                                    src={activity.image}
+                                                    alt={activity.title}
+                                                    className="w-full h-40 object-cover"
+                                                />
+                                                <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-primary-brown text-white text-xs font-medium">
+                                                    {activity.badge}
+                                                </span>
                                             </div>
-                                            <button
-                                                disabled={isSelected}
-                                                className={`w-full py-2 rounded-lg text-xs font-bold transition-colors ${isSelected
-                                                    ? 'bg-primary-dark text-white cursor-not-allowed'
-                                                    : 'bg-beige text-primary-brown hover:bg-primary hover:text-white'
-                                                    }`}
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    if (isSelected) return
-                                                    if (onAddToList) {
-                                                        onAddToList({
-                                                            id: activity?.id,
-                                                            title: activity?.title,
-                                                            location: activity?.location,
-                                                            image: activity?.image,
-                                                            travelers: travelers,
-                                                            addOns: Array.isArray(rawAvailableAddOns)
-                                                                ? selectedAddOnLabels
-                                                                : addOns
-                                                        })
-                                                    }
-                                                }}
-                                            >
-                                                {isSelected ? 'ADDED TO LIST' : 'ADD TO LIST'}
-                                            </button>
-                                        </div>
-                                    </article>
-                                        )
-                                    })()
-                                ))}
+                                            <div className="p-3">
+                                                <h3 className="text-sm font-semibold text-slate-900 mb-2 line-clamp-2">{activity.title}</h3>
+                                                <div className="flex items-center gap-1.5 mb-3 text-slate-600">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                        <circle cx="12" cy="10" r="3" />
+                                                    </svg>
+                                                    <span className="text-xs">{activity.location}</span>
+                                                </div>
+                                                <button
+                                                    disabled={isSelected}
+                                                    className={`w-full py-2 rounded-lg text-xs font-bold transition-colors ${isSelected
+                                                        ? 'bg-primary-dark text-white cursor-not-allowed'
+                                                        : 'bg-beige text-primary-brown hover:bg-primary hover:text-white'
+                                                        }`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        if (isSelected) return
+                                                        if (onAddToList) {
+                                                            onAddToList({
+                                                                id: activity?.id,
+                                                                title: activity?.title,
+                                                                location: activity?.location,
+                                                                image: activity?.image,
+                                                                travelers: travelers,
+                                                                addOns: Array.isArray(rawAvailableAddOns)
+                                                                    ? selectedAddOnLabels
+                                                                    : addOns
+                                                            })
+                                                        }
+                                                    }}
+                                                >
+                                                    {isSelected ? 'ADDED TO LIST' : 'ADD TO LIST'}
+                                                </button>
+                                            </div>
+                                        </article>
+                                    )
+                                })}
                             </div>
                         </div>
                     </div>

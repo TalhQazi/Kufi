@@ -54,7 +54,14 @@ export default function App() {
       return []
     }
   }) // Store selected activities for user profile
-  const [currentUser, setCurrentUser] = useState(JSON.parse(localStorage.getItem('currentUser')) || null)
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem('currentUser'))
+      return parsed && typeof parsed === 'object' ? parsed : null
+    } catch {
+      return null
+    }
+  })
 
   useEffect(() => {
     try {
@@ -69,6 +76,22 @@ export default function App() {
     } catch {
       return false
     }
+  }
+
+  const isUserAuthenticated = () => {
+    if (!hasAuthToken()) return false
+    const id = currentUser?._id || currentUser?.id
+    return Boolean(id)
+  }
+
+  const requireUserAuth = () => {
+    if (isUserAuthenticated()) return true
+    try {
+      window.alert('Please login first to continue')
+    } catch {
+    }
+    setShowModal('login')
+    return false
   }
 
   const getStoredRole = () => {
@@ -250,10 +273,7 @@ export default function App() {
   }
 
   const handleProfileClick = () => {
-    if (!currentUser) {
-      setShowModal('login')
-      return
-    }
+    if (!requireUserAuth()) return
     const role = currentUser.role || localStorage.getItem('userRole')
     if (role === 'admin') {
       navigateTo('admin')
@@ -265,28 +285,19 @@ export default function App() {
   }
 
   const handleMyRequestsClick = () => {
-    if (!currentUser) {
-      setShowModal('login')
-      return
-    }
+    if (!requireUserAuth()) return
     setTravelerProfileInitialTab(null)
     navigateTo('user-profile')
   }
 
   const handleMyProfileClick = () => {
-    if (!currentUser) {
-      setShowModal('login')
-      return
-    }
+    if (!requireUserAuth()) return
     setTravelerProfileInitialTab('Personal Info')
     navigateTo('traveler-profile')
   }
 
   const handleSettingsClick = () => {
-    if (!currentUser) {
-      setShowModal('login')
-      return
-    }
+    if (!requireUserAuth()) return
     setTravelerProfileInitialTab('Settings')
     navigateTo('traveler-profile')
   }
@@ -303,6 +314,24 @@ export default function App() {
 
       const isAdminRoute = String(newPage || '').startsWith('admin')
       const isSupplierRoute = String(newPage || '').startsWith('supplier')
+
+      const isUserProtectedRoute =
+        newPage === 'travel-booking' ||
+        newPage === 'traveler-profile' ||
+        newPage === 'user-profile' ||
+        newPage === 'itinerary-view'
+
+      if (isUserProtectedRoute && !isUserAuthenticated()) {
+        setIsPopState(true)
+        setPage('home')
+        setShowModal('login')
+        try {
+          window.alert('Please login first to continue')
+        } catch {
+        }
+        window.history.replaceState({ page: 'home' }, '', '#home')
+        return
+      }
 
       if ((isAdminRoute || isSupplierRoute) && !hasAuthToken()) {
         setIsPopState(true);
@@ -490,7 +519,10 @@ export default function App() {
         onMyProfileClick={handleMyProfileClick}
         onMyRequestsClick={handleMyRequestsClick}
         onSettingsClick={handleSettingsClick}
-        onSendRequest={() => navigateTo('travel-booking')}
+        onSendRequest={() => {
+          if (!requireUserAuth()) return
+          navigateTo('travel-booking')
+        }}
         onBack={goBack}
         onForward={goForward}
         canGoBack={canGoBack}
@@ -514,6 +546,13 @@ export default function App() {
       <CountryDetails
         countryName={selectedCountryName}
         selectedCityName={selectedCityName}
+        selectedActivities={selectedActivities}
+        onAddToList={(activity) => handleAddToList(activity, { navigate: false })}
+        onRemoveActivity={handleRemoveFromList}
+        onSendRequest={() => {
+          if (!requireUserAuth()) return
+          navigateTo('travel-booking')
+        }}
         onLogout={handleLogout}
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={handleProfileClick}
@@ -575,7 +614,10 @@ export default function App() {
         onActivityClick={handleActivityClick}
         selectedActivities={selectedActivities}
         onRemoveActivity={handleRemoveFromList}
-        onSendRequest={() => navigateTo('travel-booking')}
+        onSendRequest={() => {
+          if (!requireUserAuth()) return
+          navigateTo('travel-booking')
+        }}
         onAddToList={(activityData) => handleAddToList(activityData, { navigate: false })}
         hideHeaderFooter={true}
       />

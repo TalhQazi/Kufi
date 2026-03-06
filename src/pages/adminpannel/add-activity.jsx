@@ -22,6 +22,20 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
 
   useEffect(() => {
     if (!initialData) return
+
+    const normalizeDurationHours = () => {
+      const raw = initialData.duration
+      if (raw == null) return ""
+      const s = String(raw).trim().toLowerCase()
+      if (!s) return ""
+
+      const match = s.match(/(\d+(?:\.\d+)?)/)
+      const n = match ? Number(match[1]) : NaN
+      if (!Number.isFinite(n)) return ""
+
+      const clamped = Math.min(10, Math.max(1, Math.round(n)))
+      return clamped === 1 ? '1 hour' : `${clamped} hours`
+    }
     const normalizeAddOns = () => {
       const raw = initialData.addOns
       if (Array.isArray(raw)) {
@@ -62,7 +76,7 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
       difficulty: initialData.difficulty || prev.difficulty,
       location: initialData.location || initialData.country || "",
       season: initialData.season || prev.season,
-      duration: initialData.duration || "",
+      duration: normalizeDurationHours(),
       status: (initialData.status === 'approved' || initialData.status === 'active') ? 'active' : 'inactive',
       price: initialData.price != null ? String(initialData.price) : "",
       thumbnail: initialData.thumbnail || initialData.image || "",
@@ -278,12 +292,20 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
               { label: "Year Round", value: "Year Round" },
             ]}
           />
-          <LabeledInput
-            label="Duration"
+          <SelectField
+            label="Duration (Hours)"
             name="duration"
-            value={formData.duration}
+            value={String(formData.duration || '')}
             onChange={handleChange}
-            placeholder="e.g., 3 Days"
+            options={[
+              { label: 'Select hours', value: '' },
+              ...Array.from({ length: 10 }, (_, i) => {
+                const h = i + 1
+                const value = h === 1 ? '1 hour' : `${h} hours`
+                const label = h === 1 ? '1 Hour' : `${h} Hours`
+                return { label, value }
+              }),
+            ]}
           />
           <LabeledInput
             label="Price ($)"
