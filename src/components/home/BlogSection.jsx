@@ -7,21 +7,37 @@ export default function BlogSection({ onBlogClick }) {
     const [startIndex, setStartIndex] = useState(0)
     const [isPaused, setIsPaused] = useState(false)
 
+    const resolveBlogImage = (raw) => {
+        const image = raw?.image || raw?.imageUrl || ''
+        if (!image) return ''
+        if (typeof image !== 'string') return ''
+        if (image.startsWith('http://') || image.startsWith('https://')) return image
+        if (image.startsWith('data:')) return image
+        if (image.startsWith('/')) return image
+        return `${import.meta.env.VITE_API_URL?.replace(/\/$/, '') || ''}/${image}`.replace(/([^:]\/)\/+/, '$1')
+    }
+
     useEffect(() => {
         const fetchBlogs = async () => {
             try {
                 setIsLoading(true);
                 const response = await api.get('/blogs');
-                setBlogData(response.data || []);
+                const data = Array.isArray(response.data)
+                    ? response.data
+                    : response.data?.blogs || [];
+
+                const transformed = data.map((item) => ({
+                    id: item?._id || item?.id,
+                    _id: item?._id || item?.id,
+                    title: item?.title || 'Untitled',
+                    subtitle: item?.category || item?.subtitle || '',
+                    image: resolveBlogImage(item),
+                }))
+
+                setBlogData(transformed);
             } catch (error) {
                 console.error("Error fetching blogs:", error);
-                // Fallback blogs to prevent empty UI
-                setBlogData([
-                    { id: 1, title: 'Travel Experience', subtitle: 'ADVENTURE', image: '/assets/blog1.jpeg' },
-                    { id: 2, title: 'Mountain Path', subtitle: 'NATURE', image: '/assets/blog2.jpeg' },
-                    { id: 3, title: 'Ocean View', subtitle: 'BEACH', image: '/assets/blog3.jpeg' },
-                    { id: 4, title: 'City Streets', subtitle: 'CULTURE', image: '/assets/blog4.jpeg' }
-                ]);
+                setBlogData([]);
             } finally {
                 setIsLoading(false);
             }
@@ -30,12 +46,10 @@ export default function BlogSection({ onBlogClick }) {
     }, []);
 
     // Get the 4 visible blogs based on current start index
-    const visibleBlogs = blogData.length > 0 ? [
-        blogData[startIndex % blogData.length],
-        blogData[(startIndex + 1) % blogData.length],
-        blogData[(startIndex + 2) % blogData.length],
-        blogData[(startIndex + 3) % blogData.length]
-    ] : [];
+    const visibleCount = Math.min(4, blogData.length)
+    const visibleBlogs = blogData.length > 0
+        ? Array.from({ length: visibleCount }, (_, i) => blogData[(startIndex + i) % blogData.length])
+        : [];
 
     // Auto-rotate every 4 seconds
     useEffect(() => {
@@ -93,7 +107,7 @@ export default function BlogSection({ onBlogClick }) {
                         >
                             <div
                                 className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                                style={{ backgroundImage: `url(${item.image || item.imageUrl || '/assets/blog1.jpeg'})` }}
+                                style={{ backgroundImage: `url(${item.image || '/assets/blog1.jpeg'})` }}
                             />
                             {/* Dark gradient overlay */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />

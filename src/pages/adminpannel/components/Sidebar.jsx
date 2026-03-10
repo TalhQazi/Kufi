@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   LayoutDashboard,
   Activity,
+  BookOpen,
   Users,
   BarChart3,
   CreditCard,
@@ -18,6 +19,7 @@ import {
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard },
   { label: "Activity", icon: Activity },
+  { label: "Blogs", icon: BookOpen },
   { label: "User Management", icon: Users },
   { label: "Analytics", icon: BarChart3 },
   { label: "Payments & Finance", icon: CreditCard },

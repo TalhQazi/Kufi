@@ -4,6 +4,8 @@ import Header from './pages/adminpannel/components/Header'
 import Dashboard from './pages/adminpannel/dashboard'
 import Activity from './pages/adminpannel/activity'
 import AddActivity from './pages/adminpannel/add-activity'
+import Blogs from './pages/adminpannel/blogs'
+import AddBlog from './pages/adminpannel/add-blog'
 import UserManagement from './pages/adminpannel/user-management'
 import Analytics from './pages/adminpannel/analytics'
 import PaymentsFinance from './pages/adminpannel/payments-finance'
@@ -31,6 +33,10 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
     if (activePage.startsWith('Activity')) {
       if (activePage === 'Activity/Add') return <AddActivity onBack={() => setActivePage('Activity')} />
       return <Activity onAddNew={() => setActivePage('Activity/Add')} />
+    }
+    if (activePage.startsWith('Blogs')) {
+      if (activePage === 'Blogs/Add') return <AddBlog onBack={() => setActivePage('Blogs')} />
+      return <Blogs onAddNew={() => setActivePage('Blogs/Add')} />
     }
     if (activePage === 'User Management') return <UserManagement />
     if (activePage === 'Analytics') return <Analytics />
