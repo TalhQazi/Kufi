@@ -776,27 +776,39 @@ export default function CountryDetails({
                                                 </div>
                                             </div>
                                             <div className="country-experience-content">
-                                                <h3 className="country-experience-title">{exp.title}</h3>
-                                                <p className="country-experience-subtitle">{exp.category || "Discovery"}</p>
+                                                <div className="flex-1">
+                                                    <h3 className="country-experience-title">{exp.title}</h3>
+                                                    <p className="country-experience-subtitle">{exp.category || "Discovery"}</p>
+                                                </div>
 
                                                 <button
                                                     type="button"
-                                                    className={`mt-3 w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors ${selected
-                                                        ? 'bg-primary-dark text-white'
+                                                    className={`mt-auto w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors group relative ${selected
+                                                        ? 'bg-primary-dark text-white hover:bg-red-600'
                                                         : 'bg-beige text-primary-brown hover:bg-primary-brown hover:text-white'
                                                         }`}
                                                     onClick={(e) => {
                                                         e.stopPropagation()
-                                                        if (selected) return
-                                                        onAddToList && onAddToList({
-                                                            id: expId,
-                                                            title: exp?.title || 'Activity',
-                                                            location: location || 'Location',
-                                                            image: image,
-                                                        })
+                                                        if (selected) {
+                                                            onRemoveActivity && onRemoveActivity(expId)
+                                                        } else {
+                                                            onAddToList && onAddToList({
+                                                                id: expId,
+                                                                title: exp?.title || 'Activity',
+                                                                location: location || 'Location',
+                                                                image: image,
+                                                            })
+                                                        }
                                                     }}
                                                 >
-                                                    {selected ? 'ADDED TO LIST' : 'ADD TO LIST'}
+                                                    <span className={`inline ${selected ? 'group-hover:hidden' : ''}`}>
+                                                        {selected ? 'ADDED TO LIST' : 'ADD TO LIST'}
+                                                    </span>
+                                                    {selected && (
+                                                        <span className="hidden group-hover:inline absolute inset-0 flex items-center justify-center">
+                                                            REMOVE FROM LIST
+                                                        </span>
+                                                    )}
                                                 </button>
                                             </div>
                                         </div>

@@ -195,7 +195,12 @@ export default function CategoriesSection({ onCategoryClick }) {
     }, [staticCategories])
 
     const isIconUrl = (value) => {
-        return /^https?:\/\//i.test(String(value || '').trim())
+        const raw = String(value || '').trim()
+        if (!raw) return false
+        if (/^https?:\/\//i.test(raw)) return true
+        if (raw.startsWith('data:')) return true
+        if (raw.startsWith('/uploads/')) return true
+        return false
     }
 
     const safeCategories = useMemo(() => {
@@ -207,9 +212,11 @@ export default function CategoriesSection({ onCategoryClick }) {
                     id: c?._id || name,
                     name,
                     image: String(c?.image || '').trim(),
+                    status: c?.status || 'active',
                 }
             })
             .filter((c) => Boolean(c.name))
+            .filter((c) => c.status === 'active' || !c.status)  // Only show active categories, hide drafts
     }, [categories])
 
     return (

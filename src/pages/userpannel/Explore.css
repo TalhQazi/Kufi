@@ -226,6 +226,15 @@
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.explore-card > div:last-child {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .explore-card:hover {
@@ -238,6 +247,20 @@
     width: 100%;
     height: 200px;
     overflow: hidden;
+}
+
+.explore-card-image-wrapper img {
+    height: 100%;
+}
+
+@media (min-width: 1400px) {
+    .explore-card-image-wrapper {
+        height: 260px;
+    }
+    
+    .explore-grid {
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    }
 }
 
 .explore-card-image {

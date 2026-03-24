@@ -156,11 +156,37 @@ const CategoryManagement = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [editingCategoryId, setEditingCategoryId] = useState(null);
+    const [iconMode, setIconMode] = useState('preset')
+    const [uploadingIcon, setUploadingIcon] = useState(false)
     const [newCategory, setNewCategory] = useState({
         name: "",
         description: "",
-        image: ""
+        image: "",
+        status: "active"
     });
+
+    const resolveImageUrl = (value) => {
+        const raw = String(value || '').trim()
+        if (!raw) return ''
+        if (/^https?:\/\//i.test(raw)) return raw
+        if (raw.startsWith('data:')) return raw
+        // Legacy support: if backend previously returned relative paths
+        if (raw.startsWith('/')) {
+            const base = String(api?.defaults?.baseURL || '').replace(/\/$/, '')
+            if (!base) return raw
+            return `${base}${raw}`
+        }
+        return raw
+    }
+
+    const fileToDataUrl = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(String(reader.result || ''))
+            reader.onerror = reject
+            reader.readAsDataURL(file)
+        })
+    }
 
     useEffect(() => {
         fetchCategories();
@@ -179,17 +205,19 @@ const CategoryManagement = () => {
         }
     };
 
-    const handleAddCategory = async (e) => {
+    const handleAddCategory = async (e, targetStatus = 'active') => {
         e.preventDefault();
         try {
+            const payload = { ...newCategory, status: targetStatus };
             if (editingCategoryId) {
-                await api.put(`/categories/${editingCategoryId}`, newCategory);
+                await api.put(`/categories/${editingCategoryId}`, payload);
             } else {
-                await api.post('/categories', newCategory);
+                await api.post('/categories', payload);
             }
             setShowAddModal(false);
             setEditingCategoryId(null);
-            setNewCategory({ name: "", description: "", image: "" });
+            setIconMode('preset')
+            setNewCategory({ name: "", description: "", image: "", status: "active" });
             fetchCategories();
         } catch (error) {
             console.error("Error saving category:", error);
@@ -201,13 +229,45 @@ const CategoryManagement = () => {
 
     const handleEditCategory = (category) => {
         setEditingCategoryId(category?._id || null);
+        const nextImage = category?.image || ""
+        setIconMode(isIconUrl(nextImage) ? 'upload' : 'preset')
         setNewCategory({
             name: category?.name || "",
             description: category?.description || "",
-            image: category?.image || "",
+            image: nextImage,
+            status: category?.status || "active"
         });
         setShowAddModal(true);
     };
+
+    const handleUploadIcon = async (file) => {
+        if (!file) return
+
+        const maxBytes = 5 * 1024 * 1024
+        if (file.size > maxBytes) {
+            alert('Icon image must be 5MB or less.')
+            return
+        }
+
+        try {
+            setUploadingIcon(true)
+            const iconDataUrl = await fileToDataUrl(file)
+            const res = await api.post('/categories/upload-icon', { iconDataUrl })
+
+            const image = res?.data?.image
+            if (!image) throw new Error('Upload succeeded but no image returned')
+
+            setNewCategory((prev) => ({ ...prev, image }))
+            setIconMode('upload')
+        } catch (error) {
+            console.error('Error uploading category icon:', error)
+            const status = error?.response?.status
+            const msg = error?.response?.data?.msg || error?.response?.data?.message || error?.message
+            alert(`Failed to upload icon${status ? ` (Status: ${status})` : ''}: ${msg || 'Unknown error'}`)
+        } finally {
+            setUploadingIcon(false)
+        }
+    }
 
     const handleDeleteCategory = async (id) => {
         if (!window.confirm("Are you sure you want to delete this category?")) return;
@@ -220,12 +280,27 @@ const CategoryManagement = () => {
         }
     };
 
-    const filteredCategories = (Array.isArray(categories) ? categories : []).filter(c =>
-        String(c?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredCategories = (Array.isArray(categories) ? categories : [])
+        .filter(c => c?.status === 'active' || c?.status === 'draft' || !c?.status)  // Show both active and draft
+        .filter(c =>
+            String(c?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .sort((a, b) => {
+            // Drafts first, then alphabetically by name
+            const aIsDraft = a?.status === 'draft';
+            const bIsDraft = b?.status === 'draft';
+            if (aIsDraft && !bIsDraft) return -1;
+            if (!aIsDraft && bIsDraft) return 1;
+            return String(a?.name || '').localeCompare(String(b?.name || ''));
+        });
 
     const isIconUrl = (value) => {
-        return /^https?:\/\//i.test(String(value || '').trim())
+        const raw = String(value || '').trim()
+        if (!raw) return false
+        if (/^https?:\/\//i.test(raw)) return true
+        if (raw.startsWith('data:')) return true
+        if (raw.startsWith('/uploads/')) return true
+        return false
     }
 
     return (
@@ -282,7 +357,7 @@ const CategoryManagement = () => {
                                             <td className="px-6 py-4">
                                                 <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200">
                                                     {category.image && isIconUrl(category.image) ? (
-                                                        <img src={category.image} alt={category.name} className="w-full h-full object-cover" />
+                                                        <img src={resolveImageUrl(category.image)} alt={category.name} className="w-full h-full object-cover" />
                                                     ) : category.image ? (
                                                         <div className="w-full h-full flex items-center justify-center">
                                                             {getIconByKey(category.image) || <ImageIcon className="w-5 h-5 text-gray-300" />}
@@ -298,6 +373,11 @@ const CategoryManagement = () => {
                                                 <div className="flex items-center gap-2">
                                                     <Tag className="w-4 h-4 text-[#704b24]" />
                                                     <span className="text-sm font-semibold text-slate-800">{category.name}</span>
+                                                    {category.status === 'draft' && (
+                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                                            Draft
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
@@ -334,18 +414,19 @@ const CategoryManagement = () => {
 
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
                         <div className="flex items-center justify-between p-6 border-b border-gray-100">
                             <h2 className="text-xl font-semibold text-slate-900">{editingCategoryId ? 'Edit Category' : 'Add New Category'}</h2>
                             <button onClick={() => {
                                 setShowAddModal(false)
                                 setEditingCategoryId(null)
-                                setNewCategory({ name: "", description: "", image: "" })
+                                setIconMode('preset')
+                                setNewCategory({ name: "", description: "", image: "", status: "active" })
                             }} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                                 <X className="w-5 h-5 text-gray-500" />
                             </button>
                         </div>
-                        <form onSubmit={handleAddCategory} className="p-6 space-y-4">
+                        <form onSubmit={handleAddCategory} className="p-6 space-y-4 overflow-y-auto">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Category Name</label>
                                 <input
@@ -369,6 +450,80 @@ const CategoryManagement = () => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Category Icon</label>
+
+                                <div className="flex items-center gap-2 mb-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIconMode('preset')
+                                            setNewCategory((prev) => ({ ...prev, image: '' }))
+                                        }}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${iconMode === 'preset'
+                                            ? 'border-[#704b24] bg-[#f7f1e7] text-[#704b24]'
+                                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        Choose Icon
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIconMode('upload')
+                                            setNewCategory((prev) => ({ ...prev, image: '' }))
+                                        }}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${iconMode === 'upload'
+                                            ? 'border-[#704b24] bg-[#f7f1e7] text-[#704b24]'
+                                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        Upload Icon
+                                    </button>
+                                </div>
+
+                                {iconMode === 'upload' ? (
+                                    <div className="rounded-xl border border-gray-200 p-3 bg-gray-50/40">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden border border-gray-200 flex items-center justify-center shrink-0">
+                                                    {newCategory.image && isIconUrl(newCategory.image) ? (
+                                                        <img src={resolveImageUrl(newCategory.image)} alt="Icon Preview" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <ImageIcon className="w-5 h-5 text-gray-300" />
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-semibold text-slate-700 truncate">Upload a custom icon</p>
+                                                    <p className="text-[11px] text-gray-500">Max size: 5MB</p>
+                                                </div>
+                                            </div>
+
+                                            {newCategory.image ? (
+                                                <button
+                                                    type="button"
+                                                    className="text-[11px] font-semibold text-red-600 hover:text-red-700"
+                                                    onClick={() => setNewCategory((prev) => ({ ...prev, image: '' }))}
+                                                >
+                                                    Remove
+                                                </button>
+                                            ) : null}
+                                        </div>
+
+                                        <div className="mt-3 flex items-center justify-between gap-3">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => handleUploadIcon(e.target.files?.[0])}
+                                                className="block w-full text-xs text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#f7f1e7] file:text-[#704b24] hover:file:bg-[#efe2cf]"
+                                                disabled={uploadingIcon}
+                                            />
+                                        </div>
+
+                                        {uploadingIcon ? (
+                                            <p className="mt-2 text-[11px] text-gray-500">Uploading...</p>
+                                        ) : null}
+                                    </div>
+                                ) : (
+                                    <>
                                 <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                                     {CATEGORY_ICONS.map((icon) => {
                                         const isSelected = newCategory.image === icon.key
@@ -396,21 +551,32 @@ const CategoryManagement = () => {
                                         <span>{newCategory.image}</span>
                                     </div>
                                 ) : null}
+                                    </>
+                                )}
                             </div>
-                            <div className="pt-4 flex gap-3">
+                            <div className="pt-4 flex flex-col sm:flex-row gap-3">
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setShowAddModal(false)
                                         setEditingCategoryId(null)
-                                        setNewCategory({ name: "", description: "", image: "" })
+                                        setIconMode('preset')
+                                        setNewCategory({ name: "", description: "", image: "", status: "active" })
                                     }}
                                     className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-slate-600 font-medium hover:bg-gray-50 transition-all"
                                 >
                                     Cancel
                                 </button>
                                 <button
-                                    type="submit"
+                                    type="button"
+                                    onClick={(e) => handleAddCategory(e, 'draft')}
+                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium transition-all border border-gray-300"
+                                >
+                                    Save as Draft
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => handleAddCategory(e, 'active')}
                                     className="flex-1 bg-[#704b24] hover:bg-[#5a3c1d] text-white px-4 py-2.5 rounded-xl font-medium transition-all shadow-sm active:scale-95"
                                 >
                                     {editingCategoryId ? 'Update Category' : 'Save Category'}

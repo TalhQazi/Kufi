@@ -4,6 +4,8 @@ import api from "../../api";
 
 const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
   const [countries, setCountries] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     title: "",
@@ -103,6 +105,24 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
     };
 
     fetchCountries();
+  }, []);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const res = await api.get('/categories');
+        const list = Array.isArray(res.data) ? res.data : (res.data?.categories || []);
+        setCategories(Array.isArray(list) ? list : []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategories([]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
   }, []);
 
   const handleChange = (e) => {
@@ -241,14 +261,13 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
             name="category"
             value={formData.category}
             onChange={handleChange}
+            disabled={categoriesLoading}
             options={[
-              { label: "Select a category", value: "" },
-              { label: "FoodTour", value: "FoodTour" },
-              { label: "whenVisting", value: "whenVisting" },
-              { label: "ShipCrusie", value: "ShipCrusie" },
-              { label: "MemorableTour", value: "MemorableTour" },
-              { label: "SummerVisit", value: "SummerVisit" },
-              { label: "DayTour", value: "DayTour" },
+              { label: categoriesLoading ? "Loading categories..." : "Select a category", value: "" },
+              ...categories.map((cat) => ({
+                label: cat.name || cat.title || cat.label || cat,
+                value: cat.name || cat.title || cat.label || cat,
+              })),
             ]}
           />
           <SelectField

@@ -3,6 +3,7 @@ import { FiUser } from 'react-icons/fi'
 import api from '../../api'
 import Footer from '../../components/layout/Footer'
 import ProfilePic from '../../components/ui/ProfilePic'
+import './Explore.css'
 
 export default function Explore({
   selectedActivities = [],
@@ -467,14 +468,14 @@ export default function Explore({
                   return (
                     <article
                       key={activityId}
-                      className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                      className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer explore-card"
                       onClick={() => onActivityClick && onActivityClick(activityId)}
                     >
-                      <div className="relative">
+                      <div className="relative explore-card-image-wrapper">
                         <img
                           src={activity.imageUrl || activity.images?.[0] || activity.image || activity.Picture || "/assets/activity1.jpeg"}
                           alt={activity.title}
-                          className="w-full h-48 object-cover"
+                          className="w-full h-full object-cover"
                         />
                         <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-primary-brown text-white text-xs font-medium">
                           {activity.category || activity.badge || "Trekking"}
@@ -503,7 +504,7 @@ export default function Explore({
                         </div>
 
                         <button
-                          className={`w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors ${isSelected
+                          className={`mt-auto w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors ${isSelected
                             ? 'bg-primary-dark text-white'
                             : 'bg-beige text-primary-brown hover:bg-primary-brown hover:text-white'
                             }`}
