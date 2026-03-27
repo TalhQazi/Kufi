@@ -13,6 +13,11 @@ import {
   Globe,
   MapPin,
   Tag,
+  MessageSquare,
+  FileText,
+  Layout,
+  PanelTop,
+  Layers,
 } from "lucide-react";
 
 
@@ -27,6 +32,11 @@ const navItems = [
   { label: "Manage Countries", icon: Globe },
   { label: "Manage Cities", icon: MapPin },
   { label: "Manage Categories", icon: Tag },
+  { label: "Reviews", icon: MessageSquare },
+  { label: "Booking Terms", icon: FileText },
+  { label: "Footer", icon: Layout },
+  { label: "Header", icon: PanelTop },
+  { label: "Sections", icon: Layers },
 ];
 
 

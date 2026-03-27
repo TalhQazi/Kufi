@@ -15,6 +15,11 @@ import NotificationsBooking from './pages/adminpannel/notifications-booking'
 import CountryManagement from './pages/adminpannel/CountryManagement'
 import CityManagement from './pages/adminpannel/CityManagement'
 import CategoryManagement from './pages/adminpannel/CategoryManagement'
+import ReviewController from './pages/adminpannel/ReviewController'
+import BookingTermsController from './pages/adminpannel/BookingTermsController'
+import FooterController from './pages/adminpannel/FooterController'
+import HeaderController from './pages/adminpannel/HeaderController'
+import SectionVisibilityController from './pages/adminpannel/SectionVisibilityController'
 import AdminProfile from './pages/adminpannel/AdminProfile'
 import AdminSettings from './pages/adminpannel/AdminSettings'
 import './App.css'
@@ -50,9 +55,13 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
     if (activePage === 'Supplier Dashboard') return <SupplierDashboard onLogout={onLogout} onHomeClick={onHomeClick} />
     if (activePage === 'Booking Notifications') return <NotificationsBooking />
     if (activePage === 'Manage Countries') return <CountryManagement />
-    if (activePage === 'Manage Countries') return <CountryManagement />
     if (activePage === 'Manage Cities') return <CityManagement />
     if (activePage === 'Manage Categories') return <CategoryManagement />
+    if (activePage === 'Reviews') return <ReviewController />
+    if (activePage === 'Booking Terms') return <BookingTermsController />
+    if (activePage === 'Footer') return <FooterController />
+    if (activePage === 'Header') return <HeaderController />
+    if (activePage === 'Sections') return <SectionVisibilityController />
     if (activePage === 'Profile') return <AdminProfile />
     if (activePage === 'Settings') return <AdminSettings />
     return <Dashboard />

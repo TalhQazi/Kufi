@@ -418,6 +418,16 @@ const Activity = ({ onAddNew }) => {
                       <p className="font-semibold text-[#a26e35]">{viewingActivity.price ? `$${viewingActivity.price}` : 'Contact for Price'}</p>
                     </div>
                   </div>
+
+                  {/* Show coordinates if available */}
+                  {viewingActivity.coordinates?.lat && viewingActivity.coordinates?.lng && (
+                    <div>
+                      <p className="text-[11px] text-gray-400 uppercase font-semibold mb-1">Map Coordinates</p>
+                      <p className="text-sm text-gray-600 font-mono">
+                        Lat: {viewingActivity.coordinates.lat}, Lng: {viewingActivity.coordinates.lng}
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-[11px] text-gray-400 uppercase font-semibold mb-1">Description</p>
                     <p className="text-sm text-gray-600 whitespace-pre-line">{viewingActivity.description || 'No description provided.'}</p>

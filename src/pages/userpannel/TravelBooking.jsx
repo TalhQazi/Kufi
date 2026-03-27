@@ -96,17 +96,15 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         arrivalDate: '',
         departureDate: '',
         cities: '',
-        includeHotel: false,
-        hotelOwn: false,
-        foodAllGood: false,
-        vegetarian: false,
-        travelOwn: true,
-        withTransport: true,
         budget: '',
         additionalOptions: false,
-        activities: []
+        activities: [],
+        // Dynamic booking terms selections
+        bookingTermSelections: {}
     })
     const [countries, setCountries] = useState([])
+    const [bookingTerms, setBookingTerms] = useState([])
+    const [bookingTermsLoading, setBookingTermsLoading] = useState(true)
 
     useEffect(() => {
         const ids = (payloadActivities || [])
@@ -129,6 +127,24 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
             }
         }
         fetchCountries()
+    }, [])
+
+    // Fetch dynamic booking terms
+    useEffect(() => {
+        const fetchBookingTerms = async () => {
+            try {
+                setBookingTermsLoading(true)
+                const response = await api.get('/booking-terms?isActive=true')
+                const terms = Array.isArray(response.data) ? response.data : []
+                setBookingTerms(terms)
+            } catch (error) {
+                console.error("Error fetching booking terms:", error)
+                setBookingTerms([])
+            } finally {
+                setBookingTermsLoading(false)
+            }
+        }
+        fetchBookingTerms()
     }, [])
 
     // Close dropdown when clicking outside
@@ -263,6 +279,36 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
             return () => clearTimeout(timer)
         }
     }, [showSuccess, formData, onSubmit])
+
+    const handleBookingTermChange = (termId, option, isMultiple) => {
+        setFormData(prev => {
+            const currentSelections = prev.bookingTermSelections || {}
+            const termSelections = currentSelections[termId] || []
+
+            if (isMultiple) {
+                // Toggle selection for multiple select
+                const newSelections = termSelections.includes(option)
+                    ? termSelections.filter(s => s !== option)
+                    : [...termSelections, option]
+                return {
+                    ...prev,
+                    bookingTermSelections: {
+                        ...currentSelections,
+                        [termId]: newSelections
+                    }
+                }
+            } else {
+                // Single select - replace with new selection
+                return {
+                    ...prev,
+                    bookingTermSelections: {
+                        ...currentSelections,
+                        [termId]: [option]
+                    }
+                }
+            }
+        })
+    }
 
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }))
@@ -553,101 +599,61 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                 </div>
                             </div>
 
-                            {/* Hotel Preferences */}
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-slate-700 mb-3">Hotel</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.includeHotel}
-                                            onChange={(e) => {
-                                                const checked = e.target.checked
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    includeHotel: checked,
-                                                    hotelOwn: checked ? false : prev.hotelOwn,
-                                                }))
-                                            }}
-                                            className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                        />
-                                        <span className="text-sm text-slate-700">Include Hotel</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.hotelOwn}
-                                            onChange={(e) => {
-                                                const checked = e.target.checked
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    hotelOwn: checked,
-                                                    includeHotel: checked ? false : prev.includeHotel,
-                                                }))
-                                            }}
-                                            className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                        />
-                                        <span className="text-sm text-slate-700">I will choose my own</span>
-                                    </label>
+                            {/* Dynamic Booking Terms from Admin */}
+                            {bookingTermsLoading ? (
+                                <div className="mb-4 flex items-center justify-center py-4">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-brown"></div>
+                                    <span className="ml-2 text-sm text-slate-500">Loading preferences...</span>
                                 </div>
-                            </div>
+                            ) : (
+                                bookingTerms.length > 0 && bookingTerms.map((term) => {
+                                    const termId = term._id || term.id
+                                    const selections = formData.bookingTermSelections?.[termId] || []
+                                    const isMultiple = term.selectionType === 'multiple'
 
-                            {/* Food Preference */}
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-slate-700 mb-3">Food Preference</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.foodAllGood}
-                                            onChange={(e) => {
-                                                const checked = e.target.checked
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    foodAllGood: checked,
-                                                    vegetarian: checked ? false : prev.vegetarian,
-                                                }))
-                                            }}
-                                            className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                        />
-                                        <span className="text-sm text-slate-700">All is good</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.vegetarian}
-                                            onChange={(e) => {
-                                                const checked = e.target.checked
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    vegetarian: checked,
-                                                    foodAllGood: checked ? false : prev.foodAllGood,
-                                                }))
-                                            }}
-                                            className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
-                                        />
-                                        <span className="text-sm text-slate-700">Vegetarian</span>
-                                    </label>
-                                </div>
-                            </div>
+                                    return (
+                                        <div key={termId} className="mb-4">
+                                            <label className="block text-sm font-medium text-slate-700 mb-3">
+                                                {term.title}
+                                            </label>
+                                            <div className={`grid gap-3 ${(term.options || []).length > 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+                                                {(term.options || []).map((option, idx) => {
+                                                    const isSelected = selections.includes(option)
 
-                            {/* Transportation */}
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-slate-700 mb-3">Transportation</label>
-                                <div className="grid grid-cols-1 mb-4 gap-3 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                                    <label className="flex items-center gap-2 cursor-not-allowed opacity-80">
-                                        <div className="w-5 h-5 rounded bg-primary-brown flex items-center justify-center">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                                                <polyline points="20 6 9 17 4 12" />
-                                            </svg>
+                                                    if (isMultiple) {
+                                                        // Multiple select - checkboxes
+                                                        return (
+                                                            <label key={idx} className="flex items-center gap-2 cursor-pointer">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isSelected}
+                                                                    onChange={() => handleBookingTermChange(termId, option, true)}
+                                                                    className="w-4 h-4 rounded border-slate-300 text-primary-brown focus:ring-primary-brown"
+                                                                />
+                                                                <span className="text-sm text-slate-700">{option}</span>
+                                                            </label>
+                                                        )
+                                                    } else {
+                                                        // Single select - radio buttons
+                                                        return (
+                                                            <label key={idx} className="flex items-center gap-2 cursor-pointer">
+                                                                <input
+                                                                    type="radio"
+                                                                    name={`term-${termId}`}
+                                                                    checked={isSelected}
+                                                                    onChange={() => handleBookingTermChange(termId, option, false)}
+                                                                    className="w-4 h-4 border-slate-300 text-primary-brown focus:ring-primary-brown"
+                                                                />
+                                                                <span className="text-sm text-slate-700">{option}</span>
+                                                            </label>
+                                                        )
+                                                    }
+                                                })}
+                                            </div>
                                         </div>
-                                        <span className="text-sm font-semibold text-slate-800 tracking-tight">Included in Itinerary</span>
-                                    </label>
-                                    <p className="text-[11px] text-slate-500 ml-7 leading-tight italic">
-                                        Ground transportation for all scheduled itinerary activities is provided.
-                                    </p>
-                                </div>
-                            </div>
+                                    )
+                                })
+                            )}
 
                             {/* Budget Range */}
                             <div className="mb-6">

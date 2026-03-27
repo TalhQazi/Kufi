@@ -3,6 +3,7 @@ import api from '../../api'
 import './CountryDetails.css'
 import Footer from '../../components/layout/Footer'
 import BlogSection from '../../components/home/BlogSection'
+import useSectionVisibility from '../../hooks/useSectionVisibility'
 
 export default function CountryDetails({
     onHomeClick,
@@ -30,6 +31,8 @@ export default function CountryDetails({
     const [country, setCountry] = useState(null)
     const [cities, setCities] = useState([])
     const [citiesLoading, setCitiesLoading] = useState(true)
+    const [reviews, setReviews] = useState([])
+    const [reviewsLoading, setReviewsLoading] = useState(true)
     const dropdownRef = useRef(null)
 
     // Scroll to top when component mounts
@@ -300,6 +303,7 @@ export default function CountryDetails({
     const safeCategories = useMemo(() => {
         const list = Array.isArray(categories) ? categories : []
         return list
+            .filter((c) => String(c?.status || '').toLowerCase() !== 'draft')
             .map((c) => {
                 const name = String(c?.name || '').trim()
                 return {
@@ -329,7 +333,7 @@ export default function CountryDetails({
     }
 
     const selectionPanel = (
-        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
             <h4 className="m-0 mb-2 text-lg font-bold text-slate-900">Your Selection</h4>
             <p className="m-0 mb-6 text-sm text-slate-600">
                 <span className="font-bold text-primary-brown">{Array.isArray(selectedActivities) ? selectedActivities.length : 0}</span>
@@ -398,26 +402,39 @@ export default function CountryDetails({
 
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
 
-    const staticReviews = [
-        { id: 'static-1', rating: 5, text: 'Seamless booking process and an absolutely unforgettable trip—highly recommend!', author: 'Liza', role: 'LIZA' },
-        { id: 'static-2', rating: 5, text: 'The best itinerary we’ve ever had; every detail was handled perfectly.', author: 'Mr. John Doe', role: 'MR. JOHN DO' },
-        { id: 'static-3', rating: 4, text: 'Professional, responsive, and found us the best deals I could not find online.', author: 'Mr.Jelly', role: 'MR.Jelly' },
-        { id: 'static-4', rating: 5, text: 'They took the stress out of travel planning so we could just enjoy the sights', author: 'Mr.Allen', role: 'MR.Allen' },
-        { id: 'static-5', rating: 5, text: 'Incredible service from start to finish—we would not book with anyone else now.', author: 'Samia Chahudary', role: 'Samia' },
-        { id: 'static-6', rating: 4, text: 'Our honeymoon was flawless thanks to the expert recommendations from this team.', author: 'Della ', role: 'Della' },
-        { id: 'static-7', rating: 5, text: 'Five-star service! They handled a last-minute flight change with total ease.', author: 'Queen Doll', role: 'Queen' },
-        { id: 'static-8', rating: 5, text: 'Hidden gems and local spots we never would have found on our own.', author: 'Saima', role: 'Saima' },
-        { id: 'static-9', rating: 5, text: 'Efficient, friendly, and truly cared about making our vacation special.', author: 'Malifa', role: 'Malifa' },
-        { id: 'static-10', rating: 4, text: 'Professional, responsive, and found us the best deals I could not find online.', author: 'Mr.Ali Hassan', role: 'Ali' },
-        { id: 'static-11', rating: 5, text: 'A world-class experience; they turned our dream vacation into a reality.', author: 'Mr.Hassan', role: 'Hassan' },
-        { id: 'static-12', rating: 4, text: 'Professional, responsive, and found us the best deals I could not find online.', author: 'Faria Sheikh', role: 'Faria' },
-        { id: 'static-13', rating: 5, text: 'Incredible service from start to finish—we would not book with anyone else now.', author: 'Nazim', role: 'Nazim' },
+    useEffect(() => {
+        const fetchCountryReviews = async () => {
+            try {
+                setReviewsLoading(true)
+                const res = await api.get(`/reviews?type=country&country=${encodeURIComponent(countryName || '')}&isActive=true`)
+                const list = Array.isArray(res?.data) ? res.data : []
 
-    ]
+                const mapped = list
+                    .filter(Boolean)
+                    .map((r) => ({
+                        id: r?._id || r?.id,
+                        rating: Number(r?.rating) || 0,
+                        text: String(r?.note || ''),
+                        author: String(r?.name || 'Client'),
+                        role: String(r?.role || 'CLIENT'),
+                    }))
+                    .filter((r) => Boolean(r.id) && Boolean(r.text))
+
+                setReviews(mapped)
+            } catch (error) {
+                console.error('Error fetching country reviews:', error)
+                setReviews([])
+            } finally {
+                setReviewsLoading(false)
+            }
+        }
+
+        fetchCountryReviews()
+    }, [countryName])
 
     const displayedReviews = useMemo(() => {
-        const reviews = Array.isArray(staticReviews) ? staticReviews.filter(Boolean) : []
-        if (reviews.length <= 3) return reviews
+        const list = Array.isArray(reviews) ? reviews.filter(Boolean) : []
+        if (list.length <= 3) return list
 
         const seedFromString = (value) => {
             const str = String(value || '')
@@ -439,14 +456,14 @@ export default function CountryDetails({
         }
 
         const rng = mulberry32(seedFromString(countryName))
-        const shuffled = [...reviews]
+        const shuffled = [...list]
         for (let i = shuffled.length - 1; i > 0; i--) {
             const j = Math.floor(rng() * (i + 1))
             ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
         }
 
         return shuffled.slice(0, 3)
-    }, [countryName])
+    }, [countryName, reviews])
 
     useEffect(() => {
         const fetchCountryAndCities = async () => {
@@ -527,6 +544,9 @@ export default function CountryDetails({
 
     const profileImage = getProfileImage();
 
+    // Section visibility hook
+    const { isVisible } = useSectionVisibility('country')
+
     const isPageLoading = Boolean(citiesLoading || isLoading || categoriesLoading)
 
     return (
@@ -542,337 +562,360 @@ export default function CountryDetails({
                         <nav className="country-navbar">
                             <div className="country-navbar-inner">
                                 <div className="country-logo">
-                            <button
-                                onClick={() => {
-                                    if (onHomeClick) {
-                                        onHomeClick()
-                                    }
-                                }}
-                                className="cursor-pointer hover:opacity-80 transition-opacity"
-                                style={{ background: 'none', border: 'none', padding: 0 }}
-                            >
-                                <img src="/assets/navbar.png" alt="Kufi Travel" className="country-logo-image" />
-                            </button>
+                                    <button
+                                        onClick={() => {
+                                            if (onHomeClick) {
+                                                onHomeClick()
+                                            }
+                                        }}
+                                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                                        style={{ background: 'none', border: 'none', padding: 0 }}
+                                    >
+                                        <img src="/assets/navbar.png" alt="Kufi Travel" className="country-logo-image" />
+                                    </button>
                                 </div>
 
+                                <div className="country-navbar-right">
+                                    <button className="country-icon-btn" onClick={onNotificationClick}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                        </svg>
+                                    </button>
 
-                        <div className="country-navbar-right">
-                            <button className="country-icon-btn" onClick={onNotificationClick}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                                </svg>
-                            </button>
+                                    <div className="country-profile-dropdown" ref={dropdownRef}>
+                                        <button onClick={() => setDropdown(!dropdown)} className="country-profile-btn">
+                                            {profileImage ? (
+                                                <img
+                                                    src={profileImage}
+                                                    alt="Profile"
+                                                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
+                                                    onError={(e) => { e.target.src = '/assets/profile-avatar.jpeg' }}
+                                                />
+                                            ) : (
+                                                <div className="w-8 h-8 rounded-full bg-[#a26e35] text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm">
+                                                    {currentUser.name ? currentUser.name.substring(0, 2).toUpperCase() : 'U'}
+                                                </div>
+                                            )}
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
+                                                <path d="M6 9l6 6 6-6" />
+                                            </svg>
+                                        </button>
 
-
-                            <div className="country-profile-dropdown" ref={dropdownRef}>
-                                <button onClick={() => setDropdown(!dropdown)} className="country-profile-btn">
-                                    {profileImage ? (
-                                        <img
-                                            src={profileImage}
-                                            alt="Profile"
-                                            className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
-                                            onError={(e) => { e.target.src = '/assets/profile-avatar.jpeg' }}
-                                        />
-                                    ) : (
-                                        <div className="w-8 h-8 rounded-full bg-[#a26e35] text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm">
-                                            {currentUser.name ? currentUser.name.substring(0, 2).toUpperCase() : 'U'}
-                                        </div>
-                                    )}
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
-                                        <path d="M6 9l6 6 6-6" />
-                                    </svg>
-                                </button>
-
-                                {dropdown && (
-                                    <div className="country-dropdown-menu">
-                                        <div className="country-dropdown-item" onClick={() => { onProfileClick && onProfileClick(); setDropdown(false); }}>
-                                            MY REQUESTS
-                                        </div>
-                                        <div className="country-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
-                                            NOTIFICATIONS
-                                        </div>
-                                        <div className="country-dropdown-item" onClick={() => {
-                                            if (onSettingsClick) {
-                                                onSettingsClick()
-                                            }
-                                            setDropdown(false);
-                                        }}>
-                                            PAYMENTS
-                                        </div>
-                                        <div className="country-dropdown-item" onClick={() => {
-                                            if (onSettingsClick) {
-                                                onSettingsClick()
-                                            }
-                                            setDropdown(false);
-                                        }}>
-                                            SETTINGS
-                                        </div>
-                                        <div className="country-dropdown-divider"></div>
-                                        <div className="country-dropdown-item logout" onClick={() => { onLogout && onLogout(); setDropdown(false); }}>
-                                            LOGOUT
-                                        </div>
+                                        {dropdown && (
+                                            <div className="country-dropdown-menu">
+                                                <div className="country-dropdown-item" onClick={() => { onProfileClick && onProfileClick(); setDropdown(false); }}>
+                                                    MY REQUESTS
+                                                </div>
+                                                <div className="country-dropdown-item" onClick={() => { onNotificationClick && onNotificationClick(); setDropdown(false); }}>
+                                                    NOTIFICATIONS
+                                                </div>
+                                                <div className="country-dropdown-item" onClick={() => {
+                                                    if (onSettingsClick) {
+                                                        onSettingsClick()
+                                                    }
+                                                    setDropdown(false);
+                                                }}>
+                                                    PAYMENTS
+                                                </div>
+                                                <div className="country-dropdown-item" onClick={() => {
+                                                    if (onSettingsClick) {
+                                                        onSettingsClick()
+                                                    }
+                                                    setDropdown(false);
+                                                }}>
+                                                    SETTINGS
+                                                </div>
+                                                <div className="country-dropdown-divider"></div>
+                                                <div className="country-dropdown-item logout" onClick={() => { onLogout && onLogout(); setDropdown(false); }}>
+                                                    LOGOUT
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                        </div>
+                                </div>
                             </div>
                         </nav>
                     )}
 
-            {/* Hero Section */}
-            <section className="country-hero">
-                <div className="country-hero-overlay"></div>
-                <img
-                    src={country?.image || country?.imageUrl || "/assets/italy-hero.jpg"}
-                    alt={country?.name || countryName}
-                    className="country-hero-image"
-                    onError={(e) => { e.target.src = '/assets/activity1.jpeg' }}
-                />
-                <div className="country-hero-content">
-                    <div className="country-breadcrumb">
-                        <button onClick={onBack} className="country-back-btn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                                <path d="M19 12H5M12 19l-7-7 7-7" />
-                            </svg>
-                            Back
-                        </button>
-                    </div>
-                    <h1 className="country-hero-title">Explore {countryName}</h1>
-                    <p className="country-hero-subtitle">Everything you need to know about your next adventure</p>
-                </div>
-            </section>
-
-            {/* Main Content */}
-            <main className="country-main">
-                {/* About Section */}
-                <section className="country-about">
-                    <h2 className="country-section-title">About {countryName}</h2>
-                    <div className="country-about-text">
-                        <p>
-                            {country?.description || `No description found for ${countryName} yet.`}
-                        </p>
-                    </div>
-                </section>
-
-                {/* Cities Section */}
-                <section id="country-cities" className="country-experiences">
-                    <h2 className="country-section-title">Cities in {countryName}</h2>
-                    <div className="country-experiences-grid">
-                        {citiesLoading ? (
-                            <div className="col-span-full py-20 flex justify-center">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
+                    {/* Hero Section */}
+                    {isVisible('country-hero') && (
+                        <section className="country-hero">
+                            <div className="country-hero-overlay"></div>
+                            <img
+                                src={country?.image || country?.imageUrl || "/assets/italy-hero.jpg"}
+                                alt={country?.name || countryName}
+                                className="country-hero-image"
+                                onError={(e) => { e.target.src = '/assets/activity1.jpeg' }}
+                            />
+                            <div className="country-hero-content">
+                                <div className="country-breadcrumb">
+                                    <button onClick={onBack} className="country-back-btn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                                        </svg>
+                                        Back
+                                    </button>
+                                </div>
+                                <h1 className="country-hero-title">Explore {countryName}</h1>
+                                <p className="country-hero-subtitle">Everything you need to know about your next adventure</p>
                             </div>
-                        ) : cities.length > 0 ? (
-                            cities.map((city) => (
-                                <div
-                                    key={city._id}
-                                    className="country-experience-card"
-                                >
-                                    <div className="country-card-image-wrapper">
-                                        <img
-                                            src={city.image || "/assets/activity1.jpeg"}
-                                            alt={city.name}
-                                            className="country-experience-image"
-                                        />
-                                    </div>
-                                    <div className="country-experience-content">
-                                        <h3 className="country-experience-title">{city.name}</h3>
-                                        <p className="country-experience-subtitle">{city.description || ""}</p>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="col-span-full py-20 text-center text-slate-500">
-                                No cities found in {countryName} yet.
-                            </div>
-                        )}
-                    </div>
-                </section>
+                        </section>
+                    )}
 
-                {/* Top Categories */}
-                <section className="country-categories">
-                    <h2 className="country-section-title">Top Categories in {countryName}</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-y-10 gap-x-8 sm:gap-x-10">
-                        {safeCategories.map((category) => {
-                            const normalizedNameKey = normalizeCategoryKey(category.name)
-                            const normalizedImageKey = normalizeCategoryKey(category.image)
-                            const icon = iconByNormalizedKey[normalizedNameKey] || iconByName[String(category.name || '').toLowerCase()] || defaultCategoryIcon
-                            const hasImage = Boolean(String(category.image || '').trim())
-                            const hasUrlImage = hasImage && isIconUrl(category.image)
-                            const builtInIcon = iconByKey[String(category.image || '')]
-                            const renderedIcon = hasUrlImage
-                                ? (
-                                    <img
-                                        src={category.image}
-                                        alt={category.name}
-                                        className="w-full h-full object-contain"
-                                        loading="lazy"
-                                    />
-                                )
-                                : builtInIcon
-                                    ? builtInIcon
-                                    : iconByNormalizedKey[normalizedImageKey]
-                                        ? iconByNormalizedKey[normalizedImageKey]
-                                        : icon
-
-                            return (
-                                <div
-                                    key={category.id}
-                                    className="flex flex-col items-center gap-3 cursor-pointer transition-transform duration-300 hover:-translate-y-2"
-                                    onClick={() => {
-                                        setSelectedCategory((prev) => (prev === category.name ? null : category.name))
-                                    }}
-                                    role="button"
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault()
-                                            setSelectedCategory((prev) => (prev === category.name ? null : category.name))
-                                        }
-                                    }}
-                                >
-                                    <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
-                                        {renderedIcon}
-                                    </div>
-                                    <p className="m-0 text-sm sm:text-base font-bold text-[#1a1a1a] text-center">{category.name}</p>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </section>
-
-                {/* Popular Experiences */}
-                <section id="country-popular-experiences" className="country-experiences">
-                    <h2 className="country-section-title">Popular Experiences</h2>
-                    <div className="mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8">
-                        <div className="country-experiences-grid">
-                            {isLoading ? (
-                                <div className="col-span-full py-20 flex justify-center">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
-                                </div>
-                            ) : displayedExperiences.length > 0 ? (
-                                displayedExperiences.map((exp) => {
-                                    const expId = exp._id || exp.id
-                                    const selected = isExperienceSelected(exp)
-                                    const location = exp?.location || exp?.city?.name || exp?.country?.name || exp?.country || ''
-                                    const image = exp.imageUrl || exp.images?.[0] || exp.image || exp.Picture || "/assets/activity1.jpeg"
-
-                                    return (
-                                        <div
-                                            key={expId}
-                                            className="country-experience-card"
-                                            onClick={() => onActivityClick && onActivityClick(expId)}
-                                        >
-                                            <div className="country-card-image-wrapper">
-                                                <img
-                                                    src={image}
-                                                    alt={exp.title}
-                                                    className="country-experience-image"
-                                                />
-                                                <div className="country-experience-rating">
-                                                    <span>★</span>
-                                                    <span>{exp.rating || 4.7}</span>
-                                                </div>
-                                            </div>
-                                            <div className="country-experience-content">
-                                                <div className="flex-1">
-                                                    <h3 className="country-experience-title">{exp.title}</h3>
-                                                    <p className="country-experience-subtitle">{exp.category || "Discovery"}</p>
-                                                </div>
-
-                                                <button
-                                                    type="button"
-                                                    className={`mt-auto w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors group relative ${selected
-                                                        ? 'bg-primary-dark text-white hover:bg-red-600'
-                                                        : 'bg-beige text-primary-brown hover:bg-primary-brown hover:text-white'
-                                                        }`}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        if (selected) {
-                                                            onRemoveActivity && onRemoveActivity(expId)
-                                                        } else {
-                                                            onAddToList && onAddToList({
-                                                                id: expId,
-                                                                title: exp?.title || 'Activity',
-                                                                location: location || 'Location',
-                                                                image: image,
-                                                            })
-                                                        }
-                                                    }}
-                                                >
-                                                    <span className={`inline ${selected ? 'group-hover:hidden' : ''}`}>
-                                                        {selected ? 'ADDED TO LIST' : 'ADD TO LIST'}
-                                                    </span>
-                                                    {selected && (
-                                                        <span className="hidden group-hover:inline absolute inset-0 flex items-center justify-center">
-                                                            REMOVE FROM LIST
-                                                        </span>
-                                                    )}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )
-                                })
-                            ) : (
-                                <div className="col-span-full py-20 text-center text-slate-500">
-                                    No experiences found in {countryName} yet.
-                                </div>
-                            )}
-                        </div>
-
-                        <aside className="lg:sticky lg:top-24 h-fit order-first lg:order-last lg:ml-12">
-                            {selectionPanel}
-                        </aside>
-                    </div>
-                </section>
-
-                {/* Feedback Section */}
-                <section className="country-feedback">
-                    <h2 className="country-section-title">Best Feedback From Clients</h2>
-                    <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:gap-5">
-                        {displayedReviews.map((testimonial) => (
-                                <div
-                                    key={testimonial.id}
-                                    className="bg-white rounded-[18px] px-6 py-5 shadow-[0_16px_30px_rgba(15,23,42,0.10)] border border-slate-100 w-full sm:w-[320px] lg:w-[310px] min-h-[200px]"
-                                >
-                                    <div className="flex gap-1 text-[#FFB21E] mb-3">
-                                        {[...Array(5)].map((_, i) => (
-                                            <svg
-                                                key={`${testimonial.id}-star-${i}`}
-                                                className={`w-3.5 h-3.5 ${i < (Number(testimonial.rating) || 0) ? 'fill-current' : 'fill-slate-200'}`}
-                                                viewBox="0 0 20 20"
-                                            >
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                            </svg>
-                                        ))}
-                                    </div>
-
-                                    <p className="m-0 text-slate-600 text-[13px] leading-relaxed">
-                                        “{testimonial.text}”
+                    {/* Main Content */}
+                    <main className="country-main">
+                        {/* About Section */}
+                        {isVisible('country-about') && (
+                            <section className="country-about">
+                                <h2 className="country-section-title">About {countryName}</h2>
+                                <div className="country-about-text">
+                                    <p>
+                                        {country?.description || `No description found for ${countryName} yet.`}
                                     </p>
-
-                                    <div className="mt-4 flex items-center gap-3">
-                                        <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
-                                            {(testimonial.author || 'C').charAt(0)}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <h4 className="m-0 text-xs font-bold text-slate-900 truncate">{testimonial.author}</h4>
-                                            <p className="m-0 text-[9px] text-slate-400 font-bold uppercase tracking-[0.22em] leading-none mt-1 truncate">{testimonial.role}</p>
-                                        </div>
-                                    </div>
                                 </div>
-                            ))}
-                    </div>
-                </section>
+                            </section>
+                        )}
 
-                {/* Travel Blog */}
-                <BlogSection onBlogClick={onBlogClick} />
-            </main>
+                        {/* Cities Section */}
+                        {isVisible('country-cities') && (
+                            <section id="country-cities" className="country-experiences">
+                                <h2 className="country-section-title">Cities in {countryName}</h2>
+                                <div className="country-experiences-grid">
+                                    {citiesLoading ? (
+                                        <div className="col-span-full py-20 flex justify-center">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
+                                        </div>
+                                    ) : cities.length > 0 ? (
+                                        cities.map((city) => (
+                                            <div
+                                                key={city._id}
+                                                className="country-experience-card"
+                                            >
+                                                <div className="country-card-image-wrapper">
+                                                    <img
+                                                        src={city.image || "/assets/activity1.jpeg"}
+                                                        alt={city.name}
+                                                        className="country-experience-image"
+                                                    />
+                                                </div>
+                                                <div className="country-experience-content">
+                                                    <h3 className="country-experience-title">{city.name}</h3>
+                                                    <p className="country-experience-subtitle">{city.description || ""}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="col-span-full py-20 text-center text-slate-500">
+                                            No cities found in {countryName} yet.
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Top Categories */}
+                        <div className="mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8 items-start">
+                            <div className="space-y-10">
+                                {isVisible('country-categories') && (
+                                    <section className="country-categories">
+                                        <h2 className="country-section-title">Top Categories in {countryName}</h2>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-y-10 gap-x-8 sm:gap-x-10">
+                                            {safeCategories.map((category) => {
+                                                const normalizedNameKey = normalizeCategoryKey(category.name)
+                                                const normalizedImageKey = normalizeCategoryKey(category.image)
+                                                const icon = iconByNormalizedKey[normalizedNameKey] || iconByName[String(category.name || '').toLowerCase()] || defaultCategoryIcon
+                                                const hasImage = Boolean(String(category.image || '').trim())
+                                                const hasUrlImage = hasImage && isIconUrl(category.image)
+                                                const builtInIcon = iconByKey[String(category.image || '')]
+                                                const renderedIcon = hasUrlImage
+                                                    ? (
+                                                        <img
+                                                            src={category.image}
+                                                            alt={category.name}
+                                                            className="w-full h-full object-contain"
+                                                            loading="lazy"
+                                                        />
+                                                    )
+                                                    : builtInIcon
+                                                        ? builtInIcon
+                                                        : iconByNormalizedKey[normalizedImageKey]
+                                                            ? iconByNormalizedKey[normalizedImageKey]
+                                                            : icon
+
+                                                return (
+                                                    <div
+                                                        key={category.id}
+                                                        className="flex flex-col items-center gap-3 cursor-pointer transition-transform duration-300 hover:-translate-y-2"
+                                                        onClick={() => {
+                                                            setSelectedCategory((prev) => (prev === category.name ? null : category.name))
+                                                        }}
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                                e.preventDefault()
+                                                                setSelectedCategory((prev) => (prev === category.name ? null : category.name))
+                                                            }
+                                                        }}
+                                                    >
+                                                        <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                                                            {renderedIcon}
+                                                        </div>
+                                                        <p className="m-0 text-sm sm:text-base font-bold text-[#1a1a1a] text-center">{category.name}</p>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </section>
+                                )}
+
+                                {isVisible('country-experiences') && (
+                                    <section id="country-popular-experiences" className="country-experiences">
+                                    <h2 className="country-section-title">Popular Experiences</h2>
+                                    <div className="country-experiences-grid country-experiences-grid--three">
+                                        {isLoading ? (
+                                            <div className="col-span-full py-20 flex justify-center">
+                                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
+                                            </div>
+                                        ) : displayedExperiences.length > 0 ? (
+                                            displayedExperiences.map((exp) => {
+                                                const expId = exp._id || exp.id
+                                                const selected = isExperienceSelected(exp)
+                                                const location = exp?.location || exp?.city?.name || exp?.country?.name || exp?.country || ''
+                                                const image = exp.imageUrl || exp.images?.[0] || exp.image || exp.Picture || "/assets/activity1.jpeg"
+
+                                                return (
+                                                    <div
+                                                        key={expId}
+                                                        className="country-experience-card"
+                                                        onClick={() => onActivityClick && onActivityClick(expId)}
+                                                    >
+                                                        <div className="country-card-image-wrapper">
+                                                            <img
+                                                                src={image}
+                                                                alt={exp.title}
+                                                                className="country-experience-image"
+                                                            />
+                                                            <div className="country-experience-rating">
+                                                                <span>★</span>
+                                                                <span>{exp.rating || 4.7}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="country-experience-content">
+                                                            <div className="flex-1">
+                                                                <h3 className="country-experience-title">{exp.title}</h3>
+                                                                <p className="country-experience-subtitle">{exp.category || "Discovery"}</p>
+                                                            </div>
+
+                                                            <button
+                                                                type="button"
+                                                                className={`mt-auto w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors group relative ${selected
+                                                                    ? 'bg-primary-dark text-white hover:bg-red-600'
+                                                                    : 'bg-beige text-primary-brown hover:bg-primary-brown hover:text-white'
+                                                                    }`}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    if (selected) {
+                                                                        onRemoveActivity && onRemoveActivity(expId)
+                                                                    } else {
+                                                                        onAddToList && onAddToList({
+                                                                            id: expId,
+                                                                            title: exp?.title || 'Activity',
+                                                                            location: location || 'Location',
+                                                                            image: image,
+                                                                        })
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <span className={`inline ${selected ? 'group-hover:hidden' : ''}`}>
+                                                                    {selected ? 'ADDED TO LIST' : 'ADD TO LIST'}
+                                                                </span>
+                                                                {selected && (
+                                                                    <span className="hidden group-hover:inline absolute inset-0 flex items-center justify-center">
+                                                                        REMOVE FROM LIST
+                                                                    </span>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })
+                                        ) : (
+                                            <div className="col-span-full py-20 text-center text-slate-500">
+                                                No experiences found in {countryName} yet.
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+                                )}
+
+                                {/* Feedback Section */}
+                                {isVisible('country-feedback') && (
+                                    <section className="country-feedback">
+                                        <h2 className="country-section-title">Best Feedback From Clients</h2>
+                                        <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:gap-5">
+                                            {reviewsLoading ? (
+                                                <div className="w-full flex items-center justify-center min-h-[220px]">
+                                                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-brown"></div>
+                                                </div>
+                                            ) : displayedReviews.length === 0 ? (
+                                                <div className="w-full flex items-center justify-center min-h-[220px] text-sm text-slate-400">
+                                                    No reviews yet.
+                                                </div>
+                                            ) : displayedReviews.map((testimonial) => (
+                                                <div
+                                                    key={testimonial.id}
+                                                    className="bg-white rounded-[18px] px-6 py-5 shadow-[0_16px_30px_rgba(15,23,42,0.10)] border border-slate-100 w-full sm:w-[320px] lg:w-[310px] min-h-[200px]"
+                                                >
+                                                    <div className="flex gap-1 text-[#FFB21E] mb-3">
+                                                        {[...Array(5)].map((_, i) => (
+                                                            <svg
+                                                                key={`${testimonial.id}-star-${i}`}
+                                                                className={`w-3.5 h-3.5 ${i < (Number(testimonial.rating) || 0) ? 'fill-current' : 'fill-slate-200'}`}
+                                                                viewBox="0 0 20 20"
+                                                            >
+                                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                            </svg>
+                                                        ))}
+                                                    </div>
+
+                                                    <p className="m-0 text-slate-600 text-[13px] leading-relaxed">
+                                                        "{testimonial.text}"
+                                                    </p>
+
+                                                    <div className="mt-4 flex items-center gap-3">
+                                                        <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
+                                                            {(testimonial.author || 'C').charAt(0)}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <h4 className="m-0 text-xs font-bold text-slate-900 truncate">{testimonial.author}</h4>
+                                                            <p className="m-0 text-[9px] text-slate-400 font-bold uppercase tracking-[0.22em] leading-none mt-1 truncate">{testimonial.role}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </section>
+                                )}
+
+                                {/* Travel Blog */}
+                                {isVisible('country-blog') && (
+                                    <div className="country-blog-section-wrapper">
+                                        <BlogSection onBlogClick={onBlogClick} />
+                                    </div>
+                                )}
+                            </div>
+
+                            <aside className="lg:sticky lg:top-24 h-fit order-first lg:order-last lg:w-[320px]">
+                                {selectionPanel}
+                            </aside>
+                        </div>
+                    </main>
 
                     {!hideHeaderFooter && <Footer />}
-                </>
-            )}
-        </div>
-    )
+            </>
+        )}
+    </div>
+  )
 }

@@ -4,7 +4,6 @@ import api from "../../api";
 
 const tabs = ["All Users", "All Suppliers", "Active", "Suspended", "Disputes", "Reviews"];
 
-
 const StatusBadge = ({ status }) => {
   const isActive = status === "active";
   return (
@@ -19,12 +18,29 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+const ScoreBadge = ({ score }) => {
+  const getScoreColor = (s) => {
+    if (s >= 80) return "bg-emerald-100 text-emerald-600";
+    if (s >= 60) return "bg-blue-100 text-blue-600";
+    if (s >= 40) return "bg-yellow-100 text-yellow-600";
+    return "bg-gray-100 text-gray-600";
+  };
+  return (
+    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getScoreColor(score)}`}>
+      {score}/100
+    </span>
+  );
+};
+
 const UserManagement = () => {
   const [activeTab, setActiveTab] = useState("All Users");
   const [query, setQuery] = useState("");
   const [userList, setUserList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [scoreModalOpen, setScoreModalOpen] = useState(false);
+  const [editingScoreUser, setEditingScoreUser] = useState(null);
+  const [newScore, setNewScore] = useState("");
 
   useEffect(() => {
     fetchUsers();
@@ -63,7 +79,8 @@ const UserManagement = () => {
         joinDate: u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : 'N/A',
         activity: u.activity || '0 bookings',
         status: (u.status || 'active').toLowerCase(),
-        role: u.role || 'user'
+        role: u.role || 'user',
+        scorePoints: u.scorePoints || 0
       }));
 
       console.log("Transformed users:", transformedUsers);
@@ -190,6 +207,43 @@ const UserManagement = () => {
     }
   };
 
+  const openScoreModal = (user) => {
+    setEditingScoreUser(user);
+    setNewScore(user.scorePoints?.toString() || "0");
+    setScoreModalOpen(true);
+  };
+
+  const closeScoreModal = () => {
+    setScoreModalOpen(false);
+    setEditingScoreUser(null);
+    setNewScore("");
+  };
+
+  const handleScoreUpdate = async () => {
+    if (!editingScoreUser) return;
+    
+    const score = parseInt(newScore, 10);
+    if (isNaN(score) || score < 0 || score > 100) {
+      alert("Score must be between 0 and 100");
+      return;
+    }
+
+    try {
+      await api.put(`/admin/suppliers/${editingScoreUser.id}/score`, { scorePoints: score });
+      
+      // Update local state
+      setUserList(prev => prev.map(u => 
+        u.id === editingScoreUser.id ? { ...u, scorePoints: score } : u
+      ));
+      
+      alert(`Score updated for ${editingScoreUser.name}: ${score}/100`);
+      closeScoreModal();
+    } catch (error) {
+      console.error("Error updating supplier score:", error);
+      alert("Failed to update supplier score");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -233,6 +287,61 @@ const UserManagement = () => {
           </div>
         </div>
 
+        {/* Score Modal */}
+        {scoreModalOpen && editingScoreUser && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 animate-in fade-in zoom-in duration-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Assign Score Points
+                </h3>
+                <button
+                  className="text-gray-400 hover:text-gray-600"
+                  onClick={closeScoreModal}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="space-y-3">
+                <p className="text-sm text-gray-500">
+                  Set score for <span className="font-semibold text-slate-700">{editingScoreUser.name}</span>
+                </p>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-gray-500 uppercase">
+                    Score (0-100)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#a26e35] focus:border-transparent outline-none"
+                    value={newScore}
+                    onChange={(e) => setNewScore(e.target.value)}
+                    placeholder="Enter score (0-100)"
+                  />
+                  <p className="text-xs text-gray-400">
+                    Higher scores get priority for order assignments
+                  </p>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:bg-gray-100 border border-gray-200"
+                    onClick={closeScoreModal}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold bg-[#a26e35] text-white hover:bg-[#8c5c2c]"
+                    onClick={handleScoreUpdate}
+                  >
+                    Save Score
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-hidden rounded-2xl border border-gray-100">
           <table className="w-full text-sm">
@@ -242,6 +351,7 @@ const UserManagement = () => {
                 <th className="text-left px-6 py-3 font-semibold">Type</th>
                 <th className="text-left px-6 py-3 font-semibold">Join Date</th>
                 <th className="text-left px-6 py-3 font-semibold">Status</th>
+                <th className="text-left px-6 py-3 font-semibold">Score</th>
                 <th className="text-left px-6 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
@@ -276,7 +386,22 @@ const UserManagement = () => {
                         <StatusBadge status={user.status} />
                       </td>
                       <td className="px-6 py-4">
+                        {user.type === 'Supplier' ? (
+                          <ScoreBadge score={user.scorePoints || 0} />
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-3 text-xs font-semibold">
+                          {user.type === 'Supplier' && (
+                            <button
+                              className="text-purple-600 hover:underline flex items-center gap-1"
+                              onClick={() => openScoreModal(user)}
+                            >
+                              Assign Score
+                            </button>
+                          )}
                           {user.role === 'supplier' && user.status === 'pending' && (
                             <button
                               className="text-emerald-600 hover:underline flex items-center gap-1"
@@ -441,13 +566,27 @@ const UserManagement = () => {
                     <p className="text-gray-400 font-medium mb-1">Join Date</p>
                     <p className="text-slate-700 font-semibold">{user.joinDate}</p>
                   </div>
-                  <div>
+                  {user.type === 'Supplier' && (
+                    <div>
+                      <p className="text-gray-400 font-medium mb-1">Score</p>
+                      <ScoreBadge score={user.scorePoints || 0} />
+                    </div>
+                  )}
+                  <div className={user.type === 'Supplier' ? 'col-span-2' : ''}>
                     <p className="text-gray-400 font-medium mb-1">Activity</p>
                     <p className="text-slate-700 font-semibold">{user.activity}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-3 pt-1">
+                <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
+                  {user.type === 'Supplier' && (
+                    <button
+                      className="py-2 px-3 rounded-xl bg-purple-50 text-purple-600 text-xs font-bold hover:bg-purple-100 transition"
+                      onClick={() => openScoreModal(user)}
+                    >
+                      Assign Score
+                    </button>
+                  )}
                   {user.role === 'supplier' && user.status === 'pending' && (
                     <button
                       className="flex-1 py-2 rounded-xl bg-emerald-50 text-emerald-600 text-xs font-bold hover:bg-emerald-100 transition"

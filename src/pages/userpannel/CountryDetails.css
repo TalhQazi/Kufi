@@ -229,9 +229,23 @@
 
 /* Main Content */
 .country-main {
-    max-width: 1240px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 60px 80px;
+    padding: 60px 40px;
+}
+
+@media (min-width: 1920px) {
+    .country-main {
+        max-width: 1600px;
+        padding: 60px 60px;
+    }
+}
+
+@media (min-width: 2560px) {
+    .country-main {
+        max-width: 1800px;
+        padding: 60px 80px;
+    }
 }
 
 .country-section-title {
@@ -323,6 +337,21 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 20px;
+}
+
+.country-experiences-grid--three {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 1200px) {
+    .country-experiences-grid,
+    .country-experiences-grid--three {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .country-blog-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 .country-experience-card {
@@ -592,8 +621,8 @@
     .country-navbar-inner,
     .country-main,
     .country-footer {
-        padding-left: 20px;
-        padding-right: 20px;
+        padding-left: 16px;
+        padding-right: 16px;
     }
 
     .country-navbar-inner {
@@ -652,5 +681,51 @@
     .country-experiences-grid,
     .country-blog-grid {
         grid-template-columns: 1fr;
+    }
+
+    .country-navbar-inner,
+    .country-main,
+    .country-footer {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .country-hero-content {
+        left: 12px;
+        right: 12px;
+    }
+}
+
+@media (max-width: 320px) {
+    .country-navbar-inner,
+    .country-main,
+    .country-footer {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .country-hero-content {
+        left: 8px;
+        right: 8px;
+    }
+}
+
+/* Blog Section Wrapper - Forces 3 columns on CountryDetails without modifying BlogSection */
+.country-blog-section-wrapper [class*="grid-cols-4"],
+.country-blog-section-wrapper .lg\:grid-cols-4 {
+    grid-template-columns: repeat(3, 1fr) !important;
+}
+
+@media (max-width: 1024px) {
+    .country-blog-section-wrapper [class*="grid-cols-4"],
+    .country-blog-section-wrapper .lg\:grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .country-blog-section-wrapper [class*="grid-cols-4"],
+    .country-blog-section-wrapper .lg\:grid-cols-4 {
+        grid-template-columns: 1fr !important;
     }
 }

@@ -3,19 +3,40 @@ import Button from '../ui/Button'
 import { FiPhone, FiUser, FiSettings, FiLogOut, FiChevronDown } from 'react-icons/fi'
 import { HiMenu, HiX } from 'react-icons/hi'
 import ProfilePic from '../ui/ProfilePic'
+import api from '../../api'
 
 export default function Header({ onSignupClick, onSigninClick, onHomeClick, currentUser, onLogout, onProfileClick, onMyRequestsClick, onSettingsClick }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
     const [activeSection, setActiveSection] = useState('home')
+    const [settings, setSettings] = useState(null)
     const dropdownRef = useRef(null)
 
-    const navItems = [
+    // Fetch header settings
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const response = await api.get('/header')
+                setSettings(response.data)
+            } catch (error) {
+                console.error('Error fetching header settings:', error)
+            }
+        }
+        fetchSettings()
+    }, [])
+
+    const navItems = settings?.navItems?.filter(item => item.isActive) || [
         { id: 'home', label: 'Home' },
         { id: 'destinations', label: 'Destinations' },
         { id: 'top-locations', label: 'Top Locations' },
         { id: 'blog', label: 'Blog' },
     ]
+
+    const logo = settings?.logo || '/assets/navbar.png'
+    const contactPhone = settings?.contactInfo?.phone || '+0 123 456 789'
+    const showContact = settings?.contactInfo?.isActive !== false
+    const authButtonLabel = settings?.authButton?.label || 'Login/Signup'
+    const showAuthButton = settings?.authButton?.isActive !== false
 
     // Close profile dropdown when clicking outside
     useEffect(() => {
@@ -98,7 +119,7 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                         }}
                         className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
                     >
-                        <img src="/assets/navbar.png" alt="Kufi Travel" className="w-full h-full object-contain" />
+                        <img src={logo} alt="Kufi Travel" className="w-full h-full object-contain" />
                     </button>
                 </div>
 
@@ -119,10 +140,12 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                 </nav>
 
                 <div className="flex items-center gap-4 sm:gap-8">
-                    <div className="hidden sm:flex items-center gap-2 text-slate-700 text-sm font-medium">
-                        <span className="text-[#A67C52]"><FiPhone /></span>
-                        <span className="whitespace-nowrap">+0 123 456 789</span>
-                    </div>
+                    {showContact && (
+                        <div className="hidden sm:flex items-center gap-2 text-slate-700 text-sm font-medium">
+                            <span className="text-[#A67C52]"><FiPhone /></span>
+                            <span className="whitespace-nowrap">{contactPhone}</span>
+                        </div>
+                    )}
                     <div className="hidden sm:flex items-center gap-3">
                         {currentUser ? (
                             <div className="relative" ref={dropdownRef}>
@@ -236,9 +259,11 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                                 )}
                             </div>
                         ) : (
-                            <Button variant="signup" onClick={onSigninClick} className="!rounded-md !px-6 !py-2 !text-sm !font-medium">
-                                Login/Signup
-                            </Button>
+                            showAuthButton && (
+                                <Button variant="signup" onClick={onSigninClick} className="!rounded-md !px-6 !py-2 !text-sm !font-medium">
+                                    {authButtonLabel}
+                                </Button>
+                            )
                         )}
                     </div>
                     <button
@@ -319,9 +344,11 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                                     </button>
                                 </div>
                             ) : (
-                                <Button variant="signup" onClick={onSigninClick} className="!rounded-md !px-6 !py-2 !text-sm !font-medium w-full">
-                                    Login/Signup
-                                </Button>
+                                showAuthButton && (
+                                    <Button variant="signup" onClick={onSigninClick} className="!rounded-md !px-6 !py-2 !text-sm !font-medium w-full">
+                                        {authButtonLabel}
+                                    </Button>
+                                )
                             )}
                         </div>
                     </nav>

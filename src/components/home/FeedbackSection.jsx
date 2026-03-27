@@ -55,8 +55,18 @@ export default function FeedbackSection() {
         const fetchFeedbacks = async () => {
             try {
                 setIsLoading(true);
-                const response = await api.get('/feedbacks');
-                setFeedbackItems(response.data || []);
+                const response = await api.get('/reviews?type=feedback&isActive=true');
+                const reviews = response.data || [];
+                // Map API reviews to component format
+                const mappedReviews = reviews.map(review => ({
+                    _id: review._id,
+                    text: review.note,
+                    name: review.name,
+                    nameLabel: review.role,
+                    avatar: review.image,
+                    rating: review.rating,
+                }));
+                setFeedbackItems(mappedReviews);
             } catch (error) {
                 console.error("Error fetching feedbacks:", error);
             } finally {
@@ -69,61 +79,7 @@ export default function FeedbackSection() {
     // Triple the items for infinite loop logic
     const loopedItems = [...feedbackItems, ...feedbackItems, ...feedbackItems];
 
-    const fallbackReviews = [
-        {
-            id: 'fallback-1',
-            text: 'Amazing experience! Everything was perfectly organized and the itinerary was exactly what we wanted.',
-            name: 'Ayesha Khan',
-            nameLabel: 'TRAVELER',
-            avatar: '/assets/girl1.jif',
-        },
-        {
-            id: 'fallback-2',
-            text: 'Support team was super responsive. Booking was smooth and the recommendations were spot on.',
-            name: 'Hassan Ali',
-            nameLabel: 'CLIENT',
-            avatar: '/assets/boy1.jif',
-        },
-        {
-            id: 'fallback-3',
-            text: 'Loved the destinations and activities. Great value for money and a very premium feel overall.',
-            name: 'Sara Ahmed',
-            nameLabel: 'TRAVELER',
-            avatar: '/assets/girl2.jif',
-        },
-        {
-            id: 'fallback-4',
-            text: 'We had a wonderful family trip. Everything was planned nicely and we felt taken care of throughout.',
-            name: 'Usman Riaz',
-            nameLabel: 'CLIENT',
-            avatar: '/assets/boy2.jif',
-        },
-        {
-            id: 'fallback-5',
-            text: 'The whole process was easy and transparent. We got exactly what was promised and more.',
-            name: 'Mariam Noor',
-            nameLabel: 'TRAVELER',
-            avatar: '/assets/girl1.jif',
-        },
-        {
-            id: 'fallback-6',
-            text: 'Great communication and quick updates. The itinerary was well-balanced and enjoyable.',
-            name: 'Bilal Sheikh',
-            nameLabel: 'CLIENT',
-            avatar: '/assets/boy1.jif',
-        },
-        {
-            id: 'fallback-7',
-            text: 'Highly recommended! Clean UI, easy booking, and the suggestions were truly helpful.',
-            name: 'Hira Malik',
-            nameLabel: 'TRAVELER',
-            avatar: '/assets/girl2.jif',
-        },
-    ];
-
-    const rightSideReviews = (!isLoading && Array.isArray(feedbackItems) && feedbackItems.length > 0
-        ? [...feedbackItems, ...fallbackReviews]
-        : (!isLoading ? fallbackReviews : []))
+    const rightSideReviews = (Array.isArray(feedbackItems) ? feedbackItems : [])
         .slice(0, 6)
         .map((item) => ({
             id: item?._id || item?.id,

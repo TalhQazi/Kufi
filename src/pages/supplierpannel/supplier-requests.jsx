@@ -1,5 +1,5 @@
 import api from "../../api";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   CalendarDays,
   MapPin,
@@ -10,6 +10,9 @@ import {
   Phone,
   Heart,
   Sparkles,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import SupplierGenerateItinerary from "./supplier-generate-itinerary";
 
@@ -21,6 +24,8 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
   const [itineraryRequestId, setItineraryRequestId] = useState(null);
   const [resumeItineraryDraft, setResumeItineraryDraft] = useState(null);
   const [showTemplate, setShowTemplate] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState(new Set()); // Track expanded user groups
+  const [currentChildIndex, setCurrentChildIndex] = useState({}); // Track carousel index per group
 
   const safeParseJson = (value) => {
     try {
@@ -66,7 +71,50 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
     return fields.some((v) => String(v || "").trim());
   };
 
-  // Load requests from database (GET /supplier/bookings)
+  // Group requests by user email - creates parent-child node structure
+  const groupedRequests = useMemo(() => {
+    const groups = {};
+    
+    requests.forEach((req) => {
+      // Use email as unique identifier for user, fallback to name
+      const userKey = req.email || req.name || 'unknown';
+      if (!groups[userKey]) {
+        groups[userKey] = {
+          user: {
+            name: req.name,
+            email: req.email,
+            avatar: req.avatar,
+            phone: req.phone,
+          },
+          requests: [],
+        };
+      }
+      groups[userKey].requests.push(req);
+    });
+    
+    // Convert to array and sort each group's requests by date (newest first)
+    return Object.values(groups).map((group) => ({
+      ...group,
+      requests: group.requests.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.date || 0);
+        const dateB = new Date(b.createdAt || b.date || 0);
+        return dateB - dateA;
+      }),
+    }));
+  }, [requests]);
+
+  // Toggle group expand/collapse
+  const toggleGroup = (userKey) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(userKey)) {
+        next.delete(userKey);
+      } else {
+        next.add(userKey);
+      }
+      return next;
+    });
+  };
   const fetchRequests = async ({ silent = false } = {}) => {
     try {
       if (!silent) setIsLoading(true);
@@ -562,116 +610,300 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
           </div>
         </div>
 
-        <div className="space-y-4">
-          {requests.map((req) => (
-            <div
-              key={req.id || req._id}
-              className={`rounded-2xl border px-5 py-4 shadow-sm cursor-pointer transition-all ${((req.id || req._id) === selectedId) ? (darkMode ? "border-amber-500/50 bg-slate-800/50" : "border-[#a26e35]/50 bg-amber-50/30") : (darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100")}`}
-              onClick={() => setSelectedId(req.id || req._id)}
-            >
-              <div className="flex items-center gap-3">
-                <img
-                  src={req.avatar || "/assets/profile-avatar.jpeg"}
-                  alt={req.name}
-                  className="h-10 w-10 rounded-full object-cover"
-                />
-                <div className="flex flex-col gap-1">
-                  <p className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-                    {req.name}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${darkMode ? "bg-amber-900/40 text-amber-400" : "bg-amber-50 text-amber-700"}`}>
-                      {formatStatusLabel(req.status)}
+        <div className="space-y-6">
+          {/* Node Tree Structure - Grouped by User */}
+          {Object.values(groupedRequests).map((group, groupIndex) => {
+            const userKey = group.user.email || group.user.name || `group-${groupIndex}`;
+            const isExpanded = expandedGroups.has(userKey);
+            const parentRequest = group.requests[0];
+            const childRequests = group.requests.slice(1);
+            const hasChildren = childRequests.length > 0;
+
+            return (
+              <div key={userKey} className="relative">
+                {/* Connection Line for Node Tree */}
+                {hasChildren && isExpanded && (
+                  <div 
+                    className="absolute left-6 top-16 w-0.5 bg-gradient-to-b from-emerald-400 to-emerald-200"
+                    style={{ height: 'calc(100% - 80px)' }}
+                  />
+                )}
+
+                {/* PARENT CARD - Largest */}
+                <div
+                  className={`rounded-2xl border px-6 py-5 shadow-md cursor-pointer transition-all relative z-10 ${
+                    (parentRequest.id || parentRequest._id) === selectedId 
+                      ? (darkMode ? "border-amber-500/50 bg-slate-800/70" : "border-[#a26e35]/50 bg-amber-50/50") 
+                      : (darkMode ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white")
+                  }`}
+                  onClick={() => setSelectedId(parentRequest.id || parentRequest._id)}
+                >
+                  {/* Parent Badge */}
+                  <div className="absolute -top-3 left-6">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      darkMode 
+                        ? "bg-emerald-600 text-white" 
+                        : "bg-emerald-500 text-white"
+                    }`}>
+                      Parent Request
                     </span>
-                    {hasAdjustment(req) && (
-                      <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${darkMode ? "bg-blue-900/30 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
-                        Requested Adjustment
-                      </span>
+                  </div>
+
+                  <div className="flex items-start justify-between mt-2">
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <img
+                          src={parentRequest.avatar || "/assets/profile-avatar.jpeg"}
+                          alt={parentRequest.name}
+                          className="h-14 w-14 rounded-full object-cover border-3 border-emerald-200 shadow-sm"
+                        />
+                        <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center">
+                          <span className="text-[8px] font-bold text-white">P</span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className={`text-base font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                          {parentRequest.name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+                            darkMode ? "bg-amber-900/40 text-amber-400" : "bg-amber-50 text-amber-700"
+                          }`}>
+                            {formatStatusLabel(parentRequest.status)}
+                          </span>
+                          {hasChildren && (
+                            <span className={`text-[11px] ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                              +{childRequests.length} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expand/Collapse Button */}
+                    {hasChildren && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleGroup(userKey);
+                        }}
+                        className={`p-2 rounded-full transition-all ${
+                          darkMode 
+                            ? "hover:bg-slate-800 text-slate-400" 
+                            : "hover:bg-gray-100 text-gray-500"
+                        } ${isExpanded ? "rotate-180" : ""}`}
+                      >
+                        <ChevronDown className="h-5 w-5" />
+                      </button>
                     )}
                   </div>
-                </div>
-              </div>
 
-              <div className={`mt-3 flex flex-wrap items-center gap-x-8 gap-y-2 text-[12px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-emerald-500" />
-                  {req.location || req.experience}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarDays className="h-3.5 w-3.5 text-emerald-500" />
-                  {(() => {
-                    const arrival = formatTripDate(req?.tripDetails?.arrivalDate);
-                    const departure = formatTripDate(req?.tripDetails?.departureDate);
-                    if (arrival !== "—" && departure !== "—") {
-                      return `${arrival} - ${departure}`;
-                    }
-                    return req.dateRange || req.date || "—";
-                  })()}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5 text-emerald-500" />
-                  {req.travelers || req.guests} Travelers
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-                  {req.amount}
-                </span>
-              </div>
+                  <div className={`mt-4 flex flex-wrap items-center gap-x-8 gap-y-2 text-[13px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <MapPin className="h-4 w-4 text-emerald-500" />
+                      {parentRequest.location || parentRequest.experience}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <CalendarDays className="h-4 w-4 text-emerald-500" />
+                      {(() => {
+                        const arrival = formatTripDate(parentRequest?.tripDetails?.arrivalDate);
+                        const departure = formatTripDate(parentRequest?.tripDetails?.departureDate);
+                        if (arrival !== "—" && departure !== "—") {
+                          return `${arrival} - ${departure}`;
+                        }
+                        return parentRequest.dateRange || parentRequest.date || "—";
+                      })()}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Users className="h-4 w-4 text-emerald-500" />
+                      {parentRequest.travelers || parentRequest.guests} Travelers
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <DollarSign className="h-4 w-4 text-emerald-500" />
+                      {parentRequest.amount}
+                    </span>
+                  </div>
 
-              <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t transition-colors pt-4" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
-                <button
-                  type="button"
-                  disabled={(() => {
-                    const normalizedStatus = String(req.status || '').trim().toLowerCase();
-                    if (hasAdjustment(req)) return false;
-                    return normalizedStatus !== 'confirmed';
-                  })()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setItineraryRequestId(req.id || req._id);
-                    setView(hasAdjustment(req) ? "generate" : "itinerary");
-                  }}
-                  className={`inline-flex w-full lg:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${(String(req.status || '').trim().toLowerCase() === 'confirmed')
-                    ? "bg-[#a26e35] text-white shadow-sm hover:bg-[#8b5e2d]"
-                    : (darkMode ? "bg-slate-800 text-slate-600 cursor-not-allowed" : "bg-gray-100 text-gray-400 cursor-not-allowed")
-                    }`}
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  <span>{hasAdjustment(req) ? 'View Adjustment Itinerary' : 'Proceed To Create Itinerary'}</span>
-                </button>
-                {String(req.status || '').trim().toLowerCase() !== 'confirmed' && (
-                  <div className="flex items-center justify-end gap-2 w-full lg:w-auto">
+                  <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t transition-colors pt-4" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
                     <button
                       type="button"
+                      disabled={(() => {
+                        const normalizedStatus = String(parentRequest.status || '').trim().toLowerCase();
+                        if (hasAdjustment(parentRequest)) return false;
+                        return normalizedStatus !== 'confirmed';
+                      })()}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleStatusUpdate(req.id || req._id, 'confirmed');
+                        setItineraryRequestId(parentRequest.id || parentRequest._id);
+                        setView(hasAdjustment(parentRequest) ? "generate" : "itinerary");
                       }}
-                      className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors"
+                      className={`inline-flex w-full lg:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${
+                        (String(parentRequest.status || '').trim().toLowerCase() === 'confirmed')
+                          ? "bg-[#a26e35] text-white shadow-sm hover:bg-[#8b5e2d]"
+                          : (darkMode ? "bg-slate-800 text-slate-600 cursor-not-allowed" : "bg-gray-100 text-gray-400 cursor-not-allowed")
+                      }`}
                     >
-                      <span>Accept</span>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>{hasAdjustment(parentRequest) ? 'View Adjustment' : 'Create Itinerary'}</span>
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStatusUpdate(req.id || req._id, 'cancelled');
-                      }}
-                      className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-rose-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-600 transition-colors"
-                    >
-                      <span>Reject</span>
-                    </button>
+                    {String(parentRequest.status || '').trim().toLowerCase() !== 'confirmed' && (
+                      <div className="flex items-center justify-end gap-2 w-full lg:w-auto">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusUpdate(parentRequest.id || parentRequest._id, 'confirmed');
+                          }}
+                          className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusUpdate(parentRequest.id || parentRequest._id, 'cancelled');
+                          }}
+                          className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-rose-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-600 transition-colors"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  {/* CHILD REQUESTS - Carousel Navigation */}
+                  {isExpanded && childRequests.length > 0 && (
+                    <div className="mt-4 pt-4 border-t transition-colors" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className={`text-[10px] uppercase tracking-wider font-bold ${darkMode ? "text-emerald-400" : "text-emerald-600"}`}>
+                          Additional Requests ({childRequests.length})
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCurrentChildIndex(prev => ({
+                                ...prev,
+                                [userKey]: Math.max(0, (prev[userKey] || 0) - 1)
+                              }));
+                            }}
+                            disabled={(currentChildIndex[userKey] || 0) === 0}
+                            className={`p-1.5 rounded-full transition-colors ${
+                              (currentChildIndex[userKey] || 0) === 0
+                                ? (darkMode ? "text-slate-600" : "text-gray-300")
+                                : (darkMode ? "text-slate-400 hover:bg-slate-800" : "text-gray-500 hover:bg-gray-100")
+                            }`}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </button>
+                          <span className={`text-[11px] font-medium ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                            {(currentChildIndex[userKey] || 0) + 1} / {childRequests.length}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCurrentChildIndex(prev => ({
+                                ...prev,
+                                [userKey]: Math.min(childRequests.length - 1, (prev[userKey] || 0) + 1)
+                              }));
+                            }}
+                            disabled={(currentChildIndex[userKey] || 0) >= childRequests.length - 1}
+                            className={`p-1.5 rounded-full transition-colors ${
+                              (currentChildIndex[userKey] || 0) >= childRequests.length - 1
+                                ? (darkMode ? "text-slate-600" : "text-gray-300")
+                                : (darkMode ? "text-slate-400 hover:bg-slate-800" : "text-gray-500 hover:bg-gray-100")
+                            }`}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {(() => {
+                        const childIndex = currentChildIndex[userKey] || 0;
+                        const childReq = childRequests[childIndex];
+                        return (
+                          <div
+                            key={childReq.id || childReq._id}
+                            className={`rounded-xl border px-4 py-3 cursor-pointer transition-all ${
+                              (childReq.id || childReq._id) === selectedId 
+                                ? (darkMode ? "border-emerald-500/50 bg-slate-800/50" : "border-emerald-400/50 bg-emerald-50/30") 
+                                : (darkMode ? "border-slate-700/50 bg-slate-900/50" : "border-gray-200 bg-gray-50/50")
+                            }`}
+                            onClick={() => setSelectedId(childReq.id || childReq._id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  darkMode ? "bg-slate-700 text-slate-300" : "bg-gray-200 text-gray-600"
+                                }`}>
+                                  #{childIndex + 2}
+                                </span>
+                                <p className={`text-sm font-medium transition-colors ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
+                                  {childReq.location || childReq.experience}
+                                </p>
+                              </div>
+                              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                darkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-50 text-amber-600"
+                              }`}>
+                                {formatStatusLabel(childReq.status)}
+                              </span>
+                            </div>
+                            
+                            <div className={`mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                              <span className="inline-flex items-center gap-1">
+                                <MapPin className="h-3 w-3 text-emerald-400" />
+                                {childReq.location || childReq.experience}
+                              </span>
+                              <span className="inline-flex items-center gap-1">
+                                <CalendarDays className="h-3 w-3 text-emerald-400" />
+                                {childReq.dateRange || childReq.date || "—"}
+                              </span>
+                              <span className="inline-flex items-center gap-1">
+                                <Users className="h-3 w-3 text-emerald-400" />
+                                {childReq.travelers || childReq.guests} Travelers
+                              </span>
+                            </div>
+
+                            {String(childReq.status || '').trim().toLowerCase() !== 'confirmed' && (
+                              <div className="mt-2 flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusUpdate(childReq.id || childReq._id, 'confirmed');
+                                  }}
+                                  className="inline-flex items-center justify-center gap-1 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-semibold text-white hover:bg-emerald-600 transition-colors"
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusUpdate(childReq.id || childReq._id, 'cancelled');
+                                  }}
+                                  className="inline-flex items-center justify-center gap-1 rounded-full bg-rose-500 px-3 py-1 text-[10px] font-semibold text-white hover:bg-rose-600 transition-colors"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
       <aside className="space-y-4">
         {selected && (
           <div className={`rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
-            <div className={`flex items-center justify-between px-5 py-3 border-b transition-colors ${darkMode ? "bg-slate-800/50 border-slate-800" : "bg-gray-50 border-gray-100"}`}>
+            <div className="px-5 py-4 border-b transition-colors" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
               <p className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Traveler Details</p>
             </div>
             <div className="px-5 py-4 space-y-4 text-xs">

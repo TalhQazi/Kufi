@@ -20,6 +20,7 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
     thumbnail: "",
     addOns: [""],
     highlights: [""],
+    coordinates: { lat: "", lng: "" },
   });
 
   useEffect(() => {
@@ -84,6 +85,7 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
       thumbnail: initialData.thumbnail || initialData.image || "",
       addOns: normalizeAddOns(),
       highlights: normalizeHighlights(),
+      coordinates: initialData.coordinates || { lat: "", lng: "" },
     }))
   }, [initialData])
 
@@ -130,6 +132,16 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? (checked ? "active" : "inactive") : value,
+    }));
+  };
+
+  const handleCoordinateChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      coordinates: {
+        ...prev.coordinates,
+        [field]: value,
+      },
     }));
   };
 
@@ -200,6 +212,10 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
         highlights: (Array.isArray(formData.highlights) ? formData.highlights : [])
           .map((v) => String(v || '').trim())
           .filter(Boolean),
+        coordinates: {
+          lat: formData.coordinates?.lat ? Number(formData.coordinates.lat) : null,
+          lng: formData.coordinates?.lng ? Number(formData.coordinates.lng) : null,
+        },
       };
 
       if (activityId) {
@@ -334,6 +350,36 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
             placeholder="e.g., 150"
           />
           <StatusToggle status={formData.status} onChange={handleChange} />
+
+          {/* Coordinates Fields */}
+          <div className="md:col-span-2">
+            <label className="text-sm font-semibold text-gray-600 mb-2 block">
+              Map Coordinates (Optional)
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <input
+                  type="text"
+                  value={formData.coordinates?.lat || ""}
+                  onChange={(e) => handleCoordinateChange("lat", e.target.value)}
+                  placeholder="Latitude (e.g., 40.7128)"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#a26e35]/30"
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={formData.coordinates?.lng || ""}
+                  onChange={(e) => handleCoordinateChange("lng", e.target.value)}
+                  placeholder="Longitude (e.g., -74.0060)"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#a26e35]/30"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              Enter latitude and longitude to show the location on the map in Activity Details page
+            </p>
+          </div>
         </div>
 
         <div className="pt-2">

@@ -10,8 +10,10 @@ import ServicesSection from '../../components/home/ServicesSection'
 import BlogSection from '../../components/home/BlogSection'
 import FeedbackSection from '../../components/home/FeedbackSection'
 import Footer from '../../components/layout/Footer'
+import useSectionVisibility from '../../hooks/useSectionVisibility'
 
 export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick, onCountryClick, onHomeClick, onExploreClick, currentUser, onLogout, onProfileClick, onMyRequestsClick, onSettingsClick, onActivityClick, onBlogClick, onServiceClick, hideHeaderFooter = false }) {
+    const { isVisible } = useSectionVisibility('home')
     return (
         <>
             {!hideHeaderFooter && (
@@ -27,21 +29,23 @@ export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick
                 />
             )}
             <div className="relative">
-                <HeroSection onSignupClick={onSignupClick} onCountryClick={onCountryClick} onExploreClick={onExploreClick} />
-                <SearchBar onSearch={(payload) => {
-                    if (onCountryClick && payload?.country) {
-                        onCountryClick(payload.country)
-                    }
-                }} />
+                {isVisible('hero') && <HeroSection onSignupClick={onSignupClick} onCountryClick={onCountryClick} onExploreClick={onExploreClick} />}
+                {isVisible('search') && (
+                    <SearchBar onSearch={(payload) => {
+                        if (onCountryClick && payload?.country) {
+                            onCountryClick(payload.country)
+                        }
+                    }} />
+                )}
             </div>
-            <DestinationsSection onCountryClick={onCountryClick} />
-            <CategoriesSection onCategoryClick={onCategoryClick} />
-            <TopLocationsSection onCountryClick={onCountryClick} />
-            <TopActivitiesSection onActivityClick={onActivityClick} />
-            <BookingSystemSection />
-            <FeedbackSection />
-            <ServicesSection onServiceClick={onServiceClick} />
-            <BlogSection onBlogClick={onBlogClick} />
+            {isVisible('destinations') && <DestinationsSection onCountryClick={onCountryClick} />}
+            {isVisible('categories') && <CategoriesSection onCategoryClick={onCategoryClick} />}
+            {isVisible('top-locations') && <TopLocationsSection onCountryClick={onCountryClick} />}
+            {isVisible('top-activities') && <TopActivitiesSection onActivityClick={onActivityClick} />}
+            {isVisible('booking-system') && <BookingSystemSection />}
+            {isVisible('feedback') && <FeedbackSection />}
+            {isVisible('services') && <ServicesSection onServiceClick={onServiceClick} />}
+            {isVisible('blog') && <BlogSection onBlogClick={onBlogClick} />}
             {!hideHeaderFooter && <Footer />}
         </>
     )
