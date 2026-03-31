@@ -5,7 +5,7 @@ const API_BASE_URL =
   // import.meta.env.VITE_API_URL || 'http://192.168.18.56:5000/api';
   //  import.meta.env.VITE_API_URL || 'https://kufi-backend-new1.vercel.app/api';
   import.meta.env.VITE_API_URL || 'https://kufi-backend.vercel.app/api';
-
+// change api base url
 const api = axios.create({
     baseURL: API_BASE_URL,
     timeout: 15000,
