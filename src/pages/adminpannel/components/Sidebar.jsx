@@ -18,6 +18,7 @@ import {
   Layout,
   PanelTop,
   Layers,
+  Scale,
 } from "lucide-react";
 
 
@@ -37,6 +38,7 @@ const navItems = [
   { label: "Footer", icon: Layout },
   { label: "Header", icon: PanelTop },
   { label: "Sections", icon: Layers },
+  { label: "Legal Content", icon: Scale },
 ];
 
 

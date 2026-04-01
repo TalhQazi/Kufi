@@ -20,6 +20,7 @@ import BookingTermsController from './pages/adminpannel/BookingTermsController'
 import FooterController from './pages/adminpannel/FooterController'
 import HeaderController from './pages/adminpannel/HeaderController'
 import SectionVisibilityController from './pages/adminpannel/SectionVisibilityController'
+import LegalContentController from './pages/adminpannel/LegalContentController'
 import AdminProfile from './pages/adminpannel/AdminProfile'
 import AdminSettings from './pages/adminpannel/AdminSettings'
 import './App.css'
@@ -62,6 +63,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
     if (activePage === 'Footer') return <FooterController />
     if (activePage === 'Header') return <HeaderController />
     if (activePage === 'Sections') return <SectionVisibilityController />
+    if (activePage === 'Legal Content') return <LegalContentController darkMode={isDarkMode} />
     if (activePage === 'Profile') return <AdminProfile />
     if (activePage === 'Settings') return <AdminSettings />
     return <Dashboard />

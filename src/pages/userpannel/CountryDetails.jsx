@@ -788,7 +788,7 @@ export default function CountryDetails({
                                                 return (
                                                     <div
                                                         key={expId}
-                                                        className="country-experience-card"
+                                                        className="country-experience-card group"
                                                         onClick={() => onActivityClick && onActivityClick(expId)}
                                                     >
                                                         <div className="country-card-image-wrapper">
@@ -810,7 +810,7 @@ export default function CountryDetails({
 
                                                             <button
                                                                 type="button"
-                                                                className={`mt-auto w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors group relative ${selected
+                                                                className={`mt-auto w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors relative overflow-hidden ${selected
                                                                     ? 'bg-primary-dark text-white hover:bg-red-600'
                                                                     : 'bg-beige text-primary-brown hover:bg-primary-brown hover:text-white'
                                                                     }`}
@@ -828,11 +828,11 @@ export default function CountryDetails({
                                                                     }
                                                                 }}
                                                             >
-                                                                <span className={`inline ${selected ? 'group-hover:hidden' : ''}`}>
+                                                                <span className={`block transition-opacity duration-200 ${selected ? 'group-hover:opacity-0' : ''}`}>
                                                                     {selected ? 'ADDED TO LIST' : 'ADD TO LIST'}
                                                                 </span>
                                                                 {selected && (
-                                                                    <span className="hidden group-hover:inline absolute inset-0 flex items-center justify-center">
+                                                                    <span className="absolute inset-0 flex items-center justify-center bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                                                         REMOVE FROM LIST
                                                                     </span>
                                                                 )}

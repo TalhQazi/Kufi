@@ -303,7 +303,22 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
     return images;
   };
 
-  const selected = requests.find((r) => (r.id || r._id) === selectedId) || (requests.length > 0 ? requests[0] : null);
+  // Find selected request from either flat array or grouped requests (for child requests)
+  const selected = useMemo(() => {
+    // First try to find in flat requests array
+    const fromRequests = requests.find((r) => (r.id || r._id) === selectedId);
+    if (fromRequests) return fromRequests;
+    
+    // If not found, search through grouped requests (child requests)
+    for (const group of Object.values(groupedRequests)) {
+      const fromGroup = group.requests.find((r) => (r.id || r._id) === selectedId);
+      if (fromGroup) return fromGroup;
+    }
+    
+    // Fallback to first request
+    return requests.length > 0 ? requests[0] : null;
+  }, [requests, selectedId, groupedRequests]);
+  
   const itineraryRequest =
     requests.find((r) => (r.id || r._id) === itineraryRequestId) || selected || resumeItineraryDraft?.payload?.requestSnapshot || null;
 
@@ -746,29 +761,44 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                       <Sparkles className="h-3.5 w-3.5" />
                       <span>{hasAdjustment(parentRequest) ? 'View Adjustment' : 'Create Itinerary'}</span>
                     </button>
-                    {String(parentRequest.status || '').trim().toLowerCase() !== 'confirmed' && (
-                      <div className="flex items-center justify-end gap-2 w-full lg:w-auto">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStatusUpdate(parentRequest.id || parentRequest._id, 'confirmed');
-                          }}
-                          className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStatusUpdate(parentRequest.id || parentRequest._id, 'cancelled');
-                          }}
-                          className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-rose-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-600 transition-colors"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
+                    
+                    {/* Parent Button Area - Accept/Reject */}
+                    <div className="flex items-center justify-end gap-2 w-full lg:w-auto">
+                      {/* Accept Button - Hidden when confirmed */}
+                      {(() => {
+                        const parentStatus = String(parentRequest.status || '').trim().toLowerCase();
+                        const isParentConfirmed = parentStatus === 'confirmed';
+                        const isParentCancelled = parentStatus === 'cancelled';
+                        return (
+                          <>
+                            {!isParentConfirmed && !isParentCancelled && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStatusUpdate(parentRequest.id || parentRequest._id, 'confirmed');
+                                }}
+                                className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors"
+                              >
+                                Accept
+                              </button>
+                            )}
+                            {/* Reject Button - Always visible unless cancelled */}
+                            {!isParentCancelled && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStatusUpdate(parentRequest.id || parentRequest._id, 'cancelled');
+                                }}
+                                className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-rose-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-600 transition-colors"
+                              >
+                                Reject
+                              </button>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
                   </div>
 
                   {/* CHILD REQUESTS - Carousel Navigation */}
@@ -822,72 +852,138 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                       {(() => {
                         const childIndex = currentChildIndex[userKey] || 0;
                         const childReq = childRequests[childIndex];
+                        const childStatus = String(childReq.status || '').trim().toLowerCase();
+                        const isConfirmed = childStatus === 'confirmed';
+                        const isCancelled = childStatus === 'cancelled';
                         return (
                           <div
                             key={childReq.id || childReq._id}
-                            className={`rounded-xl border px-4 py-3 cursor-pointer transition-all ${
+                            className={`rounded-2xl border px-6 py-5 shadow-md cursor-pointer transition-all relative ${
                               (childReq.id || childReq._id) === selectedId 
-                                ? (darkMode ? "border-emerald-500/50 bg-slate-800/50" : "border-emerald-400/50 bg-emerald-50/30") 
-                                : (darkMode ? "border-slate-700/50 bg-slate-900/50" : "border-gray-200 bg-gray-50/50")
+                                ? (darkMode ? "border-emerald-500/50 bg-slate-800/70" : "border-emerald-400/50 bg-emerald-50/50") 
+                                : (darkMode ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white")
                             }`}
-                            onClick={() => setSelectedId(childReq.id || childReq._id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedId(childReq.id || childReq._id);
+                            }}
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                  darkMode ? "bg-slate-700 text-slate-300" : "bg-gray-200 text-gray-600"
-                                }`}>
-                                  #{childIndex + 2}
-                                </span>
-                                <p className={`text-sm font-medium transition-colors ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
-                                  {childReq.location || childReq.experience}
-                                </p>
-                              </div>
-                              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                                darkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-50 text-amber-600"
+                            {/* Child Badge */}
+                            <div className="absolute -top-3 left-6">
+                              <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                darkMode 
+                                  ? "bg-slate-600 text-white" 
+                                  : "bg-gray-500 text-white"
                               }`}>
-                                {formatStatusLabel(childReq.status)}
-                              </span>
-                            </div>
-                            
-                            <div className={`mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
-                              <span className="inline-flex items-center gap-1">
-                                <MapPin className="h-3 w-3 text-emerald-400" />
-                                {childReq.location || childReq.experience}
-                              </span>
-                              <span className="inline-flex items-center gap-1">
-                                <CalendarDays className="h-3 w-3 text-emerald-400" />
-                                {childReq.dateRange || childReq.date || "—"}
-                              </span>
-                              <span className="inline-flex items-center gap-1">
-                                <Users className="h-3 w-3 text-emerald-400" />
-                                {childReq.travelers || childReq.guests} Travelers
+                                Child #{childIndex + 1}
                               </span>
                             </div>
 
-                            {String(childReq.status || '').trim().toLowerCase() !== 'confirmed' && (
-                              <div className="mt-2 flex items-center justify-end gap-2">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStatusUpdate(childReq.id || childReq._id, 'confirmed');
-                                  }}
-                                  className="inline-flex items-center justify-center gap-1 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-semibold text-white hover:bg-emerald-600 transition-colors"
-                                >
-                                  Accept
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStatusUpdate(childReq.id || childReq._id, 'cancelled');
-                                  }}
-                                  className="inline-flex items-center justify-center gap-1 rounded-full bg-rose-500 px-3 py-1 text-[10px] font-semibold text-white hover:bg-rose-600 transition-colors"
-                                >
-                                  Reject
-                                </button>
+                            <div className="flex items-start justify-between mt-2">
+                              <div className="flex items-center gap-4">
+                                <div className="relative">
+                                  <img
+                                    src={childReq.avatar || "/assets/profile-avatar.jpeg"}
+                                    alt={childReq.name}
+                                    className="h-14 w-14 rounded-full object-cover border-3 border-slate-200 shadow-sm"
+                                  />
+                                  <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-slate-500 border-2 border-white flex items-center justify-center">
+                                    <span className="text-[8px] font-bold text-white">C</span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <p className={`text-base font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                                    {childReq.name}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+                                      darkMode ? "bg-amber-900/40 text-amber-400" : "bg-amber-50 text-amber-700"
+                                    }`}>
+                                      {formatStatusLabel(childReq.status)}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
-                            )}
+                            </div>
+
+                            <div className={`mt-4 flex flex-wrap items-center gap-x-8 gap-y-2 text-[13px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
+                              <span className="inline-flex items-center gap-1.5">
+                                <MapPin className="h-4 w-4 text-emerald-500" />
+                                {childReq.location || childReq.experience}
+                              </span>
+                              <span className="inline-flex items-center gap-1.5">
+                                <CalendarDays className="h-4 w-4 text-emerald-500" />
+                                {(() => {
+                                  const arrival = formatTripDate(childReq?.tripDetails?.arrivalDate);
+                                  const departure = formatTripDate(childReq?.tripDetails?.departureDate);
+                                  if (arrival !== "—" && departure !== "—") {
+                                    return `${arrival} - ${departure}`;
+                                  }
+                                  return childReq.dateRange || childReq.date || "—";
+                                })()}
+                              </span>
+                              <span className="inline-flex items-center gap-1.5">
+                                <Users className="h-4 w-4 text-emerald-500" />
+                                {childReq.travelers || childReq.guests} Travelers
+                              </span>
+                              <span className="inline-flex items-center gap-1.5">
+                                <DollarSign className="h-4 w-4 text-emerald-500" />
+                                {childReq.amount}
+                              </span>
+                            </div>
+
+                            <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t transition-colors pt-4" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
+                              <button
+                                type="button"
+                                disabled={(() => {
+                                  const normalizedStatus = String(childReq.status || '').trim().toLowerCase();
+                                  if (hasAdjustment(childReq)) return false;
+                                  return normalizedStatus !== 'confirmed';
+                                })()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setItineraryRequestId(childReq.id || childReq._id);
+                                  setView(hasAdjustment(childReq) ? "generate" : "itinerary");
+                                }}
+                                className={`inline-flex w-full lg:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${
+                                  (String(childReq.status || '').trim().toLowerCase() === 'confirmed')
+                                    ? "bg-[#a26e35] text-white shadow-sm hover:bg-[#8b5e2d]"
+                                    : (darkMode ? "bg-slate-800 text-slate-600 cursor-not-allowed" : "bg-gray-100 text-gray-400 cursor-not-allowed")
+                                }`}
+                              >
+                                <Sparkles className="h-3.5 w-3.5" />
+                                <span>{hasAdjustment(childReq) ? 'View Adjustment' : 'Create Itinerary'}</span>
+                              </button>
+                              
+                              {/* Button Area - Accept/Reject */}
+                              <div className="flex items-center justify-end gap-2 w-full lg:w-auto">
+                                {/* Accept Button - Hidden when confirmed */}
+                                {!isConfirmed && !isCancelled && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleStatusUpdate(childReq.id || childReq._id, 'confirmed');
+                                    }}
+                                    className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors"
+                                  >
+                                    Accept
+                                  </button>
+                                )}
+                                {/* Reject Button - Always visible unless cancelled */}
+                                {!isCancelled && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleStatusUpdate(childReq.id || childReq._id, 'cancelled');
+                                    }}
+                                    className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 rounded-full bg-rose-500 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-600 transition-colors"
+                                  >
+                                    Reject
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         );
                       })()}
