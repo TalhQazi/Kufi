@@ -101,7 +101,7 @@ export default function FeedbackSection() {
     }
 
     return (
-        <section className="bg-white py-20 px-4 sm:px-8 lg:px-20 relative overflow-hidden">
+        <section className="bg-white py-20 px-4 sm:px-8 lg:px-20 2xl:px-8 min-[2560px]:px-4 relative overflow-hidden">
             {/* Background Organic Blob */}
             <div className="absolute right-[-5%] bottom-[-5%] w-[60%] h-[80%] pointer-events-none z-0">
                 <svg
@@ -118,9 +118,9 @@ export default function FeedbackSection() {
                 </svg>
             </div>
 
-            <div className="max-w-[1400px] mx-auto relative z-10">
+            <div className="max-w-[1400px] 2xl:max-w-[1800px] mx-auto relative z-10">
                 {/* Header Section */}
-                <div className="mb-16 relative flex flex-col md:flex-row justify-between items-start md:items-center px-4">
+                <div className="mb-16 relative flex flex-col md:flex-row justify-between items-start md:items-center px-4 2xl:px-8">
                     <div className="relative">
                         <p className="text-[#9BB098] text-xs font-bold uppercase tracking-[0.3em] mb-3">WHAT THEY SAY</p>
                         <h2 className="text-4xl lg:text-5xl font-bold text-[#353935] m-0">
@@ -143,8 +143,8 @@ export default function FeedbackSection() {
                 <div className="flex flex-col lg:flex-row items-start gap-10">
 
                     {/* Constant Image - Stays static on the left */}
-                    <div className="flex-shrink-0 relative z-0 w-full lg:w-auto">
-                        <div className="w-full sm:min-w-[420px] lg:w-[420px] aspect-[4/3] rounded-[28px] overflow-hidden shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+                    <div className="flex-shrink-0 relative z-0 w-full lg:w-auto 2xl:min-w-[520px]">
+                        <div className="w-full sm:min-w-[420px] lg:w-[420px] 2xl:w-[520px] 2xl:h-[420px] aspect-[4/3] rounded-[28px] overflow-hidden shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
                             <img
                                 src="/assets/feedback.jpeg"
                                 alt="Featured feedback"

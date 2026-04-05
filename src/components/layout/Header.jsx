@@ -107,7 +107,7 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
 
     return (
         <header className="w-full bg-white mb-0 sticky top-0 z-50 shadow-sm">
-            <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4 py-4 px-4 sm:px-6 lg:px-12">
+            <div className="max-w-[1400px] 2xl:max-w-[1800px] min-[2560px]:max-w-[2400px] mx-auto flex items-center justify-between gap-4 py-4 px-4 sm:px-6 lg:px-12 2xl:px-6 min-[2560px]:px-4">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => {

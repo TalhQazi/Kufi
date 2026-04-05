@@ -30,18 +30,18 @@ export default function TopLocationsSection({ onCountryClick }) {
     const hasMore = visibleCount < total
 
     return (
-        <section id="top-locations" className="bg-gradient-to-b from-white to-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
-            <div className="max-w-[1240px] mx-auto">
+        <section id="top-locations" className="bg-gradient-to-b from-white to-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20 2xl:px-8 min-[2560px]:px-4">
+            <div className="max-w-[1240px] 2xl:max-w-[1600px] min-[2560px]:max-w-[2200px] mx-auto">
                 <div className="text-center mb-10">
                     <p className="text-lg font-normal text-[#a67c52] m-0 mb-1 font-sacramento">Top Locations</p>
                     <h2 className="text-xl sm:text-3xl font-bold text-slate-900 m-0 mb-4">Top Locations We Are Currently Serving</h2>
-                    <p className="text-sm text-slate-500 max-w-[560px] m-0 mx-auto">
+                    <p className="text-sm text-slate-500 max-w-[560px] 2xl:max-w-[800px] m-0 mx-auto">
                         Travel makes one modest. You see what a tiny place you occupy in the world.
                         One's destination is never a place, but a new way of seeing things.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 min-[2560px]:grid-cols-6 gap-6">
                     {loading ? (
                         <div className="col-span-full py-10 flex justify-center">
                             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#a67c52]"></div>

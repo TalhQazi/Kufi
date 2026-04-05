@@ -468,7 +468,7 @@ export default function Explore({
                   return (
                     <article
                       key={activityId}
-                      className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer explore-card"
+                      className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer explore-card group"
                       onClick={() => onActivityClick && onActivityClick(activityId)}
                     >
                       <div className="relative explore-card-image-wrapper">
@@ -504,18 +504,27 @@ export default function Explore({
                         </div>
 
                         <button
-                          className={`mt-auto w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors ${isSelected
-                            ? 'bg-primary-dark text-white'
+                          className={`mt-auto w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors relative overflow-hidden ${isSelected
+                            ? 'bg-primary-dark text-white hover:bg-red-600'
                             : 'bg-beige text-primary-brown hover:bg-primary-brown hover:text-white'
                             }`}
                           onClick={(e) => {
                             e.stopPropagation()
-                            if (!isSelected) {
+                            if (isSelected) {
+                              onRemoveActivity && onRemoveActivity(activityId)
+                            } else {
                               onAddToList && onAddToList(activity)
                             }
                           }}
                         >
-                          {isSelected ? 'ADDED TO LIST' : 'ADD TO LIST'}
+                          <span className={`block transition-opacity duration-200 ${isSelected ? 'group-hover:opacity-0' : ''}`}>
+                            {isSelected ? 'ADDED TO LIST' : 'ADD TO LIST'}
+                          </span>
+                          {isSelected && (
+                            <span className="absolute inset-0 flex items-center justify-center bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              REMOVE FROM LIST
+                            </span>
+                          )}
                         </button>
                       </div>
                     </article>

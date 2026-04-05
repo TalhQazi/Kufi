@@ -33,13 +33,13 @@ export default function DestinationsSection({ onCountryClick }) {
     }
 
     return (
-        <section id="destinations" className="bg-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20">
-            <div className="max-w-[1240px] mx-auto">
+        <section id="destinations" className="bg-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20 2xl:px-8 min-[2560px]:px-4">
+            <div className="max-w-[1240px] 2xl:max-w-[1600px] min-[2560px]:max-w-[2200px] mx-auto">
                 <div className="mb-10">
                     <h2 className="text-xl sm:text-3xl font-bold text-slate-900">Explore Destinations</h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 min-[2560px]:grid-cols-6 gap-6">
                     {loading ? (
                         <div className="col-span-full py-10 flex justify-center">
                             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#a67c52]"></div>

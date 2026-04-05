@@ -27,8 +27,8 @@ export default function BookingSystemSection() {
     ]
 
     return (
-        <section className="bg-white py-16 sm:py-24 px-4 sm:px-8 lg:px-20">
-            <div className="max-w-[1240px] mx-auto">
+        <section className="bg-white py-16 sm:py-24 px-4 sm:px-8 lg:px-20 2xl:px-8 min-[2560px]:px-4">
+            <div className="max-w-[1240px] 2xl:max-w-[1600px] min-[2560px]:max-w-[2200px] mx-auto">
                 <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-20 text-center tracking-tight">
                     Booking System
                 </h2>

@@ -1,9 +1,37 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { FiSearch, FiBell, FiMapPin, FiCalendar, FiFilter, FiArrowUp, FiArrowDown, FiUser } from 'react-icons/fi'
+import { FiSearch, FiBell, FiMapPin, FiCalendar, FiFilter, FiArrowUp, FiArrowDown, FiUser, FiInfo, FiX } from 'react-icons/fi'
 import { FaCheckCircle, FaClock, FaCreditCard } from 'react-icons/fa'
 import api from '../../api'
 import Footer from '../../components/layout/Footer'
 import ProfilePic from '../../components/ui/ProfilePic'
+
+// Custom Alert Modal Component
+const ItineraryAlertModal = ({ isOpen, onClose, message }) => {
+    if (!isOpen) return null
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-[#A67C52]/10 flex items-center justify-center">
+                        <FiInfo className="w-6 h-6 text-[#A67C52]" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Itinerary Not Available</h3>
+                </div>
+                <p className="text-gray-600 mb-6 leading-relaxed">{message}</p>
+                <div className="flex justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-6 py-2.5 rounded-lg bg-[#A67C52] text-white font-semibold hover:bg-[#8e6a45] transition-colors"
+                    >
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
 
 export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, canGoForward, onExploreClick, onItineraryClick, onHomeClick, onNotificationClick, onProfileClick, onMyProfileClick, onMyRequestsClick, onSettingsClick, onCountryClick, hideHeaderFooter = false }) {
     const [dropdown, setDropdown] = useState(false)
@@ -12,6 +40,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
     const [countries, setCountries] = useState([])
     const [cities, setCities] = useState([])
     const [isLoading, setIsLoading] = useState(true)
+    const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' })
     const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {}
     const dropdownRef = useRef(null)
 
@@ -382,7 +411,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
         <div className="min-h-screen bg-gray-50 font-inter">
             {/* Header */}
             <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
+                <div className="max-w-7xl 2xl:max-w-[1600px] min-[2560px]:max-w-[2200px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-6 min-[2560px]:px-4 h-16 md:h-20 flex items-center justify-between">
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => {
@@ -487,7 +516,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+            <main className="max-w-7xl 2xl:max-w-[1600px] min-[2560px]:max-w-[2200px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-6 min-[2560px]:px-4 py-6 md:py-8">
                 {/* Hero Section */}
                 <div className="relative rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden mb-6 sm:mb-8 md:mb-12 h-[250px] sm:h-[300px] md:h-[400px]">
                     <img
@@ -523,7 +552,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_350px] gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_350px] 2xl:grid-cols-[minmax(0,1fr)_400px] gap-8 2xl:gap-12">
                     {/* Left Column - Trip Requests */}
                     <div className="min-w-0">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
@@ -614,7 +643,13 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                                                                 status === 'accepted' ||
                                                                 status === 'adjustment replied'
                                                             if (!isAllowed) return
-                                                            if (!hasSupplierItinerary(trip)) alert('Supplier has not sent the itinerary yet.')
+                                                            if (!hasSupplierItinerary(trip)) {
+                                                                setAlertModal({
+                                                                    isOpen: true,
+                                                                    message: 'Supplier has not sent the itinerary yet. You will be notified once the itinerary is ready.'
+                                                                })
+                                                                return
+                                                            }
                                                             onItineraryClick && onItineraryClick(trip)
                                                         }}
                                                         className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${(() => {
@@ -711,6 +746,12 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                     </div>
                 </div>
             </main>
+            {/* Custom Alert Modal */}
+            <ItineraryAlertModal
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal({ isOpen: false, message: '' })}
+                message={alertModal.message}
+            />
             {!hideHeaderFooter && <Footer />}
         </div>
     )

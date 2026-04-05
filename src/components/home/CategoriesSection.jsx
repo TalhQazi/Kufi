@@ -220,12 +220,12 @@ export default function CategoriesSection({ onCategoryClick }) {
     }, [categories])
 
     return (
-        <section className="bg-[#F5F1ED] py-16 sm:py-20 px-4 sm:px-8 lg:px-20">
-            <div className="max-w-[1200px] mx-auto text-center">
+        <section className="bg-[#F5F1ED] py-16 sm:py-20 px-4 sm:px-8 lg:px-20 2xl:px-12">
+            <div className="max-w-[1200px] 2xl:max-w-[1600px] mx-auto text-center">
                 <div className="mb-12 sm:mb-14">
                     <p className="text-2xl sm:text-3xl font-sacramento text-[#A67C52] m-0 mb-2">Top Categories</p>
                     <h2 className="text-3xl sm:text-4xl font-bold text-[#1a1a1a] m-0 mb-4">Explore By Categories</h2>
-                    <p className="text-sm sm:text-base text-slate-600 max-w-[680px] m-0 mx-auto leading-relaxed">
+                    <p className="text-sm sm:text-base text-slate-600 max-w-[680px] 2xl:max-w-[900px] m-0 mx-auto leading-relaxed">
                         Select according to your interest to check. Choose your own interest and join kufi travelling agency overall world.
                     </p>
                 </div>
@@ -237,7 +237,7 @@ export default function CategoriesSection({ onCategoryClick }) {
                 ) : safeCategories.length === 0 ? (
                     <div className="py-10 text-center text-sm text-slate-600">No categories found.</div>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-y-10 gap-x-8 sm:gap-x-10">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-8 min-[2560px]:grid-cols-10 gap-y-10 gap-x-8 sm:gap-x-10">
                         {safeCategories.map(({ id, name, image }) => {
                             const icon = iconByName[String(name || '').toLowerCase()] || defaultIcon
                             const hasImage = Boolean(String(image || '').trim())

@@ -103,8 +103,8 @@ export default function ServicesSection({ onServiceClick }) {
     ]
 
     return (
-        <section className="bg-white py-12 px-4 sm:px-8 lg:px-20 border-b border-[#f0f0f0]">
-            <div className="max-w-[1240px] mx-auto">
+        <section className="bg-white py-12 px-4 sm:px-8 lg:px-20 2xl:px-8 min-[2560px]:px-4 border-b border-[#f0f0f0]">
+            <div className="max-w-[1240px] 2xl:max-w-[1600px] min-[2560px]:max-w-[2200px] mx-auto">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6 sm:gap-8 text-center">
                     {services.map((service) => (
                         <div

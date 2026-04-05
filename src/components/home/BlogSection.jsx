@@ -82,12 +82,12 @@ export default function BlogSection({ onBlogClick }) {
 
     return (
         <section
-            className="bg-white py-16 sm:py-24 px-4 sm:px-8 lg:px-20"
+            className="bg-white py-16 sm:py-24 px-4 sm:px-8 lg:px-20 2xl:px-8 min-[2560px]:px-4"
             id="blog"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
         >
-            <div className="max-w-[1240px] mx-auto">
+            <div className="max-w-[1240px] 2xl:max-w-[1600px] min-[2560px]:max-w-[2200px] mx-auto">
                 <div className="text-center mb-12">
                     <p className="font-['Sacramento'] text-3xl sm:text-4xl text-slate-500 mb-2">Roaming Tales</p>
                     <h2 className="text-3xl sm:text-[40px] font-bold text-slate-900 m-0">
@@ -95,7 +95,7 @@ export default function BlogSection({ onBlogClick }) {
                     </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 transition-all duration-500">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 min-[2560px]:grid-cols-6 gap-6 transition-all duration-500">
                     {visibleBlogs.filter(Boolean).map((item, index) => (
                         <article
                             key={`${item.id}-${index}-${startIndex}`}
