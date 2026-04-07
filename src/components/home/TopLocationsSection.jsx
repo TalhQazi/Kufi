@@ -41,7 +41,7 @@ export default function TopLocationsSection({ onCountryClick }) {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 min-[2560px]:grid-cols-6 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 min-[2560px]:grid-cols-4 gap-4 min-[2560px]:gap-6 transition-all duration-500 place-items-center">
                     {loading ? (
                         <div className="col-span-full py-10 flex justify-center">
                             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#a67c52]"></div>
@@ -56,7 +56,7 @@ export default function TopLocationsSection({ onCountryClick }) {
                                    // location={item?.country?.name || item?.country || ''}
                                     rating="4.4"
                                     className="rounded-[20px] shadow-card-hover"
-                                    imageClassName="h-64 sm:h-[280px]"
+                                    imageClassName="h-64 sm:h-[280px] min-[2560px]:h-[400px]"
                                     onClick={() => {
                                         if (onCountryClick) {
                                             onCountryClick(item)

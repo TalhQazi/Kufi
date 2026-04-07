@@ -123,7 +123,7 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                     </button>
                 </div>
 
-                <nav className="hidden md:flex items-center gap-6 lg:gap-10 text-sm font-medium">
+                <nav className="hidden md:flex items-center gap-6 lg:gap-10 min-[2560px]:gap-16 text-sm font-medium min-[2560px]:absolute min-[2560px]:left-1/2 min-[2560px]:-translate-x-1/2">
                     {navItems.map((item) => (
                         <a
                             key={item.id}

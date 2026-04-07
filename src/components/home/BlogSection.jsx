@@ -95,11 +95,11 @@ export default function BlogSection({ onBlogClick }) {
                     </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 min-[2560px]:grid-cols-6 gap-6 transition-all duration-500">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 min-[2560px]:grid-cols-4 gap-4 min-[2560px]:gap-6 transition-all duration-500 place-items-center">
                     {visibleBlogs.filter(Boolean).map((item, index) => (
                         <article
                             key={`${item.id}-${index}-${startIndex}`}
-                            className="relative rounded-2xl overflow-hidden h-80 sm:h-[420px] group cursor-pointer shadow-lg animate-fadeIn"
+                            className="relative rounded-2xl overflow-hidden h-80 sm:h-[420px] min-[2560px]:h-[520px] min-[2560px]:w-[520px] group cursor-pointer shadow-lg animate-fadeIn"
                             onClick={() => {
                                 const id = item?._id || item?.id
                                 if (id && onBlogClick) onBlogClick(id)

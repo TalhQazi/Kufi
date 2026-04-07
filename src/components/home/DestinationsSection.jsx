@@ -39,7 +39,7 @@ export default function DestinationsSection({ onCountryClick }) {
                     <h2 className="text-xl sm:text-3xl font-bold text-slate-900">Explore Destinations</h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 min-[2560px]:grid-cols-6 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 min-[2560px]:grid-cols-4 gap-4 min-[2560px]:gap-6 transition-all duration-500 place-items-center">
                     {loading ? (
                         <div className="col-span-full py-10 flex justify-center">
                             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#a67c52]"></div>
@@ -53,6 +53,7 @@ export default function DestinationsSection({ onCountryClick }) {
                                     title={item.name || item.title}
                                     location={item.description?.substring(0, 20) || item.location}
                                     rating="4.4"
+                                    imageClassName="h-64 min-[2560px]:h-[400px]"
                                     onClick={() => {
                                         if (onCountryClick) {
                                             onCountryClick(item.name)
