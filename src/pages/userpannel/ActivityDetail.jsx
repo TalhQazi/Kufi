@@ -234,8 +234,13 @@ export default function ActivityDetail({
         activity?.country ||
         ""
     const googleMapsApiKey = "AIzaSyAWXLVRCfHG9losAeOQjq5TiMcTDbtDeGQ"
-    const mapQuery = encodeURIComponent(activityLocation || activityTitle || '')
-    const mapEmbedUrl = `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${mapQuery}`
+
+    // Use coordinates if available, otherwise fall back to location string
+    const hasCoordinates = activity?.coordinates?.lat != null && activity?.coordinates?.lng != null
+    const mapQuery = hasCoordinates
+        ? `${activity.coordinates.lat},${activity.coordinates.lng}`
+        : (activityLocation || activityTitle || '')
+    const mapEmbedUrl = `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(mapQuery)}`
     const activityRating = typeof activity?.rating === 'number' ? activity.rating : null
     const activityReviewsCount =
         typeof activity?.reviewsCount === 'number'
