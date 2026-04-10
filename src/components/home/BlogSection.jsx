@@ -99,7 +99,7 @@ export default function BlogSection({ onBlogClick }) {
                     {visibleBlogs.filter(Boolean).map((item, index) => (
                         <article
                             key={`${item.id}-${index}-${startIndex}`}
-                            className="relative rounded-2xl overflow-hidden h-80 sm:h-[420px] min-[2560px]:h-[520px] min-[2560px]:w-[520px] group cursor-pointer shadow-lg animate-fadeIn"
+                            className="relative rounded-2xl overflow-hidden h-80 sm:h-[420px] w-full min-[2560px]:h-[520px] min-[2560px]:w-full group cursor-pointer shadow-lg animate-fadeIn"
                             onClick={() => {
                                 const id = item?._id || item?.id
                                 if (id && onBlogClick) onBlogClick(id)

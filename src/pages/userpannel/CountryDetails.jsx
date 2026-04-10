@@ -333,7 +333,7 @@ export default function CountryDetails({
     }
 
     const selectionPanel = (
-        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
+        <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4 border border-slate-200 lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto">
             <h4 className="m-0 mb-2 text-lg font-bold text-slate-900">Your Selection</h4>
             <p className="m-0 mb-6 text-sm text-slate-600">
                 <span className="font-bold text-primary-brown">{Array.isArray(selectedActivities) ? selectedActivities.length : 0}</span>
@@ -677,46 +677,50 @@ export default function CountryDetails({
                             </section>
                         )}
 
-                        {/* Cities Section */}
-                        {isVisible('country-cities') && (
-                            <section id="country-cities" className="country-experiences">
-                                <h2 className="country-section-title">Cities in {countryName}</h2>
-                                <div className="country-experiences-grid">
-                                    {citiesLoading ? (
-                                        <div className="col-span-full py-20 flex justify-center">
-                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
-                                        </div>
-                                    ) : cities.length > 0 ? (
-                                        cities.map((city) => (
-                                            <div
-                                                key={city._id}
-                                                className="country-experience-card"
-                                            >
-                                                <div className="country-card-image-wrapper">
-                                                    <img
-                                                        src={city.image || "/assets/activity1.jpeg"}
-                                                        alt={city.name}
-                                                        className="country-experience-image"
-                                                    />
-                                                </div>
-                                                <div className="country-experience-content">
-                                                    <h3 className="country-experience-title">{city.name}</h3>
-                                                    <p className="country-experience-subtitle">{city.description || ""}</p>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="col-span-full py-20 text-center text-slate-500">
-                                            No cities found in {countryName} yet.
-                                        </div>
-                                    )}
-                                </div>
-                            </section>
-                        )}
+                        {/* Main Content Grid with Sidebar */}
+                        <div className="mx-auto grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 lg:gap-8 items-start">
+                            {/* Sidebar - Sticky on right */}
+                            <aside className="lg:sticky lg:top-24 h-fit lg:w-[300px] order-first lg:order-last">
+                                {selectionPanel}
+                            </aside>
 
-                        {/* Top Categories */}
-                        <div className="mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8 items-start">
                             <div className="space-y-10">
+                                {/* Cities Section */}
+                                {isVisible('country-cities') && (
+                                    <section id="country-cities" className="country-experiences">
+                                        <h2 className="country-section-title">Cities in {countryName}</h2>
+                                        <div className="country-cities-grid">
+                                            {citiesLoading ? (
+                                                <div className="col-span-full py-20 flex justify-center">
+                                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
+                                                </div>
+                                            ) : cities.length > 0 ? (
+                                                cities.map((city) => (
+                                                    <div
+                                                        key={city._id}
+                                                        className="country-city-card"
+                                                    >
+                                                        <div className="country-city-image-wrapper">
+                                                            <img
+                                                                src={city.image || "/assets/activity1.jpeg"}
+                                                                alt={city.name}
+                                                                className="country-city-image"
+                                                            />
+                                                        </div>
+                                                        <div className="country-city-content">
+                                                            <h3 className="country-city-title">{city.name}</h3>
+                                                            <p className="country-city-subtitle">{city.description || ""}</p>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="col-span-full py-20 text-center text-slate-500">
+                                                    No cities found in {countryName} yet.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </section>
+                                )}
                                 {isVisible('country-categories') && (
                                     <section className="country-categories">
                                         <h2 className="country-section-title">Top Categories in {countryName}</h2>
@@ -773,7 +777,7 @@ export default function CountryDetails({
                                 {isVisible('country-experiences') && (
                                     <section id="country-popular-experiences" className="country-experiences">
                                     <h2 className="country-section-title">Popular Experiences</h2>
-                                    <div className="country-experiences-grid country-experiences-grid--three">
+                                    <div className="country-experiences-grid">
                                         {isLoading ? (
                                             <div className="col-span-full py-20 flex justify-center">
                                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
@@ -906,10 +910,6 @@ export default function CountryDetails({
                                     </div>
                                 )}
                             </div>
-
-                            <aside className="lg:sticky lg:top-24 h-fit order-first lg:order-last lg:w-[320px]">
-                                {selectionPanel}
-                            </aside>
                         </div>
                     </main>
 
