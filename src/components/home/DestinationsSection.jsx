@@ -13,8 +13,9 @@ export default function DestinationsSection({ onCountryClick }) {
             try {
                 const response = await api.get('/countries')
                 const data = response.data || []
-                setAllCountries(data)
-                setDestinations(data.slice(0, 4))
+                const activeOnly = (Array.isArray(data) ? data : []).filter((c) => c?.status !== 'draft')
+                setAllCountries(activeOnly)
+                setDestinations(activeOnly.slice(0, 4))
             } catch (error) {
                 console.error("Error fetching countries:", error)
             } finally {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Globe, Plus, Trash2, Image as ImageIcon, Search, X, Pencil } from "lucide-react";
+import { Globe, Plus, Trash2, Image as ImageIcon, Search, X, Pencil, Upload, Tag } from "lucide-react";
 import api from "../../api";
 
 const CountryManagement = () => {
@@ -11,8 +11,11 @@ const CountryManagement = () => {
     const [newCountry, setNewCountry] = useState({
         name: "",
         description: "",
-        image: ""
+        image: "",
+        imageFile: null,
+        status: "active"
     });
+    const [imagePreview, setImagePreview] = useState(null);
 
     useEffect(() => {
         fetchCountries();
@@ -30,21 +33,55 @@ const CountryManagement = () => {
         }
     };
 
-    const handleAddCountry = async (e) => {
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file');
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image size should be less than 5MB');
+            return;
+        }
+
+        setNewCountry({ ...newCountry, imageFile: file });
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleAddCountry = async (e, targetStatus = 'active') => {
         e.preventDefault();
         try {
+            const payload = {
+                name: newCountry.name,
+                description: newCountry.description,
+                image: imagePreview || newCountry.image || null,
+                status: targetStatus
+            };
+
             if (editingCountryId) {
-                await api.put(`/countries/${editingCountryId}`, newCountry);
+                await api.put(`/countries/${editingCountryId}`, payload);
             } else {
-                await api.post('/countries', newCountry);
+                await api.post('/countries', payload);
             }
             setShowAddModal(false);
             setEditingCountryId(null);
-            setNewCountry({ name: "", description: "", image: "" });
+            setNewCountry({ name: "", description: "", image: "", imageFile: null, status: "active" });
+            setImagePreview(null);
             fetchCountries();
         } catch (error) {
             console.error("Error adding country:", error);
-            alert("Failed to add country");
+            alert("Failed to save country");
         }
     };
 
@@ -54,7 +91,10 @@ const CountryManagement = () => {
             name: country?.name || "",
             description: country?.description || "",
             image: country?.image || country?.imageUrl || "",
+            imageFile: null,
+            status: country?.status || "active"
         });
+        setImagePreview(country?.image || country?.imageUrl || null);
         setShowAddModal(true);
     };
 
@@ -69,9 +109,18 @@ const CountryManagement = () => {
         }
     };
 
-    const filteredCountries = countries.filter(c =>
-        c.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredCountries = (Array.isArray(countries) ? countries : [])
+        .filter(c => c?.status === 'active' || c?.status === 'draft' || !c?.status)
+        .filter(c =>
+            String(c?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .sort((a, b) => {
+            const aIsDraft = a?.status === 'draft';
+            const bIsDraft = b?.status === 'draft';
+            if (aIsDraft && !bIsDraft) return -1;
+            if (!aIsDraft && bIsDraft) return 1;
+            return String(a?.name || '').localeCompare(String(b?.name || ''));
+        });
 
     return (
         <div className="space-y-6">
@@ -136,12 +185,28 @@ const CountryManagement = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className="text-sm font-semibold text-slate-800">{country.name}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <Tag className="w-4 h-4 text-[#704b24]" />
+                                                    <span className="text-sm font-semibold text-slate-800">{country.name}</span>
+                                                    {country.status === 'draft' && (
+                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                                            Draft
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <p className="text-xs text-gray-500 line-clamp-2 max-w-md">{country.description}</p>
                                             </td>
                                             <td className="px-6 py-4 text-right">
+                                                {country.status === 'draft' && (
+                                                    <button
+                                                        onClick={() => handleEditCountry(country)}
+                                                        className="mr-2 inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition-colors"
+                                                    >
+                                                        Resume
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => handleEditCountry(country)}
                                                     className="p-2 text-gray-400 hover:text-[#704b24] transition-colors rounded-lg hover:bg-[#f7f1e7]"
@@ -173,18 +238,19 @@ const CountryManagement = () => {
             {/* Add Modal */}
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-200">
                         <div className="flex items-center justify-between p-6 border-b border-gray-100">
                             <h2 className="text-xl font-semibold text-slate-900">{editingCountryId ? 'Edit Country' : 'Add New Country'}</h2>
                             <button onClick={() => {
                                 setShowAddModal(false)
                                 setEditingCountryId(null)
-                                setNewCountry({ name: "", description: "", image: "" })
+                                setNewCountry({ name: "", description: "", image: "", imageFile: null, status: "active" })
+                                setImagePreview(null)
                             }} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                                 <X className="w-5 h-5 text-gray-500" />
                             </button>
                         </div>
-                        <form onSubmit={handleAddCountry} className="p-6 space-y-4">
+                        <form onSubmit={(e) => handleAddCountry(e, 'active')} className="p-6 space-y-4 overflow-y-auto">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Country Name</label>
                                 <input
@@ -208,38 +274,74 @@ const CountryManagement = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Picture URL</label>
-                                <div className="relative">
-                                    <div className="absolute left-4 top-3 text-gray-400">
-                                        <ImageIcon className="w-4 h-4" />
+                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Country Image</label>
+                                {/* Image Preview */}
+                                {imagePreview && (
+                                    <div className="mb-3 relative">
+                                        <img
+                                            src={imagePreview}
+                                            alt="Preview"
+                                            className="w-full h-40 object-cover rounded-xl border border-gray-200"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setImagePreview(null);
+                                                setNewCountry({ ...newCountry, image: '', imageFile: null });
+                                            }}
+                                            className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
                                     </div>
+                                )}
+                                {/* File Upload */}
+                                <div className="relative">
                                     <input
-                                        required
-                                        type="url"
-                                        placeholder="https://example.com/image.jpg"
-                                        className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#704b24] focus:ring-1 focus:ring-[#704b24] outline-none transition-all text-sm"
-                                        value={newCountry.image}
-                                        onChange={e => setNewCountry({ ...newCountry, image: e.target.value })}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        className="hidden"
+                                        id="country-image-upload"
                                     />
+                                    <label
+                                        htmlFor="country-image-upload"
+                                        className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl border-2 border-dashed border-gray-300 hover:border-[#704b24] hover:bg-[#f7f1e7]/50 cursor-pointer transition-all"
+                                    >
+                                        <Upload className="w-5 h-5 text-gray-400" />
+                                        <span className="text-sm text-gray-600">
+                                            {imagePreview ? 'Change Image' : 'Click to upload image'}
+                                        </span>
+                                    </label>
                                 </div>
+                                <p className="mt-1.5 text-xs text-gray-400">Supported: JPG, PNG, GIF (max 5MB)</p>
                             </div>
-                            <div className="pt-4 flex gap-3">
+                            <div className="pt-4 flex flex-col sm:flex-row gap-3">
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setShowAddModal(false)
                                         setEditingCountryId(null)
-                                        setNewCountry({ name: "", description: "", image: "" })
+                                        setNewCountry({ name: "", description: "", image: "", imageFile: null, status: "active" })
+                                        setImagePreview(null)
                                     }}
                                     className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-slate-600 font-medium hover:bg-gray-50 transition-all"
                                 >
                                     Cancel
                                 </button>
                                 <button
-                                    type="submit"
+                                    type="button"
+                                    onClick={(e) => handleAddCountry(e, 'draft')}
+                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium transition-all border border-gray-300"
+                                >
+                                    Save as Draft
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => handleAddCountry(e, 'active')}
                                     className="flex-1 bg-[#704b24] hover:bg-[#5a3c1d] text-white px-4 py-2.5 rounded-xl font-medium transition-all shadow-sm active:scale-95"
                                 >
-                                    {editingCountryId ? 'Update Country' : 'Save Country'}
+                                    {editingCountryId ? 'Update Country' : 'Publish'}
                                 </button>
                             </div>
                         </form>

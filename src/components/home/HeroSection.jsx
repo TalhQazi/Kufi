@@ -19,7 +19,9 @@ export default function HeroSection({ onCountryClick, onExploreClick }) {
         const fetchCountries = async () => {
             try {
                 const response = await api.get('/countries')
-                setCountries(response.data || [])
+                const data = response.data || []
+                const activeOnly = (Array.isArray(data) ? data : []).filter((c) => c?.status !== 'draft')
+                setCountries(activeOnly)
             } catch (error) {
                 console.error("Error fetching countries:", error)
                 // Fallback to static if needed or show error

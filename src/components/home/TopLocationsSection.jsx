@@ -11,7 +11,9 @@ export default function TopLocationsSection({ onCountryClick }) {
         const fetchCities = async () => {
             try {
                 const response = await api.get('/cities')
-                setCities(response.data || [])
+                const data = response.data || []
+                const activeOnly = (Array.isArray(data) ? data : []).filter((c) => c?.status !== 'draft')
+                setCities(activeOnly)
             } catch (error) {
                 console.error("Error fetching cities:", error)
             } finally {

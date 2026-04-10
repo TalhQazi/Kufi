@@ -137,7 +137,8 @@ export default function CategoryPage({
             try {
                 setIsLoading(true)
                 const response = await api.get('/activities')
-                const all = Array.isArray(response.data) ? response.data : []
+                const allRaw = Array.isArray(response.data) ? response.data : []
+                const all = allRaw.filter((a) => a?.status !== 'draft')
 
                 const target = normalizeCategory(categoryName)
                 const filtered = all.filter((a) => {

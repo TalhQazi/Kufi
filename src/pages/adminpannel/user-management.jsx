@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Search, CheckCircle } from "lucide-react";
+import { Search, CheckCircle, Clock, MapPin, Users, X } from "lucide-react";
 import api from "../../api";
 
 const tabs = ["All Users", "All Suppliers", "Active", "Suspended", "Disputes", "Reviews"];
@@ -41,6 +41,10 @@ const UserManagement = () => {
   const [scoreModalOpen, setScoreModalOpen] = useState(false);
   const [editingScoreUser, setEditingScoreUser] = useState(null);
   const [newScore, setNewScore] = useState("");
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [supplierHistory, setSupplierHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [viewingSupplier, setViewingSupplier] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -244,6 +248,27 @@ const UserManagement = () => {
     }
   };
 
+  const openHistoryModal = async (user) => {
+    setViewingSupplier(user);
+    setHistoryModalOpen(true);
+    setHistoryLoading(true);
+    try {
+      const response = await api.get(`/admin/suppliers/${user.id}/history`);
+      setSupplierHistory(response.data || []);
+    } catch (error) {
+      console.error("Error fetching supplier history:", error);
+      setSupplierHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const closeHistoryModal = () => {
+    setHistoryModalOpen(false);
+    setSupplierHistory([]);
+    setViewingSupplier(null);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -342,6 +367,109 @@ const UserManagement = () => {
           </div>
         )}
 
+        {/* Supplier History Modal */}
+        {historyModalOpen && viewingSupplier && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Supplier History
+                  </h3>
+                  <p className="text-sm text-gray-500">{viewingSupplier.name}</p>
+                </div>
+                <button
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                  onClick={closeHistoryModal}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6">
+                {historyLoading ? (
+                  <div className="flex justify-center py-10">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#a26e35]"></div>
+                  </div>
+                ) : supplierHistory.length === 0 ? (
+                  <div className="text-center py-10 text-gray-500">
+                    <Clock className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <p>No booking history found for this supplier.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {supplierHistory.map((booking) => (
+                      <div key={booking._id} className="border border-gray-100 rounded-xl p-4 hover:bg-gray-50 transition">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <p className="font-semibold text-slate-900">
+                              {booking.travelerName}
+                            </p>
+                            <p className="text-xs text-gray-500">{booking.travelerEmail}</p>
+                          </div>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            booking.status === 'confirmed' ? 'bg-emerald-100 text-emerald-600' :
+                            booking.status === 'cancelled' ? 'bg-rose-100 text-rose-600' :
+                            'bg-amber-100 text-amber-600'
+                          }`}>
+                            {booking.status}
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-2 text-sm">
+                          {booking.items && booking.items.length > 0 && (
+                            <div className="flex items-start gap-2">
+                              <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
+                              <div>
+                                <p className="text-gray-500 text-xs">Activities:</p>
+                                {booking.items.map((item, idx) => (
+                                  <p key={idx} className="text-slate-700">- {item.title} ({item.travelers} travelers)</p>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {booking.tripDetails?.country && (
+                            <div className="flex items-center gap-2">
+                              <Users className="w-4 h-4 text-gray-400" />
+                              <span className="text-slate-700">{booking.tripDetails.country}</span>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-gray-400" />
+                            <span className="text-gray-500 text-xs">
+                              {new Date(booking.createdAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-4 border-t border-gray-100 bg-gray-50">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">Total Assignments: {supplierHistory.length}</span>
+                  <button
+                    className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:bg-gray-200"
+                    onClick={closeHistoryModal}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-hidden rounded-2xl border border-gray-100">
           <table className="w-full text-sm">
@@ -395,12 +523,21 @@ const UserManagement = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3 text-xs font-semibold">
                           {user.type === 'Supplier' && (
-                            <button
-                              className="text-purple-600 hover:underline flex items-center gap-1"
-                              onClick={() => openScoreModal(user)}
-                            >
-                              Assign Score
-                            </button>
+                            <>
+                              <button
+                                className="text-purple-600 hover:underline flex items-center gap-1"
+                                onClick={() => openScoreModal(user)}
+                              >
+                                Assign Score
+                              </button>
+                              <button
+                                className="text-blue-600 hover:underline flex items-center gap-1"
+                                onClick={() => openHistoryModal(user)}
+                              >
+                                <Clock className="w-3 h-3" />
+                                View History
+                              </button>
+                            </>
                           )}
                           {user.role === 'supplier' && user.status === 'pending' && (
                             <button
@@ -580,12 +717,20 @@ const UserManagement = () => {
 
                 <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
                   {user.type === 'Supplier' && (
-                    <button
-                      className="py-2 px-3 rounded-xl bg-purple-50 text-purple-600 text-xs font-bold hover:bg-purple-100 transition"
-                      onClick={() => openScoreModal(user)}
-                    >
-                      Assign Score
-                    </button>
+                    <>
+                      <button
+                        className="py-2 px-3 rounded-xl bg-purple-50 text-purple-600 text-xs font-bold hover:bg-purple-100 transition"
+                        onClick={() => openScoreModal(user)}
+                      >
+                        Assign Score
+                      </button>
+                      <button
+                        className="py-2 px-3 rounded-xl bg-blue-50 text-blue-600 text-xs font-bold hover:bg-blue-100 transition"
+                        onClick={() => openHistoryModal(user)}
+                      >
+                        View History
+                      </button>
+                    </>
                   )}
                   {user.role === 'supplier' && user.status === 'pending' && (
                     <button

@@ -430,7 +430,14 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                 Dates
               </p>
               <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-                {itineraryRequest.dateRange || itineraryRequest.date || "—"}
+                {(() => {
+                  const arrival = formatTripDate(itineraryRequest?.tripDetails?.arrivalDate);
+                  const departure = formatTripDate(itineraryRequest?.tripDetails?.departureDate);
+                  if (arrival !== "—" && departure !== "—") {
+                    return `${arrival} - ${departure}`;
+                  }
+                  return itineraryRequest.dateRange || itineraryRequest.date || "—";
+                })()}
               </p>
             </div>
 
@@ -564,7 +571,14 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                     <div className="inline-flex items-center gap-2">
                       <CalendarDays className="h-3.5 w-3.5 text-emerald-500" />
                       <span className={`truncate ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
-                        {itineraryRequest.dateRange || itineraryRequest.date || "—"}
+                        {(() => {
+                          const arrival = formatTripDate(itineraryRequest?.tripDetails?.arrivalDate);
+                          const departure = formatTripDate(itineraryRequest?.tripDetails?.departureDate);
+                          if (arrival !== "—" && departure !== "—") {
+                            return `${arrival} - ${departure}`;
+                          }
+                          return itineraryRequest.dateRange || itineraryRequest.date || "—";
+                        })()}
                       </span>
                     </div>
                     <div className="inline-flex items-center gap-2">

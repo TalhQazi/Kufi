@@ -5,11 +5,13 @@ import AddActivity from "./add-activity";
 
 const StatusBadge = ({ status }) => {
   const styles =
-    status === "approved"
-      ? "bg-emerald-100 text-emerald-700"
-      : status === "pending"
-        ? "bg-amber-100 text-amber-700"
-        : "bg-rose-100 text-rose-700";
+    status === "draft"
+      ? "bg-gray-100 text-gray-600 border border-gray-200"
+      : status === "approved"
+        ? "bg-emerald-100 text-emerald-700"
+        : status === "pending"
+          ? "bg-amber-100 text-amber-700"
+          : "bg-rose-100 text-rose-700";
 
   return (
     <span className={`px-3 py-1 text-[11px] font-semibold rounded-full ${styles}`}>
@@ -108,6 +110,7 @@ const Activity = ({ onAddNew }) => {
 
   const counts = {
     all: listingData.length,
+    draft: listingData.filter((l) => l.status === "draft").length,
     pending: listingData.filter((l) => l.status === "pending").length,
     approved: listingData.filter((l) => l.status === "approved").length,
     rejected: listingData.filter((l) => l.status === "rejected").length,
@@ -115,6 +118,7 @@ const Activity = ({ onAddNew }) => {
 
   const tabs = [
     { label: "All Listings", value: "all", count: counts.all },
+    { label: `Draft (${counts.draft})`, value: "draft", count: counts.draft },
     { label: `Pending (${counts.pending})`, value: "pending", count: counts.pending },
     { label: "Approved", value: "approved", count: counts.approved },
     { label: "Rejected", value: "rejected", count: counts.rejected },
@@ -232,6 +236,15 @@ const Activity = ({ onAddNew }) => {
                   >
                     <Eye className="w-3.5 h-3.5" /> View
                   </button>
+                  {item.status === "draft" && (
+                    <button
+                      className="flex-1 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-bold flex items-center justify-center gap-1 hover:bg-gray-200 transition-colors border border-gray-200"
+                      onClick={() => handleEdit(item.id)}
+                      disabled={editLoading}
+                    >
+                      Resume
+                    </button>
+                  )}
                   <button
                     className="flex-1 py-1.5 rounded-lg bg-[#f7f1e7] text-[#704b24] text-xs font-bold flex items-center justify-center gap-1 hover:bg-[#efe2cf] transition-colors"
                     onClick={() => handleEdit(item.id)}
@@ -324,6 +337,15 @@ const Activity = ({ onAddNew }) => {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
+                        {item.status === "draft" && (
+                          <button
+                            className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition-colors"
+                            onClick={() => handleEdit(item.id)}
+                            disabled={editLoading}
+                          >
+                            Resume
+                          </button>
+                        )}
                         <button
                           className="text-[#704b24] hover:text-[#8b5c2a] transition-colors p-1.5 rounded-lg hover:bg-[#f7f1e7]"
                           onClick={() => handleEdit(item.id)}

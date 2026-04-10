@@ -114,15 +114,16 @@ export default function Explore({
         setIsLoading(true)
         const response = await api.get('/activities')
         const data = Array.isArray(response.data) ? response.data : []
-        setAllActivities(data)
+        const activeOnly = data.filter((a) => a?.status !== 'draft')
+        setAllActivities(activeOnly)
 
         const keys = getBackendCategoryKeysForFilter(selectedCategory)
         if (keys && keys.length > 0) {
-          setFilteredActivities(data.filter(a => keys.includes(normalizeCategory(a?.category))))
+          setFilteredActivities(activeOnly.filter(a => keys.includes(normalizeCategory(a?.category))))
           return
         }
 
-        setFilteredActivities(data)
+        setFilteredActivities(activeOnly)
       } catch (error) {
         console.error("Error fetching activities:", error)
       } finally {

@@ -74,6 +74,11 @@ export default function ActivityDetail({
                 setIsLoading(true)
                 const activityRes = await api.get(`/activities/${activityId}`)
                 const loadedActivity = activityRes?.data
+                if (loadedActivity?.status === 'draft') {
+                    setActivity(null)
+                    setSimilarActivities([])
+                    return
+                }
                 setActivity(loadedActivity)
 
                 const normalizeCountryKey = (value) => {
@@ -113,6 +118,7 @@ export default function ActivityDetail({
                 const normalizeActivities = (items) => {
                     const list = Array.isArray(items) ? items : []
                     return list
+                        .filter((a) => a?.status !== 'draft')
                         .filter(a => (a?._id || a?.id) && (a?._id || a?.id) !== activityId)
                         .filter((a) => {
                             if (!activeCountryKey) return true

@@ -1,6 +1,6 @@
 import api from "../../api";
 import React, { useState, useEffect } from "react";
-import { Search, Clock3, User, MapPin, Info, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { Search, Clock3, User, MapPin, Info, CheckCircle2, AlertTriangle, Loader2, ExternalLink, ArrowRight, X } from "lucide-react";
 
 const tabs = [
   { label: "All", value: "all" },
@@ -16,6 +16,11 @@ const NotificationsBooking = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [transferBusyId, setTransferBusyId] = useState(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsRequest, setDetailsRequest] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState('');
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -46,6 +51,24 @@ const NotificationsBooking = () => {
     if (s === 'confirmed' || s === 'accepted' || s === 'approve' || s === 'approved') return 'accepted';
     if (s === 'cancelled' || s === 'canceled' || s === 'rejected' || s === 'reject') return 'rejected';
     return 'pending';
+  };
+
+  const formatTripDate = (value) => {
+    if (value === null || value === undefined) return '—';
+    const v = String(value || '').trim();
+    if (!v) return '—';
+    const isoMatch = v.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (isoMatch?.[1]) return isoMatch[1];
+    const t = Date.parse(v);
+    if (Number.isFinite(t)) return new Date(t).toISOString().slice(0, 10);
+    return v;
+  };
+
+  const formatDates = (req) => {
+    const arrival = formatTripDate(req?.tripDetails?.arrivalDate || req?.arrivalDate);
+    const departure = formatTripDate(req?.tripDetails?.departureDate || req?.departureDate);
+    if (arrival !== '—' && departure !== '—') return `${arrival} - ${departure}`;
+    return req?.dateRange || req?.date || '—';
   };
 
   const detectTransferred = (req) => {
@@ -149,6 +172,88 @@ const NotificationsBooking = () => {
     }
   };
 
+  const tryTransferBooking = async (bookingId) => {
+    // Use the correct backend endpoint
+    const payload = { bookingId, id: bookingId };
+    return await api.post(`/bookings/${bookingId}/transfer`, payload);
+  };
+
+  const onTransferToAnotherSupplier = async (req) => {
+    const bookingId = req?.id;
+    if (!bookingId) return;
+
+    try {
+      setTransferBusyId(bookingId);
+      await tryTransferBooking(bookingId);
+
+      setRequests((prev) =>
+        prev.map((r) => {
+          if (String(r.id) !== String(bookingId)) return r;
+          const status = 'transferred';
+          return {
+            ...r,
+            status,
+            statusLabel: statusLabelFromStatus(status),
+            statusColor: statusColorFromStatus(status),
+            autoTransfer: 'Request transferred to another supplier.',
+            raw: {
+              ...(r.raw || {}),
+              transferStatus: 'transferred',
+              transferred: true,
+            },
+          };
+        })
+      );
+    } catch (error) {
+      const status = error?.response?.status;
+      const data = error?.response?.data;
+      const rawMessage =
+        (typeof data === 'string' && data) ||
+        data?.message ||
+        data?.error ||
+        error?.message ||
+        'Transfer failed.';
+      const tried = error?._lastTriedPath ? ` (${error._lastTriedPath})` : '';
+      setErrorMsg(`${String(rawMessage)}${tried}${status ? ` (Status: ${status})` : ''}`);
+      console.error('Error transferring booking:', error);
+    } finally {
+      setTransferBusyId(null);
+    }
+  };
+
+  const tryGetBookingById = async (bookingId) => {
+    // Use the correct backend endpoint
+    return await api.get(`/bookings/${bookingId}`);
+  };
+
+  const onOpenDetails = async (req) => {
+    setDetailsError('');
+    setDetailsOpen(true);
+    setDetailsRequest(req?.raw || req || null);
+    const bookingId = req?.id;
+    if (!bookingId) return;
+
+    try {
+      setDetailsLoading(true);
+      const res = await tryGetBookingById(bookingId);
+      const data = res?.data?.booking ?? res?.data?.data ?? res?.data;
+      if (data) setDetailsRequest(data);
+    } catch (err) {
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      const rawMessage =
+        (typeof data === 'string' && data) ||
+        data?.message ||
+        data?.error ||
+        err?.message ||
+        'Failed to load request details.';
+      const tried = err?._lastTriedPath ? ` (${err._lastTriedPath})` : '';
+      setDetailsError(`${String(rawMessage)}${tried}${status ? ` (Status: ${status})` : ''}`);
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
   const fetchBookings = async () => {
     try {
       setLoading(true);
@@ -188,6 +293,7 @@ const NotificationsBooking = () => {
 
         return {
           id: req._id,
+          raw: req,
           traveler: travelerName,
           status: derivedStatus,
           statusLabel: statusLabelFromStatus(derivedStatus),
@@ -269,6 +375,123 @@ const NotificationsBooking = () => {
 
   return (
     <div className="space-y-6">
+      {detailsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => {
+              setDetailsOpen(false);
+              setDetailsRequest(null);
+              setDetailsError('');
+            }}
+            aria-label="Close"
+          />
+          <div className="relative w-full max-w-3xl rounded-2xl bg-white shadow-xl border border-gray-100 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-900 truncate">Request Details</p>
+                <p className="text-xs text-gray-500 truncate">
+                  {detailsRequest?.contactDetails?.email || detailsRequest?.email || detailsRequest?.user?.email || '—'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-600"
+                onClick={() => {
+                  setDetailsOpen(false);
+                  setDetailsRequest(null);
+                  setDetailsError('');
+                }}
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-5 py-4 space-y-4">
+              {detailsError && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-4 py-3 text-sm">
+                  {detailsError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">Traveler</p>
+                  <p className="mt-1 font-semibold text-slate-900">
+                    {(() => {
+                      const first = detailsRequest?.contactDetails?.firstName || '';
+                      const last = detailsRequest?.contactDetails?.lastName || '';
+                      return String(`${first} ${last}`.trim() || detailsRequest?.name || detailsRequest?.user?.name || '—');
+                    })()}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">Destination</p>
+                  <p className="mt-1 font-semibold text-slate-900">
+                    {detailsRequest?.location || detailsRequest?.country || detailsRequest?.tripDetails?.destination || detailsRequest?.tripDetails?.country || '—'}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">Dates</p>
+                  <p className="mt-1 font-semibold text-slate-900">{formatDates(detailsRequest)}</p>
+                </div>
+                <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">Travelers</p>
+                  <p className="mt-1 font-semibold text-slate-900">
+                    {detailsRequest?.travelers ||
+                     detailsRequest?.guests ||
+                     detailsRequest?.pax ||
+                     detailsRequest?.tripDetails?.travelers ||
+                     (Array.isArray(detailsRequest?.items) && detailsRequest.items[0]?.travelers) ||
+                     (Array.isArray(detailsRequest?.items) && detailsRequest.items.reduce((sum, item) => sum + (item.travelers || 0), 0)) ||
+                     '—'}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">Budget</p>
+                  <p className="mt-1 font-semibold text-slate-900">
+                    {detailsRequest?.tripDetails?.budget || detailsRequest?.budget || detailsRequest?.amount || detailsRequest?.totalAmount || '—'}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">Phone</p>
+                  <p className="mt-1 font-semibold text-slate-900">
+                    {detailsRequest?.contactDetails?.phone || detailsRequest?.phone || detailsRequest?.user?.phone || '—'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 p-3">
+                <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">Activities</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {Array.isArray(detailsRequest?.items) && detailsRequest.items.length > 0 ? (
+                    detailsRequest.items
+                      .map((it) => it?.activity?.title || it?.title)
+                      .filter(Boolean)
+                      .slice(0, 12)
+                      .map((title) => (
+                        <span key={title} className="inline-flex items-center rounded-full border border-gray-200 px-3 py-1 text-xs font-semibold text-slate-700">
+                          {title}
+                        </span>
+                      ))
+                  ) : (
+                    <span className="text-xs text-gray-500">—</span>
+                  )}
+                </div>
+              </div>
+
+              {detailsLoading && (
+                <div className="flex items-center justify-center py-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-[#a26e35]" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
@@ -353,12 +576,32 @@ const NotificationsBooking = () => {
                   </p>
                 </div>
 
-                <div className="flex flex-col gap-2 items-stretch md:items-end min-w-[180px]">
+                <div className="flex flex-col gap-2 items-stretch md:items-end min-w-[220px]">
                   <span
                     className={`inline-flex items-center gap-2 px-3 py-1 text-[11px] font-semibold rounded-full ${req.statusColor}`}
                   >
                     <span>{req.statusLabel}</span>
                   </span>
+
+                  {req.status === 'rejected' && (
+                    <button
+                      type="button"
+                      disabled={transferBusyId === req.id}
+                      onClick={() => onTransferToAnotherSupplier(req)}
+                      className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+                        transferBusyId === req.id
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-[#a26e35] text-white hover:bg-[#8b5e2d]'
+                      }`}
+                    >
+                      {transferBusyId === req.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <ArrowRight className="w-4 h-4" />
+                      )}
+                      <span>Transfer to Another Supplier</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -367,8 +610,13 @@ const NotificationsBooking = () => {
                   <Info className="w-3.5 h-3.5 text-gray-400" />
                   <span>{req.autoTransfer}</span>
                 </div>
-                <button className="text-xs font-semibold text-[#a26e35] hover:text-[#8d5d2b] flex items-center gap-1 self-start md:self-auto">
+                <button
+                  type="button"
+                  onClick={() => onOpenDetails(req)}
+                  className="text-xs font-semibold text-[#a26e35] hover:text-[#8d5d2b] flex items-center gap-1 self-start md:self-auto"
+                >
                   <span>View Request Details</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>

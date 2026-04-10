@@ -13,7 +13,7 @@ export default function TopActivitiesSection({ onActivityClick }) {
             try {
                 setIsLoading(true);
                 const response = await api.get('/activities'); // Fetching all activities and filtering/slicing for top ones
-                const allActivities = response.data || [];
+                const allActivities = (Array.isArray(response.data) ? response.data : []).filter((a) => a?.status !== 'draft');
 
                 // Simulate "top" by slicing or use a specific endpoint if available
                 setLeftCards(allActivities.slice(0, 2).map(act => ({

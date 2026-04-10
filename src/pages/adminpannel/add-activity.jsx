@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Upload } from "lucide-react";
+import { Upload, Save } from "lucide-react";
 import api from "../../api";
 
 const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
@@ -22,6 +22,49 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
     highlights: [""],
     coordinates: { lat: "", lng: "" },
   });
+
+  const saveDraft = async () => {
+    try {
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        country: formData.location,
+        location: formData.location,
+        duration: formData.duration,
+        price: formData.price ? Number(formData.price) : undefined,
+        image: formData.thumbnail || undefined,
+        status: 'draft',
+        addOns: (Array.isArray(formData.addOns) ? formData.addOns : [])
+          .map((v) => String(v || '').trim())
+          .filter(Boolean),
+        highlights: (Array.isArray(formData.highlights) ? formData.highlights : [])
+          .map((v) => String(v || '').trim())
+          .filter(Boolean),
+        coordinates: {
+          lat: formData.coordinates?.lat ? Number(formData.coordinates.lat) : null,
+          lng: formData.coordinates?.lng ? Number(formData.coordinates.lng) : null,
+        },
+      };
+
+      if (activityId) {
+        await api.put(`/activities/${activityId}`, payload);
+      } else {
+        await api.post('/activities', payload);
+      }
+
+      alert('Draft saved successfully!');
+
+      if (onSaved) {
+        onSaved();
+      } else if (onBack) {
+        onBack();
+      }
+    } catch (error) {
+      console.error('Error saving activity draft:', error);
+      alert('Failed to save draft. Please try again.');
+    }
+  };
 
   useEffect(() => {
     if (!initialData) return
@@ -444,19 +487,30 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-2">
-          <button
-            className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:bg-gray-100"
-            onClick={onBack}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-5 py-2 rounded-lg text-sm font-semibold bg-[#a26e35] text-white hover:bg-[#8c5c2c]"
-          >
-            Save Activity
-          </button>
+        <div className="flex items-center justify-between gap-3 pt-4 border-t border-gray-100">
+          <div className="flex items-center gap-3 ml-auto">
+            <button
+              onClick={onBack}
+              className="px-5 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </button>
+            {!activityId && (
+              <button
+                onClick={saveDraft}
+                className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                Save Draft
+              </button>
+            )}
+            <button
+              onClick={handleSave}
+              className="px-5 py-2 rounded-lg text-sm font-semibold bg-[#a26e35] text-white hover:bg-[#8c5c2c]"
+            >
+              {activityId ? 'Update Activity' : 'Publish'}
+            </button>
+          </div>
         </div>
       </div>
 
