@@ -26,6 +26,7 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
   const [showTemplate, setShowTemplate] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState(new Set()); // Track expanded user groups
   const [currentChildIndex, setCurrentChildIndex] = useState({}); // Track carousel index per group
+  const [bookingTerms, setBookingTerms] = useState([]); // Dynamic booking terms from admin
 
   const safeParseJson = (value) => {
     try {
@@ -221,8 +222,67 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
     }
   };
 
+  // Fetch booking terms from admin panel
+  const fetchBookingTerms = async () => {
+    try {
+      const response = await api.get("/booking-terms?isActive=true");
+      const terms = response.data || [];
+      setBookingTerms(terms);
+    } catch (error) {
+      console.error("Error fetching booking terms:", error);
+      setBookingTerms([]);
+    }
+  };
+
+  // Helper to get preference display value from bookingTermSelections
+  const getPreferenceValue = (term, request) => {
+    if (!term) return "No";
+    
+    const termId = term._id || term.id;
+    const selections = request?.bookingTermSelections || {};
+    
+    // Get selected options for this term
+    const selectedOptions = selections[termId] || [];
+    
+    if (selectedOptions.length > 0) {
+      // Join multiple selections with comma
+      return selectedOptions.join(", ");
+    }
+    
+    // Fallback to old preferences format for backward compatibility
+    const preferences = request?.preferences || {};
+    const termTitle = String(term.title || "").toLowerCase().trim();
+    
+    // Direct field mapping based on common term titles
+    if (termTitle.includes("hotel") && termTitle.includes("own")) {
+      return preferences.hotelOwn ? "Yes" : "No";
+    }
+    if (termTitle.includes("hotel") || termTitle.includes("stay")) {
+      return (preferences.includeHotel || preferences.hotelIncluded) ? "Yes" : "No";
+    }
+    if (termTitle.includes("food") || termTitle.includes("meal")) {
+      return preferences.foodAllGood ? "All Good" : "Standard";
+    }
+    if (termTitle.includes("veg") || termTitle.includes("vegetarian")) {
+      return preferences.vegetarian ? "Yes" : "No";
+    }
+    if (termTitle.includes("kufi") || termTitle.includes("guide")) {
+      return (preferences.kufiTravel || preferences.guide || preferences.tour) ? "Yes" : "No";
+    }
+    
+    return "No";
+  };
+
+  // Helper to check if preference is active/positive
+  const isPreferenceActive = (term, request) => {
+    const value = getPreferenceValue(term, request);
+    const inactiveValues = ["no", "standard", "", null, undefined];
+    return !inactiveValues.includes(String(value).toLowerCase().trim());
+  };
+
   useEffect(() => {
     fetchRequests();
+    fetchBookingTerms();
   }, []);
 
   useEffect(() => {
@@ -1131,22 +1191,46 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
               <div className="pt-2 border-t border-dashed transition-colors" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
                 <p className={`text-[10px] uppercase tracking-wider font-bold mb-3 ${darkMode ? "text-amber-500/80" : "text-[#a26e35]"}`}>Preferences</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className={`flex flex-col gap-1 p-2 rounded-xl border ${selected.preferences?.includeHotel || selected.preferences?.hotelIncluded ? "bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-900/30 dark:text-emerald-400" : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-500"}`}>
-                    <span className="font-bold">Hotel</span>
-                    <span className="text-[9px] uppercase">{(selected.preferences?.includeHotel || selected.preferences?.hotelIncluded) ? "Requested" : "No"}</span>
-                  </div>
-                  <div className={`flex flex-col gap-1 p-2 rounded-xl border ${selected.preferences?.vegetarian ? "bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-900/30 dark:text-emerald-400" : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-500"}`}>
-                    <span className="font-bold">Veg Only</span>
-                    <span className="text-[9px] uppercase">{selected.preferences?.vegetarian ? "Yes" : "No"}</span>
-                  </div>
-                  <div className={`flex flex-col gap-1 p-2 rounded-xl border ${selected.preferences?.foodAllGood ? "bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-900/30 dark:text-emerald-400" : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-500"}`}>
-                    <span className="font-bold">Food</span>
-                    <span className="text-[9px] uppercase">{selected.preferences?.foodAllGood ? "All Good" : "Standard"}</span>
-                  </div>
-                  <div className={`flex flex-col gap-1 p-2 rounded-xl border ${selected.preferences?.hotelOwn ? "bg-amber-50 border-amber-100 text-amber-700 dark:bg-amber-900/20 dark:border-amber-900/30 dark:text-amber-400" : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-500"}`}>
-                    <span className="font-bold">Own Hotel</span>
-                    <span className="text-[9px] uppercase">{selected.preferences?.hotelOwn ? "Yes" : "No"}</span>
-                  </div>
+                  {bookingTerms.length > 0 ? (
+                    // Dynamic preferences from admin panel booking terms
+                    bookingTerms.map((term) => {
+                      const isActive = isPreferenceActive(term, selected);
+                      const value = getPreferenceValue(term, selected);
+                      return (
+                        <div
+                          key={term._id || term.title}
+                          className={`flex flex-col gap-1 p-2 rounded-xl border ${
+                            isActive
+                              ? "bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-900/30 dark:text-emerald-400"
+                              : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-500"
+                          }`}
+                        >
+                          <span className="font-bold">{term.title}</span>
+                          <span className="text-[9px] uppercase">{value}</span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    // Fallback to static preferences if no booking terms available
+                    <>
+                      <div className={`flex flex-col gap-1 p-2 rounded-xl border ${selected.preferences?.includeHotel || selected.preferences?.hotelIncluded ? "bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-900/30 dark:text-emerald-400" : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-500"}`}>
+                        <span className="font-bold">Hotel</span>
+                        <span className="text-[9px] uppercase">{(selected.preferences?.includeHotel || selected.preferences?.hotelIncluded) ? "Requested" : "No"}</span>
+                      </div>
+                      <div className={`flex flex-col gap-1 p-2 rounded-xl border ${selected.preferences?.vegetarian ? "bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-900/30 dark:text-emerald-400" : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-500"}`}>
+                        <span className="font-bold">Veg Only</span>
+                        <span className="text-[9px] uppercase">{selected.preferences?.vegetarian ? "Yes" : "No"}</span>
+                      </div>
+                      <div className={`flex flex-col gap-1 p-2 rounded-xl border ${selected.preferences?.foodAllGood ? "bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-900/30 dark:text-emerald-400" : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-500"}`}>
+                        <span className="font-bold">Food</span>
+                        <span className="text-[9px] uppercase">{selected.preferences?.foodAllGood ? "All Good" : "Standard"}</span>
+                      </div>
+                      <div className={`flex flex-col gap-1 p-2 rounded-xl border ${selected.preferences?.hotelOwn ? "bg-amber-50 border-amber-100 text-amber-700 dark:bg-amber-900/20 dark:border-amber-900/30 dark:text-amber-400" : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-slate-800/50 dark:border-slate-800 dark:text-slate-500"}`}>
+                        <span className="font-bold">Own Hotel</span>
+                        <span className="text-[9px] uppercase">{selected.preferences?.hotelOwn ? "Yes" : "No"}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

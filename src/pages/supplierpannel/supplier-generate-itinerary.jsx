@@ -53,8 +53,27 @@ const formatRange = ({ min, max, isRange, hasValue }) => {
   return `${formatMoney(min)} - ${formatMoney(max)}`;
 };
 
-const createEmptyDay = (day) => ({
+// Helper to format date as YYYY-MM-DD
+const formatDateForInput = (date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return d.toISOString().split("T")[0];
+};
+
+// Helper to calculate date for a specific day based on start date
+const calculateDayDate = (startDateStr, dayIndex) => {
+  if (!startDateStr) return "";
+  const start = new Date(startDateStr);
+  if (isNaN(start.getTime())) return "";
+  const dayDate = new Date(start);
+  dayDate.setDate(start.getDate() + dayIndex);
+  return formatDateForInput(dayDate);
+};
+
+const createEmptyDay = (day, startDate = "") => ({
   day,
+  date: calculateDayDate(startDate, day - 1),
   isAdjustment: false,
   activities: [createEmptyActivity()],
 });
@@ -70,9 +89,9 @@ const createEmptyActivity = () => ({
   imageDataUrl: "",
 });
 
-const createDays = (count) => {
+const createDays = (count, startDate = "") => {
   const safeCount = Math.max(1, Number(count) || 1);
-  return Array.from({ length: safeCount }, (_, idx) => createEmptyDay(idx + 1));
+  return Array.from({ length: safeCount }, (_, idx) => createEmptyDay(idx + 1, startDate));
 };
 
 const DayCard = ({
@@ -100,7 +119,17 @@ const DayCard = ({
         onClick={() => onToggle?.(day)}
         className={`flex w-full items-center justify-between px-4 py-3 text-xs font-semibold transition-colors ${darkMode ? "text-white hover:bg-slate-700" : "text-gray-800 hover:bg-amber-100/50"}`}
       >
-        <span>Day {day} ({activities.length} {activities.length === 1 ? 'activity' : 'activities'})</span>
+        <div className="flex items-center gap-3">
+          <span>Day {day} ({activities.length} {activities.length === 1 ? 'activity' : 'activities'})</span>
+          {/* Date input in header */}
+          <input
+            type="date"
+            value={data?.date || ""}
+            onClick={(e) => e.stopPropagation()} // Prevent toggle when clicking date
+            onChange={(e) => onUpdateDay?.(day, { date: e.target.value })}
+            className={`text-[11px] px-2 py-1 rounded border transition-colors focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-600 text-slate-300" : "bg-white border-gray-300 text-gray-600"}`}
+          />
+        </div>
         <span className={`text-lg transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>{isExpanded ? "⌃" : "⌄"}</span>
       </button>
 
@@ -356,7 +385,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     endDate: "",
     preferences: "",
   });
-  const [daysData, setDaysData] = useState(() => createDays(initialDaysCount));
+  const [daysData, setDaysData] = useState(() => createDays(initialDaysCount, request?.tripDetails?.startDate || ""));
   const [isSaving, setIsSaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [draftSavedMessage, setDraftSavedMessage] = useState("");
@@ -429,10 +458,20 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
   }, [request]);
 
   const activityOptions = useMemo(() => {
-    return requestItemMeta
+    // Get titles from request items
+    const requestTitles = requestItemMeta
       .map((x) => x?.title)
       .filter((x) => String(x || "").trim());
-  }, [requestItemMeta]);
+    
+    // Get titles from available activities (for auto-generated activities)
+    const availableTitles = availableActivities
+      .map((a) => a?.title || a?.name)
+      .filter((x) => String(x || "").trim());
+    
+    // Combine and remove duplicates
+    const allTitles = [...new Set([...requestTitles, ...availableTitles])];
+    return allTitles;
+  }, [requestItemMeta, availableActivities]);
 
   const locationOptions = useMemo(() => {
     const set = new Set();
@@ -723,7 +762,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     setDaysData((prev) => {
       const list = Array.isArray(prev) ? prev : [];
       if (list.length === needed) return list;
-      return createDays(needed);
+      return createDays(needed, travelDetails?.startDate);
     });
 
     setExpandedDays((prev) => {
@@ -749,7 +788,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
 
     setDaysData((prev) => {
       const list = Array.isArray(prev) ? prev : [];
-      const next = list.length > 0 ? [...list] : [createEmptyDay(1)];
+      const next = list.length > 0 ? [...list] : [createEmptyDay(1, request?.tripDetails?.startDate || "")];
 
       const activitiesCount = Array.isArray(request?.items) ? request.items.length : 0;
       const existingAdjustmentIndex = next.findIndex((d) => Boolean(d?.isAdjustment));
@@ -757,9 +796,9 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
         ? existingAdjustmentIndex
         : Math.max(activitiesCount, next.length);
       const desiredLen = Math.max(1, insertIndex + 1);
-      while (next.length < desiredLen) next.push(createEmptyDay(next.length + 1));
+      while (next.length < desiredLen) next.push(createEmptyDay(next.length + 1, request?.tripDetails?.startDate || ""));
 
-      const target = next[insertIndex] || createEmptyDay(insertIndex + 1);
+      const target = next[insertIndex] || createEmptyDay(insertIndex + 1, request?.tripDetails?.startDate || "");
       // Add adjustment as a new activity to the existing day
       const adjustmentActivity = {
         id: `act-adjust-${Date.now()}`,
@@ -847,7 +886,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
       const next = [...list];
       const start = next.length + 1;
       for (let day = start; day <= target; day += 1) {
-        next.push(createEmptyDay(day));
+        next.push(createEmptyDay(day, travelDetails?.startDate || ""));
       }
       return next;
     });
@@ -988,17 +1027,19 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     const newDayNumbers = days.map((_, idx) => currentDayCount + idx + 1);
 
     // Convert to daysData format
+    const startDateForCalc = travelDetails?.startDate || request?.tripDetails?.startDate || "";
     setDaysData((prev) => {
       const existingDays = Array.isArray(prev) ? prev : [];
       const newDays = days.map((dayData, idx) => {
         const dayNum = existingDays.length + idx + 1;
         return {
           day: dayNum,
+          date: calculateDayDate(startDateForCalc, dayNum - 1),
           isAdjustment: false,
           isAutoGenerated: true, // Mark day as auto-generated
           activities: dayData.activities.map((act, actIdx) => ({
             id: `act-auto-${Date.now()}-${idx}-${actIdx}`,
-            activity: act.title || act.name,
+            activity: act.title || act.name || "",
             location: act.location || act.country || normalized.location || "",
             description: act.description || `Auto-selected activity (Budget: $${act.priceValue})`,
             cost: String(act.priceValue),
@@ -1063,6 +1104,29 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     if (!max) return 0;
     return Math.max(0, Math.min(1, val / max));
   };
+
+  // Auto-calculate dates when start date changes
+  useEffect(() => {
+    const startDate = travelDetails?.startDate;
+    if (!startDate) return;
+    
+    setDaysData((prev) => {
+      if (!Array.isArray(prev) || prev.length === 0) return prev;
+      
+      return prev.map((day, index) => {
+        // Only update if date is empty or hasn't been manually set
+        const existingDate = day?.date;
+        const calculatedDate = calculateDayDate(startDate, index);
+        
+        // If user has manually set a date, keep it
+        if (existingDate && existingDate !== calculateDayDate(startDate, index - 1)) {
+          return day;
+        }
+        
+        return { ...day, date: calculatedDate };
+      });
+    });
+  }, [travelDetails?.startDate]);
 
   const adjustmentCard = request?.adjustmentCard || null;
   const hasAdjustment = (() => {
@@ -1638,7 +1702,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     setDaysData((prev) => {
       const list = Array.isArray(prev) ? prev : [];
       const nextDay = list.length + 1;
-      return [...list, createEmptyDay(nextDay)];
+      return [...list, createEmptyDay(nextDay, travelDetails?.startDate || "")];
     });
   };
 
