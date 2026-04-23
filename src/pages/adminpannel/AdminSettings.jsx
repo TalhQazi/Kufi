@@ -14,9 +14,25 @@ const AdminSettings = () => {
         phone: ''
     });
 
+    const [financialSettings, setFinancialSettings] = useState({
+        commissionPercentage: 10,
+        stripePublicKey: ''
+    });
+    const [updatingSettings, setUpdatingSettings] = useState(false);
+
     useEffect(() => {
         fetchAdmins();
+        fetchFinancialSettings();
     }, []);
+
+    const fetchFinancialSettings = async () => {
+        try {
+            const res = await api.get('/admin/settings');
+            setFinancialSettings(res.data);
+        } catch (error) {
+            console.error('Error fetching financial settings:', error);
+        }
+    };
 
     const fetchAdmins = async () => {
         try {
@@ -52,6 +68,20 @@ const AdminSettings = () => {
         } catch (error) {
             console.error('Error deleting admin:', error);
             alert(error.response?.data?.message || 'Failed to delete admin');
+        }
+    };
+
+    const handleUpdateFinancialSettings = async (e) => {
+        e.preventDefault();
+        try {
+            setUpdatingSettings(true);
+            await api.put('/admin/settings', financialSettings);
+            alert('Financial settings updated successfully');
+        } catch (error) {
+            console.error('Error updating financial settings:', error);
+            alert('Failed to update financial settings');
+        } finally {
+            setUpdatingSettings(false);
         }
     };
 
@@ -137,6 +167,66 @@ const AdminSettings = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            {/* Financial Settings Section */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-gray-100">
+                    <div className="flex items-center gap-2">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#704b24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                        <h2 className="font-semibold text-slate-900">Financial & Commission Settings</h2>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Configure global commission rates and payment credentials</p>
+                </div>
+
+                <div className="p-6">
+                    <form onSubmit={handleUpdateFinancialSettings} className="space-y-6">
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase">Platform Commission (%)</label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="0.1"
+                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#704b24] focus:ring-1 focus:ring-[#704b24] outline-none transition-all text-sm"
+                                        value={financialSettings.commissionPercentage}
+                                        onChange={(e) => setFinancialSettings({ ...financialSettings, commissionPercentage: e.target.value })}
+                                        placeholder="10"
+                                    />
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">%</div>
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-1.5">This percentage will be deducted from each booking total as platform fee.</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase">Stripe Public Key</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#704b24] focus:ring-1 focus:ring-[#704b24] outline-none transition-all text-sm font-mono"
+                                    value={financialSettings.stripePublicKey}
+                                    onChange={(e) => setFinancialSettings({ ...financialSettings, stripePublicKey: e.target.value })}
+                                    placeholder="pk_live_..."
+                                />
+                                <p className="text-[10px] text-gray-400 mt-1.5">Used for frontend Stripe initialization. Keep secret key in server environment.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end pt-2">
+                            <button
+                                type="submit"
+                                disabled={updatingSettings}
+                                className="bg-[#704b24] hover:bg-[#5a3c1d] disabled:opacity-50 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-sm active:scale-95 text-sm"
+                            >
+                                {updatingSettings ? 'Saving...' : 'Save Financial Settings'}
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 

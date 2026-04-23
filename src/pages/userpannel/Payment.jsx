@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { loadStripe } from '@stripe/stripe-js'
+import api from '../../api'
 import PaymentSuccessModal from './PaymentSuccessModal.jsx'
 import Footer from '../../components/layout/Footer'
 
@@ -20,6 +22,31 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
     })
     const [useWallet, setUseWallet] = useState(false)
     const [showSuccessModal, setShowSuccessModal] = useState(false)
+    const [loading, setLoading] = useState(false)
+    const [settings, setSettings] = useState({ commissionPercentage: 10, stripePublicKey: '' })
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const res = await api.get('/admin/settings');
+                setSettings(res.data);
+            } catch (err) {
+                console.error('Error fetching settings:', err);
+            }
+        };
+        fetchSettings();
+    }, []);
+
+    const parseAmount = (budget) => {
+        if (!budget) return 0;
+        const digits = String(budget).replace(/[^0-9.]/g, '');
+        return parseFloat(digits) || 0;
+    };
+
+    const totalAmount = bookingData?.totalAmount || parseAmount(bookingData?.tripDetails?.budget || bookingData?.budget);
+    const commissionPercentage = settings.commissionPercentage;
+    const commissionAmount = (totalAmount * commissionPercentage) / 100;
+    const netAmount = totalAmount - commissionAmount;
 
     const handleBack = () => {
         if (onBack) {
@@ -31,11 +58,39 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         }
     };
 
-    const handlePayment = (e) => {
+    const handlePayment = async (e) => {
         e.preventDefault()
-        console.log('Payment submitted:', { bookingData, paymentMethod, cardData })
-        // Show success modal
-        setShowSuccessModal(true)
+        
+        if (paymentMethod === 'stripe') {
+            try {
+                setLoading(true);
+                const res = await api.post('/payment/create-checkout-session', {
+                    bookingId: bookingData._id || bookingData.id
+                });
+                
+                const stripe = await loadStripe(settings.stripePublicKey || 'pk_live_51Szm5B7o3RqGTYsBgSP9DaC45gkgqsAoJd3nXl8BoMNVVRErbQtb8yyKT1MQdZLjAA85ZzCm5aq6BuNC4xf7PsuI008U0yNpfy');
+                if (res.data.url) {
+                    window.location.href = res.data.url;
+                } else {
+                    const { error } = await stripe.redirectToCheckout({
+                        sessionId: res.data.id,
+                    });
+                    if (error) {
+                        console.error('Stripe error:', error);
+                        alert(error.message);
+                    }
+                }
+            } catch (err) {
+                console.error('Payment error:', err);
+                alert('Failed to initiate payment. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            console.log('Payment submitted:', { bookingData, paymentMethod, cardData })
+            // Show success modal for mock payments
+            setShowSuccessModal(true)
+        }
     }
 
     return (
@@ -355,34 +410,37 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
 
                                 <div className="space-y-3 mb-4 pb-4 border-b border-slate-200">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-slate-600">Activities</span>
+                                        <span className="text-slate-600">Base Price</span>
+                                        <span className="text-slate-900 font-medium">${totalAmount.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-slate-600">Accommodation</span>
+                                        <span className="text-slate-600">Platform Fee ({commissionPercentage}%)</span>
+                                        <span className="text-slate-900 font-medium">${commissionAmount.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-slate-600">Transportation</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-600">Meals</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-600">Taxes & Fees</span>
+                                        <span className="text-slate-600">Processing Fee</span>
+                                        <span className="text-slate-900 font-medium">$0.00</span>
                                     </div>
                                 </div>
 
                                 <div className="flex justify-between items-center mb-6">
                                     <span className="text-base sm:text-lg font-bold text-slate-900">Total</span>
+                                    <span className="text-base sm:text-lg font-bold text-primary-brown">${totalAmount.toLocaleString()}</span>
                                 </div>
 
                                 <button
                                     onClick={handlePayment}
-                                    className="w-full bg-primary-brown hover:bg-primary-dark text-white py-3 sm:py-4 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary-brown/20 mb-4 text-sm sm:text-base active:scale-[0.98]"
+                                    disabled={loading}
+                                    className="w-full bg-primary-brown hover:bg-primary-dark disabled:opacity-50 text-white py-3 sm:py-4 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary-brown/20 mb-4 text-sm sm:text-base active:scale-[0.98]"
                                 >
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                        <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                    </svg>
-                                    Confirm & Pay Now
+                                    {loading ? (
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                    ) : (
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                            <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                        </svg>
+                                    )}
+                                    {loading ? 'Processing...' : 'Confirm & Pay Now'}
                                 </button>
 
                                 <button

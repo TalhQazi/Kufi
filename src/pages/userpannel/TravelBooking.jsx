@@ -232,6 +232,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                 location: selectedCountryLabel || formData.cities,
                 experience,
                 amount: formData.budget,
+                totalAmount: selectedTotalPrice,
                 userId: currentUser?._id || currentUser?.id,
             }
 
@@ -243,7 +244,8 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
             if (!payload.amount) delete payload.amount
 
             console.log('Booking submitted:', payload)
-            await api.post('/bookings', payload)
+            const response = await api.post('/bookings', payload)
+            setFormData(prev => ({ ...prev, ...response.data })) // Update with server data (like _id)
             setShowSuccess(true)
         } catch (error) {
             const status = error?.response?.status
@@ -720,7 +722,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                 <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                                 </svg>
-                                <span>Redirecting to explore page...</span>
+                                <span>Redirecting to payment page...</span>
                             </div>
                         </div>
                     </div>

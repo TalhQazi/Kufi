@@ -12,6 +12,7 @@ import NotificationsModal from './pages/userpannel/NotificationsModal.jsx'
 import TravelBooking from './pages/userpannel/TravelBooking.jsx'
 import BookingConfirmation from './pages/userpannel/BookingConfirmation.jsx'
 import Payment from './pages/userpannel/Payment.jsx'
+import PaymentResult from './pages/userpannel/PaymentResult.jsx'
 import ItineraryView from './pages/userpannel/ItineraryView.jsx'
 import TravelerProfile from './pages/userpannel/TravelerProfile.jsx'
 import BlogDetail from './pages/userpannel/BlogDetail.jsx'
@@ -639,7 +640,7 @@ export default function App() {
         onSubmit={(data) => {
           setBookingData(data)
           setSelectedActivities([])
-          navigateTo('explore')
+          navigateTo('payment')
         }}
       />
     )
@@ -666,6 +667,21 @@ export default function App() {
         canGoBack={canGoBack}
         canGoForward={canGoForward}
         onNotificationClick={() => setShowNotifications(true)}
+      />
+    )
+
+    if (page === 'payment-success') return (
+      <PaymentResult
+        type="success"
+        onHomeClick={() => navigateTo('home')}
+        onProfileClick={handleMyRequestsClick}
+      />
+    )
+
+    if (page === 'payment-failed') return (
+      <PaymentResult
+        type="failed"
+        onHomeClick={() => navigateTo('home')}
       />
     )
 
