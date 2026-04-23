@@ -2,9 +2,7 @@ import axios from 'axios';
 
 // Live view / production: uses Vercel backend by default. For local backend, set VITE_API_URL in .env.local
 const API_BASE_URL =
-//    import.meta.env.VITE_API_URL || 'http://192.168.1.8:5000/api';
-  // import.meta.env.VITE_API_URL || 'https://kufi-backend-new1.vercel.app/api';
-  import.meta.env.VITE_API_URL || 'https://kufi-backend-gilt.vercel.app/api';
+  import.meta.env.VITE_API_URL || '/api';
 // settings of api route
 const api = axios.create({
     baseURL: API_BASE_URL,
