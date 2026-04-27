@@ -24,6 +24,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
     const [showSuccessModal, setShowSuccessModal] = useState(false)
     const [loading, setLoading] = useState(false)
     const [settings, setSettings] = useState({ commissionPercentage: 10, stripePublicKey: '' })
+    const [countries, setCountries] = useState([])
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -35,6 +36,24 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
             }
         };
         fetchSettings();
+    }, []);
+
+    // Fetch countries from API
+    useEffect(() => {
+        const fetchCountries = async () => {
+            try {
+                const res = await api.get('/countries?status=active');
+                const countryList = res.data || [];
+                setCountries(countryList);
+                // Set default country to first one if available
+                if (countryList.length > 0 && !billingAddress.country) {
+                    setBillingAddress(prev => ({ ...prev, country: countryList[0].name }));
+                }
+            } catch (err) {
+                console.error('Error fetching countries:', err);
+            }
+        };
+        fetchCountries();
     }, []);
 
     const parseAmount = (budget) => {
@@ -355,13 +374,17 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                                             onChange={(e) => setBillingAddress({ ...billingAddress, country: e.target.value })}
                                                             className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm bg-white"
                                                         >
-                                                            <option value="United States">United States</option>
-                                                            <option value="United Kingdom">United Kingdom</option>
-                                                            <option value="Canada">Canada</option>
-                                                            <option value="Australia">Australia</option>
-                                                            <option value="Germany">Germany</option>
-                                                            <option value="France">France</option>
-                                                            <option value="UAE">UAE</option>
+                                                            {countries.length > 0 ? (
+                                                                countries
+                                                                    .filter((country) => country.status === 'active')
+                                                                    .map((country) => (
+                                                                        <option key={country._id || country.id} value={country.name}>
+                                                                            {country.name}
+                                                                        </option>
+                                                                    ))
+                                                            ) : (
+                                                                <option value="">Loading countries...</option>
+                                                            )}
                                                         </select>
                                                     </div>
                                                 </div>
