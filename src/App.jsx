@@ -715,7 +715,15 @@ export default function App() {
       <Payment
         onHomeClick={() => navigateTo('home')}
         bookingData={bookingData}
-        onBack={goBack}
+        onBack={() => {
+          if (currentIndex > 0) {
+            goBack()
+          } else if (selectedItineraryId) {
+            navigateTo('itinerary-view')
+          } else {
+            navigateTo('user-dashboard')
+          }
+        }}
         onForward={goForward}
         canGoBack={canGoBack}
         canGoForward={canGoForward}
@@ -742,7 +750,13 @@ export default function App() {
       <ItineraryView
         itineraryId={selectedItineraryId}
         request={selectedItineraryRequest}
-        onBack={goBack}
+        onBack={() => {
+          if (currentIndex > 0) {
+            goBack()
+          } else {
+            navigateTo('user-dashboard')
+          }
+        }}
         onPaymentClick={() => {
           setBookingData(selectedItineraryRequest)
           navigateTo('payment')
