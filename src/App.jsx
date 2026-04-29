@@ -71,6 +71,34 @@ export default function App() {
     }
   })
 
+  const [selectedItineraryId, setSelectedItineraryId] = useState(() => {
+    try {
+      return localStorage.getItem('kufi_selected_itinerary_id') || null
+    } catch {
+      return null
+    }
+  })
+
+  const [selectedItineraryRequest, setSelectedItineraryRequest] = useState(() => {
+    try {
+      const raw = localStorage.getItem('kufi_selected_itinerary_request')
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  })
+
+  const [selectedActivityId, setSelectedActivityId] = useState(null)
+  const [selectedCountryName, setSelectedCountryName] = useState('Italy')
+  const [selectedCategoryName, setSelectedCategoryName] = useState('Camping Adventures')
+  const [selectedCityName, setSelectedCityName] = useState(null)
+  const [selectedBlogId, setSelectedBlogId] = useState(null)
+  const [exploreInitialCategory, setExploreInitialCategory] = useState(null)
+  const [travelerProfileInitialTab, setTravelerProfileInitialTab] = useState(null)
+  const [history, setHistory] = useState([getInitialPage()])
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isPopState, setIsPopState] = useState(false)
+
   useEffect(() => {
     try {
       localStorage.setItem(SELECTED_ACTIVITIES_STORAGE_KEY, JSON.stringify(Array.isArray(selectedActivities) ? selectedActivities : []))
@@ -226,28 +254,7 @@ export default function App() {
     }
   }, [])
 
-  const [selectedActivityId, setSelectedActivityId] = useState(null)
-  const [selectedCountryName, setSelectedCountryName] = useState('Italy')
-  const [selectedCategoryName, setSelectedCategoryName] = useState('Camping Adventures')
-  const [selectedItineraryId, setSelectedItineraryId] = useState(() => {
-    try {
-      return localStorage.getItem('kufi_selected_itinerary_id') || null
-    } catch {
-      return null
-    }
-  })
-  const [selectedItineraryRequest, setSelectedItineraryRequest] = useState(() => {
-    try {
-      const raw = localStorage.getItem('kufi_selected_itinerary_request')
-      return raw ? JSON.parse(raw) : null
-    } catch {
-      return null
-    }
-  })
-  const [selectedCityName, setSelectedCityName] = useState(null)
-  const [selectedBlogId, setSelectedBlogId] = useState(null)
-  const [exploreInitialCategory, setExploreInitialCategory] = useState(null)
-  const [travelerProfileInitialTab, setTravelerProfileInitialTab] = useState(null)
+
 
   const handleActivityClick = (id) => {
     setSelectedActivityId(id)
@@ -356,9 +363,7 @@ export default function App() {
     navigateTo('traveler-profile')
   }
 
-  const [history, setHistory] = useState([getInitialPage()])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [isPopState, setIsPopState] = useState(false)
+
 
   useEffect(() => {
     const handleNavigationChange = (event) => {
