@@ -25,16 +25,44 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
     const [loading, setLoading] = useState(false)
     const [settings, setSettings] = useState({ commissionPercentage: 10, stripePublicKey: '' })
     const [countries, setCountries] = useState([])
+    const [travelerInfo, setTravelerInfo] = useState({
+        fullName: '',
+        email: '',
+        phone: ''
+    })
+
+    useEffect(() => {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+        
+        // Try to get name from bookingData or currentUser
+        let initialName = ''
+        if (bookingData?.firstName || bookingData?.lastName) {
+            initialName = `${bookingData.firstName || ''} ${bookingData.lastName || ''}`.trim()
+        } else if (bookingData?.title && bookingData?.status) {
+             // This might be an itinerary request object which doesn't have names directly
+             initialName = currentUser?.name || currentUser?.fullName || ''
+        } else {
+            initialName = currentUser?.name || currentUser?.fullName || ''
+        }
+
+        setTravelerInfo({
+            fullName: initialName || '',
+            email: bookingData?.email || bookingData?._email || currentUser?.email || '',
+            phone: bookingData?.phone || bookingData?._phone || currentUser?.phone || ''
+        })
+    }, [bookingData])
+
 
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const res = await api.get('/admin/settings');
+                const res = await api.get('/payment/settings');
                 setSettings(res.data);
             } catch (err) {
                 console.error('Error fetching settings:', err);
             }
         };
+
         fetchSettings();
     }, []);
 
@@ -62,7 +90,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         return parseFloat(digits) || 0;
     };
 
-    const totalAmount = bookingData?.totalAmount || parseAmount(bookingData?.tripDetails?.budget || bookingData?.budget);
+    const totalAmount = bookingData?.totalAmount || bookingData?.amount || parseAmount(bookingData?.tripDetails?.budget || bookingData?.budget || bookingData?.price);
     const commissionPercentage = settings.commissionPercentage;
     const commissionAmount = (totalAmount * commissionPercentage) / 100;
     const netAmount = totalAmount - commissionAmount;
@@ -83,8 +111,26 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         if (paymentMethod === 'stripe') {
             try {
                 setLoading(true);
+                
+                // 1. Update booking with current traveler info and total amount
+                // This ensures the backend has the final price and info before Stripe session is created
+                const bookingId = bookingData._id || bookingData.id;
+                const [firstName, ...lastNameParts] = (travelerInfo.fullName || '').split(' ');
+                const lastName = lastNameParts.join(' ');
+                
+                await api.patch(`/bookings/${bookingId}`, {
+                    contactDetails: {
+                        firstName: firstName || '',
+                        lastName: lastName || '',
+                        email: travelerInfo.email,
+                        phone: travelerInfo.phone
+                    },
+                    totalAmount: totalAmount
+                });
+
+                // 2. Create checkout session
                 const res = await api.post('/payment/create-checkout-session', {
-                    bookingId: bookingData._id || bookingData.id
+                    bookingId: bookingId
                 });
                 
                 const stripe = await loadStripe(settings.stripePublicKey || 'pk_live_51Szm5B7o3RqGTYsBgSP9DaC45gkgqsAoJd3nXl8BoMNVVRErbQtb8yyKT1MQdZLjAA85ZzCm5aq6BuNC4xf7PsuI008U0yNpfy');
@@ -183,31 +229,34 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                             <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
                                 <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-4">Traveler Information</h2>
                                 <div className="grid sm:grid-cols-2 gap-4">
-                                    <div>
+                                    <div className="sm:col-span-2">
                                         <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
                                         <input
                                             type="text"
-                                            value={`${bookingData?.firstName || ''} ${bookingData?.lastName || ''}`.trim() || 'John Anderson'}
-                                            readOnly
-                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 text-sm"
+                                            value={travelerInfo.fullName}
+                                            onChange={(e) => setTravelerInfo({ ...travelerInfo, fullName: e.target.value })}
+                                            placeholder="John Anderson"
+                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-slate-900 text-sm"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
                                         <input
                                             type="email"
-                                            value={bookingData?.email || 'john.anderson@email.com'}
-                                            readOnly
-                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 text-sm"
+                                            value={travelerInfo.email}
+                                            onChange={(e) => setTravelerInfo({ ...travelerInfo, email: e.target.value })}
+                                            placeholder="john.anderson@email.com"
+                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-slate-900 text-sm"
                                         />
                                     </div>
-                                    <div className="sm:col-span-2">
+                                    <div>
                                         <label className="block text-sm font-medium text-slate-700 mb-2">Contact Number</label>
                                         <input
                                             type="tel"
-                                            value={bookingData?.phone || '+1 (555) 123-4567'}
-                                            readOnly
-                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 text-sm"
+                                            value={travelerInfo.phone}
+                                            onChange={(e) => setTravelerInfo({ ...travelerInfo, phone: e.target.value })}
+                                            placeholder="+1 (555) 123-4567"
+                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-slate-900 text-sm"
                                         />
                                     </div>
                                 </div>
@@ -426,15 +475,22 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                 <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-4">Trip Summary</h2>
 
                                 <div className="mb-4 pb-4 border-b border-slate-200">
-                                    <h3 className="font-semibold text-slate-900 mb-1">Paradise Travel Co.</h3>
-                                    <p className="text-sm text-slate-600 font-medium">June 15 - June 20, 2025</p>
-                                    <p className="text-xs text-slate-500">2 Travelers • 5 Nights</p>
+                                    <h3 className="font-semibold text-slate-900 mb-1">{bookingData?.title || bookingData?.experience || 'Trip Booking'}</h3>
+                                    <p className="text-sm text-slate-600 font-medium">
+                                        {bookingData?.tripDetails?.arrivalDate ? (
+                                            `${new Date(bookingData.tripDetails.arrivalDate).toLocaleDateString()} - ${bookingData?.tripDetails?.departureDate ? new Date(bookingData.tripDetails.departureDate).toLocaleDateString() : ''}`
+                                        ) : bookingData?.date || 'Date TBD'}
+                                    </p>
+                                    <p className="text-xs text-slate-500">
+                                        {bookingData?.guests || bookingData?.travelers || '—'} Travelers 
+                                        {bookingData?.duration ? ` • ${bookingData.duration}` : ''}
+                                    </p>
                                 </div>
 
                                 <div className="space-y-3 mb-4 pb-4 border-b border-slate-200">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-600">Base Price</span>
-                                        <span className="text-slate-900 font-medium">${totalAmount.toLocaleString()}</span>
+                                        <span className="text-slate-900 font-medium">${netAmount.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-600">Platform Fee ({commissionPercentage}%)</span>

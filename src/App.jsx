@@ -690,7 +690,10 @@ export default function App() {
         itineraryId={selectedItineraryId}
         request={selectedItineraryRequest}
         onBack={goBack}
-        onPaymentClick={() => navigateTo('payment')}
+        onPaymentClick={() => {
+          setBookingData(selectedItineraryRequest)
+          navigateTo('payment')
+        }}
         onRequestAdjustment={() => navigateTo('user-profile')}
         onLogout={handleLogout}
         onNotificationClick={() => setShowNotifications(true)}
@@ -807,8 +810,11 @@ export default function App() {
       {showNotifications && (
         <NotificationsModal
           onClose={() => setShowNotifications(false)}
-          onPaymentClick={() => navigateTo('payment')}
-          onViewItinerary={() => navigateTo('itinerary-view')}
+          onPaymentClick={(trip) => {
+            setBookingData(trip)
+            navigateTo('payment')
+          }}
+          onViewItinerary={(trip) => handleItineraryClick(trip)}
         />
       )}
 

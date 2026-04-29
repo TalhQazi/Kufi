@@ -29,6 +29,7 @@ export default function NotificationsModal({ onClose, onPaymentClick, onViewItin
 
                     return {
                         id: trip._id || trip.id,
+                        trip: trip, // Store original trip object
                         type: 'inquiry',
                         supplier: trip.supplierName || 'Travel Partner',
                         avatar: trip.imageUrl || trip.image || '/assets/hero-card1.jpeg',
@@ -202,10 +203,10 @@ export default function NotificationsModal({ onClose, onPaymentClick, onViewItin
                                                         disabled={action === 'Awaiting Response'}
                                                         onClick={() => {
                                                             if (action === 'Proceed to Payment') {
-                                                                onPaymentClick && onPaymentClick()
+                                                                onPaymentClick && onPaymentClick(notification.trip)
                                                                 onClose()
                                                             } else if (action === 'View Itinerary') {
-                                                                onViewItinerary && onViewItinerary()
+                                                                onViewItinerary && onViewItinerary(notification.trip)
                                                                 onClose()
                                                             }
                                                         }}
