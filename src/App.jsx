@@ -45,7 +45,14 @@ export default function App() {
   const [page, setPage] = useState(getInitialPage())
   const [showModal, setShowModal] = useState(null) // 'login' or 'register' or null
   const [showNotifications, setShowNotifications] = useState(false)
-  const [bookingData, setBookingData] = useState(null) // Store booking form data
+  const [bookingData, setBookingData] = useState(() => {
+    try {
+      const raw = localStorage.getItem('kufi_pending_booking')
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  }) // Store booking form data
   const [selectedActivities, setSelectedActivities] = useState(() => {
     try {
       const raw = localStorage.getItem(SELECTED_ACTIVITIES_STORAGE_KEY)
@@ -70,6 +77,39 @@ export default function App() {
     } catch {
     }
   }, [selectedActivities])
+
+  useEffect(() => {
+    try {
+      if (bookingData) {
+        localStorage.setItem('kufi_pending_booking', JSON.stringify(bookingData))
+      } else {
+        localStorage.removeItem('kufi_pending_booking')
+      }
+    } catch {
+    }
+  }, [bookingData])
+
+  useEffect(() => {
+    try {
+      if (selectedItineraryId) {
+        localStorage.setItem('kufi_selected_itinerary_id', selectedItineraryId)
+      } else {
+        localStorage.removeItem('kufi_selected_itinerary_id')
+      }
+    } catch {
+    }
+  }, [selectedItineraryId])
+
+  useEffect(() => {
+    try {
+      if (selectedItineraryRequest) {
+        localStorage.setItem('kufi_selected_itinerary_request', JSON.stringify(selectedItineraryRequest))
+      } else {
+        localStorage.removeItem('kufi_selected_itinerary_request')
+      }
+    } catch {
+    }
+  }, [selectedItineraryRequest])
 
   const hasAuthToken = () => {
     try {
@@ -189,8 +229,21 @@ export default function App() {
   const [selectedActivityId, setSelectedActivityId] = useState(null)
   const [selectedCountryName, setSelectedCountryName] = useState('Italy')
   const [selectedCategoryName, setSelectedCategoryName] = useState('Camping Adventures')
-  const [selectedItineraryId, setSelectedItineraryId] = useState(null)
-  const [selectedItineraryRequest, setSelectedItineraryRequest] = useState(null)
+  const [selectedItineraryId, setSelectedItineraryId] = useState(() => {
+    try {
+      return localStorage.getItem('kufi_selected_itinerary_id') || null
+    } catch {
+      return null
+    }
+  })
+  const [selectedItineraryRequest, setSelectedItineraryRequest] = useState(() => {
+    try {
+      const raw = localStorage.getItem('kufi_selected_itinerary_request')
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  })
   const [selectedCityName, setSelectedCityName] = useState(null)
   const [selectedBlogId, setSelectedBlogId] = useState(null)
   const [exploreInitialCategory, setExploreInitialCategory] = useState(null)
