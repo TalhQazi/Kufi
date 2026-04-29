@@ -640,7 +640,7 @@ export default function App() {
         onSubmit={(data) => {
           setBookingData(data)
           setSelectedActivities([])
-          navigateTo('payment')
+          navigateTo('explore')
         }}
       />
     )

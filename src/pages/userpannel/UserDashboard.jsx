@@ -215,7 +215,12 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                 r?.customerId
             const email = r?.email || r?.user?.email || r?.contactDetails?.email
             const phone = r?.phone || r?.user?.phone || r?.contactDetails?.phone
-            const guests = r?.guests ?? r?.travelers ?? r?.pax
+            // Check top-level first, then fallback to items array
+            const topLevelGuests = r?.guests ?? r?.travelers ?? r?.pax
+            const itemGuests = Array.isArray(r?.items)
+                ? r.items.map(item => Number(item?.travelers) || 0).filter(n => n > 0)
+                : []
+            const guests = topLevelGuests ?? (itemGuests.length > 0 ? Math.max(...itemGuests) : null) ?? null
             const amount = r?.tripDetails?.budget ?? r?.amount ?? r?.totalAmount ?? r?.price
 
             return {
