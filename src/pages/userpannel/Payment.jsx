@@ -5,7 +5,7 @@ import PaymentSuccessModal from './PaymentSuccessModal.jsx'
 import Footer from '../../components/layout/Footer'
 
 export default function Payment({ bookingData, onBack, onForward, canGoBack, canGoForward, onNotificationClick, onHomeClick, hideHeaderFooter = false }) {
-    const [paymentMethod, setPaymentMethod] = useState('card')
+    const [paymentMethod, setPaymentMethod] = useState('stripe')
     const [cardData, setCardData] = useState({
         cardholderName: '',
         cardNumber: '',
@@ -268,7 +268,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
 
                                 <div className="space-y-3 mb-6">
                                     {/* Credit/Debit Card */}
-                                    <label className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'card' ? 'border-primary-brown bg-primary-brown/5' : 'border-slate-200'}`}>
+                                    {/* <label className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'card' ? 'border-primary-brown bg-primary-brown/5' : 'border-slate-200'}`}>
                                         <input
                                             type="radio"
                                             name="paymentMethod"
@@ -282,10 +282,10 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                             <line x1="1" y1="10" x2="23" y2="10" />
                                         </svg>
                                         <span className="text-sm font-medium text-slate-900">Credit / Debit Card</span>
-                                    </label>
+                                    </label> */}
 
                                     {/* PayPal */}
-                                    <label className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'paypal' ? 'border-primary-brown bg-primary-brown/5' : 'border-slate-200'}`}>
+                                    {/* <label className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'paypal' ? 'border-primary-brown bg-primary-brown/5' : 'border-slate-200'}`}>
                                         <input
                                             type="radio"
                                             name="paymentMethod"
@@ -295,7 +295,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                             className="w-4 h-4 text-primary-brown focus:ring-primary-brown"
                                         />
                                         <span className="text-sm font-medium text-slate-900">PayPal</span>
-                                    </label>
+                                    </label> */}
 
                                     {/* Stripe */}
                                     <label className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'stripe' ? 'border-primary-brown bg-primary-brown/5' : 'border-slate-200'}`}>
