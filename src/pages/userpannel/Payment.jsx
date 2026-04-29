@@ -90,7 +90,17 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         return parseFloat(digits) || 0;
     };
 
-    const totalAmount = bookingData?.totalAmount || bookingData?.amount || parseAmount(bookingData?.tripDetails?.budget || bookingData?.budget || bookingData?.price);
+    const totalAmount = bookingData?.totalAmount || 
+                        bookingData?.amount || 
+                        bookingData?.budget ||
+                        bookingData?.tripData?.budget ||
+                        bookingData?.tripData?.amount ||
+                        parseAmount(bookingData?.adjustmentCard?.cost || 
+                                   bookingData?.cost || 
+                                   bookingData?.tripDetails?.budget || 
+                                   bookingData?.budget || 
+                                   bookingData?.price ||
+                                   bookingData?.tripData?.price);
     const commissionPercentage = settings.commissionPercentage;
     const commissionAmount = (totalAmount * commissionPercentage) / 100;
     const netAmount = totalAmount - commissionAmount;
@@ -114,7 +124,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                 
                 // 1. Update booking with current traveler info and total amount
                 // This ensures the backend has the final price and info before Stripe session is created
-                const bookingId = bookingData._id || bookingData.id;
+                const bookingId = bookingData?.bookingId || bookingData?._id || bookingData?.id;
                 const [firstName, ...lastNameParts] = (travelerInfo.fullName || '').split(' ');
                 const lastName = lastNameParts.join(' ');
                 
@@ -479,11 +489,13 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                     <p className="text-sm text-slate-600 font-medium">
                                         {bookingData?.tripDetails?.arrivalDate ? (
                                             `${new Date(bookingData.tripDetails.arrivalDate).toLocaleDateString()} - ${bookingData?.tripDetails?.departureDate ? new Date(bookingData.tripDetails.departureDate).toLocaleDateString() : ''}`
-                                        ) : bookingData?.date || 'Date TBD'}
+                                        ) : bookingData?.startDate || bookingData?.tripData?.startDate ? (
+                                            `${new Date(bookingData.startDate || bookingData.tripData.startDate).toLocaleDateString()} - ${bookingData?.endDate || bookingData?.tripData?.endDate ? new Date(bookingData.endDate || bookingData.tripData.endDate).toLocaleDateString() : ''}`
+                                        ) : bookingData?.date || bookingData?.tripData?.date || 'Date TBD'}
                                     </p>
                                     <p className="text-xs text-slate-500">
-                                        {bookingData?.guests || bookingData?.travelers || '—'} Travelers 
-                                        {bookingData?.duration ? ` • ${bookingData.duration}` : ''}
+                                        {bookingData?.guests || bookingData?.travelers || bookingData?.numberOfTravelers || bookingData?.tripData?.guests || bookingData?.tripData?.travelers || '—'} Travelers 
+                                        {bookingData?.duration || bookingData?.tripData?.duration ? ` • ${bookingData.duration || bookingData.tripData.duration}` : ''}
                                     </p>
                                 </div>
 
