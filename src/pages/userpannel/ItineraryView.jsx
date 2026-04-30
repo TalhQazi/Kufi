@@ -673,7 +673,7 @@ export default function ItineraryView({
                                     Request Adjustment
                                 </button>
                                 <button
-                                    onClick={onPaymentClick}
+                                    onClick={() => onPaymentClick && onPaymentClick({ ...request, days, tripData })}
                                     className="px-8 py-3 rounded-lg bg-[#A67C52] text-white font-semibold hover:bg-[#8e6a45] shadow-lg transition-all"
                                 >
                                     Accept Itinerary

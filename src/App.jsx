@@ -762,8 +762,8 @@ export default function App() {
             navigateTo('user-dashboard')
           }
         }}
-        onPaymentClick={() => {
-          setBookingData(selectedItineraryRequest)
+        onPaymentClick={(itineraryData) => {
+          setBookingData(itineraryData || selectedItineraryRequest)
           navigateTo('payment')
         }}
         onRequestAdjustment={() => navigateTo('user-profile')}

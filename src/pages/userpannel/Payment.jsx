@@ -90,7 +90,13 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         return parseFloat(digits) || 0;
     };
 
-    const totalAmount = bookingData?.totalAmount || 
+    // Calculate sum from itinerary days if available
+    const itinerarySum = Array.isArray(bookingData?.days) 
+        ? bookingData.days.reduce((sum, day) => sum + parseAmount(day.evening?.description || day.evening || ''), 0)
+        : 0;
+
+    const totalAmount = (itinerarySum > 0 ? itinerarySum : null) || 
+                        bookingData?.totalAmount || 
                         bookingData?.amount || 
                         bookingData?.budget ||
                         bookingData?.tripData?.budget ||
