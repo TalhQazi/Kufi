@@ -7,6 +7,7 @@ const contentTypes = [
   { type: 'privacy', title: 'Privacy Policy', icon: Scale, description: 'Privacy policy and data protection information' },
   { type: 'faqs', title: 'FAQs', icon: HelpCircle, description: 'Frequently asked questions' },
   { type: 'support', title: 'Support', icon: MessageSquare, description: 'Support information and contact details' },
+  { type: 'about', title: 'About Us', icon: FileText, description: 'About Us page content' },
 ];
 
 export default function LegalContentController({ darkMode }) {

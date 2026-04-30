@@ -135,11 +135,18 @@ export default function Footer() {
         setModalContent({ title: '', content: '', loading: false })
     }
 
-    const handleNewsletterSubmit = (e) => {
+    const handleNewsletterSubmit = async (e) => {
         e.preventDefault()
-        // Handle newsletter subscription
-        alert('Thank you for subscribing!')
-        setEmail('')
+        if (!email) return
+
+        try {
+            const response = await api.post('/newsletter/subscribe', { email })
+            alert(response.data.msg || 'Thank you for subscribing!')
+            setEmail('')
+        } catch (error) {
+            console.error('Newsletter error:', error)
+            alert(error.response?.data?.msg || 'Something went wrong. Please try again.')
+        }
     }
 
     if (loading) {
@@ -209,15 +216,18 @@ export default function Footer() {
                         )}
                     </div>
 
-                    {/* Our Services */}
                     <div className="lg:pl-8">
                         <h4 className="text-base font-bold mb-6">Our Services</h4>
                         <ul className="space-y-2.5 text-[14px] text-white/90">
-                            {['About', 'Destination', 'Blog'].map((item) => (
-                                <li key={item}>
-                                    <a href="#" className="hover:text-white transition-colors">{item}</a>
-                                </li>
-                            ))}
+                            <li>
+                                <a href="#about" className="hover:text-white transition-colors">About Us</a>
+                            </li>
+                            <li>
+                                <a href="#explore" className="hover:text-white transition-colors">Destinations</a>
+                            </li>
+                            <li>
+                                <a href="#blogs" className="hover:text-white transition-colors">Blog</a>
+                            </li>
                         </ul>
                     </div>
 
@@ -297,18 +307,16 @@ export default function Footer() {
                                 </button>
                             </form>
                         )}
-                        <div className="flex gap-3 items-center pl-1 flex-wrap">
+                        <div className="flex gap-2 items-center pl-1 flex-wrap">
                             {paymentMethods.map((method, idx) => (
                                 <img
                                     key={idx}
                                     src={method.iconImage}
                                     alt={method.name}
-                                    className={`h-6 object-contain ${
+                                    className={`h-5 object-contain rounded shadow-sm hover:scale-110 transition-transform ${
                                         method.name.toLowerCase().includes('visa')
-                                            ? 'brightness-0 invert opacity-90 h-3'
-                                            : method.name.toLowerCase().includes('paypal')
-                                                ? 'bg-white px-1 py-0.5 rounded shadow-sm h-4'
-                                                : 'rounded shadow-sm'
+                                            ? 'brightness-0 invert opacity-90 h-2.5'
+                                            : ''
                                     }`}
                                 />
                             ))}

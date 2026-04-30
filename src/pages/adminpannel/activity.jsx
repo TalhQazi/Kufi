@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowRight, Search, Eye, Check, X, Trash2, Pencil } from "lucide-react";
+import { ArrowRight, Search, Eye, Check, X, Trash2, Pencil, MapPin } from "lucide-react";
 import api from "../../api";
 import AddActivity from "./add-activity";
 
@@ -27,13 +27,26 @@ const Activity = ({ onAddNew }) => {
   const [listingData, setListingData] = useState([]);
   const [viewingActivity, setViewingActivity] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
+  const [countries, setCountries] = useState([]);
+  const [selectedCountry, setSelectedCountry] = useState("all");
 
   const [editingActivity, setEditingActivity] = useState(null);
   const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     fetchActivities();
+    fetchCountries();
   }, []);
+
+  const fetchCountries = async () => {
+    try {
+      const res = await api.get('/countries');
+      const data = Array.isArray(res.data) ? res.data : (res.data.countries || []);
+      setCountries(data);
+    } catch (error) {
+      console.error("Error fetching countries:", error);
+    }
+  };
 
   const fetchActivities = async () => {
     try {
@@ -48,6 +61,7 @@ const Activity = ({ onAddNew }) => {
         provider: item.supplierName || 'Kufi Partner',
         category: item.category || 'Activity',
         location: item.location || 'N/A',
+        country: item.country || item.location || 'N/A',
         price: item.price ? `$${item.price}` : 'Contact for Price',
         status: item.status || 'pending',
       }));
@@ -126,11 +140,14 @@ const Activity = ({ onAddNew }) => {
 
   const filteredListings = listingData.filter((item) => {
     const matchesTab = activeTab === "all" || item.status === activeTab;
+    const matchesCountry = selectedCountry === "all" || 
+      item.country === selectedCountry || 
+      item.location === selectedCountry;
     const matchesSearch =
       item.listing.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.location.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
+    return matchesTab && matchesCountry && matchesSearch;
   });
 
   return (
@@ -171,15 +188,33 @@ const Activity = ({ onAddNew }) => {
                 </button>
               ))}
             </div>
-            <div className="flex items-center bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 text-sm text-gray-500 ml-0 md:ml-auto">
-              <Search className="w-4 h-4 mr-2 text-gray-400 shrink-0" />
-              <input
-                type="text"
-                placeholder="Search listings..."
-                className="bg-transparent outline-none text-sm placeholder:text-gray-400 w-full md:w-40"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            </div>
+            <div className="flex items-center gap-2 ml-0 md:ml-auto w-full md:w-auto">
+              <div className="flex items-center bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 text-sm text-gray-500 w-full md:w-auto">
+                <MapPin className="w-4 h-4 mr-2 text-gray-400 shrink-0" />
+                <select
+                  className="bg-transparent outline-none text-sm text-gray-600 w-full md:w-32 cursor-pointer"
+                  value={selectedCountry}
+                  onChange={(e) => setSelectedCountry(e.target.value)}
+                >
+                  <option value="all">All Countries</option>
+                  {countries.map((c) => (
+                    <option key={c._id} value={c.name || c.title}>
+                      {c.name || c.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 text-sm text-gray-500 w-full md:w-48">
+                <Search className="w-4 h-4 mr-2 text-gray-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search listings..."
+                  className="bg-transparent outline-none text-sm placeholder:text-gray-400 w-full"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
           </div>
         </div>

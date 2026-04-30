@@ -16,6 +16,8 @@ import PaymentResult from './pages/userpannel/PaymentResult.jsx'
 import ItineraryView from './pages/userpannel/ItineraryView.jsx'
 import TravelerProfile from './pages/userpannel/TravelerProfile.jsx'
 import BlogDetail from './pages/userpannel/BlogDetail.jsx'
+import About from './pages/userpannel/About.jsx'
+import BlogListing from './pages/userpannel/BlogListing.jsx'
 import AdminApp from './AdminApp.jsx'
 import Header from './components/layout/Header.jsx'
 import Footer from './components/layout/Footer.jsx'
@@ -98,6 +100,37 @@ export default function App() {
   const [history, setHistory] = useState([getInitialPage()])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPopState, setIsPopState] = useState(false)
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await api.get('/config')
+        const gaId = res.data?.googleAnalyticsId
+        if (gaId) {
+          // Check if already injected
+          if (!document.getElementById('google-analytics-script')) {
+            const script1 = document.createElement('script')
+            script1.id = 'google-analytics-script'
+            script1.async = true
+            script1.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`
+            document.head.appendChild(script1)
+
+            const script2 = document.createElement('script')
+            script2.innerHTML = `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${gaId}');
+            `
+            document.head.appendChild(script2)
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching GA config:', e)
+      }
+    }
+    fetchConfig()
+  }, [])
 
   useEffect(() => {
     try {
@@ -785,6 +818,21 @@ export default function App() {
         onHomeClick={() => navigateTo('home')}
         initialTab={travelerProfileInitialTab}
         hideHeaderFooter={true}
+      />
+    )
+
+    if (page === 'blogs') return (
+      <BlogListing
+        onBack={goBack}
+        onHomeClick={() => navigateTo('home')}
+        onBlogClick={handleBlogClick}
+      />
+    )
+
+    if (page === 'about') return (
+      <About
+        onBack={goBack}
+        onHomeClick={() => navigateTo('home')}
       />
     )
 

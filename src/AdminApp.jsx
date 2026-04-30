@@ -7,6 +7,7 @@ import AddActivity from './pages/adminpannel/add-activity'
 import Blogs from './pages/adminpannel/blogs'
 import AddBlog from './pages/adminpannel/add-blog'
 import UserManagement from './pages/adminpannel/user-management'
+import SupplierManagement from './pages/adminpannel/SupplierManagement'
 import Analytics from './pages/adminpannel/analytics'
 import PaymentsFinance from './pages/adminpannel/payments-finance'
 import SystemNotification from './pages/adminpannel/system-notification'
@@ -21,6 +22,7 @@ import FooterController from './pages/adminpannel/FooterController'
 import HeaderController from './pages/adminpannel/HeaderController'
 import SectionVisibilityController from './pages/adminpannel/SectionVisibilityController'
 import LegalContentController from './pages/adminpannel/LegalContentController'
+import MemberRequests from './pages/adminpannel/MemberRequests'
 import AdminProfile from './pages/adminpannel/AdminProfile'
 import AdminSettings from './pages/adminpannel/AdminSettings'
 import './App.css'
@@ -45,6 +47,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
       return <Blogs onAddNew={() => setActivePage('Blogs/Add')} />
     }
     if (activePage === 'User Management') return <UserManagement />
+    if (activePage === 'Manage Supplier') return <SupplierManagement />
     if (activePage === 'Analytics') return <Analytics />
     if (activePage === 'Payments & Finance') return <PaymentsFinance />
     if (activePage === 'System Notification')
@@ -64,6 +67,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
     if (activePage === 'Header') return <HeaderController />
     if (activePage === 'Sections') return <SectionVisibilityController />
     if (activePage === 'Legal Content') return <LegalContentController darkMode={isDarkMode} />
+    if (activePage === 'Become a member') return <MemberRequests darkMode={isDarkMode} />
     if (activePage === 'Profile') return <AdminProfile />
     if (activePage === 'Settings') return <AdminSettings />
     return <Dashboard />

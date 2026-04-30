@@ -15,7 +15,8 @@ const CityManagement = () => {
         description: "",
         image: "",
         imageFile: null,
-        status: "active"
+        status: "active",
+        isTopLocation: false
     });
     const [imagePreview, setImagePreview] = useState(null);
 
@@ -83,7 +84,8 @@ const CityManagement = () => {
                 country: newCity.country,
                 description: newCity.description,
                 image: imagePreview || newCity.image || null,
-                status: targetStatus
+                status: targetStatus,
+                isTopLocation: newCity.isTopLocation
             };
 
             if (editingCityId) {
@@ -111,7 +113,8 @@ const CityManagement = () => {
             description: city?.description || "",
             image: city?.image || city?.imageUrl || "",
             imageFile: null,
-            status: city?.status || "active"
+            status: city?.status || "active",
+            isTopLocation: city?.isTopLocation || false
         });
         setImagePreview(city?.image || city?.imageUrl || null);
         setShowAddModal(true);
@@ -213,6 +216,11 @@ const CityManagement = () => {
                                                         {city.status === 'draft' && (
                                                             <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
                                                                 Draft
+                                                            </span>
+                                                        )}
+                                                        {city.isTopLocation && (
+                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700 border border-amber-200">
+                                                                Top Location
                                                             </span>
                                                         )}
                                                     </div>
@@ -319,6 +327,18 @@ const CityManagement = () => {
                                     value={newCity.description}
                                     onChange={e => setNewCity({ ...newCity, description: e.target.value })}
                                 />
+                            </div>
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100">
+                                <input
+                                    type="checkbox"
+                                    id="isTopLocation"
+                                    className="w-4 h-4 text-[#704b24] focus:ring-[#704b24] border-gray-300 rounded"
+                                    checked={newCity.isTopLocation}
+                                    onChange={e => setNewCity({ ...newCity, isTopLocation: e.target.checked })}
+                                />
+                                <label htmlFor="isTopLocation" className="text-sm font-medium text-amber-900 cursor-pointer">
+                                    Mark as Top Location (Show on Homepage)
+                                </label>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1.5">City Image</label>

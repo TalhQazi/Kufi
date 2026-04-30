@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Globe, Plus, Trash2, Image as ImageIcon, Search, X, Pencil, Upload, Tag } from "lucide-react";
+import { Globe, Plus, Trash2, Image as ImageIcon, Search, X, Pencil, Upload, Tag, Eye } from "lucide-react";
 import api from "../../api";
+import CountryDetails from "../userpannel/CountryDetails";
 
 const CountryManagement = () => {
     const [countries, setCountries] = useState([]);
@@ -16,6 +17,7 @@ const CountryManagement = () => {
         status: "active"
     });
     const [imagePreview, setImagePreview] = useState(null);
+    const [viewingCountry, setViewingCountry] = useState(null);
 
     useEffect(() => {
         fetchCountries();
@@ -207,6 +209,13 @@ const CountryManagement = () => {
                                                         Resume
                                                     </button>
                                                 )}
+                                                 <button
+                                                    onClick={() => setViewingCountry(country.name)}
+                                                    className="p-2 text-gray-400 hover:text-blue-500 transition-colors rounded-lg hover:bg-blue-50"
+                                                    title="Preview Progress"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </button>
                                                 <button
                                                     onClick={() => handleEditCountry(country)}
                                                     className="p-2 text-gray-400 hover:text-[#704b24] transition-colors rounded-lg hover:bg-[#f7f1e7]"
@@ -234,6 +243,33 @@ const CountryManagement = () => {
                     </div>
                 )}
             </div>
+
+            {/* Preview Modal */}
+            {viewingCountry && (
+                <div className="fixed inset-0 z-[100] bg-white overflow-y-auto">
+                    <div className="sticky top-0 z-[110] bg-white/90 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                                Preview Mode
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-800">Viewing: {viewingCountry}</h3>
+                        </div>
+                        <button 
+                            onClick={() => setViewingCountry(null)}
+                            className="bg-[#704b24] text-white px-5 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-[#5a3c1d] transition-all"
+                        >
+                            Close Preview
+                        </button>
+                    </div>
+                    <div className="relative">
+                        <CountryDetails 
+                            countryName={viewingCountry} 
+                            hideHeaderFooter={true} 
+                            onBack={() => setViewingCountry(null)}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Add Modal */}
             {showAddModal && (

@@ -27,6 +27,7 @@ const navItems = [
   { label: "Activity", icon: Activity },
   { label: "Blogs", icon: BookOpen },
   { label: "User Management", icon: Users },
+  { label: "Manage Supplier", icon: Users },
   { label: "Analytics", icon: BarChart3 },
   { label: "Payments & Finance", icon: CreditCard },
   { label: "System Notification", icon: Bell },
@@ -39,6 +40,7 @@ const navItems = [
   { label: "Header", icon: PanelTop },
   { label: "Sections", icon: Layers },
   { label: "Legal Content", icon: Scale },
+  { label: "Become a member", icon: Users },
 ];
 
 

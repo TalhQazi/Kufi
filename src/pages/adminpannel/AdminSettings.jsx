@@ -16,7 +16,8 @@ const AdminSettings = () => {
 
     const [financialSettings, setFinancialSettings] = useState({
         commissionPercentage: 10,
-        stripePublicKey: ''
+        stripePublicKey: '',
+        googleAnalyticsId: ''
     });
     const [updatingSettings, setUpdatingSettings] = useState(false);
 
@@ -214,6 +215,18 @@ const AdminSettings = () => {
                                     placeholder="pk_live_..."
                                 />
                                 <p className="text-[10px] text-gray-400 mt-1.5">Used for frontend Stripe initialization. Keep secret key in server environment.</p>
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase">Google Analytics Tracking ID (GA4)</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#704b24] focus:ring-1 focus:ring-[#704b24] outline-none transition-all text-sm font-mono"
+                                    value={financialSettings.googleAnalyticsId}
+                                    onChange={(e) => setFinancialSettings({ ...financialSettings, googleAnalyticsId: e.target.value })}
+                                    placeholder="G-XXXXXXXXXX"
+                                />
+                                <p className="text-[10px] text-gray-400 mt-1.5">Enter your Google Analytics 4 Measurement ID to enable tracking across the whole website.</p>
                             </div>
                         </div>
 

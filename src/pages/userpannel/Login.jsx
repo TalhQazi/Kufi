@@ -1,8 +1,36 @@
 import { useState } from 'react'
-import { FaFacebookF, FaTwitter, FaInstagram, FaYoutube, FaEye, FaEyeSlash, FaCheck, FaTimes } from 'react-icons/fa'
+import { FaTwitter, FaInstagram, FaYoutube, FaEye, FaEyeSlash, FaCheck, FaTimes } from 'react-icons/fa'
 import { FcGoogle } from 'react-icons/fc'
-import { FiMail, FiLock, FiGlobe } from 'react-icons/fi'
+import { useGoogleLogin } from '@react-oauth/google'
+import { FiMail, FiLock, FiGlobe, FiX } from 'react-icons/fi'
+import { Loader2 } from 'lucide-react'
 import api from '../../api'
+
+
+const LegalModal = ({ isOpen, onClose, title, content, loading }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative w-full max-w-2xl max-h-[80vh] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-[#A67C52] text-white">
+                    <h2 className="text-lg font-semibold">{title}</h2>
+                    <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors"><FiX className="h-5 w-5" /></button>
+                </div>
+                <div className="p-6 overflow-y-auto max-h-[50vh]">
+                    {loading ? (
+                        <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[#A67C52]" /></div>
+                    ) : (
+                        <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: content || 'No content available' }} />
+                    )}
+                </div>
+                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
+                    <button onClick={onClose} className="w-full py-2.5 bg-[#A67C52] text-white rounded-lg font-medium transition-colors hover:bg-[#8e6a45]">Close</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 
 export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
@@ -11,6 +39,47 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [rememberMe, setRememberMe] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+    const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '', loading: false })
+
+    const openLegalModal = async (type, title) => {
+        setLegalModal({ isOpen: true, title, content: '', loading: true })
+        try {
+            const response = await api.get(`/legal-content/${type}`)
+            setLegalModal(prev => ({ ...prev, content: response.data.content, loading: false }))
+        } catch (error) {
+            console.error('Error fetching legal content:', error)
+            setLegalModal(prev => ({ ...prev, content: 'Failed to load content.', loading: false }))
+        }
+    }
+
+    const handleGoogleLogin = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            try {
+                setIsLoading(true);
+                const response = await api.post('/auth/google', {
+                    token: tokenResponse.access_token
+                });
+
+                if (response.data.token) {
+                    localStorage.setItem('authToken', response.data.token);
+                    localStorage.setItem('currentUser', JSON.stringify(response.data.user));
+                    localStorage.setItem('userRole', response.data.user.role);
+
+                    if (onLoginSuccess) onLoginSuccess(response.data.user.role);
+                }
+            } catch (error) {
+                console.error('Google login error:', error);
+                alert('Google login failed. Please try again.');
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        onError: () => {
+            console.error('Google Login Failed');
+            alert('Google login was unsuccessful.');
+        }
+    });
 
     const handleSubmit = async (event) => {
         event.preventDefault()
@@ -59,9 +128,7 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                 <div className="flex flex-col gap-6 max-w-md">
                     {/* Social Icons */}
                     <div className="flex gap-4">
-                        <a href="#" className="w-10 h-10 rounded-full bg-[#A67C52] text-white flex items-center justify-center hover:bg-[#8e6a45] transition-colors">
-                            <FaFacebookF size={18} />
-                        </a>
+
                         <a href="#" className="w-10 h-10 rounded-full bg-[#A67C52] text-white flex items-center justify-center hover:bg-[#8e6a45] transition-colors">
                             <FaTwitter size={18} />
                         </a>
@@ -85,11 +152,29 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
 
                     {/* Footer Links */}
                     <div className="flex gap-6 text-white/80 text-sm">
-                        <a href="#" className="hover:text-white hover:underline transition-colors">Privacy Policy</a>
-                        <a href="#" className="hover:text-white hover:underline transition-colors">Terms of Service</a>
+                        <button 
+                            onClick={() => openLegalModal('privacy', 'Privacy Policy')}
+                            className="hover:text-white hover:underline transition-colors"
+                        >
+                            Privacy Policy
+                        </button>
+                        <button 
+                            onClick={() => openLegalModal('terms', 'Terms of Service')}
+                            className="hover:text-white hover:underline transition-colors"
+                        >
+                            Terms of Service
+                        </button>
                     </div>
                 </div>
             </div>
+
+            <LegalModal 
+                isOpen={legalModal.isOpen} 
+                onClose={() => setLegalModal(prev => ({ ...prev, isOpen: false }))}
+                title={legalModal.title}
+                content={legalModal.content}
+                loading={legalModal.loading}
+            />
 
             {/* Right Side */}
             <div className="bg-white flex flex-col relative">
@@ -197,14 +282,14 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                             <span className="relative bg-white px-4 text-xs md:text-sm font-medium text-slate-500">Or continue with</span>
                         </div>
 
-                        <div className="flex gap-3 md:gap-4">
-                            <button type="button" className="flex-1 py-2.5 md:py-3 rounded border-2 border-[#A67C52] bg-white flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer group">
+                        <div className="flex flex-col gap-3 md:gap-4">
+                            <button
+                                type="button"
+                                onClick={handleGoogleLogin}
+                                className="w-full py-2.5 md:py-3 rounded border-2 border-[#A67C52] bg-white flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer group"
+                            >
                                 <FcGoogle size={20} />
-                                <span className="font-semibold text-sm md:text-base text-[#A67C52] group-hover:text-[#8e6a45]">Google</span>
-                            </button>
-                            <button type="button" className="flex-1 py-2.5 md:py-3 rounded border-2 border-[#A67C52] bg-white flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer group">
-                                <FaFacebookF size={20} className="text-[#A67C52]" />
-                                <span className="font-semibold text-sm md:text-base text-[#A67C52] group-hover:text-[#8e6a45]">Facebook</span>
+                                <span className="font-semibold text-sm md:text-base text-[#A67C52] group-hover:text-[#8e6a45]">Continue with Google</span>
                             </button>
                         </div>
 

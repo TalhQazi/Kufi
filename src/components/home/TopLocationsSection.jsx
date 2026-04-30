@@ -10,9 +10,10 @@ export default function TopLocationsSection({ onCountryClick }) {
     useEffect(() => {
         const fetchCities = async () => {
             try {
-                const response = await api.get('/cities')
+                const response = await api.get('/cities?isTopLocation=true')
                 const data = response.data || []
-                const activeOnly = (Array.isArray(data) ? data : []).filter((c) => c?.status !== 'draft')
+                const activeOnly = (Array.isArray(data) ? data : [])
+                    .filter((c) => c?.status !== 'draft' && c?.isTopLocation === true)
                 setCities(activeOnly)
             } catch (error) {
                 console.error("Error fetching cities:", error)

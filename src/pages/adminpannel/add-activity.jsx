@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Upload, Save } from "lucide-react";
+import { Upload, Save, Plus, X } from "lucide-react";
 import api from "../../api";
 
 const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
@@ -18,6 +18,7 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
     status: "active",
     price: "",
     thumbnail: "",
+    images: [],
     addOns: [""],
     highlights: [""],
     coordinates: { lat: "", lng: "" },
@@ -34,6 +35,7 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
         duration: formData.duration,
         price: formData.price ? Number(formData.price) : undefined,
         image: formData.thumbnail || undefined,
+        images: formData.images || [],
         status: 'draft',
         addOns: (Array.isArray(formData.addOns) ? formData.addOns : [])
           .map((v) => String(v || '').trim())
@@ -126,6 +128,7 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
       status: (initialData.status === 'approved' || initialData.status === 'active') ? 'active' : 'inactive',
       price: initialData.price != null ? String(initialData.price) : "",
       thumbnail: initialData.thumbnail || initialData.image || "",
+      images: Array.isArray(initialData.images) ? initialData.images : [],
       addOns: normalizeAddOns(),
       highlights: normalizeHighlights(),
       coordinates: initialData.coordinates || { lat: "", lng: "" },
@@ -232,6 +235,28 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
     reader.readAsDataURL(file);
   };
 
+  const handleGalleryChange = (files) => {
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          images: [...(prev.images || []), reader.result]
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeGalleryImage = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
+
   const handleSave = async () => {
     if (!formData.title || !formData.category || !formData.location) {
       alert("Please fill in the required fields (Name, Category, Location)");
@@ -248,6 +273,7 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
         duration: formData.duration,
         price: formData.price ? Number(formData.price) : undefined,
         image: formData.thumbnail || undefined,
+        images: formData.images || [],
         status: formData.status === "active" ? "approved" : "pending",
         addOns: (Array.isArray(formData.addOns) ? formData.addOns : [])
           .map((v) => String(v || '').trim())
@@ -301,6 +327,12 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
           <ThumbnailDrop
             thumbnail={formData.thumbnail}
             onThumbnailChange={handleThumbnailChange}
+            label="Main Thumbnail"
+          />
+          <GalleryDrop
+            images={formData.images}
+            onGalleryChange={handleGalleryChange}
+            onRemove={removeGalleryImage}
           />
           <div>
             <label className="text-sm font-semibold text-gray-600 mb-2 block">
@@ -597,6 +629,60 @@ const ThumbnailDrop = ({ thumbnail, onThumbnailChange }) => {
       </div>
       <input
         type="file"
+        accept="image/*"
+        className="hidden"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+      />
+    </div>
+  );
+};
+
+const GalleryDrop = ({ images, onGalleryChange, onRemove }) => {
+  const fileInputRef = useRef(null);
+
+  const handleClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e) => {
+    onGalleryChange(e.target.files);
+  };
+
+  return (
+    <div className="md:col-span-2">
+      <label className="text-sm font-semibold text-gray-600 mb-2 block">
+        Gallery Images
+      </label>
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+        {images.map((img, idx) => (
+          <div key={idx} className="relative aspect-square group">
+            <img
+              src={img}
+              alt={`Gallery ${idx}`}
+              className="w-full h-full object-cover rounded-xl border border-gray-100"
+            />
+            <button
+              onClick={() => onRemove(idx)}
+              className="absolute -top-2 -right-2 bg-rose-500 text-white p-1 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ))}
+        <div
+          className="aspect-square border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#a26e35]/60 transition-colors"
+          onClick={handleClick}
+        >
+          <Plus className="w-6 h-6 text-gray-400" />
+          <span className="text-[10px] font-semibold text-gray-500 mt-1">Add More</span>
+        </div>
+      </div>
+      <input
+        type="file"
+        multiple
         accept="image/*"
         className="hidden"
         ref={fileInputRef}
