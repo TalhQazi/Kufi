@@ -215,6 +215,7 @@ const Activity = ({ onAddNew }) => {
                 />
               </div>
           </div>
+        </div>
 
        
         <div className="md:hidden space-y-4">
