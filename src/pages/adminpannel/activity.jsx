@@ -188,7 +188,6 @@ const Activity = ({ onAddNew }) => {
                 </button>
               ))}
             </div>
-            </div>
             <div className="flex items-center gap-2 ml-0 md:ml-auto w-full md:w-auto">
               <div className="flex items-center bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 text-sm text-gray-500 w-full md:w-auto">
                 <MapPin className="w-4 h-4 mr-2 text-gray-400 shrink-0" />
@@ -215,9 +214,7 @@ const Activity = ({ onAddNew }) => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-            </div>
           </div>
-        </div>
 
        
         <div className="md:hidden space-y-4">
@@ -426,6 +423,7 @@ const Activity = ({ onAddNew }) => {
           )}
         </div>
       </div>
+    </div>
 
       {viewingActivity && (
         <div className="fixed inset-0 bg-black/40 z-[70] flex items-center justify-center p-4">
