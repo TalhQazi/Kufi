@@ -33,6 +33,7 @@ export default function CountryDetails({
     const [citiesLoading, setCitiesLoading] = useState(true)
     const [reviews, setReviews] = useState([])
     const [reviewsLoading, setReviewsLoading] = useState(true)
+    const [selectedCity, setSelectedCity] = useState(null)
     const dropdownRef = useRef(null)
 
     // Scroll to top when component mounts
@@ -357,23 +358,27 @@ export default function CountryDetails({
                 <div className="mb-4 space-y-3 lg:flex-1 lg:overflow-y-auto lg:pr-2 hide-scrollbar">
                     {selectedActivities.map((activity) => (
                         <div key={activity?.id || activity?._id} className="pb-3 border-b border-slate-200 last:border-0">
-                            <div className="flex items-center gap-3 mb-2">
+                            <div 
+                                className="flex items-center gap-3 mb-2 cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => onActivityClick && onActivityClick(activity?.id || activity?._id)}
+                            >
                                 <img src={activity?.image} alt={activity?.title} className="w-16 h-16 rounded-lg object-cover" />
                                 <div className="flex-1 min-w-0">
                                     <h4 className="text-sm font-semibold text-slate-900 truncate">{activity?.title}</h4>
                                     <p className="text-xs text-slate-500 truncate">{activity?.location}</p>
                                 </div>
-                                <button
-                                    onClick={() => onRemoveActivity && onRemoveActivity(activity?.id || activity?._id)}
-                                    className="p-1 hover:bg-red-50 rounded transition-colors"
-                                    title="Remove"
-                                    type="button"
-                                >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
-                                        <path d="M18 6L6 18M6 6l12 12" />
-                                    </svg>
-                                </button>
                             </div>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onRemoveActivity && onRemoveActivity(activity?.id || activity?._id);
+                                }}
+                                className="text-xs text-red-500 hover:text-red-700 font-medium"
+                                title="Remove"
+                                type="button"
+                            >
+                                Remove
+                            </button>
                         </div>
                     ))}
                 </div>
@@ -698,7 +703,8 @@ export default function CountryDetails({
                                                 cities.map((city) => (
                                                     <div
                                                         key={city._id}
-                                                        className="country-city-card"
+                                                        className="country-city-card cursor-pointer hover:shadow-lg transition-shadow"
+                                                        onClick={() => setSelectedCity(city)}
                                                     >
                                                         <div className="country-city-image-wrapper">
                                                             <img
@@ -915,6 +921,34 @@ export default function CountryDetails({
 
                     {!hideHeaderFooter && <Footer />}
             </>
+        )}
+
+        {/* City Detail Modal */}
+        {selectedCity && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setSelectedCity(null)}>
+                <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="relative h-48">
+                        <img 
+                            src={selectedCity.image || "/assets/activity1.jpeg"} 
+                            alt={selectedCity.name}
+                            className="w-full h-full object-cover"
+                        />
+                        <button 
+                            onClick={() => setSelectedCity(null)}
+                            className="absolute top-4 right-4 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-gray-600 hover:bg-white"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    <div className="p-6">
+                        <p className="text-sm text-[#a26e35] font-medium mb-1">{countryName}</p>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-3">{selectedCity.name}</h2>
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                            {selectedCity.description || "No description available for this city."}
+                        </p>
+                    </div>
+                </div>
+            </div>
         )}
     </div>
   )
