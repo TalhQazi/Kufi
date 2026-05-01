@@ -147,6 +147,21 @@ const SupplierManagement = () => {
                                 </span>
                             </div>
 
+                            {/* Verification Status */}
+                            <div className="flex items-center gap-2 mb-4">
+                                <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                                    supplier.isVerified ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                }`}>
+                                    {supplier.isVerified ? 'Verified' : 'Pending'}
+                                </span>
+                                <span className="text-[10px] text-gray-400">
+                                    License: {supplier.businessLicenseStatus || 'pending'}
+                                </span>
+                                <span className="text-[10px] text-gray-400">
+                                    Profile: {supplier.businessProfileStatus || 'pending'}
+                                </span>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4 py-4 border-y border-gray-50 mb-4">
                                 <div>
                                     <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Score</p>
@@ -160,13 +175,34 @@ const SupplierManagement = () => {
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => handleViewSupplier(supplier)}
-                                className="w-full py-3 bg-gray-50 text-slate-600 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#704b24] hover:text-white transition-all shadow-sm"
-                            >
-                                <Eye className="w-4 h-4" />
-                                View History & Requests
-                            </button>
+                            <div className="flex gap-2">
+                                {!supplier.isVerified && (
+                                    <button
+                                        onClick={async () => {
+                                            if (!window.confirm(`Verify supplier ${supplier.name}?`)) return;
+                                            try {
+                                                await api.put(`/admin/suppliers/${supplier._id}/verify-all`);
+                                                alert("Supplier verified successfully!");
+                                                fetchSuppliers();
+                                            } catch (error) {
+                                                console.error("Error verifying supplier:", error);
+                                                alert("Failed to verify supplier");
+                                            }
+                                        }}
+                                        className="flex-1 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold flex items-center justify-center gap-1 hover:bg-emerald-100 transition-all"
+                                    >
+                                        <CheckCircle className="w-4 h-4" />
+                                        Verify
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => handleViewSupplier(supplier)}
+                                    className="flex-1 py-3 bg-gray-50 text-slate-600 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#704b24] hover:text-white transition-all shadow-sm"
+                                >
+                                    <Eye className="w-4 h-4" />
+                                    View
+                                </button>
+                            </div>
                         </div>
                     ))
                 )}

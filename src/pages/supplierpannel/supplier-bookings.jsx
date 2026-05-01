@@ -196,7 +196,27 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                       {row.date}
                     </p>
                   </div>
-                  <p className="text-sm font-bold text-[#a26e35]">{row.amount}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-[#a26e35]">{row.amount}</p>
+                    {row.status !== 'Cancelled' && row.status !== 'Completed' && (
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+                          try {
+                            await api.patch(`/bookings/${row.id}/status`, { status: 'cancelled' });
+                            setBookings(prev => prev.map(b => b.id === row.id ? { ...b, status: 'Cancelled' } : b));
+                            alert("Booking cancelled successfully!");
+                          } catch (error) {
+                            console.error("Error cancelling booking:", error);
+                            alert("Failed to cancel booking");
+                          }
+                        }}
+                        className="text-[10px] text-rose-500 hover:text-rose-700 font-medium px-2 py-1 border border-rose-200 rounded"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )) : <div className="text-center py-8 text-gray-400 text-xs">No bookings found</div>}
@@ -232,7 +252,7 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                     <td className="px-4 py-3 text-xs max-w-[150px] truncate">{row.experience}</td>
                     <td className="px-4 py-3 text-xs hidden xl:table-cell">{row.date}</td>
                     <td className="px-4 py-3 text-xs font-semibold">{row.amount}</td>
-                    <td className="px-6 py-3 text-right">
+                    <td className="px-4 py-3 text-right">
                       <span
                         className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${statusClass(
                           row.status
@@ -240,6 +260,26 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                       >
                         {row.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {row.status !== 'Cancelled' && row.status !== 'Completed' && (
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+                            try {
+                              await api.patch(`/bookings/${row.id}/status`, { status: 'cancelled' });
+                              setBookings(prev => prev.map(b => b.id === row.id ? { ...b, status: 'Cancelled' } : b));
+                              alert("Booking cancelled successfully!");
+                            } catch (error) {
+                              console.error("Error cancelling booking:", error);
+                              alert("Failed to cancel booking");
+                            }
+                          }}
+                          className="text-xs text-rose-500 hover:text-rose-700 font-medium"
+                        >
+                          Cancel
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )) : <tr><td colSpan="7" className="text-center py-8 text-gray-400 text-xs">No bookings found</td></tr>}

@@ -6,6 +6,12 @@ const SupplierProfile = ({ darkMode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState('Profile');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [form, setForm] = useState({
     businessName: "",
     contactEmail: "",
@@ -20,6 +26,12 @@ const SupplierProfile = ({ darkMode }) => {
   const [countries, setCountries] = useState([]);
 
   const [documents, setDocuments] = useState([]);
+  
+  const [verificationStatus, setVerificationStatus] = useState({
+    businessLicenseStatus: 'pending',
+    businessProfileStatus: 'pending',
+    isVerified: false
+  });
 
   // Normalize profile object (from DB via login user), support camelCase or snake_case
   const normalizeProfile = (data) => {
@@ -62,7 +74,16 @@ const SupplierProfile = ({ darkMode }) => {
         const rawUser = stored ? JSON.parse(stored) : null;
         const userFields = normalizeProfile(profileFromApi || rawUser);
 
-        setForm((prev) => ({ ...prev, ...userFields }));
+        setForm((prev => ({ ...prev, ...userFields })));
+        
+        // Set verification status from API
+        if (profileFromApi) {
+          setVerificationStatus({
+            businessLicenseStatus: profileFromApi.businessLicenseStatus || 'pending',
+            businessProfileStatus: profileFromApi.businessProfileStatus || 'pending',
+            isVerified: profileFromApi.isVerified || false
+          });
+        }
       } catch (error) {
         console.error("Error loading supplier profile from stored user:", error);
       } finally {
@@ -144,33 +165,90 @@ const SupplierProfile = ({ darkMode }) => {
     }
   };
 
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      setPasswordError('All fields are required');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+      await api.post('/auth/change-password', {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      setPasswordSuccess('Password changed successfully!');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setPasswordSuccess('');
+      }, 2000);
+    } catch (error) {
+      const msg = error.response?.data?.msg || error.response?.data?.message || 'Failed to change password';
+      setPasswordError(msg);
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   const handleUploadClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
-  const handleFileChange = (event) => {
+  const handleFileChange = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setForm(prev => ({ ...prev, image: reader.result }));
-    };
-    reader.readAsDataURL(file);
-
-    const now = new Date();
-    const meta = `Pending review • Uploaded ${now.toLocaleDateString()}`;
-
-    setDocuments((prev) => [
-      ...prev,
-      {
-        id: prev.length + 1,
-        name: file.name,
-        status: "Pending",
-        meta,
-      },
-    ]);
+    
+    try {
+      // Upload to backend
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await api.post('/upload/business-license', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      const fileUrl = response.data?.url || response.data?.fileUrl;
+      
+      // Save to user profile in backend
+      await api.patch('/auth/profile', { businessLicense: fileUrl });
+      
+      // Update local state
+      const now = new Date();
+      const meta = `Pending review • Uploaded ${now.toLocaleDateString()}`;
+      
+      setDocuments((prev) => [
+        ...prev,
+        {
+          id: prev.length + 1,
+          name: file.name,
+          status: "Pending",
+          meta,
+          url: fileUrl,
+        },
+      ]);
+      
+      alert("Business license uploaded! Pending verification.");
+    } catch (error) {
+      console.error("Error uploading business license:", error);
+      alert("Failed to upload business license");
+    }
 
     event.target.value = "";
   };
@@ -183,29 +261,55 @@ const SupplierProfile = ({ darkMode }) => {
     );
   }
 
+  const tabs = ['Profile', 'Settings'];
+
   return (
     <div className={`space-y-6 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
-      {/* Top bar: title + button */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className={`text-xl sm:text-2xl font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-slate-900"}`}>Profile & Verification</h1>
-          <p className={`mt-1 text-xs sm:text-sm transition-colors duration-300 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
-            Manage your supplier profile and documents
-          </p>
+      {/* Top bar: title + tabs */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className={`text-xl sm:text-2xl font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-slate-900"}`}>
+              {activeTab === 'Profile' ? 'Profile & Verification' : 'Settings'}
+            </h1>
+            <p className={`mt-1 text-xs sm:text-sm transition-colors duration-300 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+              {activeTab === 'Profile' ? 'Manage your supplier profile and documents' : 'Manage your account settings'}
+            </p>
+          </div>
+
+          {activeTab === 'Profile' && (
+            <button
+              onClick={handleToggleEdit}
+              disabled={isSaving}
+              className={`w-full sm:w-auto rounded-full px-6 py-2.5 text-xs font-semibold shadow-sm transition-all ${isEditing
+                ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                : "bg-[#a26e35] text-white hover:bg-[#8b5e2d]"
+                } ${isSaving ? "opacity-70 cursor-not-allowed" : ""}`}
+            >
+              {isSaving ? "Saving..." : isEditing ? "Save Changes" : "Edit Profile"}
+            </button>
+          )}
         </div>
 
-        <button
-          onClick={handleToggleEdit}
-          disabled={isSaving}
-          className={`w-full sm:w-auto rounded-full px-6 py-2.5 text-xs font-semibold shadow-sm transition-all ${isEditing
-            ? "bg-emerald-600 text-white hover:bg-emerald-700"
-            : "bg-[#a26e35] text-white hover:bg-[#8b5e2d]"
-            } ${isSaving ? "opacity-70 cursor-not-allowed" : ""}`}
-        >
-          {isSaving ? "Saving..." : isEditing ? "Save Changes" : "Edit Profile"}
-        </button>
+        {/* Tabs */}
+        <div className="flex gap-2 border-b border-gray-200 dark:border-slate-700">
+          {tabs.map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 text-xs font-semibold transition-colors border-b-2 -mb-px ${
+                activeTab === tab
+                  ? 'border-[#a26e35] text-[#a26e35]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {activeTab === 'Profile' && (
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2.1fr)_minmax(260px,0.9fr)]">
         {/* Left: business information & documents */}
         <div className="space-y-5">
@@ -396,8 +500,8 @@ const SupplierProfile = ({ darkMode }) => {
               {[
                 { label: "Email", verified: !!(form.contactEmail && form.contactEmail.includes('@')) },
                 { label: "Phone", verified: !!(form.phoneNumber && form.phoneNumber.length >= 7) },
-                { label: "Business License", verified: documents.length > 0 },
-                { label: "Business Profile", verified: !!(form.businessName && form.businessAddress) },
+                { label: "Business License", verified: verificationStatus.businessLicenseStatus === 'verified' },
+                { label: "Business Profile", verified: verificationStatus.businessProfileStatus === 'verified' },
               ].map((item, idx) => (
                 <div
                   key={item.label}
@@ -414,15 +518,127 @@ const SupplierProfile = ({ darkMode }) => {
             </div>
           </div>
 
-          <div className={`rounded-2xl border transition-colors duration-300 px-5 py-5 text-xs ${darkMode ? "bg-blue-900/20 border-blue-900/30 text-blue-300" : "bg-[#eef4ff] border-blue-100 text-blue-900"}`}>
+          <div className={`rounded-2xl border transition-colors duration-300 px-5 py-5 text-xs ${verificationStatus.isVerified ? (darkMode ? "bg-emerald-900/20 border-emerald-900/30 text-emerald-300" : "bg-emerald-50 border-emerald-100 text-emerald-900") : (darkMode ? "bg-amber-900/20 border-amber-900/30 text-amber-300" : "bg-amber-50 border-amber-100 text-amber-900")}`}>
             <h2 className={`text-sm font-semibold mb-2 transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Account Status</h2>
             <p className="text-[11px] leading-relaxed opacity-90">
-              Your account is fully verified and active. You can now receive
-              bookings and manage your experiences.
+              {verificationStatus.isVerified 
+                ? "Your account is fully verified and active. You can now receive bookings and manage your experiences."
+                : "Your account is pending verification. Please complete your business profile and upload business license."}
             </p>
           </div>
         </aside>
       </div>
+      )}
+
+      {/* Settings Tab Content */}
+      {activeTab === 'Settings' && (
+        <div className="space-y-5">
+          <div className={`rounded-2xl border transition-colors duration-300 px-5 py-5 space-y-4 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+            <h2 className={`text-sm font-semibold transition-colors duration-300 ${darkMode ? "text-white" : "text-slate-900"}`}>Security</h2>
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Password</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Last changed 3 months ago</p>
+                </div>
+                <button 
+                  onClick={() => setShowPasswordModal(true)}
+                  className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-[#a26e35] hover:bg-slate-50 transition-colors dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300"
+                >
+                  Update Password
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Change Password</h3>
+              <button 
+                onClick={() => {
+                  setShowPasswordModal(false)
+                  setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+                  setPasswordError('')
+                  setPasswordSuccess('')
+                }}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Current Password</label>
+                <input
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#a26e35] bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                  placeholder="Enter current password"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">New Password</label>
+                <input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#a26e35] bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                  placeholder="Enter new password"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-[#a26e35] bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                  placeholder="Confirm new password"
+                />
+              </div>
+
+              {passwordError && (
+                <p className="text-red-500 text-sm">{passwordError}</p>
+              )}
+              {passwordSuccess && (
+                <p className="text-green-500 text-sm">{passwordSuccess}</p>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPasswordModal(false)
+                    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+                    setPasswordError('')
+                    setPasswordSuccess('')
+                  }}
+                  className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isChangingPassword}
+                  className="flex-1 px-4 py-2 bg-[#a26e35] text-white rounded-lg text-sm font-medium hover:bg-[#8b5e2d] disabled:opacity-50"
+                >
+                  {isChangingPassword ? "Changing..." : "Change Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

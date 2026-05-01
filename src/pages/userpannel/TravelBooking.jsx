@@ -106,6 +106,28 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
     const [bookingTerms, setBookingTerms] = useState([])
     const [bookingTermsLoading, setBookingTermsLoading] = useState(true)
 
+    // Fetch user profile from API to auto-fill form
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            try {
+                const res = await api.get('/auth/profile')
+                const profile = res.data
+                if (profile) {
+                    setFormData(prev => ({
+                        ...prev,
+                        firstName: prev.firstName || profile.fullName || profile.name || '',
+                        lastName: prev.lastName || '',
+                        email: prev.email || profile.email || '',
+                        phone: prev.phone || profile.phone || '',
+                    }))
+                }
+            } catch (err) {
+                console.error('Error fetching profile:', err)
+            }
+        }
+        fetchUserProfile()
+    }, [])
+
     useEffect(() => {
         const ids = (payloadActivities || [])
             .map(a => a?.id || a?._id)
@@ -511,7 +533,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                                        Last Name <span className="text-red-500">*</span>
+                                        Last Name
                                     </label>
                                     <input
                                         type="text"
@@ -519,7 +541,6 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                         onChange={(e) => handleChange('lastName', e.target.value)}
                                         className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm"
                                         placeholder="Doe"
-                                        required
                                     />
                                 </div>
                             </div>

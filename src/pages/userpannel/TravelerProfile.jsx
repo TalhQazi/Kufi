@@ -10,21 +10,101 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
     const [showProfileDropdown, setShowProfileDropdown] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
+    const [showPasswordModal, setShowPasswordModal] = useState(false)
+    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    const [passwordError, setPasswordError] = useState('')
+    const [passwordSuccess, setPasswordSuccess] = useState('')
     const [isLoading, setIsLoading] = useState(true)
     const [bookings, setBookings] = useState([])
-    const [profileData, setProfileData] = useState({
-        fullName: '',
-        email: '',
-        phone: '',
-        country: '',
-        dob: '',
-        gender: '',
-        address: '',
-        city: '',
-        nationality: ''
+    const [profileData, setProfileData] = useState(() => {
+        try {
+            const saved = localStorage.getItem('kufi_user_profile')
+            const parsed = saved ? JSON.parse(saved) : {}
+            return {
+                fullName: parsed.fullName || '',
+                email: parsed.email || '',
+                phone: parsed.phone || '',
+                country: parsed.country || '',
+                dob: parsed.dob || '',
+                gender: parsed.gender || '',
+                streetNumber: parsed.streetNumber || '',
+                address: parsed.address || '',
+                city: parsed.city || '',
+                state: parsed.state || '',
+                zipCode: parsed.zipCode || '',
+                nationality: parsed.nationality || ''
+            }
+        } catch {
+            return {
+                fullName: '',
+                email: '',
+                phone: '',
+                country: '',
+                dob: '',
+                gender: '',
+                streetNumber: '',
+                address: '',
+                city: '',
+                state: '',
+                zipCode: '',
+                nationality: ''
+            }
+        }
     })
+    
+    const countriesList = [
+        "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (Democratic Republic of the)", "Congo (Republic of the)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Korea (North)", "Korea (South)", "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+    ]
+    
     const [wishlist, setWishlist] = useState([])
+    const [userPreferences, setUserPreferences] = useState(() => {
+        try {
+            const saved = localStorage.getItem('kufi_user_preferences')
+            return saved ? JSON.parse(saved) : {
+                destinations: [],
+                tripTypes: [],
+                budget: '',
+                foodPreferences: [],
+                accommodation: [],
+                travelStyle: []
+            }
+        } catch {
+            return {
+                destinations: [],
+                tripTypes: [],
+                budget: '',
+                foodPreferences: [],
+                accommodation: [],
+                travelStyle: []
+            }
+        }
+    })
+    const [isPreferencesEditing, setIsPreferencesEditing] = useState(false)
     const dropdownRef = useRef(null)
+
+    // Save preferences to localStorage whenever they change
+    useEffect(() => {
+        try {
+            localStorage.setItem('kufi_user_preferences', JSON.stringify(userPreferences))
+        } catch (err) {
+            console.error('Error saving preferences:', err)
+        }
+    }, [userPreferences])
+
+    // Save profileData to localStorage whenever it changes
+    useEffect(() => {
+        try {
+            localStorage.setItem('kufi_user_profile', JSON.stringify(profileData))
+        } catch (err) {
+            console.error('Error saving profile:', err)
+        }
+    }, [profileData])
+
+    const availableDestinations = ['Europe', 'Asia', 'Middle East', 'Africa', 'North America', 'South America', 'Oceania', 'Caribbean']
+    const availableTripTypes = ['Adventure', 'Relaxation', 'Cultural', 'Business', 'Family', 'Honeymoon', 'Solo', 'Group']
+    const availableFoodPreferences = ['Local Cuisine', 'Vegetarian Options', 'Vegan', 'Fine Dining', 'Street Food', 'Halal', 'Kosher', 'Seafood']
+    const availableAccommodation = ['Boutique Hotels', '4-5 Star', 'Hostels', 'Unique Stays', 'Airbnb', 'Resorts', 'Eco-Lodges']
+    const availableTravelStyle = ['Luxury', 'Budget', 'Mid-Range', 'Backpacking', 'Slow Travel', 'Digital Nomad']
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -97,8 +177,11 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                     country: profile.country || storedUser?.country || '',
                     dob: profile.dob ? String(profile.dob).split('T')[0] : (storedUser?.dob ? String(storedUser.dob).split('T')[0] : ''),
                     gender: profile.gender || storedUser?.gender || '',
+                    streetNumber: profile.streetNumber || '',
                     address: profile.address || storedUser?.address || '',
                     city: profile.city || storedUser?.city || '',
+                    state: profile.state || '',
+                    zipCode: profile.zipCode || '',
                     nationality: profile.nationality || storedUser?.nationality || ''
                 })
 
@@ -140,6 +223,43 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
         } catch (error) {
             console.error("Error updating profile:", error)
             alert("Failed to update profile. Please try again.")
+        }
+    }
+
+    const handleChangePassword = async (e) => {
+        e.preventDefault()
+        setPasswordError('')
+        setPasswordSuccess('')
+
+        if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+            setPasswordError('All fields are required')
+            return
+        }
+
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            setPasswordError('New passwords do not match')
+            return
+        }
+
+        if (passwordData.newPassword.length < 6) {
+            setPasswordError('Password must be at least 6 characters')
+            return
+        }
+
+        try {
+            await api.post('/auth/change-password', {
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
+            })
+            setPasswordSuccess('Password changed successfully!')
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+            setTimeout(() => {
+                setShowPasswordModal(false)
+                setPasswordSuccess('')
+            }, 2000)
+        } catch (error) {
+            const msg = error.response?.data?.msg || error.response?.data?.message || 'Failed to change password'
+            setPasswordError(msg)
         }
     }
 
@@ -251,7 +371,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
         return { preferredDestinations, preferredTripTypes }
     }, [normalizedBookings])
 
-    const tabs = ['Personal Info', 'Preferences', 'Travel History', 'Wishlist', 'Payments', 'Settings']
+    const tabs = ['Personal Info', 'Preferences', 'Travel History', 'Wishlist', 'Settings']
 
     if (isLoading) {
         return (
@@ -335,17 +455,6 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                             }}
                                         >
                                             NOTIFICATIONS
-                                        </div>
-                                        <div
-                                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                                            onClick={() => {
-                                                setActiveTab('Payments')
-                                                setShowProfileDropdown(false)
-                                                // Scroll to top if needed
-                                                window.scrollTo({ top: 0, behavior: 'smooth' })
-                                            }}
-                                        >
-                                            PAYMENTS
                                         </div>
                                         <div
                                             className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
@@ -598,8 +707,29 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 </div>
 
 
-                                {/* Address */}
+                                {/* Street Number */}
                                 <div>
+                                    <div className="flex items-center gap-2 text-[11px] text-[#C4A574] font-medium mb-1.5 uppercase tracking-wider">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                            <circle cx="12" cy="10" r="3" />
+                                        </svg>
+                                        Street Number
+                                    </div>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={profileData.streetNumber}
+                                            onChange={(e) => setProfileData({ ...profileData, streetNumber: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                        />
+                                    ) : (
+                                        <div className="text-sm sm:text-base text-slate-900 font-medium">{profileData.streetNumber}</div>
+                                    )}
+                                </div>
+
+                                {/* Address */}
+                                {/* <div>
                                     <div className="flex items-center gap-2 text-[11px] text-[#C4A574] font-medium mb-1.5 uppercase tracking-wider">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -617,7 +747,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                     ) : (
                                         <div className="text-sm sm:text-base text-slate-900 font-medium">{profileData.address}</div>
                                     )}
-                                </div>
+                                </div> */}
 
                                 {/* City */}
                                 <div>
@@ -640,6 +770,48 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                     )}
                                 </div>
 
+                                {/* State */}
+                                <div>
+                                    <div className="flex items-center gap-2 text-[11px] text-[#C4A574] font-medium mb-1.5 uppercase tracking-wider">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                            <circle cx="12" cy="10" r="3" />
+                                        </svg>
+                                        State
+                                    </div>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={profileData.state}
+                                            onChange={(e) => setProfileData({ ...profileData, state: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                        />
+                                    ) : (
+                                        <div className="text-sm sm:text-base text-slate-900 font-medium">{profileData.state}</div>
+                                    )}
+                                </div>
+
+                                {/* Zip Code */}
+                                <div>
+                                    <div className="flex items-center gap-2 text-[11px] text-[#C4A574] font-medium mb-1.5 uppercase tracking-wider">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                            <circle cx="12" cy="10" r="3" />
+                                        </svg>
+                                        Zip Code
+                                    </div>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={profileData.zipCode}
+                                            onChange={(e) => setProfileData({ ...profileData, zipCode: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
+                                        />
+                                    ) : (
+                                        <div className="text-sm sm:text-base text-slate-900 font-medium">{profileData.zipCode}</div>
+                                    )}
+                                </div>
+
                                 {/* Nationality */}
                                 <div>
                                     <div className="flex items-center gap-2 text-[11px] text-[#C4A574] font-medium mb-1.5 uppercase tracking-wider">
@@ -651,12 +823,16 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         Nationality
                                     </div>
                                     {isEditing ? (
-                                        <input
-                                            type="text"
+                                        <select
                                             value={profileData.nationality}
                                             onChange={(e) => setProfileData({ ...profileData, nationality: e.target.value })}
                                             className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-brown"
-                                        />
+                                        >
+                                            <option value="">Select Nationality</option>
+                                            {countriesList.map((country) => (
+                                                <option key={country} value={country}>{country}</option>
+                                            ))}
+                                        </select>
                                     ) : (
                                         <div className="text-sm sm:text-base text-slate-900 font-medium">{profileData.nationality}</div>
                                     )}
@@ -667,7 +843,15 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
 
                     {activeTab === 'Preferences' && (
                         <div className="bg-white rounded-2xl p-6 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-900 mb-6">Traveler Preferences</h3>
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-bold text-slate-900">Traveler Preferences</h3>
+                                <button
+                                    onClick={() => setIsPreferencesEditing(!isPreferencesEditing)}
+                                    className="text-xs font-medium text-[#8B6E4E] hover:text-[#7a5d3f]"
+                                >
+                                    {isPreferencesEditing ? 'Done' : 'Edit'}
+                                </button>
+                            </div>
 
                             <div className="space-y-6">
                                 {/* Preferred Destinations */}
@@ -680,15 +864,38 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         Preferred Destinations
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        {derivedPreferences.preferredDestinations.length > 0 ? derivedPreferences.preferredDestinations.map((dest) => (
-                                            <span
-                                                key={dest}
-                                                className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium"
-                                            >
-                                                {dest}
-                                            </span>
-                                        )) : (
-                                            <span className="text-xs text-slate-500">No data yet</span>
+                                        {isPreferencesEditing ? (
+                                            availableDestinations.map((dest) => {
+                                                const isSelected = userPreferences.destinations.includes(dest)
+                                                return (
+                                                    <button
+                                                        key={dest}
+                                                        onClick={() => {
+                                                            setUserPreferences(prev => ({
+                                                                ...prev,
+                                                                destinations: isSelected 
+                                                                    ? prev.destinations.filter(d => d !== dest)
+                                                                    : [...prev.destinations, dest]
+                                                            }))
+                                                        }}
+                                                        className={`px-4 py-2 rounded-full text-xs font-medium transition-colors ${
+                                                            isSelected 
+                                                                ? 'bg-[#8B6E4E] text-white' 
+                                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                        }`}
+                                                    >
+                                                        {dest}
+                                                    </button>
+                                                )
+                                            })
+                                        ) : userPreferences.destinations.length > 0 ? (
+                                            userPreferences.destinations.map((dest) => (
+                                                <span key={dest} className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium">
+                                                    {dest}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-xs text-slate-500">No preferences selected</span>
                                         )}
                                     </div>
                                 </div>
@@ -703,15 +910,38 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         Preferred Trip Types
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        {derivedPreferences.preferredTripTypes.length > 0 ? derivedPreferences.preferredTripTypes.map((type) => (
-                                            <span
-                                                key={type}
-                                                className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium"
-                                            >
-                                                {type}
-                                            </span>
-                                        )) : (
-                                            <span className="text-xs text-slate-500">No data yet</span>
+                                        {isPreferencesEditing ? (
+                                            availableTripTypes.map((type) => {
+                                                const isSelected = userPreferences.tripTypes.includes(type)
+                                                return (
+                                                    <button
+                                                        key={type}
+                                                        onClick={() => {
+                                                            setUserPreferences(prev => ({
+                                                                ...prev,
+                                                                tripTypes: isSelected 
+                                                                    ? prev.tripTypes.filter(t => t !== type)
+                                                                    : [...prev.tripTypes, type]
+                                                            }))
+                                                        }}
+                                                        className={`px-4 py-2 rounded-full text-xs font-medium transition-colors ${
+                                                            isSelected 
+                                                                ? 'bg-[#8B6E4E] text-white' 
+                                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                        }`}
+                                                    >
+                                                        {type}
+                                                    </button>
+                                                )
+                                            })
+                                        ) : userPreferences.tripTypes.length > 0 ? (
+                                            userPreferences.tripTypes.map((type) => (
+                                                <span key={type} className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium">
+                                                    {type}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-xs text-slate-500">No preferences selected</span>
                                         )}
                                     </div>
                                 </div>
@@ -726,9 +956,30 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         Budget Range
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        <button className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]">
-                                            $3,000 - $5,000 per trip
-                                        </button>
+                                        {isPreferencesEditing ? (
+                                            ['Under $1,000', '$1,000 - $3,000', '$3,000 - $5,000', '$5,000 - $10,000', 'Over $10,000'].map((budget) => {
+                                                const isSelected = userPreferences.budget === budget
+                                                return (
+                                                    <button
+                                                        key={budget}
+                                                        onClick={() => setUserPreferences(prev => ({ ...prev, budget: isSelected ? '' : budget }))}
+                                                        className={`px-4 py-2 rounded-full text-xs font-medium transition-colors ${
+                                                            isSelected 
+                                                                ? 'bg-[#8B6E4E] text-white' 
+                                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                        }`}
+                                                    >
+                                                        {budget}
+                                                    </button>
+                                                )
+                                            })
+                                        ) : userPreferences.budget ? (
+                                            <span className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium">
+                                                {userPreferences.budget}
+                                            </span>
+                                        ) : (
+                                            <span className="text-xs text-slate-500">No budget selected</span>
+                                        )}
                                     </div>
                                 </div>
 
@@ -744,14 +995,39 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         Food Preferences
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        {['Local Cuisine', 'Vegetarian Options', 'Fine Dining'].map((food) => (
-                                            <button
-                                                key={food}
-                                                className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]"
-                                            >
-                                                {food}
-                                            </button>
-                                        ))}
+                                        {isPreferencesEditing ? (
+                                            availableFoodPreferences.map((food) => {
+                                                const isSelected = userPreferences.foodPreferences.includes(food)
+                                                return (
+                                                    <button
+                                                        key={food}
+                                                        onClick={() => {
+                                                            setUserPreferences(prev => ({
+                                                                ...prev,
+                                                                foodPreferences: isSelected 
+                                                                    ? prev.foodPreferences.filter(f => f !== food)
+                                                                    : [...prev.foodPreferences, food]
+                                                            }))
+                                                        }}
+                                                        className={`px-4 py-2 rounded-full text-xs font-medium transition-colors ${
+                                                            isSelected 
+                                                                ? 'bg-[#8B6E4E] text-white' 
+                                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                        }`}
+                                                    >
+                                                        {food}
+                                                    </button>
+                                                )
+                                            })
+                                        ) : userPreferences.foodPreferences.length > 0 ? (
+                                            userPreferences.foodPreferences.map((food) => (
+                                                <span key={food} className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium">
+                                                    {food}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-xs text-slate-500">No preferences selected</span>
+                                        )}
                                     </div>
                                 </div>
 
@@ -765,14 +1041,39 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         Accommodation Preferences
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        {['Boutique Hotels', '4-5 Star', 'Unique Stays'].map((accom) => (
-                                            <button
-                                                key={accom}
-                                                className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]"
-                                            >
-                                                {accom}
-                                            </button>
-                                        ))}
+                                        {isPreferencesEditing ? (
+                                            availableAccommodation.map((accom) => {
+                                                const isSelected = userPreferences.accommodation.includes(accom)
+                                                return (
+                                                    <button
+                                                        key={accom}
+                                                        onClick={() => {
+                                                            setUserPreferences(prev => ({
+                                                                ...prev,
+                                                                accommodation: isSelected 
+                                                                    ? prev.accommodation.filter(a => a !== accom)
+                                                                    : [...prev.accommodation, accom]
+                                                            }))
+                                                        }}
+                                                        className={`px-4 py-2 rounded-full text-xs font-medium transition-colors ${
+                                                            isSelected 
+                                                                ? 'bg-[#8B6E4E] text-white' 
+                                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                        }`}
+                                                    >
+                                                        {accom}
+                                                    </button>
+                                                )
+                                            })
+                                        ) : userPreferences.accommodation.length > 0 ? (
+                                            userPreferences.accommodation.map((accom) => (
+                                                <span key={accom} className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium">
+                                                    {accom}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-xs text-slate-500">No preferences selected</span>
+                                        )}
                                     </div>
                                 </div>
 
@@ -787,9 +1088,39 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                         Travel Style
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        <button className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium hover:bg-[#7a5d3f]">
-                                            Luxury
-                                        </button>
+                                        {isPreferencesEditing ? (
+                                            availableTravelStyle.map((style) => {
+                                                const isSelected = userPreferences.travelStyle.includes(style)
+                                                return (
+                                                    <button
+                                                        key={style}
+                                                        onClick={() => {
+                                                            setUserPreferences(prev => ({
+                                                                ...prev,
+                                                                travelStyle: isSelected 
+                                                                    ? prev.travelStyle.filter(s => s !== style)
+                                                                    : [...prev.travelStyle, style]
+                                                            }))
+                                                        }}
+                                                        className={`px-4 py-2 rounded-full text-xs font-medium transition-colors ${
+                                                            isSelected 
+                                                                ? 'bg-[#8B6E4E] text-white' 
+                                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                        }`}
+                                                    >
+                                                        {style}
+                                                    </button>
+                                                )
+                                            })
+                                        ) : userPreferences.travelStyle.length > 0 ? (
+                                            userPreferences.travelStyle.map((style) => (
+                                                <span key={style} className="px-4 py-2 rounded-full bg-[#8B6E4E] text-white text-xs font-medium">
+                                                    {style}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-xs text-slate-500">No preferences selected</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -920,20 +1251,6 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                         </div>
                     )}
 
-                    {activeTab === 'Payments' && (
-                        <div className="bg-white rounded-2xl p-6 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-900 mb-6">Payments</h3>
-                            <div className="flex flex-col items-center justify-center py-12">
-                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#C4A574" strokeWidth="1.5" className="mb-4">
-                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                                    <line x1="1" y1="10" x2="23" y2="10" />
-                                </svg>
-                                <p className="text-lg font-semibold text-slate-900 mb-2">Payment System</p>
-                                <p className="text-sm text-slate-500">Coming Soon</p>
-                            </div>
-                        </div>
-                    )}
-
                     {activeTab === 'Settings' && (
                         <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-sm min-h-[400px]">
                             <h3 className="text-xl font-bold text-slate-900 mb-8">Account Settings</h3>
@@ -977,7 +1294,10 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                                 <p className="text-sm font-semibold text-slate-900">Password</p>
                                                 <p className="text-xs text-slate-500">Last changed 3 months ago</p>
                                             </div>
-                                            <button className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-[#8B6E4E] hover:bg-slate-50 transition-colors">
+                                            <button 
+                                                onClick={() => setShowPasswordModal(true)}
+                                                className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-[#8B6E4E] hover:bg-slate-50 transition-colors"
+                                            >
                                                 Update Password
                                             </button>
                                         </div>
@@ -994,13 +1314,99 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                     onClose={() => setShowNotifications(false)}
                     onPaymentClick={() => {
                         setShowNotifications(false)
-                        setActiveTab('Payments')
+                        setActiveTab('Travel History')
                     }}
                     onViewItinerary={() => {
                         setShowNotifications(false)
                     }}
                 />
             )}
+
+            {showPasswordModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-slate-900">Change Password</h3>
+                            <button 
+                                onClick={() => {
+                                    setShowPasswordModal(false)
+                                    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+                                    setPasswordError('')
+                                    setPasswordSuccess('')
+                                }}
+                                className="text-slate-400 hover:text-slate-600"
+                            >
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleChangePassword} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Current Password</label>
+                                <input
+                                    type="password"
+                                    value={passwordData.currentPassword}
+                                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown"
+                                    placeholder="Enter current password"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
+                                <input
+                                    type="password"
+                                    value={passwordData.newPassword}
+                                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown"
+                                    placeholder="Enter new password"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Confirm New Password</label>
+                                <input
+                                    type="password"
+                                    value={passwordData.confirmPassword}
+                                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown"
+                                    placeholder="Confirm new password"
+                                />
+                            </div>
+
+                            {passwordError && (
+                                <p className="text-red-500 text-sm">{passwordError}</p>
+                            )}
+                            {passwordSuccess && (
+                                <p className="text-green-500 text-sm">{passwordSuccess}</p>
+                            )}
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowPasswordModal(false)
+                                        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+                                        setPasswordError('')
+                                        setPasswordSuccess('')
+                                    }}
+                                    className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-2 bg-[#8B6E4E] text-white rounded-lg text-sm font-medium hover:bg-[#7a5d3f]"
+                                >
+                                    Change Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {!hideHeaderFooter && <Footer />}
         </div>
     )

@@ -1,6 +1,6 @@
 import api from "../../api";
 import React, { useState, useEffect } from "react";
-import { Clock, Star, Users, Bus, MapPin, ChevronDown } from "lucide-react";
+import { Clock, Star, Users, Bus, MapPin, ChevronDown, Plus } from "lucide-react";
 
 const ExperienceDetails = ({ darkMode, experience, onBack, onBookNow }) => {
   return (
@@ -103,7 +103,7 @@ const ExperienceDetails = ({ darkMode, experience, onBack, onBookNow }) => {
   );
 };
 
-const ExperiencesListing = ({ darkMode, experiences, onAddExperience, onEditExperience, onViewDetails, onBookNow }) => {
+const ExperiencesListing = ({ darkMode, experiences, drafts = [], onAddExperience, onEditExperience, onResumeDraft, onDeleteDraft, onViewDetails, onBookNow }) => {
   return (
     <div className={`space-y-6 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
       {/* Top header */}
@@ -259,6 +259,74 @@ const ExperiencesListing = ({ darkMode, experiences, onAddExperience, onEditExpe
           </div>
         )) : <div className="col-span-full py-12 text-center text-gray-400 text-sm">No experiences found</div>}
       </div>
+
+      {/* Drafts Section */}
+      {drafts.length > 0 && (
+        <div className="mt-8">
+          <h3 className={`text-lg font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"} mb-4`}>
+            Drafts ({drafts.length})
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+            {drafts.map((draft) => (
+              <div
+                key={draft._id}
+                className={`flex flex-col overflow-hidden rounded-2xl border shadow-sm transition-all hover:shadow-md ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}
+              >
+                <div className="h-32 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                  {draft.image ? (
+                    <img src={draft.image} alt={draft.title} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className={`flex h-full items-center justify-center ${darkMode ? "text-slate-600" : "text-gray-400"}`}>
+                      <Clock className="h-8 w-8" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3 px-4 py-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                          Draft
+                        </span>
+                      </div>
+                      <h4 className={`mt-2 text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                        {draft.title || "Untitled Draft"}
+                      </h4>
+                      <p className={`mt-0.5 text-[11px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
+                        {draft.updatedAt ? new Date(draft.updatedAt).toLocaleDateString() : "No date"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className={`text-xs font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
+                      ${draft.price || "0"}
+                      <span className={`ml-1 text-[10px] font-normal transition-colors ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
+                        /person
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onResumeDraft?.(draft)}
+                        className="inline-flex items-center justify-center rounded-full bg-[#a26e35] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#8b5e2d]"
+                      >
+                        Resume
+                      </button>
+                      <button
+                        onClick={() => onDeleteDraft?.(draft._id)}
+                        className={`inline-flex items-center justify-center rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-500 hover:bg-rose-50 transition-colors ${darkMode ? "bg-rose-950/20 border-rose-900/30 hover:bg-rose-900/40" : ""}`}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -267,13 +335,16 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
   const [formData, setFormData] = useState({
     title: experience?.title || "",
     location: experience?.location || "",
-    days: experience?.days || 1,
-    nights: experience?.nights || 0,
-    capacity: experience?.capacity || 12,
     category: experience?.category || "",
     description: experience?.description || "",
     price: experience?.price || "",
-    image: experience?.image || experience?.imageUrl || ""
+    image: experience?.image || experience?.imageUrl || "",
+    duration: experience?.duration || "",
+    difficulty: experience?.difficulty || "Easy",
+    season: experience?.season || "Summer",
+    highlights: experience?.highlights || [""],
+    addOns: experience?.addOns || [""],
+    coordinates: experience?.coordinates || { lat: "", lng: "" }
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [countries, setCountries] = useState([]);
@@ -414,11 +485,27 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
     e.preventDefault();
     try {
       setIsSubmitting(true);
+      const payload = {
+        ...formData,
+        highlights: (Array.isArray(formData.highlights) ? formData.highlights : [])
+          .map((v) => String(v || '').trim())
+          .filter(Boolean),
+        addOns: (Array.isArray(formData.addOns) ? formData.addOns : [])
+          .map((v) => String(v || '').trim())
+          .filter(Boolean),
+        coordinates: {
+          lat: formData.coordinates?.lat ? Number(formData.coordinates.lat) : null,
+          lng: formData.coordinates?.lng ? Number(formData.coordinates.lng) : null,
+        },
+        price: formData.price ? Number(formData.price) : undefined,
+        duration: formData.duration || undefined,
+        status: 'pending', // Send to admin for approval
+      };
       if (experience) {
-        await api.put(`/activities/${experience._id || experience.id}`, formData);
+        await api.put(`/activities/${experience._id || experience.id}`, payload);
         alert("Experience updated successfully!");
       } else {
-        await api.post('/supplier/activities', formData);
+        await api.post('/supplier/activities', payload);
         alert("Experience published successfully!");
       }
       onSuccess?.();
@@ -439,6 +526,43 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleCoordinateChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      coordinates: { ...prev.coordinates, [field]: value }
+    }));
+  };
+
+  const handleHighlightInputChange = (index, value) => {
+    setFormData((prev) => {
+      const next = Array.isArray(prev.highlights) ? [...prev.highlights] : [""];
+      next[index] = value;
+      return { ...prev, highlights: next };
+    });
+  };
+
+  const handleHighlightAppend = () => {
+    setFormData((prev) => {
+      const current = Array.isArray(prev.highlights) ? prev.highlights : [""];
+      return { ...prev, highlights: [...current, ""] };
+    });
+  };
+
+  const handleAddOnInputChange = (index, value) => {
+    setFormData((prev) => {
+      const next = Array.isArray(prev.addOns) ? [...prev.addOns] : [""];
+      next[index] = value;
+      return { ...prev, addOns: next };
+    });
+  };
+
+  const handleAddOnAppend = () => {
+    setFormData((prev) => {
+      const current = Array.isArray(prev.addOns) ? prev.addOns : [""];
+      return { ...prev, addOns: [...current, ""] };
+    });
   };
 
   return (
@@ -523,22 +647,14 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
                   <p className={`text-[10px] ${darkMode ? "text-slate-500" : "text-gray-500"}`}>Destination: {formData.location}</p>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Days</label>
+                  <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Duration (hours)</label>
                   <input
-                    type="number"
-                    value={formData.days}
-                    onChange={(e) => setFormData({ ...formData, days: e.target.value })}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Nights</label>
-                  <input
-                    type="number"
-                    value={formData.nights}
-                    onChange={(e) => setFormData({ ...formData, nights: e.target.value })}
+                    type="text"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                    placeholder="e.g., 2 hours"
                     className={`w-full rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
                   />
                 </div>
@@ -549,15 +665,6 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
                     type="number"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Capacity</label>
-                  <input
-                    type="number"
-                    value={formData.capacity}
-                    onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
                     className={`w-full rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
                   />
                 </div>
@@ -574,6 +681,114 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
                     <option key={name} value={name}>{name}</option>
                   ))}
                 </select>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Difficulty Level</label>
+                  <select
+                    value={formData.difficulty}
+                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                    className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
+                  >
+                    <option value="Easy">Easy</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="Challenging">Challenging</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Recommended Season</label>
+                  <select
+                    value={formData.season}
+                    onChange={(e) => setFormData({ ...formData, season: e.target.value })}
+                    className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
+                  >
+                    <option value="Summer">Summer</option>
+                    <option value="Winter">Winter</option>
+                    <option value="Spring">Spring</option>
+                    <option value="Autumn">Autumn</option>
+                    <option value="All Year">All Year</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Latitude</label>
+                  <input
+                    type="text"
+                    value={formData.coordinates?.lat || ""}
+                    onChange={(e) => handleCoordinateChange("lat", e.target.value)}
+                    placeholder="e.g., 40.7128"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Longitude</label>
+                  <input
+                    type="text"
+                    value={formData.coordinates?.lng || ""}
+                    onChange={(e) => handleCoordinateChange("lng", e.target.value)}
+                    placeholder="e.g., -74.0060"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Highlights</label>
+                <div className="space-y-2">
+                  {(Array.isArray(formData.highlights) ? formData.highlights : [""]).map((value, idx) => {
+                    const isLast = idx === (Array.isArray(formData.highlights) ? formData.highlights.length - 1 : 0);
+                    const canAppend = String(value || "").trim().length > 0;
+                    return (
+                      <div key={idx} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={value}
+                          onChange={(e) => handleHighlightInputChange(idx, e.target.value)}
+                          placeholder="Enter highlight"
+                          className={`flex-1 rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
+                        />
+                        {canAppend && isLast && (
+                          <button
+                            type="button"
+                            onClick={handleHighlightAppend}
+                            className="p-2 rounded-lg bg-[#a26e35] text-white hover:bg-[#8b5e2d]"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Optional Add-ons</label>
+                <div className="space-y-2">
+                  {(Array.isArray(formData.addOns) ? formData.addOns : [""]).map((value, idx) => {
+                    const isLast = idx === (Array.isArray(formData.addOns) ? formData.addOns.length - 1 : 0);
+                    const canAppend = String(value || "").trim().length > 0;
+                    return (
+                      <div key={idx} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={value}
+                          onChange={(e) => handleAddOnInputChange(idx, e.target.value)}
+                          placeholder="Enter add-on"
+                          className={`flex-1 rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
+                        />
+                        {canAppend && isLast && (
+                          <button
+                            type="button"
+                            onClick={handleAddOnAppend}
+                            className="p-2 rounded-lg bg-[#a26e35] text-white hover:bg-[#8b5e2d]"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
               <div className="space-y-2">
                 <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Cover Image</label>
@@ -618,11 +833,60 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
                 Cancel
               </button>
               <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    setIsSubmitting(true);
+                    const payload = {
+                      ...formData,
+                      title: formData.title || "Untitled",
+                      highlights: (Array.isArray(formData.highlights) ? formData.highlights : [])
+                        .map((v) => String(v || '').trim())
+                        .filter(Boolean),
+                      addOns: (Array.isArray(formData.addOns) ? formData.addOns : [])
+                        .map((v) => String(v || '').trim())
+                        .filter(Boolean),
+                      coordinates: {
+                        lat: formData.coordinates?.lat ? Number(formData.coordinates.lat) : null,
+                        lng: formData.coordinates?.lng ? Number(formData.coordinates.lng) : null,
+                      },
+                      price: formData.price ? Number(formData.price) : undefined,
+                      duration: formData.duration || undefined,
+                      status: 'draft',
+                    };
+                    
+                    // Save to localStorage
+                    const existingDrafts = JSON.parse(localStorage.getItem('kufi_supplier_drafts') || '[]');
+                    const draftId = experience?._id || experience?.id || `draft_${Date.now()}`;
+                    const existingIndex = existingDrafts.findIndex(d => d._id === draftId);
+                    
+                    if (existingIndex >= 0) {
+                      existingDrafts[existingIndex] = { ...payload, _id: draftId, updatedAt: new Date().toISOString() };
+                    } else {
+                      existingDrafts.push({ ...payload, _id: draftId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+                    }
+                    
+                    localStorage.setItem('kufi_supplier_drafts', JSON.stringify(existingDrafts));
+                    alert("Draft saved successfully!");
+                    onSuccess?.();
+                  } catch (error) {
+                    console.error("Error saving draft:", error);
+                    alert("Failed to save draft");
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                }}
+                disabled={isSubmitting}
+                className="w-full sm:w-auto rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+              >
+                {isSubmitting ? "Saving..." : "Save Draft"}
+              </button>
+              <button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full sm:w-auto rounded-full bg-[#a26e35] px-5 py-2 text-xs font-semibold text-white hover:bg-[#8b5e2d] disabled:opacity-50"
               >
-                {isSubmitting ? "Saving..." : experience ? "Update Experience" : "Publish Experience"}
+                {isSubmitting ? "Publishing..." : experience ? "Update & Publish" : "Publish Experience"}
               </button>
             </div>
           </div>
@@ -644,6 +908,7 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
 
 const SupplierExperience = ({ darkMode, view = 'list', onViewChange, navigateTo }) => {
   const [experiences, setExperiences] = useState([]);
+  const [drafts, setDrafts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedExperience, setSelectedExperience] = useState(null);
 
@@ -654,8 +919,15 @@ const SupplierExperience = ({ darkMode, view = 'list', onViewChange, navigateTo 
         // Match backend supplier activities route on Vercel
         const response = await api.get('/supplier/activities');
         setExperiences(response.data || []);
+        
+        // Load drafts from localStorage
+        const savedDrafts = JSON.parse(localStorage.getItem('kufi_supplier_drafts') || '[]');
+        setDrafts(savedDrafts);
       } catch (error) {
         console.error("Error fetching supplier experiences:", error);
+        // Still load drafts even if API fails
+        const savedDrafts = JSON.parse(localStorage.getItem('kufi_supplier_drafts') || '[]');
+        setDrafts(savedDrafts);
       } finally {
         setIsLoading(false);
       }
@@ -723,10 +995,21 @@ const SupplierExperience = ({ darkMode, view = 'list', onViewChange, navigateTo 
     <ExperiencesListing
       darkMode={darkMode}
       experiences={experiences}
+      drafts={drafts}
       onAddExperience={() => onViewChange?.("create")}
       onEditExperience={(exp) => {
         setSelectedExperience(exp);
         onViewChange?.("edit");
+      }}
+      onResumeDraft={(draft) => {
+        setSelectedExperience(draft);
+        onViewChange?.("edit");
+      }}
+      onDeleteDraft={(draftId) => {
+        if (!window.confirm("Delete this draft?")) return;
+        const updatedDrafts = drafts.filter(d => d._id !== draftId);
+        localStorage.setItem('kufi_supplier_drafts', JSON.stringify(updatedDrafts));
+        setDrafts(updatedDrafts);
       }}
       onViewDetails={(exp) => {
         setSelectedExperience(exp);
