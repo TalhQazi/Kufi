@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../api";
 
-export default function CategoriesSection({ onCategoryClick }) {
+export default function CategoriesSection({ onCategoryClick, sectionInfo }) {
     const iconColor = "#9B6F40"
 
     const [categories, setCategories] = useState([])
@@ -223,10 +223,10 @@ export default function CategoriesSection({ onCategoryClick }) {
         <section className="bg-[#F5F1ED] py-16 sm:py-20 px-4 sm:px-8 lg:px-20 2xl:px-12">
             <div className="max-w-[1200px] 2xl:max-w-[1600px] mx-auto text-center">
                 <div className="mb-12 sm:mb-14">
-                    <p className="text-2xl sm:text-3xl font-sacramento text-[#A67C52] m-0 mb-2">Top Categories</p>
-                    <h2 className="text-3xl sm:text-4xl font-bold text-[#1a1a1a] m-0 mb-4">Explore By Categories</h2>
+                    <p className="text-2xl sm:text-3xl font-sacramento text-[#A67C52] m-0 mb-2">{sectionInfo?.title || 'Top Categories'}</p>
+                    <h2 className="text-3xl sm:text-4xl font-bold text-[#1a1a1a] m-0 mb-4">{sectionInfo?.heading || 'Explore By Categories'}</h2>
                     <p className="text-sm sm:text-base text-slate-600 max-w-[680px] 2xl:max-w-[900px] m-0 mx-auto leading-relaxed">
-                        Select according to your interest to check. Choose your own interest and join kufi travelling agency overall world.
+                        {sectionInfo?.subheading || 'Select according to your interest to check. Choose your own interest and join kufi travelling agency overall world.'}
                     </p>
                 </div>
 

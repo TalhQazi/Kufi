@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Card from '../ui/Card'
 import api from '../../api'
 
-export default function TopLocationsSection({ onCountryClick }) {
+export default function TopLocationsSection({ onCountryClick, sectionInfo }) {
     const [cities, setCities] = useState([])
     const [loading, setLoading] = useState(true)
     const [visibleCount, setVisibleCount] = useState(4)
@@ -36,11 +36,10 @@ export default function TopLocationsSection({ onCountryClick }) {
         <section id="top-locations" className="bg-gradient-to-b from-white to-slate-50 py-12 sm:py-16 px-4 sm:px-8 lg:px-20 2xl:px-8 min-[2560px]:px-4">
             <div className="max-w-[1240px] 2xl:max-w-[1600px] min-[2560px]:max-w-[2200px] mx-auto">
                 <div className="text-center mb-10">
-                    <p className="text-lg font-normal text-[#a67c52] m-0 mb-1 font-sacramento">Top Locations</p>
-                    <h2 className="text-xl sm:text-3xl font-bold text-slate-900 m-0 mb-4">Top Locations We Are Currently Serving</h2>
+                    <p className="text-lg font-normal text-[#a67c52] m-0 mb-1 font-sacramento">{sectionInfo?.title || 'Top Locations'}</p>
+                    <h2 className="text-xl sm:text-3xl font-bold text-slate-900 m-0 mb-4">{sectionInfo?.heading || 'Top Locations We Are Currently Serving'}</h2>
                     <p className="text-sm text-slate-500 max-w-[560px] 2xl:max-w-[800px] m-0 mx-auto">
-                        Travel makes one modest. You see what a tiny place you occupy in the world.
-                        One's destination is never a place, but a new way of seeing things.
+                        {sectionInfo?.subheading || "Travel makes one modest. You see what a tiny place you occupy in the world. One's destination is never a place, but a new way of seeing things."}
                     </p>
                 </div>
 

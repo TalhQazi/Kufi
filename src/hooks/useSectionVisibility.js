@@ -31,7 +31,11 @@ export const useSectionVisibility = (page = 'home') => {
         return section ? section.isVisible : true; // Default to visible if not found
     };
 
-    return { sections, isVisible, loading, error };
+    const getSectionInfo = (sectionId) => {
+        return sections.find(s => s.id === sectionId) || null;
+    };
+
+    return { sections, isVisible, getSectionInfo, loading, error };
 };
 
 export default useSectionVisibility;

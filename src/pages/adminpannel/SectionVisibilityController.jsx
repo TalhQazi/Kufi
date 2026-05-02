@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import api from '../../api';
-import { Layout, Eye, EyeOff, Save, Loader2, RefreshCw, Home, Map, Layers, CheckCircle, AlertCircle } from 'lucide-react';
+import { Layout, Eye, EyeOff, Save, Loader2, RefreshCw, Home, Map, Layers, CheckCircle, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function SectionVisibilityController() {
     const [loading, setLoading] = useState(true);
@@ -11,6 +11,7 @@ export default function SectionVisibilityController() {
     
     const [sections, setSections] = useState([]);
     const [activeTab, setActiveTab] = useState('home');
+    const [expandedSection, setExpandedSection] = useState(null);
 
     const fetchSettings = useCallback(async () => {
         try {
@@ -79,6 +80,14 @@ export default function SectionVisibilityController() {
         ));
     };
 
+    const updateSectionText = (sectionId, field, value) => {
+        setSections(sections.map(section =>
+            section.id === sectionId
+                ? { ...section, [field]: value }
+                : section
+        ));
+    };
+
     const getFilteredSections = () => {
         return sections
             .filter(s => s.page === activeTab)
@@ -122,7 +131,7 @@ export default function SectionVisibilityController() {
                     Section Visibility Control
                 </h1>
                 <p className="text-gray-600 mt-1">
-                    Show or hide sections on your website pages. Hidden sections will not be visible to visitors.
+                    Show or hide sections on your website pages, and customize their titles and text. Hidden sections will not be visible to visitors.
                 </p>
             </div>
 
@@ -174,53 +183,93 @@ export default function SectionVisibilityController() {
                 
                 <div className="divide-y divide-gray-100">
                     {filteredSections.map((section) => (
-                        <div 
-                            key={section.id} 
-                            className={`flex items-center justify-between p-4 hover:bg-gray-50 transition-colors ${
-                                !section.isVisible ? 'bg-gray-50/50' : ''
-                            }`}
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                    section.isVisible 
-                                        ? 'bg-[#a67c52]/10 text-[#a67c52]' 
-                                        : 'bg-gray-200 text-gray-400'
-                                }`}>
-                                    <span className="text-sm font-bold">{section.sortOrder + 1}</span>
-                                </div>
-                                <div>
-                                    <h3 className={`font-medium ${
-                                        section.isVisible ? 'text-gray-900' : 'text-gray-500'
-                                    }`}>
-                                        {section.name}
-                                    </h3>
-                                    <p className="text-sm text-gray-500">{section.description}</p>
-                                    <span className="text-xs text-gray-400 mt-1 inline-block">
-                                        ID: {section.id}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => toggleSection(section.id)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                                    section.isVisible
-                                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                        : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                        <div key={section.id} className="flex flex-col">
+                            <div 
+                                className={`flex items-center justify-between p-4 hover:bg-gray-50 transition-colors ${
+                                    !section.isVisible ? 'bg-gray-50/50' : ''
                                 }`}
                             >
-                                {section.isVisible ? (
-                                    <>
-                                        <Eye className="w-4 h-4" />
-                                        <span>Visible</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <EyeOff className="w-4 h-4" />
-                                        <span>Hidden</span>
-                                    </>
-                                )}
-                            </button>
+                                <div className="flex items-center gap-4 cursor-pointer" onClick={() => setExpandedSection(expandedSection === section.id ? null : section.id)}>
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                        section.isVisible 
+                                            ? 'bg-[#a67c52]/10 text-[#a67c52]' 
+                                            : 'bg-gray-200 text-gray-400'
+                                    }`}>
+                                        <span className="text-sm font-bold">{section.sortOrder + 1}</span>
+                                    </div>
+                                    <div>
+                                        <h3 className={`font-medium flex items-center gap-2 ${
+                                            section.isVisible ? 'text-gray-900' : 'text-gray-500'
+                                        }`}>
+                                            {section.name}
+                                            {expandedSection === section.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                        </h3>
+                                        <p className="text-sm text-gray-500">{section.description}</p>
+                                        <span className="text-xs text-gray-400 mt-1 inline-block">
+                                            ID: {section.id}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                                        section.isVisible
+                                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                            : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                                    }`}
+                                >
+                                    {section.isVisible ? (
+                                        <>
+                                            <Eye className="w-4 h-4" />
+                                            <span>Visible</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <EyeOff className="w-4 h-4" />
+                                            <span>Hidden</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                            
+                            {/* Expanded Text Fields */}
+                            {expandedSection === section.id && (
+                                <div className="p-4 bg-gray-50 border-t border-gray-100 pl-16">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Section Title</label>
+                                            <input 
+                                                type="text" 
+                                                value={section.title || ''} 
+                                                onChange={(e) => updateSectionText(section.id, 'title', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#a67c52] focus:border-[#a67c52]"
+                                                placeholder="e.g. Top Categories"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Section Heading</label>
+                                            <input 
+                                                type="text" 
+                                                value={section.heading || ''} 
+                                                onChange={(e) => updateSectionText(section.id, 'heading', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#a67c52] focus:border-[#a67c52]"
+                                                placeholder="e.g. Explore By Categories"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Section Subheading / Description</label>
+                                            <textarea 
+                                                value={section.subheading || ''} 
+                                                onChange={(e) => updateSectionText(section.id, 'subheading', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#a67c52] focus:border-[#a67c52]"
+                                                rows="2"
+                                                placeholder="e.g. Select according to your interest to check..."
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

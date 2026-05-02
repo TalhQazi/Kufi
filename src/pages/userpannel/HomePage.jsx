@@ -13,7 +13,7 @@ import Footer from '../../components/layout/Footer'
 import useSectionVisibility from '../../hooks/useSectionVisibility'
 
 export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick, onCountryClick, onHomeClick, onExploreClick, currentUser, onLogout, onProfileClick, onMyRequestsClick, onSettingsClick, onActivityClick, onBlogClick, onServiceClick, hideHeaderFooter = false }) {
-    const { isVisible } = useSectionVisibility('home')
+    const { isVisible, getSectionInfo } = useSectionVisibility('home')
     return (
         <>
             {!hideHeaderFooter && (
@@ -39,8 +39,8 @@ export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick
                 )}
             </div>
             {isVisible('destinations') && <DestinationsSection onCountryClick={onCountryClick} />}
-            {isVisible('categories') && <CategoriesSection onCategoryClick={onCategoryClick} />}
-            {isVisible('top-locations') && <TopLocationsSection onCountryClick={onCountryClick} />}
+            {isVisible('categories') && <CategoriesSection onCategoryClick={onCategoryClick} sectionInfo={getSectionInfo('categories')} />}
+            {isVisible('top-locations') && <TopLocationsSection onCountryClick={onCountryClick} sectionInfo={getSectionInfo('top-locations')} />}
             {isVisible('top-activities') && <TopActivitiesSection onActivityClick={onActivityClick} />}
             {isVisible('booking-system') && <BookingSystemSection />}
             {isVisible('feedback') && <FeedbackSection />}
