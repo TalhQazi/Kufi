@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import * as React from 'react'
+const { useState, useEffect } = React
 import api from './api'
 import HomePage from './pages/userpannel/HomePage.jsx'
 import Login from './pages/userpannel/Login.jsx'

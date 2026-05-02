@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import * as React from 'react'
+const { useState, useEffect, useCallback, useMemo, useRef } = React
 import Sidebar from './pages/adminpannel/components/Sidebar'
 import Header from './pages/adminpannel/components/Header'
 import Dashboard from './pages/adminpannel/dashboard'
