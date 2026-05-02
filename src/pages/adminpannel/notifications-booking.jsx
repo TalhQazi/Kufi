@@ -175,7 +175,7 @@ const NotificationsBooking = () => {
   const tryTransferBooking = async (bookingId) => {
     // Use the correct backend endpoint
     const payload = { bookingId, id: bookingId };
-    return await api.post(`/bookings/${bookingId}/transfer`, payload);
+    return await api.patch(`/bookings/${bookingId}/transfer`, payload);
   };
 
   const onTransferToAnotherSupplier = async (req) => {
