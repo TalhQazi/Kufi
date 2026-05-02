@@ -186,7 +186,24 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                 })
 
                 setBookings(Array.isArray(bookingsList) ? bookingsList : [])
-                setWishlist(readWishlistStore())
+                
+                // Fetch wishlist from backend
+                try {
+                    const wishlistRes = await api.get('/auth/wishlist')
+                    const backendWishlist = Array.isArray(wishlistRes?.data) ? wishlistRes.data : []
+                    // Transform backend format to frontend format
+                    const transformed = backendWishlist.map(item => ({
+                        _id: item.countryId,
+                        name: item.countryName,
+                        image: item.countryImage,
+                        country: item.countryName,
+                        addedAt: item.addedAt
+                    }))
+                    setWishlist(transformed)
+                } catch (wlError) {
+                    console.error('Error fetching wishlist:', wlError)
+                    setWishlist([])
+                }
             } catch (error) {
                 console.error('Error fetching profile:', error)
             } finally {
@@ -526,15 +543,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 </button>
                             </div>
                         )}
-                        <button className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-[#8B6E4E] text-white rounded-lg text-xs font-semibold hover:bg-[#7a5d3f]">
-                            <svg width="12" height="12" className="sm:w-3.5 sm:h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                <polyline points="7 10 12 15 17 10" />
-                                <line x1="12" y1="15" x2="12" y2="3" />
-                            </svg>
-                            <span className="hidden sm:inline">Download Profile</span>
-                            <span className="sm:hidden">Download</span>
-                        </button>
+                        
                     </div>
                 </div>
 
@@ -546,6 +555,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                             <div className="flex flex-col items-center sm:items-start">
                                 <ProfilePic user={profileData} size="xl" />
                                 <button className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg bg-[#D4AF37] text-white text-[10px] sm:text-xs font-semibold">
+                              
                                     Gold Member
                                 </button>
                             </div>

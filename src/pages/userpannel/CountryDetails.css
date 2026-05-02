@@ -243,8 +243,8 @@
 
 @media (min-width: 2560px) {
     .country-main {
-        max-width: 2200px;
-        padding: 60px 40px;
+        max-width: none;
+        padding: 60px 80px 60px 60px;
     }
 }
 

@@ -4,6 +4,31 @@ import { FaPlay, FaBookmark, FaStar } from 'react-icons/fa'
 import { FiChevronRight, FiChevronLeft } from 'react-icons/fi'
 import api from '../../api'
 
+const resolveAuthToken = () => {
+    try {
+        const candidates = [
+            localStorage.getItem('authToken'),
+            localStorage.getItem('token'),
+            localStorage.getItem('accessToken'),
+        ].filter(Boolean)
+        for (const candidate of candidates) {
+            const raw = String(candidate).trim()
+            if (!raw) continue
+            if (raw.startsWith('{') && raw.endsWith('}')) {
+                try {
+                    const parsed = JSON.parse(raw)
+                    const inner = parsed.token || parsed.accessToken || parsed.authToken
+                    if (inner) return String(inner).trim()
+                } catch {}
+            }
+            if (raw.length > 5) return raw
+        }
+        return null
+    } catch {
+        return null
+    }
+}
+
 export default function HeroSection({ onCountryClick, onExploreClick }) {
     const [countries, setCountries] = useState([])
     const [loading, setLoading] = useState(true)
@@ -11,6 +36,7 @@ export default function HeroSection({ onCountryClick, onExploreClick }) {
     const [isPaused, setIsPaused] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
     const [isVideoOpen, setIsVideoOpen] = useState(false)
+    const [wishlist, setWishlist] = useState([])
     const scrollRef = useRef(null)
     const startX = useRef(0)
     const scrollLeft = useRef(0)
@@ -24,12 +50,26 @@ export default function HeroSection({ onCountryClick, onExploreClick }) {
                 setCountries(activeOnly)
             } catch (error) {
                 console.error("Error fetching countries:", error)
-                // Fallback to static if needed or show error
             } finally {
                 setLoading(false)
             }
         }
         fetchCountries()
+    }, [])
+
+    // Fetch wishlist on mount
+    useEffect(() => {
+        const fetchWishlist = async () => {
+            const token = resolveAuthToken()
+            if (!token) return
+            try {
+                const response = await api.get('/auth/wishlist')
+                setWishlist(response.data || [])
+            } catch (error) {
+                console.error('Error fetching wishlist:', error)
+            }
+        }
+        fetchWishlist()
     }, [])
 
     // Triple the cards for infinite effect
@@ -105,6 +145,36 @@ export default function HeroSection({ onCountryClick, onExploreClick }) {
     const handleCountryCardClick = (country) => {
         if (!country || !onCountryClick) return
         onCountryClick(country.name)
+    }
+
+    const handleBookmarkClick = async (e, country) => {
+        e.stopPropagation()
+        const token = resolveAuthToken()
+        if (!token) {
+            alert('Please sign in first')
+            return
+        }
+        try {
+            const exists = wishlist.some(item => item.countryId === country._id)
+            if (exists) {
+                await api.delete(`/auth/wishlist/${country._id}`)
+                setWishlist(prev => prev.filter(item => item.countryId !== country._id))
+            } else {
+                await api.post('/auth/wishlist', {
+                    countryId: country._id,
+                    countryName: country.name,
+                    countryImage: country.image || country.imageUrl
+                })
+                setWishlist(prev => [...prev, {
+                    countryId: country._id,
+                    countryName: country.name,
+                    countryImage: country.image || country.imageUrl
+                }])
+            }
+        } catch (error) {
+            console.error('Error updating wishlist:', error)
+            alert('Failed to update wishlist. Please try again.')
+        }
     }
 
     const prev = () => {
@@ -216,6 +286,7 @@ export default function HeroSection({ onCountryClick, onExploreClick }) {
                     >
                         {infiniteCards.map((country, index) => {
                             const isActive = (index % countries.length) === idx
+                            const isBookmarked = wishlist.some(item => item.countryId === country._id)
                             return (
                                 <div key={index} className="relative group flex-shrink-0 flex items-center h-[420px] w-[260px] justify-center">
                                     {/* Background Number */}
@@ -244,7 +315,10 @@ export default function HeroSection({ onCountryClick, onExploreClick }) {
                                                         <span className="text-white font-medium">4.4</span>
                                                     </div>
                                                 </div>
-                                                <button className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition-colors">
+                                                <button
+                                                    onClick={(e) => handleBookmarkClick(e, country)}
+                                                    className={`w-9 h-9 rounded-full backdrop-blur-md flex items-center justify-center transition-colors ${isBookmarked ? 'bg-[#A67C52] text-white' : 'bg-white/20 hover:bg-white/30 text-white'}`}
+                                                >
                                                     <FaBookmark size={13} />
                                                 </button>
                                             </div>

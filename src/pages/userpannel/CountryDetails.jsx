@@ -298,7 +298,9 @@ export default function CountryDetails({
     }, [staticCategories])
 
     const isIconUrl = (value) => {
-        return /^https?:\/\//i.test(String(value || '').trim())
+        const str = String(value || '').trim()
+        // Check for http/https URLs or any path that looks like an image
+        return /^https?:\/\//i.test(str) || /^\/[^\s]+\.(png|jpg|jpeg|gif|svg|webp)/i.test(str) || /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(str)
     }
 
     const safeCategories = useMemo(() => {
@@ -683,12 +685,8 @@ export default function CountryDetails({
                         )}
 
                         {/* Main Content Grid with Sidebar */}
-                        <div className="mx-auto grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 lg:gap-8 items-start">
-                            {/* Sidebar - Sticky on right */}
-                            <aside className="lg:sticky lg:top-24 h-fit lg:w-[300px] order-first lg:order-last">
-                                {selectionPanel}
-                            </aside>
-
+                        <div className="mx-auto grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 xl:gap-8 2xl:gap-32 items-start justify-end w-full">
+                            {/* Main content on left */}
                             <div className="space-y-10">
                                 {/* Cities Section */}
                                 {isVisible('country-cities') && (
@@ -753,10 +751,14 @@ export default function CountryDetails({
                                                             ? iconByNormalizedKey[normalizedImageKey]
                                                             : icon
 
+                                                const isSelected = selectedCategory === category.name
+
                                                 return (
                                                     <div
                                                         key={category.id}
-                                                        className="flex flex-col items-center gap-3 cursor-pointer transition-transform duration-300 hover:-translate-y-2"
+                                                        className={`flex flex-col items-center gap-3 cursor-pointer transition-all duration-300 hover:-translate-y-2 p-3 rounded-xl ${
+                                                            isSelected ? 'ring-2 ring-[#9B6F40] bg-[#9B6F40]/10' : ''
+                                                        }`}
                                                         onClick={() => {
                                                             setSelectedCategory((prev) => (prev === category.name ? null : category.name))
                                                         }}
@@ -772,7 +774,7 @@ export default function CountryDetails({
                                                         <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
                                                             {renderedIcon}
                                                         </div>
-                                                        <p className="m-0 text-sm sm:text-base font-bold text-[#1a1a1a] text-center">{category.name}</p>
+                                                        <p className={`m-0 text-sm sm:text-base font-bold text-center ${isSelected ? 'text-[#9B6F40]' : 'text-[#1a1a1a]'}`}>{category.name}</p>
                                                     </div>
                                                 )
                                             })}
@@ -916,6 +918,11 @@ export default function CountryDetails({
                                     </div>
                                 )}
                             </div>
+                            
+                            {/* Selection Panel on Right */}
+                            <aside className="xl:sticky xl:top-24 h-fit xl:w-[360px] hidden xl:block 2xl:ml-auto">
+                                {selectionPanel}
+                            </aside>
                         </div>
                     </main>
 
