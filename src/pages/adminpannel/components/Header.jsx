@@ -2,26 +2,31 @@ import React, { useState, useEffect, useRef } from "react";
 import { Bell, ChevronDown, Settings, LogOut, Moon, Sun } from "lucide-react";
 import ProfilePic from "../../../components/ui/ProfilePic";
 
-const Header = ({ onBellClick, onLogout, onMenuClick, isDarkMode, onThemeToggle, onProfileClick, onSettingsClick }) => {
+const Header = ({ notificationCount, notifications, onBellClick, onLogout, onMenuClick, isDarkMode, onThemeToggle, onProfileClick, onSettingsClick }) => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef(null);
+  const notificationRef = useRef(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(false);
       }
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
     };
 
-    if (showDropdown) {
+    if (showDropdown || showNotifications) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showDropdown]);
+  }, [showDropdown, showNotifications]);
 
   return (
     <header className={`h-14 sm:h-16 flex items-center justify-between px-4 sm:px-6 md:px-10 border-b sticky top-0 z-40 transition-colors duration-300 ${isDarkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-100"}`}>
@@ -46,14 +51,58 @@ const Header = ({ onBellClick, onLogout, onMenuClick, isDarkMode, onThemeToggle,
           {isDarkMode ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
         </button>
 
-        <button
-          className={`relative p-2 rounded-full transition-colors ${isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"}`}
-          onClick={onBellClick}
-          aria-label="Notifications"
-        >
-          <Bell className={`w-4 h-4 sm:w-5 sm:h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`} />
-          <span className="absolute -top-0.5 -right-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 bg-red-500 rounded-full border-2 border-white" />
-        </button>
+        <div className="relative" ref={notificationRef}>
+          <button
+            className={`relative p-2 rounded-full transition-colors ${isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"}`}
+            onClick={() => setShowNotifications(!showNotifications)}
+            aria-label="Notifications"
+          >
+            <Bell className={`w-4 h-4 sm:w-5 sm:h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`} />
+            {notificationCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full border border-white px-1">
+                {notificationCount > 99 ? '99+' : notificationCount}
+              </span>
+            )}
+          </button>
+
+          {showNotifications && (
+            <div className={`absolute right-0 mt-2 w-64 sm:w-80 rounded-lg shadow-lg border z-50 overflow-hidden ${isDarkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"}`}>
+              <div className={`px-4 py-3 border-b flex items-center justify-between ${isDarkMode ? "border-gray-800" : "border-gray-100"}`}>
+                <span className={`text-xs font-bold uppercase tracking-wider ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Recent Activity</span>
+                <button 
+                  onClick={() => {
+                    onBellClick();
+                    setShowNotifications(false);
+                  }}
+                  className="text-[11px] font-semibold text-amber-600 hover:underline"
+                >
+                  View All
+                </button>
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                {notifications && notifications.length > 0 ? (
+                  notifications.map((n, i) => (
+                    <div 
+                      key={i} 
+                      className={`px-4 py-3 border-b last:border-0 hover:bg-gray-50 transition-colors cursor-pointer ${isDarkMode ? "border-gray-800 hover:bg-gray-800" : "border-gray-50"}`}
+                      onClick={() => {
+                        onBellClick();
+                        setShowNotifications(false);
+                      }}
+                    >
+                      <p className={`text-xs font-medium leading-snug ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>{n.title}</p>
+                      <p className={`text-[10px] mt-1 ${isDarkMode ? "text-gray-500" : "text-gray-400"}`}>{n.time}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-4 py-6 text-center text-gray-500 text-xs">
+                    No recent notifications
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         <button className={`hidden sm:block p-2 rounded-full transition-colors ${isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"}`} aria-label="Settings">
           <Settings className={`w-5 h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`} />

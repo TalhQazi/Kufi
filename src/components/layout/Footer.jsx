@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Facebook, Instagram, Youtube, MapPin, Phone, Mail, Globe, Home, SendHorizonal, Loader2, X } from 'lucide-react'
+import { Facebook, Instagram, Youtube, MapPin, Phone, Mail, Globe, Home, SendHorizonal, Loader2 } from 'lucide-react'
 import api from '../../api'
 
+// IconMap ...
 const IconMap = {
     MapPin,
     Phone,
@@ -11,7 +12,6 @@ const IconMap = {
 }
 
 const DefaultSocialIcon = ({ name, iconImage }) => {
-    // If custom icon image is uploaded, use it
     if (iconImage) {
         return (
             <img
@@ -21,79 +21,16 @@ const DefaultSocialIcon = ({ name, iconImage }) => {
             />
         )
     }
-
-    // Default icons based on name
-    if (name.toLowerCase().includes('facebook')) {
-        return <Facebook size={14} fill="currentColor" />
-    }
-    if (name.toLowerCase().includes('instagram')) {
-        return <Instagram size={14} />
-    }
-    if (name.toLowerCase().includes('youtube')) {
-        return <Youtube size={14} />
-    }
-
+    if (name.toLowerCase().includes('facebook')) return <Facebook size={14} fill="currentColor" />
+    if (name.toLowerCase().includes('instagram')) return <Instagram size={14} />
+    if (name.toLowerCase().includes('youtube')) return <Youtube size={14} />
     return <Globe size={14} />
 }
 
-// Legal Content Modal Component
-const LegalModal = ({ isOpen, onClose, title, content, loading }) => {
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <div 
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                onClick={onClose}
-            />
-            
-            {/* Modal */}
-            <div className="relative w-full max-w-3xl max-h-[80vh] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-[#704b24] to-[#8f643e]">
-                    <h2 className="text-lg font-semibold text-white">{title}</h2>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-white/20 rounded-lg transition-colors text-white"
-                    >
-                        <X className="h-5 w-5" />
-                    </button>
-                </div>
-                
-                {/* Content */}
-                <div className="p-6 overflow-y-auto max-h-[60vh]">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <Loader2 className="h-8 w-8 animate-spin text-[#704b24]" />
-                        </div>
-                    ) : (
-                        <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-line">
-                            {content || 'No content available'}
-                        </div>
-                    )}
-                </div>
-                
-                {/* Footer */}
-                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
-                    <button
-                        onClick={onClose}
-                        className="w-full py-2.5 bg-[#704b24] hover:bg-[#8f643e] text-white rounded-lg font-medium transition-colors"
-                    >
-                        Close
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-export default function Footer() {
+export default function Footer({ onLegalClick }) {
     const [settings, setSettings] = useState(null)
     const [loading, setLoading] = useState(true)
     const [email, setEmail] = useState('')
-    const [modalOpen, setModalOpen] = useState(false)
-    const [modalContent, setModalContent] = useState({ title: '', content: '', loading: false })
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -109,30 +46,10 @@ export default function Footer() {
         fetchSettings()
     }, [])
 
-    const openLegalModal = async (type, title) => {
-        setModalOpen(true)
-        setModalContent({ title, content: '', loading: true })
-        
-        try {
-            const response = await api.get(`/legal-content/${type}`)
-            setModalContent({
-                title: response.data.title || title,
-                content: response.data.content || 'No content available',
-                loading: false
-            })
-        } catch (error) {
-            console.error('Error fetching legal content:', error)
-            setModalContent({
-                title,
-                content: 'Content not available. Please try again later.',
-                loading: false
-            })
+    const handleLegalClick = (type, title) => {
+        if (onLegalClick) {
+            onLegalClick(type, title)
         }
-    }
-
-    const closeModal = () => {
-        setModalOpen(false)
-        setModalContent({ title: '', content: '', loading: false })
     }
 
     const handleNewsletterSubmit = async (e) => {
@@ -220,7 +137,12 @@ export default function Footer() {
                         <h4 className="text-base font-bold mb-6">Our Services</h4>
                         <ul className="space-y-2.5 text-[14px] text-white/90">
                             <li>
-                                <a href="#about" className="hover:text-white transition-colors">About Us</a>
+                                <button 
+                                    onClick={() => handleLegalClick('about', 'About Us')}
+                                    className="hover:text-white transition-colors text-left"
+                                >
+                                    About Us
+                                </button>
                             </li>
                             <li>
                                 <a href="#explore" className="hover:text-white transition-colors">Destinations</a>
@@ -237,7 +159,7 @@ export default function Footer() {
                         <ul className="space-y-2.5 text-[14px] text-white/90">
                             <li>
                                 <button 
-                                    onClick={() => openLegalModal('faqs', "FAQ's")}
+                                    onClick={() => handleLegalClick('faqs', "FAQ's")}
                                     className="hover:text-white transition-colors text-left"
                                 >
                                     FAQ's
@@ -245,7 +167,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <button 
-                                    onClick={() => openLegalModal('privacy', 'Privacy Policy')}
+                                    onClick={() => handleLegalClick('privacy', 'Privacy Policy')}
                                     className="hover:text-white transition-colors text-left"
                                 >
                                     Privacy Policy
@@ -253,7 +175,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <button 
-                                    onClick={() => openLegalModal('terms', 'Terms & Conditions')}
+                                    onClick={() => handleLegalClick('terms', 'Terms & Conditions')}
                                     className="hover:text-white transition-colors text-left"
                                 >
                                     Terms
@@ -261,7 +183,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <button 
-                                    onClick={() => openLegalModal('support', 'Support')}
+                                    onClick={() => handleLegalClick('support', 'Support')}
                                     className="hover:text-white transition-colors text-left"
                                 >
                                     Support
@@ -329,14 +251,6 @@ export default function Footer() {
                 </div>
             </div>
             
-            {/* Legal Content Modal */}
-            <LegalModal
-                isOpen={modalOpen}
-                onClose={closeModal}
-                title={modalContent.title}
-                content={modalContent.content}
-                loading={modalContent.loading}
-            />
         </footer>
     )
 }

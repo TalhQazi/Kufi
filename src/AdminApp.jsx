@@ -32,6 +32,26 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
   const [activePage, setActivePage] = useState(initialPage)
   const [sidebarVisible, setSidebarVisible] = useState(true)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [notificationCount, setNotificationCount] = useState(0)
+  const [notifications, setNotifications] = useState([])
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsRes, activityRes] = await Promise.all([
+          import('./api').then(m => m.default.get('/admin/stats')),
+          import('./api').then(m => m.default.get('/admin/activity'))
+        ])
+        setNotificationCount(statsRes.data?.pendingRequests || 0)
+        setNotifications(Array.isArray(activityRes.data?.activities) ? activityRes.data.activities.slice(0, 5) : [])
+      } catch (err) {
+        console.error('Error fetching admin data:', err)
+      }
+    }
+    fetchData()
+    const interval = setInterval(fetchData, 60000)
+    return () => clearInterval(interval)
+  }, [])
 
   const toggleSidebar = () => setSidebarVisible(!sidebarVisible)
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode)
@@ -90,6 +110,8 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {activePage !== 'Supplier Dashboard' && (
           <Header
+            notificationCount={notificationCount}
+            notifications={notifications}
             onBellClick={() => setActivePage('Booking Notifications')}
             onLogout={onLogout}
             onMenuClick={toggleSidebar}

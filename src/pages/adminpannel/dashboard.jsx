@@ -10,6 +10,7 @@ import {
   BarElement,
   Tooltip,
   Legend,
+  Filler,
 } from "chart.js";
 import { Line, Bar } from "react-chartjs-2";
 
@@ -20,7 +21,8 @@ ChartJS.register(
   LineElement,
   BarElement,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 const defaultStats = [

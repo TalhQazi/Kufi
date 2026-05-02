@@ -220,7 +220,7 @@ export default function CategoriesSection({ onCategoryClick, sectionInfo }) {
     }, [categories])
 
     return (
-        <section className="bg-[#F5F1ED] py-16 sm:py-20 px-4 sm:px-8 lg:px-20 2xl:px-12">
+        <section id="categories" className="bg-[#F5F1ED] py-16 sm:py-20 px-4 sm:px-8 lg:px-20 2xl:px-12">
             <div className="max-w-[1200px] 2xl:max-w-[1600px] mx-auto text-center">
                 <div className="mb-12 sm:mb-14">
                     <p className="text-2xl sm:text-3xl font-sacramento text-[#A67C52] m-0 mb-2">{sectionInfo?.title || 'Top Categories'}</p>

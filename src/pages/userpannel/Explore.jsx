@@ -294,7 +294,8 @@ export default function Explore({
 
   return (
     <div className="bg-white min-h-screen">
-      <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
+      {!hideHeaderFooter && (
+        <nav className="bg-white border-b border-slate-200 py-3 px-4 sm:px-8 lg:px-20 sticky top-0 z-50">
         <div className="mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-1">
             <button
@@ -422,6 +423,7 @@ export default function Explore({
           </div>
         </div>
       </nav>
+      )}
 
       <div className="bg-beige py-4 sm:py-6 px-4 sm:px-8 lg:px-20 border-b border-slate-200">
         <div className="mx-auto overflow-x-auto hide-scrollbar">

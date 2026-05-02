@@ -14,6 +14,19 @@ import useSectionVisibility from '../../hooks/useSectionVisibility'
 
 export default function HomePage({ onSignupClick, onSigninClick, onCategoryClick, onCountryClick, onHomeClick, onExploreClick, currentUser, onLogout, onProfileClick, onMyRequestsClick, onSettingsClick, onActivityClick, onBlogClick, onServiceClick, hideHeaderFooter = false }) {
     const { isVisible, getSectionInfo } = useSectionVisibility('home')
+
+    useEffect(() => {
+        const hash = window.location.hash.replace('#', '')
+        if (hash && hash !== 'home') {
+            const element = document.getElementById(hash)
+            if (element) {
+                setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth' })
+                }, 500)
+            }
+        }
+    }, [])
+
     return (
         <>
             {!hideHeaderFooter && (

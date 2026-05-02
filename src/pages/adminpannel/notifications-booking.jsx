@@ -583,7 +583,7 @@ const NotificationsBooking = () => {
                     <span>{req.statusLabel}</span>
                   </span>
 
-                  {req.status === 'rejected' && (
+                  {req.status !== 'transferred' && (
                     <button
                       type="button"
                       disabled={transferBusyId === req.id}

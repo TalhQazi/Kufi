@@ -21,6 +21,7 @@ import BlogListing from './pages/userpannel/BlogListing.jsx'
 import AdminApp from './AdminApp.jsx'
 import Header from './components/layout/Header.jsx'
 import Footer from './components/layout/Footer.jsx'
+import LegalModal from './components/ui/LegalModal.jsx'
 
 export default function App() {
   const SELECTED_ACTIVITIES_STORAGE_KEY = 'kufi_selected_activities'
@@ -47,6 +48,7 @@ export default function App() {
   const [page, setPage] = useState(getInitialPage())
   const [showModal, setShowModal] = useState(null) // 'login' or 'register' or null
   const [showNotifications, setShowNotifications] = useState(false)
+  const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '', loading: false })
   const [bookingData, setBookingData] = useState(() => {
     try {
       const raw = localStorage.getItem('kufi_pending_booking')
@@ -101,28 +103,43 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPopState, setIsPopState] = useState(false)
 
+  const openLegalModal = async (type, title) => {
+    setLegalModal({ isOpen: true, title, content: '', loading: true })
+    try {
+      const res = await api.get(`/legal-content/${type}`)
+      setLegalModal({ isOpen: true, title, content: res.data?.content || 'No content available.', loading: false })
+    } catch (e) {
+      setLegalModal({ isOpen: true, title, content: 'Failed to load content.', loading: false })
+    }
+  }
+
+  const closeLegalModal = () => {
+    setLegalModal({ isOpen: false, title: '', content: '', loading: false })
+  }
+
   useEffect(() => {
     const fetchConfig = async () => {
       try {
         const res = await api.get('/config')
         const gaId = res.data?.googleAnalyticsId
         if (gaId) {
-          // Check if already injected
-          if (!document.getElementById('google-analytics-script')) {
-            const script1 = document.createElement('script')
-            script1.id = 'google-analytics-script'
-            script1.async = true
-            script1.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`
-            document.head.appendChild(script1)
+          // Check if scripts already exist
+          const scriptId = 'google-analytics-script';
+          if (!document.getElementById(scriptId)) {
+            // Set up dataLayer and gtag function on window
+            window.dataLayer = window.dataLayer || [];
+            window.gtag = function() {
+              window.dataLayer.push(arguments);
+            };
+            window.gtag('js', new Date());
+            window.gtag('config', gaId);
 
-            const script2 = document.createElement('script')
-            script2.innerHTML = `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${gaId}');
-            `
-            document.head.appendChild(script2)
+            // Load the external script
+            const script = document.createElement('script');
+            script.id = scriptId;
+            script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+            script.async = true;
+            document.head.appendChild(script);
           }
         }
       } catch (e) {
@@ -287,21 +304,17 @@ export default function App() {
     }
   }, [])
 
-
-
   const handleActivityClick = (id) => {
     setSelectedActivityId(id)
     navigateTo('activity-detail')
   }
 
   const handleCountryClick = async (payload) => {
-    
     const maybeName = typeof payload === 'string' ? payload : payload?.name
     const maybeCountry = payload?.country
 
     if (maybeCountry) {
       setSelectedCityName(maybeName || null)
-
       try {
         if (typeof maybeCountry === 'string' && !/^[0-9a-fA-F]{24}$/.test(maybeCountry)) {
           setSelectedCountryName(maybeCountry)
@@ -396,14 +409,10 @@ export default function App() {
     navigateTo('traveler-profile')
   }
 
-
-
   useEffect(() => {
     const handleNavigationChange = (event) => {
       const newPage = (event.type === 'popstate' ? event.state?.page : window.location.hash.slice(1)) || 'home';
-
       const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
-
       const isAdminRoute = String(newPage || '').startsWith('admin')
       const isSupplierRoute = String(newPage || '').startsWith('supplier')
 
@@ -460,6 +469,12 @@ export default function App() {
         setIsPopState(true);
         setPage('admin');
         window.history.replaceState({ page: 'admin' }, '', '#admin')
+        return
+      }
+
+      const legalTypes = ['about', 'faqs', 'privacy', 'terms', 'privacy-policy', 'terms-conditions']
+      if (legalTypes.includes(newPage)) {
+        openLegalModal(newPage, newPage.charAt(0).toUpperCase() + newPage.slice(1).replace('-', ' '))
         return
       }
 
@@ -558,15 +573,12 @@ export default function App() {
 
   const navigateTo = (newPage) => {
     if (page === newPage) return
-
     const newHistory = history.slice(0, currentIndex + 1)
     newHistory.push(newPage)
     setHistory(newHistory)
     setCurrentIndex(newHistory.length - 1)
     setPage(newPage)
-
     window.history.pushState({ page: newPage }, '', `#${newPage}`)
-
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -576,7 +588,6 @@ export default function App() {
       const prevPage = history[newIndex]
       setCurrentIndex(newIndex)
       setPage(prevPage)
-
       window.history.back()
     }
   }
@@ -587,15 +598,12 @@ export default function App() {
       const nextPage = history[newIndex]
       setCurrentIndex(newIndex)
       setPage(nextPage)
-
-  
       window.history.forward()
     }
   }
 
   const canGoBack = currentIndex > 0
   const canGoForward = currentIndex < history.length - 1
-
 
   const renderUserPage = () => {
     if (page === 'explore') return (
@@ -857,8 +865,6 @@ export default function App() {
     )
   }
 
-
- 
   if (page === 'admin') {
     const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
     if (!hasAuthToken() || role !== 'admin') {
@@ -903,7 +909,6 @@ export default function App() {
     page === 'user-profile' ||
     page === 'traveler-profile' ||
     page === 'travel-booking' ||
-    page === 'explore' ||
     page === 'payment'
 
   return (
@@ -925,7 +930,7 @@ export default function App() {
         {renderUserPage()}
       </main>
 
-      {!hideUniversalHeaderFooter && <Footer />}
+      {!hideUniversalHeaderFooter && <Footer onLegalClick={openLegalModal} />}
 
       {showNotifications && (
         <NotificationsModal
@@ -938,7 +943,6 @@ export default function App() {
         />
       )}
 
-     
       {showModal === 'login' && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="relative w-full max-w-4xl h-auto max-h-[90vh] overflow-auto bg-white/95 rounded-2xl shadow-2xl">
@@ -972,6 +976,14 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <LegalModal
+        isOpen={legalModal.isOpen}
+        onClose={closeLegalModal}
+        title={legalModal.title}
+        content={legalModal.content}
+        loading={legalModal.loading}
+      />
     </div>
   )
 }

@@ -11,6 +11,7 @@ import {
   BarElement,
   Tooltip,
   Legend,
+  Filler,
 } from "chart.js";
 
 ChartJS.register(
@@ -20,7 +21,8 @@ ChartJS.register(
   LineElement,
   BarElement,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 const SupplierAnalytics = ({ darkMode }) => {
