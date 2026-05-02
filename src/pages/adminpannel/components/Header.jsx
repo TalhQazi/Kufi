@@ -116,9 +116,11 @@ const Header = ({ notificationCount, notifications, onBellClick, onLogout, onMen
             <ProfilePic user={JSON.parse(localStorage.getItem('currentUser'))} size="sm" />
             <div className="hidden lg:flex flex-col leading-tight mr-1">
               <span className={`text-xs font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                Admin User
+                {JSON.parse(localStorage.getItem('currentUser'))?.fullName || JSON.parse(localStorage.getItem('currentUser'))?.name || 'Admin User'}
               </span>
-              <span className={`text-[11px] ${isDarkMode ? "text-gray-500" : "text-gray-400"}`}>Administrator</span>
+              <span className={`text-[11px] ${isDarkMode ? "text-gray-500" : "text-gray-400"}`}>
+                {JSON.parse(localStorage.getItem('currentUser'))?.role === 'admin' ? 'Administrator' : 'Staff'}
+              </span>
             </div>
             <ChevronDown className={`hidden sm:block w-4 h-4 ${isDarkMode ? "text-gray-500" : "text-gray-400"}`} />
           </button>
