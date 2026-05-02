@@ -145,26 +145,17 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                 const [profileRes, bookingsList] = await Promise.all([
                     api.get('/auth/profile').catch(() => ({ data: null })),
                     (async () => {
-                        const endpoints = [
-                            currentUserId ? `/bookings/user/${encodeURIComponent(String(currentUserId))}` : null,
-                            '/bookings',
-                        ].filter(Boolean)
-
-                        for (const url of endpoints) {
-                            try {
-                                const res = await api.get(url)
-                                const raw =
-                                    res?.data?.bookings ??
-                                    res?.data?.requests ??
-                                    res?.data?.data ??
-                                    res?.data
-                                const list = Array.isArray(raw) ? raw : []
-                                if (list.length > 0) return list
-                            } catch {
-                                continue
-                            }
+                        try {
+                            const res = await api.get('/bookings')
+                            const raw =
+                                res?.data?.bookings ??
+                                res?.data?.requests ??
+                                res?.data?.data ??
+                                res?.data
+                            return Array.isArray(raw) ? raw : []
+                        } catch {
+                            return []
                         }
-                        return []
                     })(),
                 ])
 
