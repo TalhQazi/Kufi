@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Search, CheckCircle, Clock, MapPin, Users, X } from "lucide-react";
+import { Search, CheckCircle, Clock, MapPin, Users, X, FileText } from "lucide-react";
 import api from "../../api";
 
 const tabs = ["All Users", "All Suppliers", "Active", "Suspended", "Disputes", "Reviews"];
@@ -84,7 +84,9 @@ const UserManagement = () => {
         activity: u.activity || '0 bookings',
         status: (u.status || 'active').toLowerCase(),
         role: u.role || 'user',
-        scorePoints: u.scorePoints || 0
+        scorePoints: u.scorePoints || 0,
+        businessLicense: u.businessLicense,
+        isVerified: u.isVerified
       }));
 
       console.log("Transformed users:", transformedUsers);
@@ -524,6 +526,15 @@ const UserManagement = () => {
                         <div className="flex items-center gap-3 text-xs font-semibold">
                           {user.type === 'Supplier' && (
                             <>
+                              {user.businessLicense && (
+                                <button
+                                  className="text-amber-600 hover:underline flex items-center gap-1"
+                                  onClick={() => window.open(user.businessLicense, '_blank')}
+                                >
+                                  <FileText className="w-3 h-3" />
+                                  View Doc
+                                </button>
+                              )}
                               <button
                                 className="text-purple-600 hover:underline flex items-center gap-1"
                                 onClick={() => openScoreModal(user)}
@@ -718,6 +729,14 @@ const UserManagement = () => {
                 <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
                   {user.type === 'Supplier' && (
                     <>
+                      {user.businessLicense && (
+                        <button
+                          className="py-2 px-3 rounded-xl bg-amber-50 text-amber-600 text-xs font-bold hover:bg-amber-100 transition"
+                          onClick={() => window.open(user.businessLicense, '_blank')}
+                        >
+                          View Doc
+                        </button>
+                      )}
                       <button
                         className="py-2 px-3 rounded-xl bg-purple-50 text-purple-600 text-xs font-bold hover:bg-purple-100 transition"
                         onClick={() => openScoreModal(user)}

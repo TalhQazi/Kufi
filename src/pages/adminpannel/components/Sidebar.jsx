@@ -19,6 +19,7 @@ import {
   PanelTop,
   Layers,
   Scale,
+  Mail,
 } from "lucide-react";
 
 
@@ -41,6 +42,7 @@ const navItems = [
   { label: "Sections", icon: Layers },
   { label: "Legal Content", icon: Scale },
   { label: "Become a member", icon: Users },
+  { label: "Email Settings", icon: Mail },
 ];
 
 

@@ -26,6 +26,7 @@ import LegalContentController from './pages/adminpannel/LegalContentController'
 import MemberRequests from './pages/adminpannel/MemberRequests'
 import AdminProfile from './pages/adminpannel/AdminProfile'
 import AdminSettings from './pages/adminpannel/AdminSettings'
+import EmailSettings from './pages/adminpannel/EmailSettings'
 import './App.css'
 
 
@@ -43,7 +44,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
           import('./api').then(m => m.default.get('/admin/stats')),
           import('./api').then(m => m.default.get('/admin/activity'))
         ])
-        setNotificationCount(statsRes.data?.pendingRequests || 0)
+        setNotificationCount(statsRes.data?.unreadNotifications || 0)
         setNotifications(Array.isArray(activityRes.data?.activities) ? activityRes.data.activities.slice(0, 5) : [])
       } catch (err) {
         console.error('Error fetching admin data:', err)
@@ -53,6 +54,15 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
     const interval = setInterval(fetchData, 30000)
     return () => clearInterval(interval)
   }, [])
+
+  const markNotificationsRead = async () => {
+    try {
+      await import('./api').then(m => m.default.post('/admin/notifications/read'))
+      setNotificationCount(0)
+    } catch (err) {
+      console.error('Error marking notifications read:', err)
+    }
+  }
 
   const toggleSidebar = () => setSidebarVisible(!sidebarVisible)
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode)
@@ -91,6 +101,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
     if (activePage === 'Become a member') return <MemberRequests darkMode={isDarkMode} />
     if (activePage === 'Profile') return <AdminProfile />
     if (activePage === 'Settings') return <AdminSettings />
+    if (activePage === 'Email Settings') return <EmailSettings />
     return <Dashboard />
 
   }
@@ -113,7 +124,11 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
           <Header
             notificationCount={notificationCount}
             notifications={notifications}
-            onBellClick={() => setActivePage('Booking Notifications')}
+            onBellClick={() => {
+              setActivePage('Booking Notifications')
+              markNotificationsRead()
+            }}
+            onMarkAsRead={markNotificationsRead}
             onLogout={onLogout}
             onMenuClick={toggleSidebar}
             isDarkMode={isDarkMode}

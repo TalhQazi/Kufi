@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Bell, ChevronDown, Settings, LogOut, Moon, Sun } from "lucide-react";
 import ProfilePic from "../../../components/ui/ProfilePic";
 
-const Header = ({ notificationCount, notifications, onBellClick, onLogout, onMenuClick, isDarkMode, onThemeToggle, onProfileClick, onSettingsClick }) => {
+const Header = ({ notificationCount, notifications, onBellClick, onMarkAsRead, onLogout, onMenuClick, isDarkMode, onThemeToggle, onProfileClick, onSettingsClick }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef(null);
@@ -54,7 +54,13 @@ const Header = ({ notificationCount, notifications, onBellClick, onLogout, onMen
         <div className="relative" ref={notificationRef}>
           <button
             className={`relative p-2 rounded-full transition-colors ${isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"}`}
-            onClick={() => setShowNotifications(!showNotifications)}
+            onClick={() => {
+              const newState = !showNotifications;
+              setShowNotifications(newState);
+              if (newState && onMarkAsRead) {
+                onMarkAsRead();
+              }
+            }}
             aria-label="Notifications"
           >
             <Bell className={`w-4 h-4 sm:w-5 sm:h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`} />
