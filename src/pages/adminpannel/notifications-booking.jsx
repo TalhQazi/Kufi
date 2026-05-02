@@ -583,7 +583,7 @@ const NotificationsBooking = () => {
                     <span>{req.statusLabel}</span>
                   </span>
 
-                  {req.status !== 'transferred' && (
+                  {req.status !== 'transferred' ? (
                     <button
                       type="button"
                       disabled={transferBusyId === req.id}
@@ -601,6 +601,11 @@ const NotificationsBooking = () => {
                       )}
                       <span>Transfer to Another Supplier</span>
                     </button>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-[11px] font-bold">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Already Transferred
+                    </span>
                   )}
                 </div>
               </div>

@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react'
+import * as React from 'react'
+const { useEffect, useState, useMemo, useCallback } = React
 import Header from '../../components/layout/Header'
 import HeroSection from '../../components/home/HeroSection'
 import SearchBar from '../../components/home/SearchBar'

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import * as React from 'react'
+const { useState, useEffect, useCallback, useMemo, useRef } = React
 import Sidebar from './pages/adminpannel/components/Sidebar'
 import Header from './pages/adminpannel/components/Header'
 import Dashboard from './pages/adminpannel/dashboard'
@@ -49,7 +50,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
       }
     }
     fetchData()
-    const interval = setInterval(fetchData, 60000)
+    const interval = setInterval(fetchData, 30000)
     return () => clearInterval(interval)
   }, [])
 
