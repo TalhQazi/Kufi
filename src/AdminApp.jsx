@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Sidebar from './pages/adminpannel/components/Sidebar'
 import Header from './pages/adminpannel/components/Header'
 import Dashboard from './pages/adminpannel/dashboard'
@@ -35,7 +35,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
   const [notificationCount, setNotificationCount] = useState(0)
   const [notifications, setNotifications] = useState([])
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const [statsRes, activityRes] = await Promise.all([

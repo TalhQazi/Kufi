@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react'
 import Header from '../../components/layout/Header'
 import HeroSection from '../../components/home/HeroSection'
 import SearchBar from '../../components/home/SearchBar'
