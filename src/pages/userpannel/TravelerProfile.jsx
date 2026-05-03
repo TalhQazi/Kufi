@@ -57,6 +57,7 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
     ]
     
     const [wishlist, setWishlist] = useState([])
+    const [selectedItinerary, setSelectedItinerary] = useState(null)
     const [userPreferences, setUserPreferences] = useState(() => {
         try {
             const saved = localStorage.getItem('kufi_user_preferences')
@@ -295,15 +296,17 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                 b?.location ||
                 '—'
 
+            // Get first activity from items for image
+            const firstActivity = b?.items?.[0]?.activity
             const imageUrl =
+                firstActivity?.imageUrl ||
+                (Array.isArray(firstActivity?.images) && firstActivity.images[0]) ||
+                firstActivity?.image ||
                 b?.imageUrl ||
                 b?.image ||
-                b?.items?.[0]?.activity?.imageUrl ||
-                b?.items?.[0]?.activity?.images?.[0] ||
-                b?.items?.[0]?.activity?.image ||
-                b?.items?.[0]?.imageUrl ||
-                b?.items?.[0]?.image ||
-                ''
+                b?.tripDetails?.image ||
+                b?.tripDetails?.imageUrl ||
+                '/assets/activity1.jpeg'
 
             const start = b?.tripDetails?.arrivalDate || b?.startDate || b?.arrivalDate
             const end = b?.tripDetails?.departureDate || b?.endDate || b?.departureDate
@@ -1180,9 +1183,14 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                                 </div>
                                             </div>
                                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
-                                                <button className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap">
-                                                    View Itinerary
-                                                </button>
+                                                {status !== 'cancelled' && (
+                                                    <button 
+                                                        onClick={() => setSelectedItinerary(trip)}
+                                                        className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap"
+                                                    >
+                                                        View Itinerary
+                                                    </button>
+                                                )}
                                                 <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap text-center ${statusClass}`}>
                                                     {statusLabel}
                                                 </span>
@@ -1404,6 +1412,136 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Itinerary Detail Modal */}
+            {selectedItinerary && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setSelectedItinerary(null)}>
+                    <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+                        {/* Header Image */}
+                        <div className="relative h-56 sm:h-64">
+                            <img
+                                src={selectedItinerary._imageUrl || '/assets/activity1.jpeg'}
+                                alt={selectedItinerary._experience}
+                                className="w-full h-full object-cover rounded-t-2xl"
+                            />
+                            <button
+                                onClick={() => setSelectedItinerary(null)}
+                                className="absolute top-4 right-4 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-gray-600 hover:bg-white shadow-lg"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6">
+                            {/* Title & Destination */}
+                            <div className="mb-6">
+                                <h2 className="text-2xl font-bold text-slate-900 mb-2">{selectedItinerary._experience}</h2>
+                                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+                                    <div className="flex items-center gap-1">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6E4E" strokeWidth="2">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                            <circle cx="12" cy="10" r="3" />
+                                        </svg>
+                                        <span className="font-medium">{selectedItinerary._destination}</span>
+                                    </div>
+                                    {selectedItinerary._durationLabel && (
+                                        <span className="px-2 py-1 bg-slate-100 rounded text-xs font-medium">
+                                            {selectedItinerary._durationLabel}
+                                        </span>
+                                    )}
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                        ['confirmed', 'accepted', 'completed'].includes(String(selectedItinerary._status).toLowerCase())
+                                            ? 'bg-green-100 text-green-700'
+                                            : ['pending', 'processing', 'in progress'].includes(String(selectedItinerary._status).toLowerCase())
+                                                ? 'bg-yellow-100 text-yellow-700'
+                                                : 'bg-slate-100 text-slate-600'
+                                    }`}>
+                                        {selectedItinerary._status || 'Pending'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Trip Details */}
+                            {(selectedItinerary._startDate || selectedItinerary._endDate) && (
+                                <div className="mb-6 p-4 bg-slate-50 rounded-xl">
+                                    <h3 className="text-sm font-semibold text-slate-900 mb-3">Trip Dates</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {selectedItinerary._startDate && (
+                                            <div>
+                                                <p className="text-xs text-slate-500 mb-1">Start Date</p>
+                                                <p className="text-sm font-medium text-slate-900">
+                                                    {new Date(selectedItinerary._startDate).toLocaleDateString('en-US', { 
+                                                        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' 
+                                                    })}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {selectedItinerary._endDate && (
+                                            <div>
+                                                <p className="text-xs text-slate-500 mb-1">End Date</p>
+                                                <p className="text-sm font-medium text-slate-900">
+                                                    {new Date(selectedItinerary._endDate).toLocaleDateString('en-US', { 
+                                                        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' 
+                                                    })}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Activities/Items */}
+                            {selectedItinerary.items && selectedItinerary.items.length > 0 && (
+                                <div className="mb-6">
+                                    <h3 className="text-sm font-semibold text-slate-900 mb-3">Activities Included</h3>
+                                    <div className="space-y-3">
+                                        {selectedItinerary.items.map((item, idx) => (
+                                            <div key={idx} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
+                                                <div className="w-16 h-16 rounded-lg bg-slate-200 flex-shrink-0 overflow-hidden">
+                                                    {item?.activity?.imageUrl || item?.activity?.image ? (
+                                                        <img
+                                                            src={item.activity.imageUrl || item.activity.image}
+                                                            alt={item?.activity?.title || 'Activity'}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No Img</div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="text-sm font-medium text-slate-900 truncate">
+                                                        {item?.activity?.title || item?.title || 'Activity'}
+                                                    </h4>
+                                                    {item?.activity?.location && (
+                                                        <p className="text-xs text-slate-500 mt-1">@{item.activity.location}</p>
+                                                    )}
+                                                    {item?.quantity && (
+                                                        <p className="text-xs text-slate-500 mt-1">Qty: {item.quantity}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Footer */}
+                            <div className="flex justify-end pt-4 border-t border-slate-200">
+                                <button
+                                    onClick={() => setSelectedItinerary(null)}
+                                    className="px-6 py-2 bg-[#8B6E4E] text-white rounded-lg font-medium hover:bg-[#7a5d3f] transition-colors"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
