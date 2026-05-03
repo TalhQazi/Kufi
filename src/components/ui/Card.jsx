@@ -17,7 +17,7 @@ export default function Card({
                 className={`relative rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-200 cursor-pointer ${className}`}
             >
                 <div
-                    className={`w-full h-64 bg-cover bg-center ${imageClassName}`}
+                    className={`w-full h-64 bg-cover bg-center bg-slate-200 ${imageClassName}`}
                     style={{ backgroundImage: `url(${image})` }}
                 />
                 <div className="absolute inset-x-0 bottom-0 p-4 flex items-center justify-between bg-gradient-to-t from-black/85 to-transparent">

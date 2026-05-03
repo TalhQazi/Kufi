@@ -48,6 +48,10 @@ export default function TopLocationsSection({ onCountryClick, sectionInfo }) {
                         <div className="col-span-full py-10 flex justify-center">
                             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#a67c52]"></div>
                         </div>
+                    ) : total === 0 ? (
+                        <div className="col-span-full py-10 text-center text-slate-400 text-base">
+                            No top locations available at the moment.
+                        </div>
                     ) : (
                         visibleCities.map((item, index) => (
                             <div key={item?._id || `${item?.name}-${index}`} className="w-full">

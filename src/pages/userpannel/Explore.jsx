@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { FiUser } from 'react-icons/fi'
 import api from '../../api'
 import Footer from '../../components/layout/Footer'
@@ -49,6 +49,22 @@ export default function Explore({
     }
   })()
   const dropdownRef = useRef(null)
+  const catScrollRef = useRef(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  const updateScrollArrows = useCallback(() => {
+    const el = catScrollRef.current
+    if (!el) return
+    setCanScrollLeft(el.scrollLeft > 0)
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+  }, [])
+
+  useEffect(() => {
+    updateScrollArrows()
+    window.addEventListener('resize', updateScrollArrows)
+    return () => window.removeEventListener('resize', updateScrollArrows)
+  }, [updateScrollArrows])
 
   const normalizeCategory = (value) => {
     return String(value || '')
@@ -162,6 +178,16 @@ export default function Explore({
 
   const categories = [
     {
+      name: 'Adventure',
+      icon: (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
+          <path d="M13 3.99961C13.5523 3.99961 14 3.55189 14 2.99961" />
+          <path d="M5.5 21L10 11L8 9L11 7L13 9V6L15 8L17 13M9 19L11 13" />
+          <path d="M7 10L9 8" />
+        </svg>
+      )
+    },
+    {
       name: 'Culture',
       icon: (
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
@@ -173,13 +199,26 @@ export default function Explore({
       )
     },
     {
-      name: 'Sightseeing',
+      name: 'Dates',
       icon: (
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <circle cx="12" cy="4" r="2" />
-          <path d="M10 8L12 6L14 8V13L12 16" />
-          <path d="M10 15L8 21" />
-          <path d="M12 16L15 21" />
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+      )
+    },
+    {
+      name: 'Entertainment',
+      icon: (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="7.5" cy="7.5" r="1" fill={brownColor} />
+          <circle cx="16.5" cy="7.5" r="1" fill={brownColor} />
+          <circle cx="7.5" cy="16.5" r="1" fill={brownColor} />
+          <circle cx="16.5" cy="16.5" r="1" fill={brownColor} />
+          <circle cx="12" cy="12" r="1" fill={brownColor} />
         </svg>
       )
     },
@@ -205,16 +244,6 @@ export default function Explore({
       )
     },
     {
-      name: 'Adventure',
-      icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <path d="M13 3.99961C13.5523 3.99961 14 3.55189 14 2.99961" />
-          <path d="M5.5 21L10 11L8 9L11 7L13 9V6L15 8L17 13M9 19L11 13" />
-          <path d="M7 10L9 8" />
-        </svg>
-      )
-    },
-    {
       name: 'In the Air',
       icon: (
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
@@ -222,48 +251,6 @@ export default function Explore({
           <path d="M12 10v12" />
           <path d="M4 11v6l8 5" />
           <path d="M20 11v6l-8 5" />
-        </svg>
-      )
-    },
-    {
-      name: 'On the water',
-      icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <path d="M2 12c0 2 1 3 3 3s3-1 3-3 1-3 3-3 3 1 3 3 1 3 3 3 3-1 3-3" />
-          <path d="M2 17c0 2 1 3 3 3s3-1 3-3 1-3 3-3 3 1 3 3 1 3 3 3 3-1 3-3" />
-          <path d="M12 9V5" />
-          <path d="M11 5h2" />
-        </svg>
-      )
-    },
-    {
-      name: 'Entertainment',
-      icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <circle cx="7.5" cy="7.5" r="1" fill={brownColor} />
-          <circle cx="16.5" cy="7.5" r="1" fill={brownColor} />
-          <circle cx="7.5" cy="16.5" r="1" fill={brownColor} />
-          <circle cx="16.5" cy="16.5" r="1" fill={brownColor} />
-          <circle cx="12" cy="12" r="1" fill={brownColor} />
-        </svg>
-      )
-    },
-    {
-      name: 'Seasonal',
-      icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <path d="M3 20L12 3L21 20H3Z" />
-          <path d="M12 3v7" />
-          <path d="M2 20h20" />
-        </svg>
-      )
-    },
-    {
-      name: 'Wellness',
-      icon: (
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
         </svg>
       )
     },
@@ -286,13 +273,42 @@ export default function Explore({
       )
     },
     {
-      name: 'Dates',
+      name: 'On the water',
       icon: (
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
+          <path d="M2 12c0 2 1 3 3 3s3-1 3-3 1-3 3-3 3 1 3 3 1 3 3 3 3-1 3-3" />
+          <path d="M2 17c0 2 1 3 3 3s3-1 3-3 1-3 3-3 3 1 3 3 1 3 3 3 3-1 3-3" />
+          <path d="M12 9V5" />
+          <path d="M11 5h2" />
+        </svg>
+      )
+    },
+    {
+      name: 'Seasonal',
+      icon: (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
+          <path d="M3 20L12 3L21 20H3Z" />
+          <path d="M12 3v7" />
+          <path d="M2 20h20" />
+        </svg>
+      )
+    },
+    {
+      name: 'Sightseeing',
+      icon: (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
+          <circle cx="12" cy="4" r="2" />
+          <path d="M10 8L12 6L14 8V13L12 16" />
+          <path d="M10 15L8 21" />
+          <path d="M12 16L15 21" />
+        </svg>
+      )
+    },
+    {
+      name: 'Wellness',
+      icon: (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
         </svg>
       )
     },
@@ -433,31 +449,69 @@ export default function Explore({
       )}
 
       <div className="bg-beige py-4 sm:py-6 px-4 sm:px-8 lg:px-20 border-b border-slate-200">
-        <div className="mx-auto overflow-x-auto hide-scrollbar">
-          <div className="flex gap-4 sm:gap-6 lg:gap-8 min-w-max">
-            <div
-              className={`flex flex-col items-center gap-2 cursor-pointer transition-all min-w-[70px] sm:min-w-[80px] p-2 rounded-xl ${!selectedCategory ? 'bg-primary-brown/10 scale-105' : 'hover:bg-slate-50'}`}
-              onClick={() => setSelectedCategory(null)}
-            >
-              <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center rounded-full bg-white shadow-sm">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                </svg>
-              </div>
-              <p className={`m-0 text-[10px] sm:text-xs font-bold text-center whitespace-nowrap ${!selectedCategory ? 'text-primary-brown' : 'text-slate-700'}`}>All</p>
-            </div>
-            {categories.map(({ name, icon }) => (
+        <div className="mx-auto relative">
+          {/* Left scroll arrow */}
+          <button
+            type="button"
+            onClick={() => {
+              if (catScrollRef.current) {
+                catScrollRef.current.scrollBy({ left: -200, behavior: 'smooth' })
+              }
+            }}
+            className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-md border border-slate-200 hover:bg-slate-50 transition-all ${canScrollLeft ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            aria-label="Scroll categories left"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+
+          {/* Right scroll arrow */}
+          <button
+            type="button"
+            onClick={() => {
+              if (catScrollRef.current) {
+                catScrollRef.current.scrollBy({ left: 200, behavior: 'smooth' })
+              }
+            }}
+            className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-md border border-slate-200 hover:bg-slate-50 transition-all ${canScrollRight ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            aria-label="Scroll categories right"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+
+          <div
+            ref={catScrollRef}
+            onScroll={updateScrollArrows}
+            className="overflow-x-auto hide-scrollbar px-10"
+          >
+            <div className="flex gap-4 sm:gap-6 lg:gap-8 min-w-max">
               <div
-                key={name}
-                className={`flex flex-col items-center gap-2 cursor-pointer transition-all min-w-[70px] sm:min-w-[80px] p-2 rounded-xl ${selectedCategory === name ? 'bg-primary-brown/10 scale-105' : 'hover:bg-slate-50'}`}
-                onClick={() => handleLocalCategoryClick(name)}
+                className={`flex flex-col items-center gap-2 cursor-pointer transition-all min-w-[70px] sm:min-w-[80px] p-2 rounded-xl ${!selectedCategory ? 'bg-primary-brown/10 scale-105' : 'hover:bg-slate-50'}`}
+                onClick={() => setSelectedCategory(null)}
               >
                 <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center rounded-full bg-white shadow-sm">
-                  {icon}
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  </svg>
                 </div>
-                <p className={`m-0 text-[10px] sm:text-xs font-bold text-center whitespace-nowrap ${selectedCategory === name ? 'text-primary-brown' : 'text-slate-700'}`}>{name}</p>
+                <p className={`m-0 text-[10px] sm:text-xs font-bold text-center whitespace-nowrap ${!selectedCategory ? 'text-primary-brown' : 'text-slate-700'}`}>All</p>
               </div>
-            ))}
+              {categories.map(({ name, icon }) => (
+                <div
+                  key={name}
+                  className={`flex flex-col items-center gap-2 cursor-pointer transition-all min-w-[70px] sm:min-w-[80px] p-2 rounded-xl ${selectedCategory === name ? 'bg-primary-brown/10 scale-105' : 'hover:bg-slate-50'}`}
+                  onClick={() => handleLocalCategoryClick(name)}
+                >
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center rounded-full bg-white shadow-sm">
+                    {icon}
+                  </div>
+                  <p className={`m-0 text-[10px] sm:text-xs font-bold text-center whitespace-nowrap ${selectedCategory === name ? 'text-primary-brown' : 'text-slate-700'}`}>{name}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

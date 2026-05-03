@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FaTwitter, FaInstagram, FaYoutube, FaEye, FaEyeSlash } from 'react-icons/fa'
+import { FaTwitter, FaInstagram, FaYoutube, FaEye, FaEyeSlash, FaCheck, FaTimes } from 'react-icons/fa'
 import { FcGoogle } from 'react-icons/fc'
 import { useGoogleLogin } from '@react-oauth/google'
 import { FiMail, FiLock, FiGlobe, FiUser, FiPhone, FiX } from 'react-icons/fi'
@@ -48,7 +48,16 @@ export default function Register({ onLoginClick, onClose }) {
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [countries, setCountries] = useState([])
+    const [passwordError, setPasswordError] = useState('')
     const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '', loading: false })
+
+    const passwordChecks = {
+        minLength: (form.password || '').length >= 8,
+        hasUppercase: /[A-Z]/.test(form.password || ''),
+        hasLowercase: /[a-z]/.test(form.password || ''),
+        hasNumber: /[0-9]/.test(form.password || ''),
+    }
+    const isPasswordValid = passwordChecks.minLength && passwordChecks.hasUppercase && passwordChecks.hasLowercase && passwordChecks.hasNumber
 
     const openLegalModal = async (type, title) => {
         setLegalModal({ isOpen: true, title, content: '', loading: true })
@@ -108,6 +117,12 @@ export default function Register({ onLoginClick, onClose }) {
 
     const handleSubmit = async (event) => {
         event.preventDefault()
+
+        if (!isPasswordValid) {
+            setPasswordError('Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number.')
+            return
+        }
+        setPasswordError('')
 
         if (form.password !== form.confirmPassword) {
             alert('Password and Confirm Password must match.')
@@ -299,9 +314,9 @@ export default function Register({ onLoginClick, onClose }) {
                                     type={showPassword ? 'text' : 'password'}
                                     name="password"
                                     placeholder="Enter your password"
-                                    className="w-full py-3 pl-8 pr-10 border-0 border-b border-slate-300 bg-transparent focus:outline-none focus:border-[#A67C52] transition-colors text-slate-900 placeholder:text-slate-400 text-sm md:text-base"
+                                    className={`w-full py-3 pl-8 pr-10 border-0 border-b bg-transparent focus:outline-none transition-colors text-slate-900 placeholder:text-slate-400 text-sm md:text-base ${passwordError ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-[#A67C52]'}`}
                                     value={form.password}
-                                    onChange={handleChange}
+                                    onChange={(e) => { handleChange(e); setPasswordError('') }}
                                     required
                                 />
                                 <button
@@ -313,6 +328,26 @@ export default function Register({ onLoginClick, onClose }) {
                                     {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
                                 </button>
                             </div>
+
+                            {/* Password requirements */}
+                            {form.password.length > 0 && (
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                                    {[
+                                        { key: 'minLength', label: '8+ characters' },
+                                        { key: 'hasUppercase', label: 'Uppercase' },
+                                        { key: 'hasLowercase', label: 'Lowercase' },
+                                        { key: 'hasNumber', label: 'Number' },
+                                    ].map(({ key, label }) => (
+                                        <span key={key} className={`flex items-center gap-1 text-xs transition-colors ${passwordChecks[key] ? 'text-green-600' : 'text-red-400'}`}>
+                                            {passwordChecks[key] ? <FaCheck size={10} /> : <FaTimes size={10} />}
+                                            {label}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                            {passwordError && (
+                                <p className="text-red-500 text-xs mt-1">{passwordError}</p>
+                            )}
 
                             <div className="relative group">
                                 <div className="absolute left-0 top-3 text-[#A67C52]">

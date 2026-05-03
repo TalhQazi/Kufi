@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FaTwitter, FaInstagram, FaYoutube, FaEye, FaEyeSlash, FaCheck, FaTimes } from 'react-icons/fa'
 import { FcGoogle } from 'react-icons/fc'
 import { useGoogleLogin } from '@react-oauth/google'
@@ -41,6 +41,21 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
     const [rememberMe, setRememberMe] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '', loading: false })
+
+    // Load remembered credentials on mount
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('rememberedLogin')
+            if (saved) {
+                const { email, password: savedPw } = JSON.parse(saved)
+                if (email) setEmailOrUsername(email)
+                if (savedPw) setPassword(savedPw)
+                setRememberMe(true)
+            }
+        } catch {
+            // ignore parse errors
+        }
+    }, [])
 
     const openLegalModal = async (type, title) => {
         setLegalModal({ isOpen: true, title, content: '', loading: true })
@@ -100,6 +115,13 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                 localStorage.setItem('authToken', response.data.token)
                 localStorage.setItem('currentUser', JSON.stringify(response.data.user))
                 localStorage.setItem('userRole', response.data.user.role)
+
+                // Remember Me: persist or clear saved credentials
+                if (rememberMe) {
+                    localStorage.setItem('rememberedLogin', JSON.stringify({ email: emailOrUsername, password: password }))
+                } else {
+                    localStorage.removeItem('rememberedLogin')
+                }
 
                 if (onLoginSuccess) onLoginSuccess(response.data.user.role)
             } else {
