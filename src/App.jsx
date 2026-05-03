@@ -1,25 +1,28 @@
 import * as React from 'react'
-const { useState, useEffect } = React
+const { useState, useEffect, Suspense, lazy } = React
 import api from './api'
-import HomePage from './pages/userpannel/HomePage.jsx'
-import Login from './pages/userpannel/Login.jsx'
-import Register from './pages/userpannel/Register.jsx'
-import Explore from './pages/userpannel/Explore.jsx'
-import UserDashboard from './pages/userpannel/UserDashboard.jsx'
-import ActivityDetail from './pages/userpannel/ActivityDetail.jsx'
-import CountryDetails from './pages/userpannel/CountryDetails.jsx'
-import CategoryPage from './pages/userpannel/CategoryPage.jsx'
-import NotificationsModal from './pages/userpannel/NotificationsModal.jsx'
-import TravelBooking from './pages/userpannel/TravelBooking.jsx'
-import BookingConfirmation from './pages/userpannel/BookingConfirmation.jsx'
-import Payment from './pages/userpannel/Payment.jsx'
-import PaymentResult from './pages/userpannel/PaymentResult.jsx'
-import ItineraryView from './pages/userpannel/ItineraryView.jsx'
-import TravelerProfile from './pages/userpannel/TravelerProfile.jsx'
-import BlogDetail from './pages/userpannel/BlogDetail.jsx'
-import About from './pages/userpannel/About.jsx'
-import BlogListing from './pages/userpannel/BlogListing.jsx'
-import AdminApp from './AdminApp.jsx'
+
+// Lazy load pages for better performance
+const HomePage = lazy(() => import('./pages/userpannel/HomePage.jsx'))
+const Login = lazy(() => import('./pages/userpannel/Login.jsx'))
+const Register = lazy(() => import('./pages/userpannel/Register.jsx'))
+const Explore = lazy(() => import('./pages/userpannel/Explore.jsx'))
+const UserDashboard = lazy(() => import('./pages/userpannel/UserDashboard.jsx'))
+const ActivityDetail = lazy(() => import('./pages/userpannel/ActivityDetail.jsx'))
+const CountryDetails = lazy(() => import('./pages/userpannel/CountryDetails.jsx'))
+const CategoryPage = lazy(() => import('./pages/userpannel/CategoryPage.jsx'))
+const NotificationsModal = lazy(() => import('./pages/userpannel/NotificationsModal.jsx'))
+const TravelBooking = lazy(() => import('./pages/userpannel/TravelBooking.jsx'))
+const BookingConfirmation = lazy(() => import('./pages/userpannel/BookingConfirmation.jsx'))
+const Payment = lazy(() => import('./pages/userpannel/Payment.jsx'))
+const PaymentResult = lazy(() => import('./pages/userpannel/PaymentResult.jsx'))
+const ItineraryView = lazy(() => import('./pages/userpannel/ItineraryView.jsx'))
+const TravelerProfile = lazy(() => import('./pages/userpannel/TravelerProfile.jsx'))
+const BlogDetail = lazy(() => import('./pages/userpannel/BlogDetail.jsx'))
+const About = lazy(() => import('./pages/userpannel/About.jsx'))
+const BlogListing = lazy(() => import('./pages/userpannel/BlogListing.jsx'))
+const AdminApp = lazy(() => import('./AdminApp.jsx'))
+
 import Header from './components/layout/Header.jsx'
 import Footer from './components/layout/Footer.jsx'
 import LegalModal from './components/ui/LegalModal.jsx'
@@ -928,55 +931,59 @@ export default function App() {
       )}
 
       <main className="flex-grow">
-        {renderUserPage()}
+        <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div></div>}>
+          {renderUserPage()}
+        </Suspense>
       </main>
 
       {!hideUniversalHeaderFooter && <Footer onLegalClick={openLegalModal} />}
 
-      {showNotifications && (
-        <NotificationsModal
-          onClose={() => setShowNotifications(false)}
-          onPaymentClick={(trip) => {
-            setBookingData(trip)
-            navigateTo('payment')
-          }}
-          onViewItinerary={(trip) => handleItineraryClick(trip)}
-        />
-      )}
+      <Suspense fallback={null}>
+        {showNotifications && (
+          <NotificationsModal
+            onClose={() => setShowNotifications(false)}
+            onPaymentClick={(trip) => {
+              setBookingData(trip)
+              navigateTo('payment')
+            }}
+            onViewItinerary={(trip) => handleItineraryClick(trip)}
+          />
+        )}
 
-      {showModal === 'login' && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="relative w-full max-w-4xl h-auto max-h-[90vh] overflow-auto bg-white/95 rounded-2xl shadow-2xl">
-            <Login
-              onRegisterClick={handleOpenRegister}
-              onLoginSuccess={(role) => {
-                setShowModal(null)
-                const user = JSON.parse(localStorage.getItem('currentUser'))
-                setCurrentUser(user)
-                if (role === 'admin') {
-                  navigateTo('admin')
-                } else if (role === 'supplier') {
-                  navigateTo('supplier')
-                } else {
-                  navigateTo('explore')
-                }
-              }}
-              onClose={handleCloseModal}
-            />
+        {showModal === 'login' && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="relative w-full max-w-4xl h-auto max-h-[90vh] overflow-auto bg-white/95 rounded-2xl shadow-2xl">
+              <Login
+                onRegisterClick={handleOpenRegister}
+                onLoginSuccess={(role) => {
+                  setShowModal(null)
+                  const user = JSON.parse(localStorage.getItem('currentUser'))
+                  setCurrentUser(user)
+                  if (role === 'admin') {
+                    navigateTo('admin')
+                  } else if (role === 'supplier') {
+                    navigateTo('supplier')
+                  } else {
+                    navigateTo('explore')
+                  }
+                }}
+                onClose={handleCloseModal}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {showModal === 'register' && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="relative w-full max-w-4xl h-auto max-h-[90vh] overflow-auto bg-white/95 rounded-2xl shadow-2xl">
-            <Register
-              onLoginClick={handleOpenLogin}
-              onClose={handleCloseModal}
-            />
+        {showModal === 'register' && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="relative w-full max-w-4xl h-auto max-h-[90vh] overflow-auto bg-white/95 rounded-2xl shadow-2xl">
+              <Register
+                onLoginClick={handleOpenLogin}
+                onClose={handleCloseModal}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Suspense>
 
       <LegalModal
         isOpen={legalModal.isOpen}

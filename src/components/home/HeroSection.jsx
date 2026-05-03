@@ -260,6 +260,7 @@ export default function HeroSection({ onCountryClick, onExploreClick }) {
                                 src={countries[idx]?.image || countries[idx]?.imageUrl || '/assets/hero-card1.jpeg'}
                                 alt={countries[idx]?.name || "Featured experience"}
                                 className="w-full h-80 object-cover"
+                                loading="lazy"
                             />
                             <div className="absolute bottom-4 left-4 right-4 text-white">
                                 <h3 className="text-lg font-bold">{countries[idx]?.name || "Lorem Ipsum"}</h3>
@@ -305,6 +306,7 @@ export default function HeroSection({ onCountryClick, onExploreClick }) {
                                             src={country.image || country.imageUrl || '/assets/hero-card1.jpeg'}
                                             alt={country.name}
                                             className="absolute inset-0 w-full h-full object-cover block m-0 p-0 border-none pointer-events-none"
+                                            loading="lazy"
                                         />
                                         <div className="absolute bottom-0 left-0 w-full p-5 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
                                             <div className="flex justify-between items-end">

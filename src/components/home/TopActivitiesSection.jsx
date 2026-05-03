@@ -82,10 +82,14 @@ export default function TopActivitiesSection({ onActivityClick }) {
                                     if (onActivityClick) onActivityClick(card.id)
                                 }}
                             >
-                                <div
-                                    className="absolute inset-0 w-full h-full bg-cover bg-center transition-transform hover:scale-105 duration-700"
-                                    style={{ backgroundImage: `url(${card.image})` }}
-                                />
+                                <div className="absolute inset-0 w-full h-full overflow-hidden">
+                                    <img 
+                                        src={card.image} 
+                                        alt={card.title}
+                                        loading="lazy"
+                                        className="w-full h-full object-cover transition-transform hover:scale-105 duration-700"
+                                    />
+                                </div>
                                 <div className="absolute inset-0 flex flex-col justify-end p-6 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
                                     {card.badge && <span className="inline-block mb-2 self-start py-1 px-3 rounded-md bg-teal-500 text-white text-xs font-medium">{card.badge}</span>}
                                     <h3 className="m-0 mb-1.5 text-xl font-bold text-white">{card.title}</h3>
@@ -106,10 +110,14 @@ export default function TopActivitiesSection({ onActivityClick }) {
                                 key={item.id}
                                 className={`absolute inset-0 w-full h-full transition-opacity duration-700 ${index === activeIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
                             >
-                                <div
-                                    className="absolute inset-0 w-full h-full bg-cover bg-center"
-                                    style={{ backgroundImage: `url(${item.image})` }}
-                                />
+                                <div className="absolute inset-0 w-full h-full">
+                                    <img 
+                                        src={item.image} 
+                                        alt={item.title}
+                                        loading="lazy"
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
                                 <div className="absolute inset-0 flex flex-col justify-between p-6 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
                                     <div></div>
 
