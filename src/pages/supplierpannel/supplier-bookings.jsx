@@ -1,11 +1,13 @@
 import api from "../../api";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { ChevronDown } from "lucide-react";
 
 const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
   const [bookings, setBookings] = useState([]);
   const [drafts, setDrafts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [timeFilter, setTimeFilter] = useState('all');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   const readItineraryDrafts = () => {
     try {
@@ -109,6 +111,32 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
     return () => window.removeEventListener("kufi_itinerary_drafts_updated", onUpdated);
   }, []);
 
+  const filteredBookings = useMemo(() => {
+    if (timeFilter === 'all') return bookings;
+    
+    const now = new Date();
+    let cutoffDate;
+    
+    switch (timeFilter) {
+      case '24h':
+        cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case 'weekly':
+        cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'monthly':
+        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        return bookings;
+    }
+    
+    return bookings.filter(b => {
+      const bookingDate = new Date(b.date || b.createdAt || b._createdAt);
+      return bookingDate >= cutoffDate;
+    });
+  }, [bookings, timeFilter]);
+
   const statusClass = (status) => {
     switch (status) {
       case "Completed":
@@ -165,15 +193,36 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
         <div className={`overflow-hidden rounded-2xl border shadow-sm transition-colors ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
           <div className={`flex items-center justify-between border-b px-6 py-4 transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`}>
             <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Booking History</h2>
-            <button className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs transition-colors ${darkMode ? "bg-slate-800 border-slate-700 text-slate-400" : "bg-white border-gray-200 text-gray-600"}`}>
-              Last 24h
-              <ChevronDown className="h-3.5 w-3.5" />
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs transition-colors ${darkMode ? "bg-slate-800 border-slate-700 text-slate-400" : "bg-white border-gray-200 text-gray-600"}`}
+              >
+                {timeFilter === 'all' ? 'All Time' : timeFilter === '24h' ? 'Last 24h' : timeFilter === 'weekly' ? 'Weekly' : 'Monthly'}
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+              {showFilterDropdown && (
+                <div className={`absolute right-0 mt-1 w-32 rounded-lg border shadow-lg z-10 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
+                  {['all', '24h', 'weekly', 'monthly'].map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => {
+                        setTimeFilter(filter);
+                        setShowFilterDropdown(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-xs transition-colors ${timeFilter === filter ? (darkMode ? "bg-slate-700 text-white" : "bg-gray-100 text-gray-900") : (darkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-600 hover:bg-gray-50")}`}
+                    >
+                      {filter === 'all' ? 'All Time' : filter === '24h' ? 'Last 24h' : filter === 'weekly' ? 'Weekly' : 'Monthly'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mobile: Card View */}
           <div className="md:hidden divide-y divide-gray-100">
-            {bookings.length > 0 ? bookings.map((row) => (
+            {filteredBookings.length > 0 ? filteredBookings.map((row) => (
               <div key={row.id} className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -237,7 +286,7 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                 </tr>
               </thead>
               <tbody>
-                {bookings.length > 0 ? bookings.map((row, idx) => (
+                {filteredBookings.length > 0 ? filteredBookings.map((row, idx) => (
                   <tr
                     key={row.id}
                     className={`transition-colors ${idx % 2 === 1 ? (darkMode ? "bg-slate-800/30" : "bg-gray-50/40") : (darkMode ? "bg-slate-900" : "bg-white")}`}
