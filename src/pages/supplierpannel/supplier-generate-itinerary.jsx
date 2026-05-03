@@ -388,6 +388,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
   const [daysData, setDaysData] = useState(() => createDays(initialDaysCount, request?.tripDetails?.startDate || ""));
   const [isSaving, setIsSaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isInSendMode, setIsInSendMode] = useState(false);
   const [draftSavedMessage, setDraftSavedMessage] = useState("");
   const [sentSuccessMessage, setSentSuccessMessage] = useState("");
   const [previousItinerary, setPreviousItinerary] = useState(null);
@@ -1589,18 +1590,19 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
 
   useEffect(() => {
     if (!currentRequestId && !draftIdRef.current) return;
-    if (isSaving || isSending) return;
+    if (isSaving || isSending || isInSendMode) return;
 
     const t = window.setTimeout(() => {
       saveDraftInternal({ showMessage: false, navigate: false }).catch(() => {});
     }, 700);
 
     return () => window.clearTimeout(t);
-  }, [travelDetails, daysData, currentRequestId, isSaving, isSending]);
+  }, [travelDetails, daysData, currentRequestId, isSaving, isSending, isInSendMode]);
 
   const handleSendToTraveler = async () => {
     try {
       setIsSending(true);
+      setIsInSendMode(true);
       setSentSuccessMessage("");
       setDraftSavedMessage("");
       const payload = buildDraftPayload();
@@ -1667,6 +1669,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
       }, 900);
     } finally {
       setIsSending(false);
+      setIsInSendMode(false);
     }
   };
 
