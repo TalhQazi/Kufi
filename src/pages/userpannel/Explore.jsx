@@ -86,9 +86,16 @@ export default function Explore({
     if (!filterName) return null
     const normalizedFilter = normalizeCategory(filterName)
     const mapped = exploreToBackendCategories[normalizedFilter]
-    if (Array.isArray(mapped) && mapped.length > 0) return mapped
+    
+    const keys = [normalizedFilter]
+    if (Array.isArray(mapped) && mapped.length > 0) {
+      keys.push(...mapped)
+    }
     const maybeBackend = backendCategoryAliases[normalizedFilter]
-    return maybeBackend ? [maybeBackend] : null
+    if (maybeBackend) {
+      keys.push(maybeBackend)
+    }
+    return [...new Set(keys)]
   }
 
   // Close dropdown when clicking outside
