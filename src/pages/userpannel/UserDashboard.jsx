@@ -95,7 +95,6 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                         currentUserId
                             ? `/bookings/user/${encodeURIComponent(String(currentUserId))}${currentEmail ? `?email=${encodeURIComponent(currentEmail)}` : ''}`
                             : null,
-                        '/bookings',
                     ].filter(Boolean)
 
                     for (const url of endpoints) {

@@ -40,6 +40,11 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const storedUser = JSON.parse(localStorage.getItem('currentUser'))
+        const role = storedUser?.role || localStorage.getItem('userRole')
+        
+        if (role !== 'admin') return
+
         const [statsRes, activityRes] = await Promise.all([
           import('./api').then(m => m.default.get('/admin/stats')),
           import('./api').then(m => m.default.get('/admin/activity'))
