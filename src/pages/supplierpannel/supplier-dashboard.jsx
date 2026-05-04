@@ -28,9 +28,20 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
   const [darkMode, setDarkMode] = useState(false);
   const [history, setHistory] = useState(["Dashboard"]);
   const [historyIndex, setHistoryIndex] = useState(0);
-  const [stats, setStats] = useState(null);
+  // Show placeholder cards immediately so the user sees the layout right away
+  // instead of staring at a blank screen while the API calls finish.
+  const [stats, setStats] = useState([
+    { label: "Total Revenue", value: "—", delta: "Loading…", icon: DollarSign },
+    { label: "Active Bookings", value: "—", delta: "Loading…", icon: CalendarDays },
+    { label: "Average Rating", value: "—", delta: "Loading…", icon: Star },
+    { label: "Experiences", value: "—", delta: "Loading…", icon: Briefcase },
+  ]);
   const [recentBookings, setRecentBookings] = useState([]);
-  const [travelerStats, setTravelerStats] = useState(null);
+  const [travelerStats, setTravelerStats] = useState([
+    { label: "Total Requests", value: 0, icon: Clock3 },
+    { label: "Accepted Requests", value: 0, icon: Check },
+    { label: "Rejected Requests", value: 0, icon: XIcon },
+  ]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [allRequests, setAllRequests] = useState([]);
   const [experiences, setExperiences] = useState([]);
@@ -212,14 +223,6 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
     setDarkMode((prev) => !prev);
   };
 
-  if (isLoading && activeSection === 'Dashboard') {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a26e35]"></div>
-      </div>
-    );
-  }
-
   return (
     <div
       className={`min-h-screen md:h-screen flex flex-col md:flex-row transition-colors duration-300 ${darkMode ? "dark bg-slate-950" : "bg-white"
@@ -314,7 +317,11 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
                   Recent Bookings
                 </h2>
                 <div className="space-y-2">
-                  {recentBookings.length > 0 ? recentBookings.map((booking, idx) => (
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#a26e35]"></div>
+                    </div>
+                  ) : recentBookings.length > 0 ? recentBookings.map((booking, idx) => (
                     <div
                       key={idx}
                       className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors duration-300 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100"}`}
@@ -427,7 +434,11 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
               </div>
 
               <div className={`rounded-xl sm:rounded-2xl border px-3 sm:px-4 py-6 sm:py-8 transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
-                {(() => {
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#a26e35]"></div>
+                  </div>
+                ) : (() => {
                   const list = Array.isArray(allRequests) ? allRequests : [];
                   const selectedReq = selectedRequestId
                     ? list.find((r) => String(r?.id || r?._id || '') === String(selectedRequestId))

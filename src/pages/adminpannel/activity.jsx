@@ -3,6 +3,26 @@ import { ArrowRight, Search, Eye, Check, X, Trash2, Pencil, MapPin } from "lucid
 import api from "../../api";
 import AddActivity from "./add-activity";
 
+const ListingThumb = ({ src, alt, sizeClass = "w-12 h-12" }) => {
+  const [errored, setErrored] = React.useState(false);
+  if (!src || errored) {
+    const initial = String(alt || 'A').trim().charAt(0).toUpperCase() || 'A';
+    return (
+      <div className={`${sizeClass} rounded-lg border border-gray-200 bg-[#f7f1e7] text-[#a26e35] flex items-center justify-center font-semibold`}>
+        {initial}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onError={() => setErrored(true)}
+      className={`${sizeClass} rounded-lg object-cover border border-gray-200`}
+    />
+  );
+};
+
 const StatusBadge = ({ status }) => {
   const styles =
     status === "draft"
@@ -52,18 +72,20 @@ const Activity = ({ onAddNew }) => {
     try {
       setLoading(true);
       const response = await api.get('/activities');
-      const data = Array.isArray(response.data) ? response.data : (response.data.activities || []);
+      const data = Array.isArray(response.data)
+        ? response.data
+        : (Array.isArray(response.data?.activities) ? response.data.activities : []);
 
       const transformedListings = data.map(item => ({
-        id: item._id,
-        listing: item.title || item.name,
-        image: item.image,
-        provider: item.supplierName || 'Kufi Partner',
-        category: item.category || 'Activity',
-        location: item.location || 'N/A',
-        country: item.country || item.location || 'N/A',
-        price: item.price ? `$${item.price}` : 'Contact for Price',
-        status: item.status || 'pending',
+        id: item?._id,
+        listing: item?.title || item?.name || 'Untitled activity',
+        image: item?.image || null,
+        provider: item?.supplierName || 'Kufi Partner',
+        category: item?.category || 'Activity',
+        location: item?.location || 'N/A',
+        country: item?.country || item?.location || 'N/A',
+        price: item?.price ? `$${item.price}` : 'Contact for Price',
+        status: item?.status || 'pending',
       }));
 
       setListingData(transformedListings);
@@ -140,13 +162,17 @@ const Activity = ({ onAddNew }) => {
 
   const filteredListings = listingData.filter((item) => {
     const matchesTab = activeTab === "all" || item.status === activeTab;
-    const matchesCountry = selectedCountry === "all" || 
-      item.country === selectedCountry || 
+    const matchesCountry = selectedCountry === "all" ||
+      item.country === selectedCountry ||
       item.location === selectedCountry;
-    const matchesSearch =
-      item.listing.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.location.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = String(searchQuery || '').toLowerCase();
+    const listing = String(item.listing || '').toLowerCase();
+    const provider = String(item.provider || '').toLowerCase();
+    const location = String(item.location || '').toLowerCase();
+    const matchesSearch = !q ||
+      listing.includes(q) ||
+      provider.includes(q) ||
+      location.includes(q);
     return matchesTab && matchesCountry && matchesSearch;
   });
 
@@ -232,13 +258,7 @@ const Activity = ({ onAddNew }) => {
               <div key={item.id} className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-3">
                 <div className="flex justify-between items-start">
                   <div className="flex items-start gap-3">
-                    {item.image && (
-                      <img
-                        src={item.image}
-                        alt={item.listing}
-                        className="w-12 h-12 rounded-lg object-cover border border-gray-200"
-                      />
-                    )}
+                    <ListingThumb src={item.image} alt={item.listing} />
                     <div>
                       <p className="font-semibold text-slate-900 text-sm">{item.listing}</p>
                       <p className="text-xs text-gray-500 mt-0.5">{item.provider}</p>
@@ -342,13 +362,7 @@ const Activity = ({ onAddNew }) => {
                   <tr key={item.id} className="hover:bg-gray-50/80">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        {item.image && (
-                          <img
-                            src={item.image}
-                            alt={item.listing}
-                            className="w-12 h-12 rounded-lg object-cover border border-gray-200"
-                          />
-                        )}
+                        <ListingThumb src={item.image} alt={item.listing} />
                         <div>
                           <p className="font-semibold text-slate-900 leading-tight">{item.listing}</p>
                           <p className="text-xs text-gray-500 mt-0.5">{item.provider}</p>
