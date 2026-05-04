@@ -3,6 +3,7 @@ import { CalendarDays, MapPin, Users, DollarSign, Info } from "lucide-react";
 import api from "../../api";
 
 const DRAFTS_STORAGE_KEY = "kufi_supplier_itinerary_drafts";
+let _isSendingToTraveler = false;
 
 const parseMoney = (value) => {
   if (value === null || value === undefined) return 0;
@@ -1504,6 +1505,8 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
   };
 
   const saveDraftInternal = async ({ showMessage, navigate } = { showMessage: true, navigate: true }) => {
+    if (_isSendingToTraveler) return;
+    
     const payload = buildDraftPayload();
     const id = draftIdRef.current || draft?.id || `draft-${Date.now()}`;
     const title = normalized.title || request?.experience || request?.title || travelDetails.destination || "Itinerary Draft";
@@ -1590,17 +1593,18 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
 
   useEffect(() => {
     if (!currentRequestId && !draftIdRef.current) return;
-    if (isSaving || isSending || isInSendMode) return;
+    if (isSaving || isSending || _isSendingToTraveler) return;
 
     const t = window.setTimeout(() => {
       saveDraftInternal({ showMessage: false, navigate: false }).catch(() => {});
     }, 700);
 
     return () => window.clearTimeout(t);
-  }, [travelDetails, daysData, currentRequestId, isSaving, isSending, isInSendMode]);
+  }, [travelDetails, daysData, currentRequestId, isSaving, isSending]);
 
   const handleSendToTraveler = async () => {
     try {
+      _isSendingToTraveler = true;
       setIsSending(true);
       setIsInSendMode(true);
       setSentSuccessMessage("");
@@ -1670,6 +1674,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     } finally {
       setIsSending(false);
       setIsInSendMode(false);
+      _isSendingToTraveler = false;
     }
   };
 
