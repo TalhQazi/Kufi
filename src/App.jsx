@@ -873,7 +873,7 @@ export default function App() {
         onMyRequestsClick={handleMyRequestsClick}
         onSettingsClick={handleSettingsClick}
         onServiceClick={handleServiceClick}
-        hideHeaderFooter={true}
+        hideHeaderFooter={false}
       />
     )
   }
@@ -922,7 +922,8 @@ export default function App() {
     page === 'user-profile' ||
     page === 'traveler-profile' ||
     page === 'travel-booking' ||
-    page === 'payment' ||
+   page === 'payment' ||
+    page === 'explore' ||
     page === 'reset-password'
 
   return (
