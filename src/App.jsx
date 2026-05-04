@@ -21,6 +21,7 @@ const TravelerProfile = lazy(() => import('./pages/userpannel/TravelerProfile.js
 const BlogDetail = lazy(() => import('./pages/userpannel/BlogDetail.jsx'))
 const About = lazy(() => import('./pages/userpannel/About.jsx'))
 const BlogListing = lazy(() => import('./pages/userpannel/BlogListing.jsx'))
+const ResetPassword = lazy(() => import('./pages/userpannel/ResetPassword.jsx'))
 const AdminApp = lazy(() => import('./AdminApp.jsx'))
 
 import Header from './components/layout/Header.jsx'
@@ -46,6 +47,7 @@ export default function App() {
 
     if ((path === 'home' || !rawHash) && role === 'supplier' && token) return 'supplier'
     if ((path === 'home' || !rawHash) && role === 'admin' && token) return 'admin'
+    if (path.startsWith('reset-password/')) return 'reset-password'
     return path
   }
 
@@ -848,6 +850,13 @@ export default function App() {
       />
     )
 
+    if (page === 'reset-password') return (
+      <ResetPassword 
+        token={window.location.hash.split('/').pop()} 
+        onComplete={() => setShowModal('login')} 
+      />
+    )
+
     return (
       <HomePage
         onHomeClick={() => navigateTo('home')}
@@ -913,7 +922,8 @@ export default function App() {
     page === 'user-profile' ||
     page === 'traveler-profile' ||
     page === 'travel-booking' ||
-    page === 'payment'
+    page === 'payment' ||
+    page === 'reset-password'
 
   return (
     <div className="flex flex-col min-h-screen">

@@ -35,7 +35,9 @@ const LegalModal = ({ isOpen, onClose, title, content, loading }) => {
 
 export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
 
+    const [view, setView] = useState('login') // 'login' or 'forgot'
     const [emailOrUsername, setEmailOrUsername] = useState('')
+    const [forgotEmail, setForgotEmail] = useState('')
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [rememberMe, setRememberMe] = useState(false)
@@ -98,13 +100,13 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
 
     const handleSubmit = async (event) => {
         event.preventDefault()
+        setIsLoading(true)
 
         try {
             const response = await api.post('/auth/login', {
-                email: emailOrUsername, // Assuming backend accepts either email or username in this field
+                email: emailOrUsername,
                 password: password
             })
-
 
             if (response.data.token) {
                 if (response.data.user.role === 'supplier' && response.data.user.status === 'pending') {
@@ -116,7 +118,6 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                 localStorage.setItem('currentUser', JSON.stringify(response.data.user))
                 localStorage.setItem('userRole', response.data.user.role)
 
-                // Remember Me: persist or clear saved credentials
                 if (rememberMe) {
                     localStorage.setItem('rememberedLogin', JSON.stringify({ email: emailOrUsername, password: password }))
                 } else {
@@ -129,7 +130,25 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
             }
         } catch (error) {
             console.error('Login error:', error)
-            alert(error.response?.data?.message || 'Invalid credentials or server error')
+            alert(error.response?.data?.msg || error.response?.data?.message || 'Invalid credentials or server error')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleForgotPassword = async (e) => {
+        e.preventDefault()
+        if (!forgotEmail) return
+        setIsLoading(true)
+        try {
+            await api.post('/auth/forgot-password', { email: forgotEmail })
+            alert('A password reset link has been sent to your email.')
+            setView('login')
+        } catch (error) {
+            console.error('Forgot password error:', error)
+            alert(error.response?.data?.msg || 'Failed to send reset link. Please try again.')
+        } finally {
+            setIsLoading(false)
         }
     }
 
@@ -230,90 +249,141 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
 
                 <div className="flex-1 flex items-center justify-center px-4 sm:px-6 md:px-12 lg:px-20 py-12 md:py-20">
                     <div className="w-full max-w-md">
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-2 md:mb-3">Welcome Back</h2>
-                        <p className="text-slate-500 mb-6 md:mb-8 text-sm md:text-base">
-                            Log in to access your account and explore new adventures.
-                        </p>
+                        {view === 'login' ? (
+                            <>
+                                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-2 md:mb-3">Welcome Back</h2>
+                                <p className="text-slate-500 mb-6 md:mb-8 text-sm md:text-base">
+                                    Log in to access your account and explore new adventures.
+                                </p>
 
-                        <form className="flex flex-col gap-4 md:gap-5" onSubmit={handleSubmit}>
-                            <div className="relative group">
-                                <div className="absolute left-0 top-3 text-[#A67C52]">
-                                    <FiMail size={20} />
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Enter your email or username"
-                                    className="w-full py-3 pl-8 pr-0 border-0 border-b border-slate-300 bg-transparent focus:outline-none focus:border-[#A67C52] transition-colors text-slate-900 placeholder:text-slate-400 text-sm md:text-base"
-                                    value={emailOrUsername}
-                                    onChange={(e) => setEmailOrUsername(e.target.value)}
-                                    required
-                                />
-                            </div>
-
-                            <div className="relative group">
-                                <div className="absolute left-0 top-3 text-[#A67C52]">
-                                    <FiLock size={20} />
-                                </div>
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    placeholder="Enter your password"
-                                    className="w-full py-3 pl-8 pr-10 border-0 border-b border-slate-300 bg-transparent focus:outline-none focus:border-[#A67C52] transition-colors text-slate-900 placeholder:text-slate-400 text-sm md:text-base"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-0 top-3 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
-                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                >
-                                    {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
-                                </button>
-                            </div>
-
-                            <div className="flex items-center justify-between mt-2">
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            className="sr-only"
-                                            checked={rememberMe}
-                                            onChange={(e) => setRememberMe(e.target.checked)}
-                                        />
-                                        <div className="w-5 h-5 border-2 border-[#A67C52] rounded bg-white flex items-center justify-center transition-colors">
-                                            {rememberMe && <FaCheck className="text-[#A67C52] text-xs" />}
+                                <form className="flex flex-col gap-4 md:gap-5" onSubmit={handleSubmit}>
+                                    <div className="relative group">
+                                        <div className="absolute left-0 top-3 text-[#A67C52]">
+                                            <FiMail size={20} />
                                         </div>
+                                        <input
+                                            type="text"
+                                            placeholder="Enter your email or username"
+                                            className="w-full py-3 pl-8 pr-0 border-0 border-b border-slate-300 bg-transparent focus:outline-none focus:border-[#A67C52] transition-colors text-slate-900 placeholder:text-slate-400 text-sm md:text-base"
+                                            value={emailOrUsername}
+                                            onChange={(e) => setEmailOrUsername(e.target.value)}
+                                            required
+                                        />
                                     </div>
-                                    <span className="text-xs md:text-sm text-slate-600 group-hover:text-slate-800 transition-colors">Remember Me</span>
-                                </label>
-                                <a href="#" className="text-xs md:text-sm text-[#A67C52] font-semibold hover:underline">
-                                    Forgot Password?
-                                </a>
-                            </div>
 
-                            <button type="submit" className="mt-3 md:mt-4 py-3 md:py-3.5 rounded bg-[#A67C52] text-white font-bold text-base md:text-lg hover:bg-[#8e6a45] transition-colors w-full shadow-md hover:shadow-lg">
-                                Login
-                            </button>
-                        </form>
+                                    <div className="relative group">
+                                        <div className="absolute left-0 top-3 text-[#A67C52]">
+                                            <FiLock size={20} />
+                                        </div>
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            placeholder="Enter your password"
+                                            className="w-full py-3 pl-8 pr-10 border-0 border-b border-slate-300 bg-transparent focus:outline-none focus:border-[#A67C52] transition-colors text-slate-900 placeholder:text-slate-400 text-sm md:text-base"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-0 top-3 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
+                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        >
+                                            {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                                        </button>
+                                    </div>
 
-                        <div className="relative my-6 md:my-8 text-center">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-slate-200"></div>
-                            </div>
-                            <span className="relative bg-white px-4 text-xs md:text-sm font-medium text-slate-500">Or continue with</span>
-                        </div>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <label className="flex items-center gap-2 cursor-pointer group">
+                                            <div className="relative flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="sr-only"
+                                                    checked={rememberMe}
+                                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                                />
+                                                <div className="w-5 h-5 border-2 border-[#A67C52] rounded bg-white flex items-center justify-center transition-colors">
+                                                    {rememberMe && <FaCheck className="text-[#A67C52] text-xs" />}
+                                                </div>
+                                            </div>
+                                            <span className="text-xs md:text-sm text-slate-600 group-hover:text-slate-800 transition-colors">Remember Me</span>
+                                        </label>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setView('forgot')}
+                                            className="text-xs md:text-sm text-[#A67C52] font-semibold hover:underline bg-transparent"
+                                        >
+                                            Forgot Password?
+                                        </button>
+                                    </div>
 
-                        <div className="flex flex-col gap-3 md:gap-4">
-                            <button
-                                type="button"
-                                onClick={handleGoogleLogin}
-                                className="w-full py-2.5 md:py-3 rounded border-2 border-[#A67C52] bg-white flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer group"
-                            >
-                                <FcGoogle size={20} />
-                                <span className="font-semibold text-sm md:text-base text-[#A67C52] group-hover:text-[#8e6a45]">Continue with Google</span>
-                            </button>
-                        </div>
+                                    <button 
+                                        type="submit" 
+                                        disabled={isLoading}
+                                        className="mt-3 md:mt-4 py-3 md:py-3.5 rounded bg-[#A67C52] text-white font-bold text-base md:text-lg hover:bg-[#8e6a45] transition-colors w-full shadow-md hover:shadow-lg flex items-center justify-center disabled:opacity-70"
+                                    >
+                                        {isLoading ? <Loader2 className="animate-spin" /> : 'Login'}
+                                    </button>
+                                </form>
+
+                                <div className="relative my-6 md:my-8 text-center">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-slate-200"></div>
+                                    </div>
+                                    <span className="relative bg-white px-4 text-xs md:text-sm font-medium text-slate-500">Or continue with</span>
+                                </div>
+
+                                <div className="flex flex-col gap-3 md:gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={handleGoogleLogin}
+                                        className="w-full py-2.5 md:py-3 rounded border-2 border-[#A67C52] bg-white flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer group"
+                                    >
+                                        <FcGoogle size={20} />
+                                        <span className="font-semibold text-sm md:text-base text-[#A67C52] group-hover:text-[#8e6a45]">Continue with Google</span>
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-2 md:mb-3">Forgot Password</h2>
+                                <p className="text-slate-500 mb-6 md:mb-8 text-sm md:text-base">
+                                    Enter your email address and we'll send you a link to reset your password.
+                                </p>
+
+                                <form className="flex flex-col gap-6" onSubmit={handleForgotPassword}>
+                                    <div className="relative group">
+                                        <div className="absolute left-0 top-3 text-[#A67C52]">
+                                            <FiMail size={20} />
+                                        </div>
+                                        <input
+                                            type="email"
+                                            placeholder="Enter your email"
+                                            className="w-full py-3 pl-8 pr-0 border-0 border-b border-slate-300 bg-transparent focus:outline-none focus:border-[#A67C52] transition-colors text-slate-900 placeholder:text-slate-400 text-sm md:text-base"
+                                            value={forgotEmail}
+                                            onChange={(e) => setForgotEmail(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+
+                                    <button 
+                                        type="submit" 
+                                        disabled={isLoading}
+                                        className="py-3 md:py-3.5 rounded bg-[#A67C52] text-white font-bold text-base md:text-lg hover:bg-[#8e6a45] transition-colors w-full shadow-md hover:shadow-lg flex items-center justify-center disabled:opacity-70"
+                                    >
+                                        {isLoading ? <Loader2 className="animate-spin" /> : 'Send Reset Link'}
+                                    </button>
+
+                                    <button 
+                                        type="button"
+                                        onClick={() => setView('login')}
+                                        className="text-[#A67C52] font-semibold hover:underline"
+                                    >
+                                        Back to Login
+                                    </button>
+                                </form>
+                            </>
+                        )}
 
                         <div className="mt-6 md:mt-8 text-center text-slate-600 text-sm md:text-base">
                             Don't have an account?{' '}
