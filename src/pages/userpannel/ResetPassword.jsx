@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { FiLock, FiEye, FiEyeSlash } from 'react-icons/fi'
+import { FiLock, FiEye, FiEyeOff } from 'react-icons/fi'
 import { Loader2 } from 'lucide-react'
 import api from '../../api'
 
@@ -87,7 +87,7 @@ export default function ResetPassword({ token, onComplete }) {
                             onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-0 top-3 text-slate-400 hover:text-slate-600 transition-colors"
                         >
-                            {showPassword ? <FiEyeSlash size={20} /> : <FiEye size={20} />}
+                            {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
                         </button>
                     </div>
 
