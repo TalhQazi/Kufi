@@ -518,17 +518,8 @@ export default function CountryDetails({
         const fetchCountryActivities = async () => {
             try {
                 setIsLoading(true)
-                const response = await api.get('/activities')
-                const allActivities = Array.isArray(response.data) ? response.data : []
-
-                const filtered = allActivities.filter((a) => {
-                    const c = String(a?.country?.name || a?.country || '').toLowerCase()
-                    const loc = String(a?.location || '').toLowerCase()
-                    const target = (countryName || '').toLowerCase()
-                    return c === target || loc.includes(target)
-                })
-
-                setExperiences(filtered)
+                const response = await api.get(`/activities?country=${encodeURIComponent(countryName || '')}`)
+                setExperiences(Array.isArray(response.data) ? response.data : [])
             } catch (error) {
                 console.error("Error fetching country activities:", error)
                 setExperiences([])
