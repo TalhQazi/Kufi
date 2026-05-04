@@ -635,7 +635,7 @@ export default function App() {
         canGoForward={canGoForward}
         onHomeClick={() => navigateTo('home')}
         initialCategory={exploreInitialCategory}
-        hideHeaderFooter={true}
+        hideHeaderFooter={false}
       />
     )
 
@@ -873,7 +873,7 @@ export default function App() {
         onMyRequestsClick={handleMyRequestsClick}
         onSettingsClick={handleSettingsClick}
         onServiceClick={handleServiceClick}
-        hideHeaderFooter={false}
+        hideHeaderFooter={true}
       />
     )
   }
