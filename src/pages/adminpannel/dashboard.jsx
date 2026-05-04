@@ -197,111 +197,46 @@ const Dashboard = ({ onNavigate }) => {
   const [bookData, setBookData] = useState(bookingsData);
   const [loading, setLoading] = useState(true);
 
-  const fetchUsersCount = async () => {
-    const extractUserList = (raw) => {
-      if (Array.isArray(raw)) return raw
-      if (!raw || typeof raw !== 'object') return []
-      if (Array.isArray(raw.users)) return raw.users
-      if (Array.isArray(raw.allUsers)) return raw.allUsers
-      if (raw.data && typeof raw.data === 'object') {
-        if (Array.isArray(raw.data)) return raw.data
-        if (Array.isArray(raw.data.users)) return raw.data.users
-        if (Array.isArray(raw.data.allUsers)) return raw.data.allUsers
-        if (Array.isArray(raw.data.data)) return raw.data.data
-        if (raw.data.data && typeof raw.data.data === 'object') {
-          if (Array.isArray(raw.data.data.users)) return raw.data.data.users
-          if (Array.isArray(raw.data.data.allUsers)) return raw.data.data.allUsers
-        }
-      }
-      return []
-    }
-
-    const endpoints = ['/admin/users', '/auth/users', '/users']
-    for (const url of endpoints) {
-      try {
-        const res = await api.get(url)
-        const list = extractUserList(res?.data)
-        if (Array.isArray(list) && list.length >= 0) return list.length
-      } catch {
-        continue
-      }
-    }
-    return 0
-  }
-
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
         
-        // Fetch all required data
-        const results = await Promise.allSettled([
-          fetchUsersCount(),                // Total Users
-          api.get('/activities'),           // Total Activities
-          api.get('/countries'),            // Total Countries
-          api.get('/cities'),               // Total Cities
-          api.get('/admin/analytics').catch(() => ({ data: [] })) // Analytics data
-        ]);
+        const response = await api.get('/admin/stats');
+        const stats = response.data;
 
-        // Process Users
-        let usersCount = 0;
-        if (results[0].status === 'fulfilled') {
-          usersCount = Number(results[0].value) || 0
-        }
-
-        // Process Activities
-        let activitiesCount = 0;
-        if (results[1].status === 'fulfilled') {
-          const activitiesData = results[1].value.data;
-          activitiesCount = Array.isArray(activitiesData) ? activitiesData.length : (activitiesData.activities?.length || 0);
-        }
-
-        // Process Countries
-        let countriesCount = 0;
-        if (results[2].status === 'fulfilled') {
-          const countriesData = results[2].value.data;
-          countriesCount = Array.isArray(countriesData) ? countriesData.length : (countriesData.countries?.length || 0);
-        }
-
-        // Process Cities
-        let citiesCount = 0;
-        if (results[3].status === 'fulfilled') {
-          const citiesData = results[3].value.data;
-          citiesCount = Array.isArray(citiesData) ? citiesData.length : (citiesData.cities?.length || 0);
-        }
-
-        // Update stats with actual counts
         setStatsData([
-          { title: "Total Users", value: usersCount.toString(), change: "Live", positive: true, icon: Users, iconBg: "bg-blue-100", iconColor: "text-blue-600" },
-          { title: "Total Activities", value: activitiesCount.toString(), change: "Live", positive: true, icon: Trello, iconBg: "bg-emerald-100", iconColor: "text-emerald-500" },
-          { title: "Total Countries", value: countriesCount.toString(), change: "Live", positive: true, icon: DollarSign, iconBg: "bg-purple-100", iconColor: "text-purple-600" },
-          { title: "Total Cities", value: citiesCount.toString(), change: "Live", positive: true, icon: BookOpen, iconBg: "bg-orange-100", iconColor: "text-orange-500" },
+          { title: "Total Users", value: (stats.users || 0).toString(), change: "Live", positive: true, icon: Users, iconBg: "bg-blue-100", iconColor: "text-blue-600" },
+          { title: "Total Activities", value: (stats.activities || 0).toString(), change: "Live", positive: true, icon: Trello, iconBg: "bg-emerald-100", iconColor: "text-emerald-500" },
+          { title: "Total Countries", value: (stats.countries || stats.bookings || 0).toString(), change: "Live", positive: true, icon: DollarSign, iconBg: "bg-purple-100", iconColor: "text-purple-600" },
+          { title: "Total Cities", value: (stats.cities || stats.pendingRequests || 0).toString(), change: "Live", positive: true, icon: BookOpen, iconBg: "bg-orange-100", iconColor: "text-orange-500" },
         ]);
 
         // Process Analytics data
-        if (results[4].status === 'fulfilled' && results[4].value.data) {
-          const analytics = results[4].value.data;
-          const analyticsArray = Array.isArray(analytics) ? analytics : (analytics.data || []);
-          
-          if (analyticsArray.length > 0) {
-            const labels = analyticsArray.map(a => a.day || a.date || a.label);
-            const data = analyticsArray.map(a => a.count || a.value || 0);
+        try {
+            const analyticsRes = await api.get('/admin/analytics').catch(() => ({ data: [] }));
+            const analyticsArray = Array.isArray(analyticsRes.data) ? analyticsRes.data : (analyticsRes.data?.data || []);
+            
+            if (analyticsArray.length > 0) {
+                const labels = analyticsArray.map(a => a.day || a.date || a.label);
+                const data = analyticsArray.map(a => a.count || a.value || 0);
 
-            setRevData(prev => ({
-              ...prev,
-              labels: labels,
-              datasets: [{ ...prev.datasets[0], data: data, label: 'Daily Revenue' }]
-            }));
+                setRevData(prev => ({
+                    ...prev,
+                    labels: labels,
+                    datasets: [{ ...prev.datasets[0], data: data, label: 'Daily Revenue' }]
+                }));
 
-            setBookData(prev => ({
-              ...prev,
-              labels: labels,
-              datasets: [{ ...prev.datasets[0], data: data, label: 'Daily Bookings' }]
-            }));
-          }
+                setBookData(prev => ({
+                    ...prev,
+                    labels: labels,
+                    datasets: [{ ...prev.datasets[0], data: data, label: 'Daily Bookings' }]
+                }));
+            }
+        } catch (err) {
+            console.warn("Analytics fetch error:", err);
         }
 
-        // Sample activity data
         setActivityData([
           { action: 'New User Registration', user: 'System Update', time: new Date().toLocaleDateString() },
           { action: 'New Activity Listed', user: 'Supplier Activity', time: new Date().toLocaleDateString() },
