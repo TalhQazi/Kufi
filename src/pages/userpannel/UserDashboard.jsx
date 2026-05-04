@@ -146,7 +146,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
 
         const intervalId = window.setInterval(() => {
             refreshUserItineraries()
-        }, 10000)
+        }, 60000)
 
         return () => {
             window.removeEventListener('focus', onFocus)
