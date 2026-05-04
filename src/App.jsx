@@ -850,12 +850,17 @@ export default function App() {
       />
     )
 
-    if (page === 'reset-password') return (
-      <ResetPassword 
-        token={window.location.hash.split('/').pop()} 
-        onComplete={() => setShowModal('login')} 
-      />
-    )
+    if (page === 'reset-password') {
+      const parts = window.location.hash.split('/')
+      const token = parts.length > 1 ? parts[parts.length - 1] : null
+      return (
+        <ResetPassword 
+          token={token} 
+          onComplete={() => setShowModal('login')} 
+        />
+      )
+    }
+
 
     return (
       <HomePage

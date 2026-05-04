@@ -345,7 +345,7 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                                 </div>
                             </>
                         ) : (
-                            <>
+                            <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-2 md:mb-3">Forgot Password</h2>
                                 <p className="text-slate-500 mb-6 md:mb-8 text-sm md:text-base">
                                     Enter your email address and we'll send you a link to reset your password.
@@ -377,13 +377,14 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                                     <button 
                                         type="button"
                                         onClick={() => setView('login')}
-                                        className="text-[#A67C52] font-semibold hover:underline"
+                                        className="text-[#A67C52] font-semibold hover:underline self-center"
                                     >
                                         Back to Login
                                     </button>
                                 </form>
-                            </>
+                            </div>
                         )}
+
 
                         <div className="mt-6 md:mt-8 text-center text-slate-600 text-sm md:text-base">
                             Don't have an account?{' '}
