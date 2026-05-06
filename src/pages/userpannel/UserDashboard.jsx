@@ -54,13 +54,19 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
         return Array.isArray(raw) ? raw : []
     }
 
+    const fetchItinerariesFast = () => {
+        return api.get('/itineraries', { timeout: 8000 })
+    }
+
     const refreshUserItineraries = async () => {
         try {
-            const res = await api.get('/itineraries')
+            const res = await fetchItinerariesFast()
+            console.log('[UserDashboard] /itineraries response:', res?.data)
             const list = extractItineraryList(res?.data)
+            console.log('[UserDashboard] extracted itineraries:', list?.length, list)
             setUserItineraries(list)
-        } catch {
-            // ignore
+        } catch (err) {
+            console.error('[UserDashboard] /itineraries error:', err?.response?.status, err?.response?.data, err?.message)
         }
     }
 
@@ -117,7 +123,10 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
 
                 const [rawBookings, itinerariesRes, countriesRes, citiesRes] = await Promise.all([
                     fetchBookingsFromBestEndpoint(),
-                    api.get('/itineraries').catch(() => ({ data: [] })),
+                    fetchItinerariesFast().catch((err) => {
+                        console.error('[UserDashboard] initial /itineraries error:', err?.response?.status, err?.response?.data, err?.message)
+                        return { data: [] }
+                    }),
                     api.get('/countries').catch(() => ({ data: [] })),
                     api.get('/cities').catch(() => ({ data: [] }))
                 ])
@@ -156,17 +165,53 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
     }, [])
 
     const getTripKey = (trip) => {
-        return String(trip?.id || trip?._id || '')
+        const raw =
+            trip?.bookingId ||
+            trip?.requestId ||
+            trip?.booking ||
+            trip?.request ||
+            trip?.tripId ||
+            trip?.id ||
+            trip?._id ||
+            ''
+
+        // Support both populated ObjectId objects and plain strings
+        const value = (raw && typeof raw === 'object') ? (raw?._id || raw?.id) : raw
+        return String(value || '')
     }
 
     const hasSupplierItinerary = (trip) => {
         const bookingKey = getTripKey(trip)
-        if (!bookingKey) return false
+        const tripTitle = String(trip?.title || trip?.experience || '').trim().toLowerCase()
+        const tripDest = String(trip?.destination || trip?.location || '').trim().toLowerCase()
         const list = Array.isArray(userItineraries) ? userItineraries : []
-        return list.some((it) => {
-            const candidate = String(it?.bookingId || it?.requestId || it?.booking || it?.request || it?._id || it?.id || '')
-            return candidate && candidate === bookingKey
+        let matched = false
+        let matchDetails = null
+        list.forEach((it) => {
+            if (matched) return
+            // Primary: match by bookingId/requestId
+            const rawCandidate =
+                it?.bookingId ||
+                it?.requestId ||
+                it?.booking ||
+                it?.request ||
+                it?._id ||
+                it?.id ||
+                ''
+            const candidateValue = (rawCandidate && typeof rawCandidate === 'object') ? (rawCandidate?._id || rawCandidate?.id) : rawCandidate
+            const candidate = String(candidateValue || '')
+            const idMatch = candidate && bookingKey && candidate === bookingKey
+            // Fallback: match by title + destination
+            const itTitle = String(it?.title || it?.tripData?.title || '').trim().toLowerCase()
+            const itDest = String(it?.destination || it?.tripData?.destination || it?.tripData?.location || '').trim().toLowerCase()
+            const titleMatch = tripTitle && itTitle && tripDest && itDest && tripTitle === itTitle && tripDest === itDest
+            if (idMatch || titleMatch) {
+                matched = true
+                matchDetails = { itId: it?._id || it?.id, candidate, bookingKey, idMatch, itTitle, tripTitle, itDest, tripDest, titleMatch }
+            }
         })
+        console.log('[UserDashboard] hasSupplierItinerary:', { bookingKey, tripTitle, tripDest, listCount: list.length, matched, matchDetails })
+        return matched
     }
 
     const normalizeItineraries = (items) => {

@@ -3,7 +3,7 @@ import { CalendarDays, MapPin, Users, DollarSign, Info } from "lucide-react";
 import api from "../../api";
 
 const DRAFTS_STORAGE_KEY = "kufi_supplier_itinerary_drafts";
-let _isSendingToTraveler = false;
+// Auto-save blocking is handled via blockDraftSaveRef inside the component
 
 const parseMoney = (value) => {
   if (value === null || value === undefined) return 0;
@@ -298,6 +298,8 @@ const DayCard = ({
 };
 
 const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, onBack }) => {
+  const blockDraftSaveRef = useRef(false);
+
   const parseDurationHours = (value) => {
     if (value == null) return 0;
     if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
@@ -395,16 +397,23 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
   const [previousItinerary, setPreviousItinerary] = useState(null);
   const [prefilledFromPrevious, setPrefilledFromPrevious] = useState(false);
   const [availableActivities, setAvailableActivities] = useState([]);
+  const [fetchedActivityDetails, setFetchedActivityDetails] = useState({});
 
   const requestItemMeta = useMemo(() => {
     const list = Array.isArray(request?.items) ? request.items : [];
     return list.map((item) => {
       const activity = item?.activity || item || {};
+      
+      // Get activity ID to look up from fetched details
+      const activityId = activity?._id || activity || item?.id;
+      const fetchedDetails = activityId ? (fetchedActivityDetails[activityId] || {}) : {};
+      
       const title =
         activity?.title ||
         item?.title ||
         activity?.name ||
         item?.name ||
+        fetchedDetails?.title ||
         "";
 
       const description =
@@ -412,6 +421,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
         item?.description ||
         activity?.details ||
         item?.details ||
+        fetchedDetails?.description ||
         "";
 
       const loc =
@@ -422,6 +432,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
         item?.location ||
         request?.tripDetails?.country ||
         request?.country ||
+        fetchedDetails?.location ||
         "";
 
       const price =
@@ -433,6 +444,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
         item?.amount ||
         activity?.budget ||
         item?.budget ||
+        fetchedDetails?.price ||
         "";
 
       // Get coordinates from activity if available
@@ -445,7 +457,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
       const duration = parseDurationHours(activity?.duration) || 2;
 
       // Get image from activity
-      const image = activity?.image || activity?.thumbnail || activity?.imageUrl || "";
+      const image = activity?.image || activity?.thumbnail || activity?.imageUrl || fetchedDetails?.image || "";
 
       return {
         title: String(title || "").trim(),
@@ -457,7 +469,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
         image: String(image || "").trim(),
       };
     });
-  }, [request]);
+  }, [request, fetchedActivityDetails]);
 
   const activityOptions = useMemo(() => {
     // Get titles from request items
@@ -663,6 +675,44 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     
     fetchActivities();
   }, [normalized.location, travelDetails.destination]);
+
+  // Fetch activity details from backend using IDs stored in booking items
+  useEffect(() => {
+    const fetchActivityDetails = async () => {
+      const list = Array.isArray(request?.items) ? request.items : [];
+      // Get activity IDs from items
+      const activityIds = list
+        .map(item => item?.activity?._id || item?.activity || item?.id)
+        .filter(Boolean);
+      
+      if (activityIds.length === 0) return;
+      
+      try {
+        const res = await api.get('/activities');
+        const allActivities = Array.isArray(res?.data) ? res.data : [];
+        
+        // Create a map of activity details by ID
+        const detailsMap = {};
+        allActivities.forEach(a => {
+          const id = a?._id || a?.id;
+          if (id) {
+            detailsMap[id] = {
+              title: a?.title || '',
+              description: a?.description || '',
+              location: a?.location || a?.country || '',
+              price: a?.price || a?.cost || 0,
+              image: a?.image || '',
+            };
+          }
+        });
+        setFetchedActivityDetails(detailsMap);
+      } catch (err) {
+        console.error('Failed to fetch activity details:', err);
+      }
+    };
+    
+    fetchActivityDetails();
+  }, [request]);
 
   const remainingBudgetDisplay = useMemo(() => {
     const total = totalBudgetValue;
@@ -1292,6 +1342,11 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
     draftIdRef.current = base;
   }, [draft?.id, currentRequestId]);
 
+  // Reset draft-save block on mount so stale state from a previous send doesn't affect a new request
+  useEffect(() => {
+    blockDraftSaveRef.current = false;
+  }, []);
+
   const getDraftImageKey = (draftId, day) => `${String(draftId || "")}:${String(day || "")}`;
 
   const persistImagesToIdb = async (draftId, list) => {
@@ -1481,11 +1536,12 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
       });
     });
 
+    const rawUser = request?.user;
     const travelerUserId =
       request?.userId ||
       request?.user?._id ||
       request?.user?.id ||
-      request?.user ||
+      (typeof rawUser === "string" ? rawUser : "") ||
       request?.travelerId ||
       request?.customerId ||
       request?.requestSnapshot?.userId ||
@@ -1505,7 +1561,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
   };
 
   const saveDraftInternal = async ({ showMessage, navigate } = { showMessage: true, navigate: true }) => {
-    if (_isSendingToTraveler) return;
+    if (blockDraftSaveRef.current) return;
     
     const payload = buildDraftPayload();
     const id = draftIdRef.current || draft?.id || `draft-${Date.now()}`;
@@ -1593,7 +1649,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
 
   useEffect(() => {
     if (!currentRequestId && !draftIdRef.current) return;
-    if (isSaving || isSending || _isSendingToTraveler) return;
+    if (isSaving || isSending || blockDraftSaveRef.current) return;
 
     const t = window.setTimeout(() => {
       saveDraftInternal({ showMessage: false, navigate: false }).catch(() => {});
@@ -1604,7 +1660,7 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
 
   const handleSendToTraveler = async () => {
     try {
-      _isSendingToTraveler = true;
+      blockDraftSaveRef.current = true;
       setIsSending(true);
       setIsInSendMode(true);
       setSentSuccessMessage("");
@@ -1619,9 +1675,13 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
         requestId: apiPayload?.requestId ? String(apiPayload.requestId) : "",
       };
 
-      if (!normalizedApiPayload.userId || !normalizedApiPayload.destination || !normalizedApiPayload.title) {
+      console.log("[Itinerary Send] request:", { _id: request?._id, id: request?.id, bookingId: request?.bookingId, userId: request?.userId, user: request?.user });
+      console.log("[Itinerary Send] currentRequestId:", currentRequestId);
+      console.log("[Itinerary Send] apiPayload:", apiPayload);
+
+      if (!normalizedApiPayload.userId || !normalizedApiPayload.destination || !normalizedApiPayload.title || !normalizedApiPayload.bookingId) {
         console.warn(
-          "Skipping backend itinerary persist: missing userId/title/destination",
+          "Skipping backend itinerary persist: missing userId/title/destination/bookingId",
           normalizedApiPayload
         );
         setSentSuccessMessage("Failed to send itinerary: missing traveler or trip details");
@@ -1667,14 +1727,24 @@ const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, o
         }
       }
 
+      // Clear draft from localStorage after successful send
+      const draftId = draftIdRef.current || draft?.id;
+      if (draftId) {
+        const existingDrafts = readDrafts();
+        const nextDrafts = existingDrafts.filter((d) => String(d?.id || '') !== String(draftId));
+        writeDrafts(nextDrafts);
+        window.dispatchEvent(new Event("kufi_itinerary_drafts_updated"));
+      }
+
       setSentSuccessMessage("Itinerary sent to traveler");
       window.setTimeout(() => {
+        blockDraftSaveRef.current = false;
         onGoToBookings?.();
       }, 900);
     } finally {
       setIsSending(false);
       setIsInSendMode(false);
-      _isSendingToTraveler = false;
+      // blockDraftSaveRef stays true until after navigation to prevent auto-save
     }
   };
 

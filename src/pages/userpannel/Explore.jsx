@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { FiUser } from 'react-icons/fi'
 import api from '../../api'
 import Footer from '../../components/layout/Footer'
@@ -11,6 +11,7 @@ export default function Explore({
   onRemoveActivity,
   onLogout,
   onActivityClick,
+
   onNotificationClick,
   onProfileClick,
   onMyProfileClick,
@@ -30,11 +31,13 @@ export default function Explore({
   const [allActivities, setAllActivities] = useState([])
   const [filteredActivities, setFilteredActivities] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [categories, setCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState(initialCategory)
   const currentUser = (() => {
     try {
       const parsed = JSON.parse(localStorage.getItem('currentUser'))
       return parsed && typeof parsed === 'object' ? parsed : null
+
     } catch {
       return null
     }
@@ -102,7 +105,7 @@ export default function Explore({
     if (!filterName) return null
     const normalizedFilter = normalizeCategory(filterName)
     const mapped = exploreToBackendCategories[normalizedFilter]
-    
+
     const keys = [normalizedFilter]
     if (Array.isArray(mapped) && mapped.length > 0) {
       keys.push(...mapped)
@@ -136,6 +139,7 @@ export default function Explore({
       try {
         setIsLoading(true)
         const response = await api.get('/activities')
+
         const data = Array.isArray(response.data) ? response.data : []
         const activeOnly = data.filter((a) => a?.status !== 'draft')
         setAllActivities(activeOnly)
@@ -154,6 +158,22 @@ export default function Explore({
       }
     }
     fetchActivities()
+  }, [])
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await api.get('/categories')
+        const list = Array.isArray(res?.data) ? res.data : []
+        const activeOnly = list.filter((c) => String(c?.status || '').toLowerCase() !== 'draft')
+        setCategories(activeOnly)
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+        setCategories([])
+      }
+    }
+
+    fetchCategories()
   }, [])
 
   useEffect(() => {
@@ -176,15 +196,41 @@ export default function Explore({
 
   const brownColor = "#9B6F40"
 
-  const categories = [
+  const isIconUrl = (value) => {
+    const raw = String(value || '').trim()
+    if (!raw) return false
+    if (/^https?:\/\//i.test(raw)) return true
+    if (raw.startsWith('data:')) return true
+    if (raw.startsWith('/uploads/')) return true
+    if (/^\/[^\s]+\.(png|jpg|jpeg|gif|svg|webp)/i.test(raw)) return true
+    if (/\.(png|jpg|jpeg|gif|svg|webp)$/i.test(raw)) return true
+    return false
+  }
+
+  const defaultCategoryIcon = (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2">
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="M8 12h8" />
+      <path d="M12 8v8" />
+    </svg>
+  )
+
+  const normalizeCategoryKey = (value) => {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .trim()
+  }
+
+  const staticCategories = [
     {
       name: 'Adventure',
       icon: (
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="2.5">
-          <path d="M13 3.99961C13.5523 3.99961 14 3.55189 14 2.99961" />
-          <path d="M5.5 21L10 11L8 9L11 7L13 9V6L15 8L17 13M9 19L11 13" />
-          <path d="M7 10L9 8" />
-        </svg>
+        <path d="M13 3.99961C13.5523 3.99961 14 3.55189 14 2.99961" />
+        <path d="M5.5 21L10 11L8 9L11 7L13 9V6L15 8L17 13M9 19L11 13" />
+        <path d="M7 10L9 8" />
+      </svg>
       )
     },
     {
@@ -314,6 +360,27 @@ export default function Explore({
     },
   ]
 
+  const iconByKey = useMemo(() => {
+    const entries = staticCategories.map(({ name, icon }) => [String(name || ''), icon])
+    return Object.fromEntries(entries)
+  }, [staticCategories])
+
+  const iconByNormalizedKey = useMemo(() => {
+    const entries = staticCategories.map(({ name, icon }) => [normalizeCategoryKey(name), icon])
+    const base = Object.fromEntries(entries)
+    return base
+  }, [staticCategories])
+
+  const getBestPresetIcon = (normalizedKey) => {
+    if (!normalizedKey) return null
+    if (iconByNormalizedKey[normalizedKey]) return iconByNormalizedKey[normalizedKey]
+
+    const keys = Object.keys(iconByNormalizedKey)
+    for (const k of keys) {
+      if (k && normalizedKey.includes(k)) return iconByNormalizedKey[k]
+    }
+    return null
+  }
 
   return (
     <div className="bg-white min-h-screen">
@@ -488,6 +555,7 @@ export default function Explore({
             className="overflow-x-auto hide-scrollbar px-10"
           >
             <div className="flex gap-4 sm:gap-6 lg:gap-8 min-w-max">
+
               <div
                 className={`flex flex-col items-center gap-2 cursor-pointer transition-all min-w-[70px] sm:min-w-[80px] p-2 rounded-xl ${!selectedCategory ? 'bg-primary-brown/10 scale-105' : 'hover:bg-slate-50'}`}
                 onClick={() => setSelectedCategory(null)}
@@ -499,18 +567,43 @@ export default function Explore({
                 </div>
                 <p className={`m-0 text-[10px] sm:text-xs font-bold text-center whitespace-nowrap ${!selectedCategory ? 'text-primary-brown' : 'text-slate-700'}`}>All</p>
               </div>
-              {categories.map(({ name, icon }) => (
-                <div
-                  key={name}
-                  className={`flex flex-col items-center gap-2 cursor-pointer transition-all min-w-[70px] sm:min-w-[80px] p-2 rounded-xl ${selectedCategory === name ? 'bg-primary-brown/10 scale-105' : 'hover:bg-slate-50'}`}
-                  onClick={() => handleLocalCategoryClick(name)}
-                >
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center rounded-full bg-white shadow-sm">
-                    {icon}
+              {categories.map((cat) => {
+                const name = String(cat?.name || '').trim()
+                const image = String(cat?.image || '').trim()
+                const normalizedNameKey = normalizeCategoryKey(name)
+                const normalizedImageKey = normalizeCategoryKey(image)
+
+                const iconFromName = getBestPresetIcon(normalizedNameKey)
+                const builtInIconByExactKey = iconByKey[image]
+                const builtInIconByImageKey = getBestPresetIcon(normalizedImageKey)
+
+                const icon = iconFromName || builtInIconByExactKey || builtInIconByImageKey || defaultCategoryIcon
+                const renderedIcon = isIconUrl(image)
+                  ? (
+                    <img
+                      src={image}
+                      alt={name}
+                      className="w-full h-full object-contain"
+                      loading="lazy"
+                    />
+                  )
+                  : icon
+
+                if (!name) return null
+
+                return (
+                  <div
+                    key={cat?._id || name}
+                    className={`flex flex-col items-center gap-2 cursor-pointer transition-all min-w-[70px] sm:min-w-[80px] p-2 rounded-xl ${selectedCategory === name ? 'bg-primary-brown/10 scale-105' : 'hover:bg-slate-50'}`}
+                    onClick={() => handleLocalCategoryClick(name)}
+                  >
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center rounded-full bg-white shadow-sm">
+                      {renderedIcon}
+                    </div>
+                    <p className={`m-0 text-[10px] sm:text-xs font-bold text-center whitespace-nowrap ${selectedCategory === name ? 'text-primary-brown' : 'text-slate-700'}`}>{name}</p>
                   </div>
-                  <p className={`m-0 text-[10px] sm:text-xs font-bold text-center whitespace-nowrap ${selectedCategory === name ? 'text-primary-brown' : 'text-slate-700'}`}>{name}</p>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>

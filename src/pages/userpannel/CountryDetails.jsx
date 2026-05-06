@@ -5,6 +5,9 @@ import Footer from '../../components/layout/Footer'
 import BlogSection from '../../components/home/BlogSection'
 import useSectionVisibility from '../../hooks/useSectionVisibility'
 
+// How many cards fit in one "row" of the experiences grid (4 columns default)
+const EXPERIENCES_PER_ROW = 4
+
 export default function CountryDetails({
     onHomeClick,
     countryName = "Italy",
@@ -34,6 +37,8 @@ export default function CountryDetails({
     const [reviews, setReviews] = useState([])
     const [reviewsLoading, setReviewsLoading] = useState(true)
     const [selectedCity, setSelectedCity] = useState(null)
+    // Show more/less state for Popular Experiences (start at 2 rows = 8 cards)
+    const [experiencesShowCount, setExperiencesShowCount] = useState(EXPERIENCES_PER_ROW * 2)
     const dropdownRef = useRef(null)
 
     // Scroll to top when component mounts
@@ -70,8 +75,6 @@ export default function CountryDetails({
     const normalizeCategory = (value) => {
         const raw = String(value || '')
             .toLowerCase()
-            .replace(/adventures?/g, '')
-            .replace(/experiences?/g, '')
             .replace(/[^a-z0-9]/g, '')
             .trim()
 
@@ -102,6 +105,17 @@ export default function CountryDetails({
             .toLowerCase()
             .replace(/[^a-z0-9]/g, '')
             .trim()
+    }
+
+    const isIconUrl = (value) => {
+        const raw = String(value || '').trim()
+        if (!raw) return false
+        if (/^https?:\/\//i.test(raw)) return true
+        if (raw.startsWith('data:')) return true
+        if (raw.startsWith('/uploads/')) return true
+        if (/^\/[^\s]+\.(png|jpg|jpeg|gif|svg|webp)/i.test(raw)) return true
+        if (/\.(png|jpg|jpeg|gif|svg|webp)$/i.test(raw)) return true
+        return false
     }
 
     const staticCategories = useMemo(() => {
@@ -269,10 +283,10 @@ export default function CountryDetails({
         const base = Object.fromEntries(entries)
 
         const aliases = {
-            foodtour: 'foodtour',
-            foodtours: 'foodtour',
-            foodtouradventure: 'foodtour',
-            foodanddrink: 'foodtour',
+            foodtour: 'foodanddrink',
+            foodtours: 'foodanddrink',
+            foodtouradventure: 'foodanddrink',
+            foodanddrink: 'foodanddrink',
 
             daytour: 'daytour',
             daytours: 'daytour',
@@ -296,12 +310,6 @@ export default function CountryDetails({
 
         return base
     }, [staticCategories])
-
-    const isIconUrl = (value) => {
-        const str = String(value || '').trim()
-        // Check for http/https URLs or any path that looks like an image
-        return /^https?:\/\//i.test(str) || /^\/[^\s]+\.(png|jpg|jpeg|gif|svg|webp)/i.test(str) || /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(str)
-    }
 
     const safeCategories = useMemo(() => {
         const list = Array.isArray(categories) ? categories : []
@@ -328,6 +336,15 @@ export default function CountryDetails({
         })
         : experiences
 
+    // Reset show count when filter changes
+    useEffect(() => {
+        setExperiencesShowCount(EXPERIENCES_PER_ROW * 2)
+    }, [selectedCategory])
+
+    const visibleExperiences = displayedExperiences.slice(0, experiencesShowCount)
+    const hasMore = displayedExperiences.length > experiencesShowCount
+    const isExpanded = experiencesShowCount > EXPERIENCES_PER_ROW * 2
+
     const isExperienceSelected = (exp) => {
         const expId = exp?._id || exp?.id
         if (!expId) return false
@@ -336,74 +353,76 @@ export default function CountryDetails({
     }
 
     const selectionPanel = (
-        <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4 border border-slate-200 lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto">
-            <h4 className="m-0 mb-2 text-lg font-bold text-slate-900">Your Selection</h4>
-            <p className="m-0 mb-6 text-sm text-slate-600">
-                <span className="font-bold text-primary-brown">{Array.isArray(selectedActivities) ? selectedActivities.length : 0}</span>
-                <span className="ml-1">activities selected</span>
-            </p>
+        <div className="selection-panel-compact bg-white rounded-xl shadow-lg border border-slate-200 lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto">
+            <div className="p-3 sm:p-4">
+                <h4 className="m-0 mb-1 text-base font-bold text-slate-900">Your Selection</h4>
+                <p className="m-0 mb-4 text-xs text-slate-600">
+                    <span className="font-bold text-primary-brown">{Array.isArray(selectedActivities) ? selectedActivities.length : 0}</span>
+                    <span className="ml-1">activities selected</span>
+                </p>
 
-            {(!Array.isArray(selectedActivities) || selectedActivities.length === 0) ? (
-                <div className="py-8 px-4 text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-beige flex items-center justify-center">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="1.5">
-                            <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                            <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
-                        </svg>
-                    </div>
-                    <p className="m-0 mb-2 text-sm font-semibold text-slate-900">Your selection is empty</p>
-                    <p className="m-0 text-xs text-slate-500">
-                        Add activities from the list to create your custom request
-                    </p>
-                </div>
-            ) : (
-                <div className="mb-4 space-y-3 lg:flex-1 lg:overflow-y-auto lg:pr-2 hide-scrollbar">
-                    {selectedActivities.map((activity) => (
-                        <div key={activity?.id || activity?._id} className="pb-3 border-b border-slate-200 last:border-0">
-                            <div 
-                                className="flex items-center gap-3 mb-2 cursor-pointer hover:opacity-80 transition-opacity"
-                                onClick={() => onActivityClick && onActivityClick(activity?.id || activity?._id)}
-                            >
-                                <img src={activity?.image} alt={activity?.title} className="w-16 h-16 rounded-lg object-cover" />
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="text-sm font-semibold text-slate-900 truncate">{activity?.title}</h4>
-                                    <p className="text-xs text-slate-500 truncate">{activity?.location}</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRemoveActivity && onRemoveActivity(activity?.id || activity?._id);
-                                }}
-                                className="text-xs text-red-500 hover:text-red-700 font-medium"
-                                title="Remove"
-                                type="button"
-                            >
-                                Remove
-                            </button>
+                {(!Array.isArray(selectedActivities) || selectedActivities.length === 0) ? (
+                    <div className="py-6 px-3 text-center">
+                        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-beige flex items-center justify-center">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="1.5">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                                <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+                            </svg>
                         </div>
-                    ))}
-                </div>
-            )}
+                        <p className="m-0 mb-1 text-xs font-semibold text-slate-900">Your selection is empty</p>
+                        <p className="m-0 text-[11px] text-slate-500">
+                            Add activities to create your custom request
+                        </p>
+                    </div>
+                ) : (
+                    <div className="mb-3 space-y-2 lg:flex-1 lg:overflow-y-auto lg:pr-1 hide-scrollbar">
+                        {selectedActivities.map((activity) => (
+                            <div key={activity?.id || activity?._id} className="pb-2 border-b border-slate-100 last:border-0">
+                                <div
+                                    className="flex items-center gap-2 mb-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => onActivityClick && onActivityClick(activity?.id || activity?._id)}
+                                >
+                                    <img src={activity?.image} alt={activity?.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="text-xs font-semibold text-slate-900 truncate">{activity?.title}</h4>
+                                        <p className="text-[11px] text-slate-500 truncate">{activity?.location}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRemoveActivity && onRemoveActivity(activity?.id || activity?._id);
+                                    }}
+                                    className="text-[11px] text-red-500 hover:text-red-700 font-medium"
+                                    title="Remove"
+                                    type="button"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
-            <p className="m-0 mb-4 text-xs text-slate-500 italic">
-                Review your selected adventures before sending request
-            </p>
+                <p className="m-0 mb-3 text-[11px] text-slate-500 italic">
+                    Review your selected adventures before sending
+                </p>
 
-            <button
-                className={`w-full py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors ${(!Array.isArray(selectedActivities) || selectedActivities.length === 0)
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                    : 'bg-primary-brown text-white hover:bg-primary-dark'
-                    }`}
-                disabled={!Array.isArray(selectedActivities) || selectedActivities.length === 0}
-                onClick={() => onSendRequest && onSendRequest()}
-                type="button"
-            >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-                </svg>
-                Send Request
-            </button>
+                <button
+                    className={`w-full py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors ${(!Array.isArray(selectedActivities) || selectedActivities.length === 0)
+                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        : 'bg-primary-brown text-white hover:bg-primary-dark'
+                        }`}
+                    disabled={!Array.isArray(selectedActivities) || selectedActivities.length === 0}
+                    onClick={() => onSendRequest && onSendRequest()}
+                    type="button"
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                    </svg>
+                    Send Request
+                </button>
+            </div>
         </div>
     )
 
@@ -438,39 +457,6 @@ export default function CountryDetails({
 
         fetchCountryReviews()
     }, [countryName])
-
-    const displayedReviews = useMemo(() => {
-        const list = Array.isArray(reviews) ? reviews.filter(Boolean) : []
-        if (list.length <= 3) return list
-
-        const seedFromString = (value) => {
-            const str = String(value || '')
-            let hash = 2166136261
-            for (let i = 0; i < str.length; i++) {
-                hash ^= str.charCodeAt(i)
-                hash = Math.imul(hash, 16777619)
-            }
-            return hash >>> 0
-        }
-
-        const mulberry32 = (a) => {
-            return function () {
-                let t = (a += 0x6D2B79F5)
-                t = Math.imul(t ^ (t >>> 15), t | 1)
-                t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-            }
-        }
-
-        const rng = mulberry32(seedFromString(countryName))
-        const shuffled = [...list]
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(rng() * (i + 1))
-            ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-        }
-
-        return shuffled.slice(0, 3)
-    }, [countryName, reviews])
 
     useEffect(() => {
         const fetchCountryAndCities = async () => {
@@ -676,7 +662,7 @@ export default function CountryDetails({
                         )}
 
                         {/* Main Content Grid with Sidebar */}
-                        <div className="mx-auto grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 xl:gap-8 2xl:gap-32 items-start justify-end w-full">
+                        <div className="mx-auto grid grid-cols-1 xl:grid-cols-[1fr_260px] gap-6 xl:gap-10 items-start w-full">
                             {/* Main content on left */}
                             <div className="space-y-10">
                                 {/* Cities Section */}
@@ -716,10 +702,34 @@ export default function CountryDetails({
                                         </div>
                                     </section>
                                 )}
+
                                 {isVisible('country-categories') && (
                                     <section className="country-categories">
                                         <h2 className="country-section-title">Top Categories in {countryName}</h2>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-y-10 gap-x-8 sm:gap-x-10">
+                                            {/* All category - shows all activities */}
+                                            <div
+                                                className={`flex flex-col items-center gap-3 cursor-pointer transition-all duration-300 hover:-translate-y-2 p-3 rounded-xl ${
+                                                    selectedCategory === null ? 'ring-2 ring-[#9B6F40] bg-[#9B6F40]/10' : ''
+                                                }`}
+                                                onClick={() => setSelectedCategory(null)}
+                                                role="button"
+                                                tabIndex={0}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault()
+                                                        setSelectedCategory(null)
+                                                    }
+                                                }}
+                                            >
+                                                <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
+                                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                                    </svg>
+                                                </div>
+                                                <p className={`m-0 text-sm sm:text-base font-bold text-center ${selectedCategory === null ? 'text-[#9B6F40]' : 'text-[#1a1a1a]'}`}>All</p>
+                                            </div>
+
                                             {safeCategories.map((category) => {
                                                 const normalizedNameKey = normalizeCategoryKey(category.name)
                                                 const normalizedImageKey = normalizeCategoryKey(category.image)
@@ -773,132 +783,193 @@ export default function CountryDetails({
                                     </section>
                                 )}
 
+                                {/* ── POPULAR EXPERIENCES ── */}
                                 {isVisible('country-experiences') && (
                                     <section id="country-popular-experiences" className="country-experiences">
-                                    <h2 className="country-section-title">Popular Experiences</h2>
-                                    <div className="country-experiences-grid">
-                                        {isLoading ? (
-                                            <div className="col-span-full py-20 flex justify-center">
-                                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
-                                            </div>
-                                        ) : displayedExperiences.length > 0 ? (
-                                            displayedExperiences.map((exp) => {
-                                                const expId = exp._id || exp.id
-                                                const selected = isExperienceSelected(exp)
-                                                const location = exp?.location || exp?.city?.name || exp?.country?.name || exp?.country || ''
-                                                const image = exp.imageUrl || exp.images?.[0] || exp.image || exp.Picture || "/assets/activity1.jpeg"
+                                        <h2 className="country-section-title">Popular Experiences</h2>
+                                        <div className="country-experiences-grid">
+                                            {isLoading ? (
+                                                <div className="col-span-full py-20 flex justify-center">
+                                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
+                                                </div>
+                                            ) : visibleExperiences.length > 0 ? (
+                                                visibleExperiences.map((exp) => {
+                                                    const expId = exp._id || exp.id
+                                                    const selected = isExperienceSelected(exp)
+                                                    const location = exp?.location || exp?.city?.name || exp?.country?.name || exp?.country || ''
+                                                    const image = exp.imageUrl || exp.images?.[0] || exp.image || exp.Picture || "/assets/activity1.jpeg"
 
-                                                return (
-                                                    <div
-                                                        key={expId}
-                                                        className="country-experience-card group"
-                                                        onClick={() => onActivityClick && onActivityClick(expId)}
-                                                    >
-                                                        <div className="country-card-image-wrapper">
-                                                            <img
-                                                                src={image}
-                                                                alt={exp.title}
-                                                                className="country-experience-image"
-                                                            />
-                                                            <div className="country-experience-rating">
-                                                                <span>★</span>
-                                                                <span>{exp.rating || 4.7}</span>
+                                                    return (
+                                                        <div
+                                                            key={expId}
+                                                            className="country-experience-card group"
+                                                            onClick={() => onActivityClick && onActivityClick(expId)}
+                                                        >
+                                                            <div className="country-card-image-wrapper">
+                                                                <img
+                                                                    src={image}
+                                                                    alt={exp.title}
+                                                                    className="country-experience-image"
+                                                                />
+                                                                <div className="country-experience-rating">
+                                                                    <span>★</span>
+                                                                    <span>{exp.rating || 4.7}</span>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="country-experience-content">
-                                                            <div className="flex-1">
-                                                                <h3 className="country-experience-title">{exp.title}</h3>
-                                                                <p className="country-experience-subtitle">{exp.category || "Discovery"}</p>
-                                                            </div>
+                                                            <div className="country-experience-content">
+                                                                <div className="flex-1">
+                                                                    <h3 className="country-experience-title">{exp.title}</h3>
+                                                                    <p className="country-experience-subtitle">{exp.category || "Discovery"}</p>
+                                                                </div>
 
-                                                            <button
-                                                                type="button"
-                                                                className={`mt-auto w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors relative overflow-hidden ${selected
-                                                                    ? 'bg-primary-dark text-white hover:bg-red-600'
-                                                                    : 'bg-beige text-primary-brown hover:bg-primary-brown hover:text-white'
-                                                                    }`}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation()
-                                                                    if (selected) {
-                                                                        onRemoveActivity && onRemoveActivity(expId)
-                                                                    } else {
-                                                                        onAddToList && onAddToList({
-                                                                            id: expId,
-                                                                            title: exp?.title || 'Activity',
-                                                                            location: location || 'Location',
-                                                                            image: image,
-                                                                        })
-                                                                    }
-                                                                }}
-                                                            >
-                                                                <span className={`block transition-opacity duration-200 ${selected ? 'group-hover:opacity-0' : ''}`}>
-                                                                    {selected ? 'ADDED TO LIST' : 'ADD TO LIST'}
-                                                                </span>
-                                                                {selected && (
-                                                                    <span className="absolute inset-0 flex items-center justify-center bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                                                        REMOVE FROM LIST
+                                                                <button
+                                                                    type="button"
+                                                                    className={`mt-auto w-full py-2 rounded-lg text-xs font-bold tracking-wide transition-colors relative overflow-hidden ${selected
+                                                                        ? 'bg-primary-dark text-white hover:bg-red-600'
+                                                                        : 'bg-beige text-primary-brown hover:bg-primary-brown hover:text-white'
+                                                                        }`}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        if (selected) {
+                                                                            onRemoveActivity && onRemoveActivity(expId)
+                                                                        } else {
+                                                                            onAddToList && onAddToList({
+                                                                                id: expId,
+                                                                                title: exp?.title || 'Activity',
+                                                                                location: location || 'Location',
+                                                                                image: image,
+                                                                            })
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <span className={`block transition-opacity duration-200 ${selected ? 'group-hover:opacity-0' : ''}`}>
+                                                                        {selected ? 'ADDED TO LIST' : 'ADD TO LIST'}
                                                                     </span>
-                                                                )}
-                                                            </button>
+                                                                    {selected && (
+                                                                        <span className="absolute inset-0 flex items-center justify-center bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                                            REMOVE FROM LIST
+                                                                        </span>
+                                                                    )}
+                                                                </button>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                )
-                                            })
-                                        ) : (
-                                            <div className="col-span-full py-20 text-center text-slate-500">
-                                                No experiences found in {countryName} yet.
+                                                    )
+                                                })
+                                            ) : (
+                                                <div className="col-span-full py-20 text-center text-slate-500">
+                                                    No experiences found in {countryName} yet.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Show More / Show Less buttons */}
+                                        {displayedExperiences.length > EXPERIENCES_PER_ROW * 2 && (
+                                            <div className="flex justify-center mt-8">
+                                                {hasMore ? (
+                                                    <button
+                                                        type="button"
+                                                        className="experiences-toggle-btn"
+                                                        onClick={() => setExperiencesShowCount((prev) => prev + EXPERIENCES_PER_ROW)}
+                                                    >
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                            <path d="M6 9l6 6 6-6" />
+                                                        </svg>
+                                                        Show More
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        className="experiences-toggle-btn experiences-toggle-btn--less"
+                                                        onClick={() => setExperiencesShowCount(EXPERIENCES_PER_ROW * 2)}
+                                                    >
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                            <path d="M18 15l-6-6-6 6" />
+                                                        </svg>
+                                                        Show Less
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
-                                    </div>
-                                </section>
+                                    </section>
                                 )}
 
-                                {/* Feedback Section */}
+                                {/* ── FEEDBACK CAROUSEL ── */}
                                 {isVisible('country-feedback') && (
                                     <section className="country-feedback">
                                         <h2 className="country-section-title">Best Feedback From Clients</h2>
-                                        <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:gap-5">
-                                            {reviewsLoading ? (
-                                                <div className="w-full flex items-center justify-center min-h-[220px]">
-                                                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-brown"></div>
-                                                </div>
-                                            ) : displayedReviews.length === 0 ? (
-                                                <div className="w-full flex items-center justify-center min-h-[220px] text-sm text-slate-400">
-                                                    No reviews yet.
-                                                </div>
-                                            ) : displayedReviews.map((testimonial) => (
-                                                <div
-                                                    key={testimonial.id}
-                                                    className="bg-white rounded-[18px] px-6 py-5 shadow-[0_16px_30px_rgba(15,23,42,0.10)] border border-slate-100 w-full sm:w-[320px] lg:w-[310px] min-h-[200px]"
+                                        {reviewsLoading ? (
+                                            <div className="w-full flex items-center justify-center min-h-[220px]">
+                                                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-brown"></div>
+                                            </div>
+                                        ) : reviews.length === 0 ? (
+                                            <div className="w-full flex items-center justify-center min-h-[220px] text-sm text-slate-400">
+                                                No reviews yet.
+                                            </div>
+                                        ) : (
+                                            <div className="feedback-carousel-wrapper">
+                                                {/* Left arrow */}
+                                                <button
+                                                    className="feedback-arrow feedback-arrow--left"
+                                                    onClick={() => {
+                                                        const el = document.getElementById('feedback-carousel')
+                                                        if (el) el.scrollBy({ left: -340, behavior: 'smooth' })
+                                                    }}
+                                                    aria-label="Scroll left"
+                                                    type="button"
                                                 >
-                                                    <div className="flex gap-1 text-[#FFB21E] mb-3">
-                                                        {[...Array(5)].map((_, i) => (
-                                                            <svg
-                                                                key={`${testimonial.id}-star-${i}`}
-                                                                className={`w-3.5 h-3.5 ${i < (Number(testimonial.rating) || 0) ? 'fill-current' : 'fill-slate-200'}`}
-                                                                viewBox="0 0 20 20"
-                                                            >
-                                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                            </svg>
-                                                        ))}
-                                                    </div>
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                        <path d="M15 18l-6-6 6-6" />
+                                                    </svg>
+                                                </button>
 
-                                                    <p className="m-0 text-slate-600 text-[13px] leading-relaxed">
-                                                        "{testimonial.text}"
-                                                    </p>
+                                                <div id="feedback-carousel" className="feedback-carousel">
+                                                    {reviews.map((testimonial) => (
+                                                        <div key={testimonial.id} className="feedback-card">
+                                                            <div className="flex gap-1 text-[#FFB21E] mb-3">
+                                                                {[...Array(5)].map((_, i) => (
+                                                                    <svg
+                                                                        key={`${testimonial.id}-star-${i}`}
+                                                                        className={`w-3.5 h-3.5 ${i < (Number(testimonial.rating) || 0) ? 'fill-current' : 'fill-slate-200'}`}
+                                                                        viewBox="0 0 20 20"
+                                                                    >
+                                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                                    </svg>
+                                                                ))}
+                                                            </div>
 
-                                                    <div className="mt-4 flex items-center gap-3">
-                                                        <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
-                                                            {(testimonial.author || 'C').charAt(0)}
+                                                            <p className="m-0 text-slate-600 text-[13px] leading-relaxed flex-1">
+                                                                "{testimonial.text}"
+                                                            </p>
+
+                                                            <div className="mt-4 flex items-center gap-3">
+                                                                <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
+                                                                    {(testimonial.author || 'C').charAt(0)}
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <h4 className="m-0 text-xs font-bold text-slate-900 truncate">{testimonial.author}</h4>
+                                                                    <p className="m-0 text-[9px] text-slate-400 font-bold uppercase tracking-[0.22em] leading-none mt-1 truncate">{testimonial.role}</p>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div className="min-w-0">
-                                                            <h4 className="m-0 text-xs font-bold text-slate-900 truncate">{testimonial.author}</h4>
-                                                            <p className="m-0 text-[9px] text-slate-400 font-bold uppercase tracking-[0.22em] leading-none mt-1 truncate">{testimonial.role}</p>
-                                                        </div>
-                                                    </div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
+
+                                                {/* Right arrow */}
+                                                <button
+                                                    className="feedback-arrow feedback-arrow--right"
+                                                    onClick={() => {
+                                                        const el = document.getElementById('feedback-carousel')
+                                                        if (el) el.scrollBy({ left: 340, behavior: 'smooth' })
+                                                    }}
+                                                    aria-label="Scroll right"
+                                                    type="button"
+                                                >
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                        <path d="M9 18l6-6-6-6" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        )}
                                     </section>
                                 )}
 
@@ -909,45 +980,45 @@ export default function CountryDetails({
                                     </div>
                                 )}
                             </div>
-                            
-                            {/* Selection Panel on Right */}
-                            <aside className="xl:sticky xl:top-24 h-fit xl:w-[360px] hidden xl:block 2xl:ml-auto">
+
+                            {/* Selection Panel on Right — compact & flush right */}
+                            <aside className="xl:sticky xl:top-24 h-fit xl:w-[260px] hidden xl:block ml-auto">
                                 {selectionPanel}
                             </aside>
                         </div>
                     </main>
 
                     {!hideHeaderFooter && <Footer />}
-            </>
-        )}
+                </>
+            )}
 
-        {/* City Detail Modal */}
-        {selectedCity && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setSelectedCity(null)}>
-                <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-                    <div className="relative h-48">
-                        <img 
-                            src={selectedCity.image || "/assets/activity1.jpeg"} 
-                            alt={selectedCity.name}
-                            className="w-full h-full object-cover"
-                        />
-                        <button 
-                            onClick={() => setSelectedCity(null)}
-                            className="absolute top-4 right-4 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-gray-600 hover:bg-white"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                    <div className="p-6">
-                        <p className="text-sm text-[#a26e35] font-medium mb-1">{countryName}</p>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-3">{selectedCity.name}</h2>
-                        <p className="text-gray-600 text-sm leading-relaxed">
-                            {selectedCity.description || "No description available for this city."}
-                        </p>
+            {/* City Detail Modal */}
+            {selectedCity && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setSelectedCity(null)}>
+                    <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="relative h-48">
+                            <img
+                                src={selectedCity.image || "/assets/activity1.jpeg"}
+                                alt={selectedCity.name}
+                                className="w-full h-full object-cover"
+                            />
+                            <button
+                                onClick={() => setSelectedCity(null)}
+                                className="absolute top-4 right-4 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-gray-600 hover:bg-white"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-sm text-[#a26e35] font-medium mb-1">{countryName}</p>
+                            <h2 className="text-2xl font-bold text-slate-900 mb-3">{selectedCity.name}</h2>
+                            <p className="text-gray-600 text-sm leading-relaxed">
+                                {selectedCity.description || "No description available for this city."}
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        )}
-    </div>
-  )
+            )}
+        </div>
+    )
 }

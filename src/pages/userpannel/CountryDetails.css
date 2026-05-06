@@ -234,6 +234,19 @@
     padding: 60px 40px;
 }
 
+@media (max-width: 1280px) {
+    .country-main {
+        padding: 48px 32px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .country-main {
+        padding: 40px 24px;
+        max-width: 100%;
+    }
+}
+
 @media (min-width: 1920px) {
     .country-main {
         max-width: 1600px;
@@ -471,6 +484,17 @@
     font-size: 14px;
     font-weight: 600;
     color: #333;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255,255,255,0.9);
+    padding: 3px 8px;
+    border-radius: 20px;
+}
+
+.country-card-image-wrapper {
+    position: relative;
+    overflow: hidden;
 }
 
 .country-experience-rating .star-filled {
@@ -484,11 +508,117 @@
     color: #9B6F40;
 }
 
-/* Feedback Section */
+/* ── Show More / Show Less button ── */
+.experiences-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 28px;
+    border-radius: 50px;
+    border: 2px solid #9B6F40;
+    background: transparent;
+    color: #9B6F40;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, transform 0.15s;
+}
+
+.experiences-toggle-btn:hover {
+    background: #9B6F40;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.experiences-toggle-btn--less {
+    border-color: #64748b;
+    color: #64748b;
+}
+
+.experiences-toggle-btn--less:hover {
+    background: #64748b;
+    color: #fff;
+}
+
+/* ── Feedback Carousel ── */
 .country-feedback {
     margin-bottom: 60px;
 }
 
+.feedback-carousel-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.feedback-carousel {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 8px 4px 16px;
+    /* Hide scrollbar */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex: 1;
+}
+
+.feedback-carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.feedback-card {
+    flex: 0 0 300px;
+    background: white;
+    border-radius: 18px;
+    padding: 22px 24px;
+    box-shadow: 0 16px 30px rgba(15, 23, 42, 0.10);
+    border: 1px solid #f1f5f9;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Navigation arrows */
+.feedback-arrow {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1.5px solid #e2e8f0;
+    background: #fff;
+    color: #9B6F40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    z-index: 2;
+}
+
+.feedback-arrow:hover {
+    background: #9B6F40;
+    border-color: #9B6F40;
+    color: #fff;
+    transform: scale(1.08);
+    box-shadow: 0 4px 14px rgba(155, 111, 64, 0.25);
+}
+
+.feedback-arrow:active {
+    transform: scale(0.97);
+}
+
+/* ── Compact Selection Panel Sidebar ── */
+.selection-panel-compact {
+    width: 100%;
+    font-size: 13px;
+}
+
+/* Feedback Section */
 .country-feedback-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -653,7 +783,6 @@
 @media (max-width: 1200px) {
 
     .country-navbar-inner,
-    .country-main,
     .country-footer {
         padding-left: 40px;
         padding-right: 40px;
@@ -672,17 +801,27 @@
     }
 
     .country-cities-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 10px;
     }
 
     .country-experiences-grid,
     .country-blog-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
 @media (max-width: 1024px) {
+    .country-navbar-inner,
+    .country-footer {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+
+    .country-hero-content {
+        left: 24px;
+    }
+
     .country-cities-grid {
         grid-template-columns: repeat(3, 1fr);
         gap: 10px;
@@ -692,12 +831,19 @@
     .country-blog-grid {
         grid-template-columns: repeat(3, 1fr);
     }
+
+    .country-categories-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .feedback-card {
+        flex: 0 0 270px;
+    }
 }
 
 @media (max-width: 768px) {
 
     .country-navbar-inner,
-    .country-main,
     .country-footer {
         padding-left: 16px;
         padding-right: 16px;
@@ -748,6 +894,15 @@
     .country-feedback-grid {
         grid-template-columns: 1fr;
     }
+
+    .feedback-card {
+        flex: 0 0 260px;
+    }
+
+    .feedback-arrow {
+        width: 34px;
+        height: 34px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -762,7 +917,6 @@
     }
 
     .country-navbar-inner,
-    .country-main,
     .country-footer {
         padding-left: 12px;
         padding-right: 12px;
@@ -772,11 +926,14 @@
         left: 12px;
         right: 12px;
     }
+
+    .feedback-card {
+        flex: 0 0 240px;
+    }
 }
 
 @media (max-width: 320px) {
     .country-navbar-inner,
-    .country-main,
     .country-footer {
         padding-left: 8px;
         padding-right: 8px;
@@ -788,5 +945,5 @@
     }
 }
 
-/* Blog Section Wrapper - Let BlogSection's own responsive classes work */
+/* Blog Section Wrapper */
 /* No overrides needed - BlogSection handles its own responsive design */
