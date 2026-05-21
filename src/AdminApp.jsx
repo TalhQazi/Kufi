@@ -27,6 +27,7 @@ import MemberRequests from './pages/adminpannel/MemberRequests'
 import AdminProfile from './pages/adminpannel/AdminProfile'
 import AdminSettings from './pages/adminpannel/AdminSettings'
 import EmailSettings from './pages/adminpannel/EmailSettings'
+import HotelManagement from './pages/adminpannel/HotelManagement'
 import './App.css'
 
 
@@ -97,6 +98,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
     if (activePage === 'Manage Countries') return <CountryManagement />
     if (activePage === 'Manage Cities') return <CityManagement />
     if (activePage === 'Manage Categories') return <CategoryManagement />
+    if (activePage === 'Hotel Management') return <HotelManagement darkMode={isDarkMode} />
     if (activePage === 'Reviews') return <ReviewController />
     if (activePage === 'Booking Terms') return <BookingTermsController />
     if (activePage === 'Footer') return <FooterController />

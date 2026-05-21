@@ -20,6 +20,7 @@ import {
   Layers,
   Scale,
   Mail,
+  Hotel,
 } from "lucide-react";
 
 
@@ -35,6 +36,7 @@ const navItems = [
   { label: "Manage Countries", icon: Globe },
   { label: "Manage Cities", icon: MapPin },
   { label: "Manage Categories", icon: Tag },
+  { label: "Hotel Management", icon: Hotel },
   { label: "Reviews", icon: MessageSquare },
   { label: "Booking Terms", icon: FileText },
   { label: "Footer", icon: Layout },

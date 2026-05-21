@@ -6,6 +6,7 @@ import {
   BarChart3,
   User,
   ClipboardList,
+  Hotel,
   Moon,
   Menu,
   X,
@@ -44,6 +45,7 @@ const SupplierSidebar = ({ activeSection, onSelectSection, onLogout, darkMode, o
     { label: "Analytics", icon: BarChart3 },
     { label: "Profile", icon: User },
     { label: "Requests", icon: ClipboardList },
+    { label: "Hotels", icon: Hotel },
   ];
 
   return (

@@ -20,6 +20,7 @@ import SupplierBookings from "./supplier-bookings";
 import SupplierAnalytics from "./supplier-analytics";
 import SupplierProfile from "./supplier-profile";
 import SupplierRequests from "./supplier-requests";
+import SupplierHotels from "./supplier-hotels";
 import ProfilePic from "../../components/ui/ProfilePic";
 
 const SupplierDashboard = ({ onLogout, onHomeClick }) => {
@@ -512,6 +513,7 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
         )}
         {activeSection === "Analytics" && <SupplierAnalytics darkMode={darkMode} />}
         {activeSection === "Profile" && <SupplierProfile darkMode={darkMode} />}
+        {activeSection === "Hotels" && <SupplierHotels darkMode={darkMode} />}
         {activeSection === "Requests" && (
           <SupplierRequests
             darkMode={darkMode}

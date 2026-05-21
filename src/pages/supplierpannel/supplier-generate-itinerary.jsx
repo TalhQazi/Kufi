@@ -1,2090 +1,643 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, MapPin, Users, DollarSign, Info } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { CalendarDays, DollarSign, GripVertical, MapPin, Users } from "lucide-react";
 import api from "../../api";
+import ItineraryActivityPool from "./components/ItineraryActivityPool";
+import ItineraryControlPanel from "./components/ItineraryControlPanel";
 
-const DRAFTS_STORAGE_KEY = "kufi_supplier_itinerary_drafts";
-// Auto-save blocking is handled via blockDraftSaveRef inside the component
+// ─── helpers ─────────────────────────────────────────────────────────────────
 
-const parseMoney = (value) => {
-  if (value === null || value === undefined) return 0;
-  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-  const cleaned = String(value)
-    .replace(/[^0-9.\-]/g, "")
-    .trim();
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : 0;
-};
+const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
-const formatMoney = (value) => {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return "$0";
-  const abs = Math.abs(n);
-  const formatted = abs.toLocaleString(undefined, { maximumFractionDigits: 0 });
-  return n < 0 ? `$-${formatted}` : `$${formatted}`;
-};
+function fmtTime(t) {
+  if (!t) return "";
+  const [h, m] = t.split(":");
+  const hour = parseInt(h, 10);
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const h12 = hour % 12 || 12;
+  return `${h12}:${m || "00"} ${ampm}`;
+}
 
-const parseMoneyRange = (value) => {
-  const raw = String(value ?? "").trim();
-  if (!raw) return { min: 0, max: 0, isRange: false, hasValue: false };
-  const cleaned = raw.replace(/\$/g, "").replace(/,/g, "").trim();
-  const parts = cleaned
-    .split("-")
-    .map((x) => x.trim())
-    .filter(Boolean);
+function fmtDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+}
 
-  if (parts.length >= 2) {
-    const a = parseMoney(parts[0]);
-    const b = parseMoney(parts[1]);
-    return {
-      min: Math.min(a, b),
-      max: Math.max(a, b),
-      isRange: true,
-      hasValue: true,
-    };
-  }
+function getDayName(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? "" : DAY_NAMES[d.getDay()];
+}
 
-  const n = parseMoney(cleaned);
-  return { min: n, max: n, isRange: false, hasValue: Boolean(raw) };
-};
+function nightsBetween(start, end) {
+  if (!start || !end) return 0;
+  const a = new Date(start), b = new Date(end);
+  return Math.max(0, Math.round((b - a) / (1000 * 60 * 60 * 24)));
+}
 
-const formatRange = ({ min, max, isRange, hasValue }) => {
-  if (!hasValue) return "$0";
-  if (!Number.isFinite(min) || !Number.isFinite(max)) return "$0";
-  if (!isRange || min === max) return formatMoney(min);
-  return `${formatMoney(min)} - ${formatMoney(max)}`;
-};
+// ─── Sortable activity card inside a day ─────────────────────────────────────
 
-// Helper to format date as YYYY-MM-DD
-const formatDateForInput = (date) => {
-  if (!date) return "";
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return "";
-  return d.toISOString().split("T")[0];
-};
+function SortableActivityCard({ activity, dayIndex, darkMode, onRemove }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: activity.id, data: { source: "day", dayIndex, activity } });
 
-// Helper to calculate date for a specific day based on start date
-const calculateDayDate = (startDateStr, dayIndex) => {
-  if (!startDateStr) return "";
-  const start = new Date(startDateStr);
-  if (isNaN(start.getTime())) return "";
-  const dayDate = new Date(start);
-  dayDate.setDate(start.getDate() + dayIndex);
-  return formatDateForInput(dayDate);
-};
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
 
-const createEmptyDay = (day, startDate = "") => ({
-  day,
-  date: calculateDayDate(startDate, day - 1),
-  isAdjustment: false,
-  activities: [createEmptyActivity()],
-});
-
-const createEmptyActivity = () => ({
-  id: `act-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-  activity: "",
-  location: "",
-  description: "",
-  cost: "",
-  startTime: "",
-  endTime: "",
-  imageDataUrl: "",
-});
-
-const createDays = (count, startDate = "") => {
-  const safeCount = Math.max(1, Number(count) || 1);
-  return Array.from({ length: safeCount }, (_, idx) => createEmptyDay(idx + 1, startDate));
-};
-
-const DayCard = ({
-  day,
-  darkMode,
-  expanded,
-  onToggle,
-  dayData,
-  onUpdateDay,
-  onUpdateActivity,
-  onAddActivity,
-  onBrowseImage,
-  onRemoveImage,
-  activityOptions,
-  locationOptions,
-}) => {
-  const isExpanded = Boolean(expanded);
-  const data = dayData || { day, activities: [] };
-  const activities = Array.isArray(data.activities) ? data.activities : [];
+  const actUrl = activity.activityId ? `/activities/${activity.activityId}` : null;
 
   return (
-    <div className={`rounded-2xl border transition-colors outline-none overflow-hidden ${darkMode ? "bg-slate-800 border-slate-700" : "bg-amber-50/40 border-amber-100"}`}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`rounded-xl border overflow-hidden flex gap-0 ${
+        darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"
+      }`}
+    >
+      {/* Drag handle */}
       <button
         type="button"
-        onClick={() => onToggle?.(day)}
-        className={`flex w-full items-center justify-between px-4 py-3 text-xs font-semibold transition-colors ${darkMode ? "text-white hover:bg-slate-700" : "text-gray-800 hover:bg-amber-100/50"}`}
+        {...attributes}
+        {...listeners}
+        className={`flex items-center px-1.5 cursor-grab active:cursor-grabbing ${darkMode ? "text-slate-600 hover:text-slate-400" : "text-gray-300 hover:text-gray-500"}`}
       >
-        <div className="flex items-center gap-3">
-          <span>Day {day} ({activities.length} {activities.length === 1 ? 'activity' : 'activities'})</span>
-          {/* Date input in header */}
-          <input
-            type="date"
-            value={data?.date || ""}
-            onClick={(e) => e.stopPropagation()} // Prevent toggle when clicking date
-            onChange={(e) => onUpdateDay?.(day, { date: e.target.value })}
-            className={`text-[11px] px-2 py-1 rounded border transition-colors focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-600 text-slate-300" : "bg-white border-gray-300 text-gray-600"}`}
-          />
-        </div>
-        <span className={`text-lg transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>{isExpanded ? "⌃" : "⌄"}</span>
+        <GripVertical className="h-3.5 w-3.5" />
       </button>
 
-      {isExpanded && (
-        <div className={`border-t px-4 py-4 space-y-4 text-xs transition-colors ${darkMode ? "border-slate-700" : "border-amber-100"}`}>
-          {/* Multiple activities per day */}
-          {activities.map((act, idx) => (
-            <div key={act.id} className={`space-y-4 ${idx > 0 ? `border-t ${darkMode ? 'border-slate-700' : 'border-amber-200'} pt-4` : ''}`}>
-              {/* Activity Header */}
-              <div className={`flex items-center justify-between ${idx > 0 ? '' : '-mt-1'}`}>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs font-semibold ${darkMode ? 'text-amber-300' : 'text-[#a26e35]'}`}>
-                    Activity {idx + 1}
-                  </span>
-                  {act.isAutoGenerated && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${darkMode ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-700'}`}>
-                      Auto (${act.cost || remainingBudgetForAutoGen})
-                    </span>
-                  )}
-                </div>
-                {activities.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => onUpdateActivity?.(day, act.id, null)}
-                    className={`text-[10px] px-2 py-1 rounded transition-colors ${darkMode ? 'text-red-400 hover:bg-red-900/20' : 'text-red-500 hover:bg-red-50'}`}
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Select Activity</p>
-                  <select
-                    value={act.activity || ""}
-                    onChange={(e) => onUpdateActivity?.(day, act.id, { activity: e.target.value })}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
-                  >
-                    <option value="">Select an activity</option>
-                    {(Array.isArray(activityOptions) ? activityOptions : [])
-                      .filter(Boolean)
-                      .map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Select Location</p>
-                  <select
-                    value={act.location || ""}
-                    onChange={(e) => onUpdateActivity?.(day, act.id, { location: e.target.value })}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-700"}`}
-                  >
-                    <option value="">Select a location</option>
-                    {(Array.isArray(locationOptions) ? locationOptions : [])
-                      .filter(Boolean)
-                      .map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Description</p>
-                <textarea
-                  rows={3}
-                  placeholder="Add notes or highlights about this activity..."
-                  value={act.description || ""}
-                  onChange={(e) => onUpdateActivity?.(day, act.id, { description: e.target.value })}
-                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white placeholder:text-slate-600" : "bg-gray-50 border-gray-200 text-gray-700 placeholder:text-gray-400"}`}
-                />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="space-y-1">
-                  <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Estimated Cost</p>
-                  <div className={`flex items-center rounded-lg border px-3 py-2 text-sm transition-all ${darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}>
-                    <span className={`mr-2 transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>$</span>
-                    <input
-                      type="number"
-                      placeholder="0.00"
-                      value={act.cost || ""}
-                      onChange={(e) => onUpdateActivity?.(day, act.id, { cost: e.target.value })}
-                      className="w-full bg-transparent outline-none text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Start Time</p>
-                  <input
-                    type="time"
-                    value={act.startTime || ""}
-                    onChange={(e) => onUpdateActivity?.(day, act.id, { startTime: e.target.value })}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white icon-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>End Time</p>
-                  <input
-                    type="time"
-                    value={act.endTime || ""}
-                    onChange={(e) => onUpdateActivity?.(day, act.id, { endTime: e.target.value })}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-900 border-slate-700 text-white icon-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Add Image</p>
-                <div className={`rounded-xl border border-dashed transition-all overflow-hidden ${darkMode ? "bg-slate-900 border-slate-700" : "bg-gray-50 border-gray-300"}`}>
-                  {act.imageDataUrl ? (
-                    <div className="relative h-28 w-full">
-                      <img src={act.imageDataUrl} alt={`Activity ${idx + 1}`} className="absolute inset-0 h-full w-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => onRemoveImage?.(day, act.id)}
-                        className={`absolute top-2 right-2 rounded-full px-3 py-1 text-[10px] font-semibold transition-colors ${darkMode ? "bg-slate-950/70 text-slate-200 hover:bg-slate-950" : "bg-white/80 text-gray-700 hover:bg-white"}`}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <div className={`flex h-24 w-full items-center justify-center text-[11px] transition-all ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
-                      <span className={`mr-1 transition-colors ${darkMode ? "text-slate-600" : "text-gray-400"}`}>📷</span>
-                      <span>Drag and drop an image, or</span>
-                      <label className="ml-1 font-semibold text-[#a26e35] hover:underline cursor-pointer" htmlFor={`day-${day}-act-${act.id}`}>
-                        browse
-                      </label>
-                      <input
-                        id={`day-${day}-act-${act.id}`}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => onBrowseImage?.(day, act.id, e.target.files?.[0])}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* Add Activity Button */}
-          <button
-            type="button"
-            onClick={() => onAddActivity?.(day)}
-            className={`w-full rounded-xl border border-dashed transition-colors px-4 py-3 flex items-center justify-center text-xs cursor-pointer ${darkMode ? "bg-slate-900/50 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-300" : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50 hover:text-gray-700"}`}
-          >
-            <span className="mr-2 text-lg">＋</span>
-            Add Activity in this day
-          </button>
+      {/* Image — hyperlink */}
+      {actUrl ? (
+        <a href={actUrl} target="_blank" rel="noopener noreferrer" className="block shrink-0 w-16 h-16">
+          <img
+            src={activity.image || "/assets/dest-1.jpeg"}
+            alt={activity.title}
+            className="w-full h-full object-cover"
+          />
+        </a>
+      ) : (
+        <div className="shrink-0 w-16 h-16">
+          <img
+            src={activity.image || "/assets/dest-1.jpeg"}
+            alt={activity.title}
+            className="w-full h-full object-cover"
+          />
         </div>
       )}
+
+      {/* Info */}
+      <div className="flex-1 px-2 py-1.5 min-w-0">
+        {actUrl ? (
+          <a
+            href={actUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`text-[11px] font-semibold leading-tight hover:underline block truncate ${darkMode ? "text-white" : "text-slate-900"}`}
+          >
+            {activity.title}
+          </a>
+        ) : (
+          <p className={`text-[11px] font-semibold leading-tight truncate ${darkMode ? "text-white" : "text-slate-900"}`}>
+            {activity.title}
+          </p>
+        )}
+
+        {/* Supplier-only: times + price */}
+        <div className={`flex items-center gap-2 mt-0.5 text-[10px] ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
+          {activity.startTime && activity.endTime && (
+            <span>{fmtTime(activity.startTime)} – {fmtTime(activity.endTime)}</span>
+          )}
+          {activity.price > 0 && (
+            <span className={`font-medium ${darkMode ? "text-amber-400" : "text-amber-600"}`}>
+              ${activity.price}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Remove */}
+      <button
+        type="button"
+        onClick={() => onRemove(activity.id)}
+        className={`px-2 text-[10px] transition-colors ${darkMode ? "text-red-500 hover:text-red-400" : "text-red-400 hover:text-red-600"}`}
+      >
+        ✕
+      </button>
     </div>
   );
-};
+}
 
-const SupplierGenerateItinerary = ({ darkMode, request, draft, onGoToBookings, onBack }) => {
-  const blockDraftSaveRef = useRef(false);
+// ─── Droppable day column ─────────────────────────────────────────────────────
 
-  const parseDurationHours = (value) => {
-    if (value == null) return 0;
-    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-    const s = String(value).trim().toLowerCase();
-    if (!s) return 0;
-    const match = s.match(/(\d+(?:\.\d+)?)/);
-    const n = match ? Number(match[1]) : NaN;
-    if (!Number.isFinite(n)) return 0;
-    return Math.max(0, n);
-  };
+function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity }) {
+  const activities = Array.isArray(day.activities) ? day.activities : [];
+  const isArrival = day.isArrivalDay || day.day === 1;
+  const isDeparture = day.isDepartureDay;
 
-  const getRequestItemDurationHours = (item) => {
-    const act = item?.activity || item || {};
-    return (
-      parseDurationHours(act?.duration) ||
-      parseDurationHours(item?.duration) ||
-      parseDurationHours(act?.time) ||
-      parseDurationHours(item?.time) ||
-      0
-    );
-  };
-
-  const DAY_CAPACITY_HOURS = 10;
-  const DAY_START_MINUTES = 8 * 60;
-  const DAY_END_MINUTES = 18 * 60;
-
-  const minutesToTime = (mins) => {
-    const safe = Math.max(0, Math.round(mins));
-    const h = Math.floor(safe / 60);
-    const m = safe % 60;
-    const hh = String(h).padStart(2, '0');
-    const mm = String(m).padStart(2, '0');
-    return `${hh}:${mm}`;
-  };
-
-  const packRequestedItemsIntoDays = (items) => {
-    const list = Array.isArray(items) ? items : [];
-    const packed = [];
-
-    let currentDay = [];
-    let remaining = DAY_CAPACITY_HOURS;
-
-    const flushDay = () => {
-      packed.push(currentDay);
-      currentDay = [];
-      remaining = DAY_CAPACITY_HOURS;
-    };
-
-    list.forEach((item) => {
-      const hours = getRequestItemDurationHours(item);
-      const normalizedHours = hours > 0 ? hours : 1;
-      if (currentDay.length === 0) {
-        currentDay.push(item);
-        remaining -= normalizedHours;
-        return;
-      }
-
-      if (normalizedHours <= remaining) {
-        currentDay.push(item);
-        remaining -= normalizedHours;
-        return;
-      }
-
-      flushDay();
-      currentDay.push(item);
-      remaining -= normalizedHours;
-    });
-
-    if (currentDay.length > 0) flushDay();
-    return packed.length > 0 ? packed : [[]];
-  };
-
-  const requestItemsPackedByDay = useMemo(() => {
-    return packRequestedItemsIntoDays(request?.items);
-  }, [request]);
-
-  const initialDaysCount = Math.max(1, requestItemsPackedByDay.length || 0);
-  const [expandedDays, setExpandedDays] = useState(() => {
-    const maxExpanded = Math.min(3, initialDaysCount);
-    return Array.from({ length: maxExpanded }, (_, idx) => idx + 1);
-  });
-  const [travelDetails, setTravelDetails] = useState({
-    destination: "",
-    budget: "",
-    startDate: "",
-    endDate: "",
-    preferences: "",
-  });
-  const [daysData, setDaysData] = useState(() => createDays(initialDaysCount, request?.tripDetails?.startDate || ""));
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [isInSendMode, setIsInSendMode] = useState(false);
-  const [draftSavedMessage, setDraftSavedMessage] = useState("");
-  const [sentSuccessMessage, setSentSuccessMessage] = useState("");
-  const [previousItinerary, setPreviousItinerary] = useState(null);
-  const [prefilledFromPrevious, setPrefilledFromPrevious] = useState(false);
-  const [availableActivities, setAvailableActivities] = useState([]);
-  const [fetchedActivityDetails, setFetchedActivityDetails] = useState({});
-
-  const requestItemMeta = useMemo(() => {
-    const list = Array.isArray(request?.items) ? request.items : [];
-    return list.map((item) => {
-      const activity = item?.activity || item || {};
-      
-      // Get activity ID to look up from fetched details
-      const activityId = activity?._id || activity || item?.id;
-      const fetchedDetails = activityId ? (fetchedActivityDetails[activityId] || {}) : {};
-      
-      const title =
-        activity?.title ||
-        item?.title ||
-        activity?.name ||
-        item?.name ||
-        fetchedDetails?.title ||
-        "";
-
-      const description =
-        activity?.description ||
-        item?.description ||
-        activity?.details ||
-        item?.details ||
-        fetchedDetails?.description ||
-        "";
-
-      const loc =
-        activity?.country?.name ||
-        activity?.country ||
-        activity?.location ||
-        activity?.city ||
-        item?.location ||
-        request?.tripDetails?.country ||
-        request?.country ||
-        fetchedDetails?.location ||
-        "";
-
-      const price =
-        activity?.price ||
-        activity?.cost ||
-        activity?.amount ||
-        item?.price ||
-        item?.cost ||
-        item?.amount ||
-        activity?.budget ||
-        item?.budget ||
-        fetchedDetails?.price ||
-        "";
-
-      // Get coordinates from activity if available
-      const coordinates = activity?.coordinates || {
-        lat: activity?.lat || activity?.y || 0,
-        lng: activity?.lng || activity?.x || 0
-      };
-
-      // Get duration from activity
-      const duration = parseDurationHours(activity?.duration) || 2;
-
-      // Get image from activity
-      const image = activity?.image || activity?.thumbnail || activity?.imageUrl || fetchedDetails?.image || "";
-
-      return {
-        title: String(title || "").trim(),
-        description: String(description || "").trim(),
-        location: String(loc || "").trim(),
-        price: parseMoney(price),
-        coordinates,
-        duration,
-        image: String(image || "").trim(),
-      };
-    });
-  }, [request, fetchedActivityDetails]);
-
-  const activityOptions = useMemo(() => {
-    // Get titles from request items
-    const requestTitles = requestItemMeta
-      .map((x) => x?.title)
-      .filter((x) => String(x || "").trim());
-    
-    // Get titles from available activities (for auto-generated activities)
-    const availableTitles = availableActivities
-      .map((a) => a?.title || a?.name)
-      .filter((x) => String(x || "").trim());
-    
-    // Combine and remove duplicates
-    const allTitles = [...new Set([...requestTitles, ...availableTitles])];
-    return allTitles;
-  }, [requestItemMeta, availableActivities]);
-
-  const locationOptions = useMemo(() => {
-    const set = new Set();
-    requestItemMeta.forEach((x) => {
-      const v = String(x?.location || "").trim();
-      if (v) set.add(v);
-    });
-    return Array.from(set);
-  }, [requestItemMeta]);
-
-  const safeParseJson = (value) => {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return null;
-    }
-  };
-
-  const DRAFT_IMAGES_DB = "kufi_itinerary_draft_images";
-  const DRAFT_IMAGES_STORE = "images";
-
-  const openDraftImagesDb = () => {
-    return new Promise((resolve, reject) => {
-      try {
-        const req = indexedDB.open(DRAFT_IMAGES_DB, 1);
-        req.onupgradeneeded = () => {
-          const db = req.result;
-          if (!db.objectStoreNames.contains(DRAFT_IMAGES_STORE)) {
-            db.createObjectStore(DRAFT_IMAGES_STORE, { keyPath: "key" });
-          }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      } catch (e) {
-        reject(e);
-      }
-    });
-  };
-
-  const idbPutImage = async (key, dataUrl) => {
-    if (!key) return;
-    const db = await openDraftImagesDb();
-    try {
-      await new Promise((resolve, reject) => {
-        const tx = db.transaction(DRAFT_IMAGES_STORE, "readwrite");
-        const store = tx.objectStore(DRAFT_IMAGES_STORE);
-        store.put({ key, dataUrl: String(dataUrl || "") });
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-        tx.onabort = () => reject(tx.error);
-      });
-    } finally {
-      db.close();
-    }
-  };
-
-  const idbGetImage = async (key) => {
-    if (!key) return "";
-    const db = await openDraftImagesDb();
-    try {
-      const record = await new Promise((resolve, reject) => {
-        const tx = db.transaction(DRAFT_IMAGES_STORE, "readonly");
-        const store = tx.objectStore(DRAFT_IMAGES_STORE);
-        const req = store.get(key);
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-      return String(record?.dataUrl || "");
-    } catch {
-      return "";
-    } finally {
-      db.close();
-    }
-  };
-
-  const normalized = useMemo(() => {
-    const location =
-      request?.tripDetails?.country ||
-      request?.location ||
-      request?.destination ||
-      "";
-
-    const budget =
-      request?.tripDetails?.budget ??
-      request?.amount ??
-      request?.totalAmount ??
-      request?.price ??
-      "";
-
-    const guests =
-      request?.guests ??
-      request?.travelers ??
-      (Array.isArray(request?.items)
-        ? request.items.reduce((sum, item) => sum + (item?.travelers || 0), 0)
-        : "");
-
-    const arrival = request?.tripDetails?.arrivalDate ? new Date(request.tripDetails.arrivalDate) : null;
-    const departure = request?.tripDetails?.departureDate ? new Date(request.tripDetails.departureDate) : null;
-
-    const startDate = arrival ? arrival.toISOString().slice(0, 10) : "";
-    const endDate = departure ? departure.toISOString().slice(0, 10) : "";
-
-    const preferencesObj = request?.preferences || {};
-    const preferencesText = [
-      preferencesObj.includeHotel || preferencesObj.hotelIncluded ? "Hotel requested" : null,
-      preferencesObj.hotelOwn ? "Own hotel" : null,
-      preferencesObj.vegetarian ? "Vegetarian" : null,
-      preferencesObj.foodAllGood ? "Food: all good" : null,
-    ].filter(Boolean).join(", ");
-
-    const title =
-      (Array.isArray(request?.items) && request.items.length > 0
-        ? request.items
-          .map((i) => i?.activity?.title || i?.title)
-          .filter(Boolean)
-          .join(", ")
-        : request?.experience || request?.title || "");
-
-    return {
-      title,
-      location,
-      budget,
-      guests,
-      startDate,
-      endDate,
-      preferencesText,
-    };
-  }, [request]);
-
-  const totalBudgetValue = useMemo(() => {
-    return parseMoney(travelDetails.budget);
-  }, [travelDetails.budget]);
-
-  const clientBudgetRange = useMemo(() => {
-    return parseMoneyRange(normalized.budget);
-  }, [normalized.budget]);
-
-  // Calculate total cost from ALL activities in daysData (both auto-generated and user-selected)
-  const totalActivitiesCost = useMemo(() => {
-    const allActs = daysData.flatMap((d) => (Array.isArray(d.activities) ? d.activities : []));
-    // Sum ALL activities - both auto-generated and user-selected
-    return allActs.reduce((sum, act) => sum + parseMoney(act?.cost), 0);
-  }, [daysData]);
-
-  const userBudgetMax = useMemo(() => {
-    return clientBudgetRange.max || 0;
-  }, [clientBudgetRange]);
-
-  const remainingBudgetForAutoGen = useMemo(() => {
-    const remaining = userBudgetMax - totalActivitiesCost;
-    return remaining > 0 ? remaining : 0;
-  }, [userBudgetMax, totalActivitiesCost]);
-
-  const hasAutoGeneratedActivities = useRef(false);
-
-  // Fetch available activities from backend for auto-generation
-  useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        const location = normalized.location || travelDetails.destination;
-        // Fetch activities, optionally filtered by location/country
-        const res = await api.get('/activities');
-        const allActivities = Array.isArray(res?.data) ? res.data : [];
-        
-        // Filter activities by same location/country if location is set
-        const filtered = location
-          ? allActivities.filter(a => {
-              const actLocation = a?.location || a?.country || '';
-              return actLocation.toLowerCase().includes(location.toLowerCase()) ||
-                     location.toLowerCase().includes(actLocation.toLowerCase());
-            })
-          : allActivities;
-        
-        // Only include approved/active activities with valid price
-        const validActivities = filtered.filter(a => 
-          a.status !== 'draft' && 
-          a.status !== 'rejected' &&
-          (a.price || a.cost || a.budget) > 0
-        );
-        
-        setAvailableActivities(validActivities);
-      } catch (err) {
-        console.error('Failed to fetch activities:', err);
-        setAvailableActivities([]);
-      }
-    };
-    
-    fetchActivities();
-  }, [normalized.location, travelDetails.destination]);
-
-  // Fetch activity details from backend using IDs stored in booking items
-  useEffect(() => {
-    const fetchActivityDetails = async () => {
-      const list = Array.isArray(request?.items) ? request.items : [];
-      // Get activity IDs from items
-      const activityIds = list
-        .map(item => item?.activity?._id || item?.activity || item?.id)
-        .filter(Boolean);
-      
-      if (activityIds.length === 0) return;
-      
-      try {
-        const res = await api.get('/activities');
-        const allActivities = Array.isArray(res?.data) ? res.data : [];
-        
-        // Create a map of activity details by ID
-        const detailsMap = {};
-        allActivities.forEach(a => {
-          const id = a?._id || a?.id;
-          if (id) {
-            detailsMap[id] = {
-              title: a?.title || '',
-              description: a?.description || '',
-              location: a?.location || a?.country || '',
-              price: a?.price || a?.cost || 0,
-              image: a?.image || '',
-            };
-          }
-        });
-        setFetchedActivityDetails(detailsMap);
-      } catch (err) {
-        console.error('Failed to fetch activity details:', err);
-      }
-    };
-    
-    fetchActivityDetails();
-  }, [request]);
-
-  const remainingBudgetDisplay = useMemo(() => {
-    const total = totalBudgetValue;
-    if (!clientBudgetRange?.hasValue) return formatMoney(total);
-
-    const min = total - clientBudgetRange.max;
-    const max = total - clientBudgetRange.min;
-    const isRange = clientBudgetRange.isRange && clientBudgetRange.min !== clientBudgetRange.max;
-    return formatRange({ min, max, isRange, hasValue: true });
-  }, [clientBudgetRange, totalBudgetValue]);
-
-  useEffect(() => {
-    const draftTd = draft?.payload?.travelDetails;
-    const hasDraftTravelDetails = Boolean(
-      draftTd &&
-      [draftTd?.destination, draftTd?.budget, draftTd?.startDate, draftTd?.endDate, draftTd?.preferences]
-        .some((v) => String(v || "").trim())
-    );
-
-    if (hasDraftTravelDetails) {
-      setTravelDetails((prev) => ({
-        ...prev,
-        ...draftTd,
-      }));
-    } else if (normalized.location) {
-      const maxBudget = clientBudgetRange?.max
-        ? String(clientBudgetRange.max)
-        : ''
-
-      setTravelDetails((prev) => ({
-        ...prev,
-        destination: prev.destination || normalized.location,
-        budget: prev.budget || maxBudget || normalized.budget,
-        startDate: prev.startDate || normalized.startDate,
-        endDate: prev.endDate || normalized.endDate,
-        preferences: prev.preferences || normalized.preferencesText,
-      }));
-    }
-
-    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) {
-      setDaysData(draft.payload.daysData);
-    }
-  }, [draft, normalized.location, normalized.budget, normalized.startDate, normalized.endDate, normalized.preferencesText, clientBudgetRange]);
-
-  useEffect(() => {
-    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
-
-    setDaysData((prev) => {
-      const list = Array.isArray(prev) ? prev : [];
-      if (list.length === 0) return list;
-
-      return list.map((day, dayIdx) => {
-        const acts = Array.isArray(day.activities) ? day.activities : [];
-        if (acts.length === 0) return day;
-
-        let cursorMinutes = DAY_START_MINUTES;
-
-        const itemForDay = Array.isArray(requestItemsPackedByDay?.[dayIdx])
-          ? requestItemsPackedByDay[dayIdx]
-          : [];
-
-        const nextActs = acts.map((act, actIdx) => {
-          const hasStart = String(act?.startTime || '').trim();
-          const hasEnd = String(act?.endTime || '').trim();
-          const hasTimes = Boolean(hasStart && hasEnd);
-
-          const sourceItem = itemForDay[actIdx];
-          const durationHours = sourceItem ? getRequestItemDurationHours(sourceItem) : 0;
-          const safeHours = durationHours > 0 ? durationHours : 1;
-          const durMinutes = Math.round(safeHours * 60);
-
-          const start = cursorMinutes;
-          const end = Math.min(start + durMinutes, DAY_END_MINUTES);
-
-          // Always advance the cursor so the *next* activity starts right after this one.
-          cursorMinutes = end;
-
-          if (hasTimes) return act;
-
-          return {
-            ...act,
-            startTime: minutesToTime(start),
-            endTime: minutesToTime(end),
-          };
-        });
-
-        return { ...day, activities: nextActs };
-      });
-    });
-  }, [draft, requestItemsPackedByDay]);
-
-  useEffect(() => {
-    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
-
-    const packedDays = Array.isArray(requestItemsPackedByDay) ? requestItemsPackedByDay : [];
-    const needed = Math.max(1, packedDays.length || 0);
-
-    setDaysData((prev) => {
-      const list = Array.isArray(prev) ? prev : [];
-      if (list.length === needed) return list;
-      return createDays(needed, travelDetails?.startDate);
-    });
-
-    setExpandedDays((prev) => {
-      const maxExpanded = Math.min(3, needed);
-      const next = Array.from({ length: maxExpanded }, (_, idx) => idx + 1);
-      return Array.isArray(prev) && prev.length ? prev : next;
-    });
-  }, [draft, requestItemsPackedByDay]);
-
-  useEffect(() => {
-    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
-
-    const card = request?.adjustmentCard;
-    if (!card) return;
-
-    const activity = String(card?.title || '').trim();
-    const description = String(card?.description || '').trim();
-    const location = String(card?.location || '').trim();
-    const cost = String(card?.cost || '').trim();
-    const imageDataUrl = String(card?.imageDataUrl || '').trim();
-
-    if (!activity && !description && !location && !cost && !imageDataUrl) return;
-
-    setDaysData((prev) => {
-      const list = Array.isArray(prev) ? prev : [];
-      const next = list.length > 0 ? [...list] : [createEmptyDay(1, request?.tripDetails?.startDate || "")];
-
-      const activitiesCount = Array.isArray(request?.items) ? request.items.length : 0;
-      const existingAdjustmentIndex = next.findIndex((d) => Boolean(d?.isAdjustment));
-      const insertIndex = existingAdjustmentIndex >= 0
-        ? existingAdjustmentIndex
-        : Math.max(activitiesCount, next.length);
-      const desiredLen = Math.max(1, insertIndex + 1);
-      while (next.length < desiredLen) next.push(createEmptyDay(next.length + 1, request?.tripDetails?.startDate || ""));
-
-      const target = next[insertIndex] || createEmptyDay(insertIndex + 1, request?.tripDetails?.startDate || "");
-      // Add adjustment as a new activity to the existing day
-      const adjustmentActivity = {
-        id: `act-adjust-${Date.now()}`,
-        activity: activity,
-        description: description,
-        location: location,
-        cost: cost,
-        imageDataUrl: imageDataUrl,
-        startTime: "",
-        endTime: "",
-      };
-      next[insertIndex] = {
-        ...target,
-        isAdjustment: true,
-        activities: [...(target.activities || []), adjustmentActivity],
-      };
-
-      return next;
-    });
-  }, [request, draft, previousItinerary]);
-
-  useEffect(() => {
-    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
-    if (!Array.isArray(requestItemMeta) || requestItemMeta.length === 0) return;
-
-    const packed = Array.isArray(requestItemsPackedByDay) ? requestItemsPackedByDay : [];
-
-    setDaysData((prev) => {
-      const list = Array.isArray(prev) ? prev : [];
-      if (list.length === 0) return list;
-
-      return list.map((d, dayIdx) => {
-        const itemsForDay = Array.isArray(packed[dayIdx]) ? packed[dayIdx] : [];
-
-        const metas = itemsForDay
-          .map((item) => {
-            const act = item?.activity || item || {};
-            const title = String(act?.title || item?.title || act?.name || item?.name || '').trim();
-            if (!title) return null;
-            const meta = requestItemMeta.find((m) => m?.title === title);
-            return meta || null;
-          })
-          .filter(Boolean);
-
-        const existing = Array.isArray(d.activities) ? d.activities : [];
-        // Keep ALL existing activities, don't truncate them
-        const nextActivities = existing.length > 0 ? [...existing] : [createEmptyActivity()];
-        
-        // Fill in metadata for activities that have matching metas
-        metas.forEach((meta, idx) => {
-          if (idx < nextActivities.length) {
-            const act = nextActivities[idx];
-            const patch = { ...act };
-            if (!String(patch.activity || '').trim() && meta.title) patch.activity = meta.title;
-            if (!String(patch.description || '').trim() && meta.description) patch.description = meta.description;
-            if (!String(patch.location || '').trim() && meta.location) patch.location = meta.location;
-            if (!String(patch.cost || '').trim() && meta.price > 0) patch.cost = String(meta.price);
-            if (!String(patch.imageDataUrl || '').trim() && meta.image) patch.imageDataUrl = meta.image;
-            nextActivities[idx] = patch;
-          }
-        });
-        
-        // If no existing activities but we have metas, create new ones
-        if (existing.length === 0 && metas.length > 0) {
-          nextActivities.length = 0;
-          metas.forEach((meta) => {
-            const act = createEmptyActivity();
-            if (meta.title) act.activity = meta.title;
-            if (meta.description) act.description = meta.description;
-            if (meta.location) act.location = meta.location;
-            if (meta.price > 0) act.cost = String(meta.price);
-            if (meta.image) act.imageDataUrl = meta.image;
-            nextActivities.push(act);
-          });
-        }
-        
-        return { ...d, activities: nextActivities };
-      });
-    });
-  }, [draft, requestItemMeta, requestItemsPackedByDay]);
-
-  useEffect(() => {
-    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
-
-    const activitiesCount = Array.isArray(requestItemsPackedByDay)
-      ? requestItemsPackedByDay.length
-      : (Array.isArray(request?.items) ? request.items.length : 0);
-    const card = request?.adjustmentCard;
-    const hasCard = Boolean(
-      card &&
-      [card?.title, card?.description, card?.location, card?.cost, card?.imageDataUrl].some((v) => String(v || '').trim())
-    );
-    const target = Math.max(1, (activitiesCount || 0) + (hasCard ? 1 : 0));
-
-    setDaysData((prev) => {
-      const list = Array.isArray(prev) ? prev : [];
-      if (list.length >= target) return list;
-
-      const next = [...list];
-      const start = next.length + 1;
-      for (let day = start; day <= target; day += 1) {
-        next.push(createEmptyDay(day, travelDetails?.startDate || ""));
-      }
-      return next;
-    });
-  }, [request, draft, requestItemsPackedByDay]);
-
-  // Helper to calculate travel time between two coordinates (hours)
-  const travelTime = (from, to, speed = 30) => {
-    if (!from || !to) return 0;
-    const dx = (from.lng || from.x || 0) - (to.lng || to.x || 0);
-    const dy = (from.lat || from.y || 0) - (to.lat || to.y || 0);
-    return Math.hypot(dx, dy) / speed;
-  };
-
-  // Helper to find best insertion point for an activity based on coordinates
-  const findBestInsertionByCoordinates = (plan, candidate) => {
-    if (!plan.length) return { index: 0, addedTime: 0 };
-    
-    let bestIndex = 0;
-    let minAddedTime = Infinity;
-    
-    for (let i = 0; i <= plan.length; i++) {
-      const prev = i === 0 ? null : plan[i - 1];
-      const next = i === plan.length ? null : plan[i];
-      
-      let addedTime = 0;
-      if (prev) addedTime += travelTime(prev.coordinates || { x: prev.x, y: prev.y }, candidate.coordinates || { x: candidate.x, y: candidate.y });
-      if (next) addedTime += travelTime(candidate.coordinates || { x: candidate.x, y: candidate.y }, next.coordinates || { x: next.x, y: next.y });
-      if (prev && next) {
-        // Subtract the travel we're replacing
-        addedTime -= travelTime(prev.coordinates || { x: prev.x, y: prev.y }, next.coordinates || { x: next.x, y: next.y });
-      }
-      
-      if (addedTime < minAddedTime) {
-        minAddedTime = addedTime;
-        bestIndex = i;
-      }
-    }
-    
-    return { index: bestIndex, addedTime: minAddedTime };
-  };
-
-  // Smart auto-generation based on remaining budget and coordinates
-  useEffect(() => {
-    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
-    if (hasAutoGeneratedActivities.current) return;
-    if (!availableActivities.length) return;
-    
-    const remaining = remainingBudgetForAutoGen;
-    if (remaining <= 0) return;
-    
-    // Get already selected activity IDs to avoid duplicates
-    const selectedIds = new Set();
-    daysData.forEach(day => {
-      day.activities?.forEach(act => {
-        if (act.activity) {
-          const match = availableActivities.find(a => a.title === act.activity);
-          if (match) selectedIds.add(match._id || match.id);
-        }
-      });
-    });
-    
-    // Filter available activities that fit in remaining budget
-    const candidates = availableActivities
-      .filter(a => !selectedIds.has(a._id || a.id))
-      .map(a => ({
-        ...a,
-        priceValue: a.price || a.cost || a.budget || 0,
-        coordinates: a.coordinates || { lat: a.y || 0, lng: a.x || 0 }
-      }))
-      .filter(a => a.priceValue > 0 && a.priceValue <= remaining)
-      .sort((a, b) => (b.profit || b.priceValue || 0) - (a.profit || a.priceValue || 0)); // Sort by value
-    
-    if (candidates.length === 0) {
-      hasAutoGeneratedActivities.current = true;
-      return;
-    }
-    
-    // Greedy selection: pick activities that maximize value within budget
-    const selected = [];
-    let usedBudget = 0;
-    
-    for (const candidate of candidates) {
-      if (usedBudget + candidate.priceValue <= remaining) {
-        // Find best position based on coordinates (minimize travel)
-        const { index } = findBestInsertionByCoordinates(selected, candidate);
-        selected.splice(index, 0, candidate);
-        usedBudget += candidate.priceValue;
-      }
-    }
-    
-    if (selected.length === 0) {
-      hasAutoGeneratedActivities.current = true;
-      return;
-    }
-    
-    // Arrange into days (8 AM - 6 PM = 10 hours per day)
-    const DAY_START_HOUR = 8;
-    const DAY_END_HOUR = 18;
-    const MAX_HOURS_PER_DAY = DAY_END_HOUR - DAY_START_HOUR;
-    
-    const days = [];
-    let currentDay = [];
-    let currentHours = 0;
-    let currentTime = DAY_START_HOUR;
-    
-    for (const act of selected) {
-      const durationHours = parseFloat(act.duration) || 2; // Default 2 hours if not specified
-      
-      // Check if this activity fits in current day
-      if (currentHours + durationHours > MAX_HOURS_PER_DAY && currentDay.length > 0) {
-        // Save current day
-        days.push({ activities: currentDay, hours: currentHours });
-        currentDay = [];
-        currentHours = 0;
-        currentTime = DAY_START_HOUR;
-      }
-      
-      // Calculate start and end times
-      const startHour = currentTime;
-      const endHour = startHour + durationHours;
-      
-      currentDay.push({
-        ...act,
-        startTime: `${String(Math.floor(startHour)).padStart(2, '0')}:${String(Math.round((startHour % 1) * 60)).padStart(2, '0')}`,
-        endTime: `${String(Math.floor(endHour)).padStart(2, '0')}:${String(Math.round((endHour % 1) * 60)).padStart(2, '0')}`,
-      });
-      
-      currentHours += durationHours;
-      currentTime = endHour;
-    }
-    
-    if (currentDay.length > 0) {
-      days.push({ activities: currentDay, hours: currentHours });
-    }
-    
-    // Calculate new day numbers BEFORE setDaysData
-    const currentDayCount = daysData.length;
-    const newDayNumbers = days.map((_, idx) => currentDayCount + idx + 1);
-
-    // Convert to daysData format
-    const startDateForCalc = travelDetails?.startDate || request?.tripDetails?.startDate || "";
-    setDaysData((prev) => {
-      const existingDays = Array.isArray(prev) ? prev : [];
-      const newDays = days.map((dayData, idx) => {
-        const dayNum = existingDays.length + idx + 1;
-        return {
-          day: dayNum,
-          date: calculateDayDate(startDateForCalc, dayNum - 1),
-          isAdjustment: false,
-          isAutoGenerated: true, // Mark day as auto-generated
-          activities: dayData.activities.map((act, actIdx) => ({
-            id: `act-auto-${Date.now()}-${idx}-${actIdx}`,
-            activity: act.title || act.name || "",
-            location: act.location || act.country || normalized.location || "",
-            description: act.description || `Auto-selected activity (Budget: $${act.priceValue})`,
-            cost: String(act.priceValue),
-            startTime: act.startTime,
-            endTime: act.endTime,
-            imageDataUrl: act.image || act.imageUrl || act.thumbnail || "",
-            isAutoGenerated: true,
-            coordinates: act.coordinates,
-          })),
-        };
-      });
-      
-      return [...existingDays, ...newDays];
-    });
-
-    // Expand newly added days by default
-    if (newDayNumbers.length > 0) {
-      setExpandedDays((prev) => {
-        const current = Array.isArray(prev) ? prev : [];
-        const updated = [...new Set([...current, ...newDayNumbers])];
-        return updated;
-      });
-    }
-
-    hasAutoGeneratedActivities.current = true;
-  }, [draft, remainingBudgetForAutoGen, availableActivities, daysData, normalized.location]);
-
-  // Auto-expand days that are marked as auto-generated
-  useEffect(() => {
-    const autoGeneratedDays = daysData
-      .filter(d => d?.isAutoGenerated)
-      .map(d => d.day);
-
-    if (autoGeneratedDays.length > 0) {
-      setExpandedDays(prev => {
-        const current = Array.isArray(prev) ? prev : [];
-        // Expand all auto-generated days plus keep existing expanded days
-        const allDays = [...current, ...autoGeneratedDays];
-        const uniqueDays = [...new Set(allDays)];
-        return uniqueDays;
-      });
-    }
-  }, [daysData]); // Watch full daysData array for changes
-
-  const calcProgress = (payload) => {
-    const td = payload?.travelDetails || {};
-    const tdFields = [td.destination, td.budget, td.startDate, td.endDate, td.preferences];
-    const tdScore = tdFields.filter((v) => String(v || "").trim()).length;
-
-    const dayList = Array.isArray(payload?.daysData) ? payload.daysData : [];
-    const dayScore = dayList.reduce((sum, d) => {
-      const activities = Array.isArray(d.activities) ? d.activities : [d];
-      return sum + activities.reduce((actSum, act) => {
-        const fields = [act.activity, act.location, act.description, act.cost, act.startTime, act.endTime, act.imageDataUrl];
-        return actSum + fields.filter((v) => String(v || "").trim()).length;
-      }, 0);
-    }, 0);
-
-    const maxActivitiesPerDay = dayList.reduce((sum, d) => sum + (Array.isArray(d.activities) ? d.activities.length : 1), 0);
-    const max = 5 + (maxActivitiesPerDay * 7);
-    const val = tdScore + dayScore;
-    if (!max) return 0;
-    return Math.max(0, Math.min(1, val / max));
-  };
-
-  // Auto-calculate dates when start date changes
-  useEffect(() => {
-    const startDate = travelDetails?.startDate;
-    if (!startDate) return;
-    
-    setDaysData((prev) => {
-      if (!Array.isArray(prev) || prev.length === 0) return prev;
-      
-      return prev.map((day, index) => {
-        // Only update if date is empty or hasn't been manually set
-        const existingDate = day?.date;
-        const calculatedDate = calculateDayDate(startDate, index);
-        
-        // If user has manually set a date, keep it
-        if (existingDate && existingDate !== calculateDayDate(startDate, index - 1)) {
-          return day;
-        }
-        
-        return { ...day, date: calculatedDate };
-      });
-    });
-  }, [travelDetails?.startDate]);
-
-  const adjustmentCard = request?.adjustmentCard || null;
-  const hasAdjustment = (() => {
-    if (!adjustmentCard) return false;
-    const fields = [adjustmentCard?.title, adjustmentCard?.description, adjustmentCard?.location, adjustmentCard?.cost, adjustmentCard?.imageDataUrl];
-    return fields.some((v) => String(v || '').trim());
-  })();
-
-  useEffect(() => {
-    const currentId = request?._id || request?.id || request?.bookingId || request?.requestId || "";
-    if (!currentId) return;
-
-    let cancelled = false;
-    const fetchPrevious = async () => {
-      try {
-        const res = await api.get('/itineraries').catch(() => ({ data: [] }));
-        const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res?.data?.itineraries) ? res.data.itineraries : []);
-        const match = (Array.isArray(list) ? list : []).find((it) => {
-          const candidate = String(it?.bookingId || it?.requestId || it?.booking || it?.request || it?._id || it?.id || '');
-          return candidate && candidate === String(currentId);
-        });
-        if (!cancelled) setPreviousItinerary(match || null);
-      } catch {
-        if (!cancelled) setPreviousItinerary(null);
-      }
-    };
-
-    fetchPrevious();
-    return () => {
-      cancelled = true;
-    };
-  }, [request]);
-
-  useEffect(() => {
-    if (prefilledFromPrevious) return;
-    if (!hasAdjustment) return;
-    if (!previousItinerary) return;
-    if (Array.isArray(draft?.payload?.daysData) && draft.payload.daysData.length > 0) return;
-
-    const tripData = previousItinerary?.tripData || {};
-    const destination = tripData?.destination || tripData?.location || previousItinerary?.destination || previousItinerary?.location || "";
-    const pickNonEmpty = (...values) => {
-      for (const v of values) {
-        if (v === null || v === undefined) continue;
-        const s = String(v).trim();
-        if (s) return v;
-      }
-      return "";
-    };
-
-    const budgetRaw = pickNonEmpty(
-      tripData?.budget,
-      tripData?.totalBudget,
-      tripData?.estimatedBudget,
-      tripData?.price,
-      previousItinerary?.budget,
-      previousItinerary?.tripData?.budget
-    );
-    const budget = String(budgetRaw || '').trim();
-
-    const parseDateRange = (value) => {
-      const raw = String(value || "").trim();
-      if (!raw) return { start: "", end: "" };
-      if (raw.includes(' - ')) {
-        const parts = raw.split(' - ').map((x) => String(x || '').trim());
-        return { start: parts[0] || '', end: parts[1] || '' };
-      }
-
-      const match = raw.match(/(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})/);
-      if (match) return { start: match[1] || '', end: match[2] || '' };
-
-      return { start: "", end: "" };
-    };
-
-    const dateRange = parseDateRange(tripData?.date);
-
-    setTravelDetails((prev) => ({
-      ...prev,
-      destination: prev.destination || destination,
-      budget: prev.budget || budget,
-      startDate: prev.startDate || dateRange.start,
-      endDate: prev.endDate || dateRange.end,
-      preferences: prev.preferences || tripData?.description || "",
-    }));
-
-    const prevDays = Array.isArray(previousItinerary?.days) ? previousItinerary.days : [];
-
-    const stripPrefix = (value, prefix) => {
-      const raw = String(value || "");
-      const p = String(prefix || "");
-      if (!p) return raw;
-      return raw.startsWith(p) ? raw.slice(p.length).trim() : raw;
-    };
-
-    const mappedDays = prevDays.map((d, idx) => {
-      const dayNo = Number(d?.day) || idx + 1;
-      const activity = String(d?.title || "").trim();
-      const description = String(d?.morning?.description || "").trim();
-      const location = stripPrefix(d?.afternoon?.description, "Location:");
-      const cost = stripPrefix(d?.evening?.description, "Estimated Cost:");
-      const imageDataUrl = String(d?.image || "").trim();
-      const startTime = String(d?.meta?.startTime || d?.startTime || d?.timeFrom || "").trim();
-      const endTime = String(d?.meta?.endTime || d?.endTime || d?.timeTo || "").trim();
-
-      return {
-        day: dayNo,
-        isAdjustment: false,
-        activities: [{
-          id: `act-prev-${Date.now()}-${idx}`,
-          activity,
-          description,
-          location: String(location || "").trim(),
-          cost: String(cost || "").trim(),
-          imageDataUrl,
-          startTime,
-          endTime,
-        }],
-      };
-    });
-
-    if (mappedDays.length > 0) {
-      setDaysData(mappedDays);
-    }
-
-    setPrefilledFromPrevious(true);
-  }, [prefilledFromPrevious, hasAdjustment, previousItinerary, draft]);
-
-  const readDrafts = () => {
-    const raw = localStorage.getItem(DRAFTS_STORAGE_KEY);
-    const parsed = safeParseJson(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  };
-
-  const writeDrafts = (list) => {
-    localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(Array.isArray(list) ? list : []));
-  };
-
-  const currentRequestId = request?._id || request?.id || request?.bookingId || request?.requestId || "";
-
-  const draftIdRef = useRef("");
-  useEffect(() => {
-    if (draft?.id) {
-      draftIdRef.current = String(draft.id);
-      return;
-    }
-    if (draftIdRef.current) return;
-    const base = currentRequestId ? `draft-${currentRequestId}` : `draft-${Date.now()}`;
-    draftIdRef.current = base;
-  }, [draft?.id, currentRequestId]);
-
-  // Reset draft-save block on mount so stale state from a previous send doesn't affect a new request
-  useEffect(() => {
-    blockDraftSaveRef.current = false;
-  }, []);
-
-  const getDraftImageKey = (draftId, day) => `${String(draftId || "")}:${String(day || "")}`;
-
-  const persistImagesToIdb = async (draftId, list) => {
-    const arr = Array.isArray(list) ? list : [];
-    const tasks = [];
-    arr.forEach((d) => {
-      const day = d?.day;
-      const activities = Array.isArray(d?.activities) ? d.activities : [];
-      activities.forEach((act) => {
-        const img = String(act?.imageDataUrl || "").trim();
-        if (!img) return;
-        if (!img.startsWith("data:image")) return;
-        const key = getDraftImageKey(draftId, `${day}-${act.id}`);
-        tasks.push(idbPutImage(key, img));
-      });
-    });
-    if (tasks.length === 0) return;
-    try {
-      await Promise.all(tasks);
-    } catch {
-      // ignore
-    }
-  };
-
-  const handleBrowseImage = (day, activityId, file) => {
-    if (!file) return;
-    if (!String(file.type || "").toLowerCase().startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      setDaysData((prev) =>
-        prev.map((d) =>
-          d.day === day
-            ? {
-                ...d,
-                activities: d.activities.map((a) =>
-                  a.id === activityId ? { ...a, imageDataUrl: result } : a
-                ),
-              }
-            : d
-        )
-      );
-      const did = draftIdRef.current;
-      if (did && result) {
-        idbPutImage(getDraftImageKey(did, `${day}-${activityId}`), result).catch(() => {});
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveImage = (day, activityId) => {
-    setDaysData((prev) =>
-      prev.map((d) =>
-        d.day === day
-          ? {
-              ...d,
-              activities: d.activities.map((a) =>
-                a.id === activityId ? { ...a, imageDataUrl: "" } : a
-              ),
-            }
-          : d
-      )
-    );
-    const did = draftIdRef.current;
-    if (did) {
-      const key = getDraftImageKey(did, `${day}-${activityId}`);
-      openDraftImagesDb()
-        .then((db) => new Promise((resolve, reject) => {
-          const tx = db.transaction(DRAFT_IMAGES_STORE, "readwrite");
-          const store = tx.objectStore(DRAFT_IMAGES_STORE);
-          store.delete(key);
-          tx.oncomplete = () => resolve();
-          tx.onerror = () => reject(tx.error);
-          tx.onabort = () => reject(tx.error);
-        }).finally(() => db.close()))
-        .catch(() => {});
-    }
-  };
-
-  useEffect(() => {
-    const did = draftIdRef.current;
-    if (!did) return;
-    const list = Array.isArray(draft?.payload?.daysData) ? draft.payload.daysData : [];
-    if (!Array.isArray(list) || list.length === 0) return;
-
-    let cancelled = false;
-    const restore = async () => {
-      try {
-        // Build list of all activity image keys to restore
-        const imageTasks = [];
-        list.forEach((d) => {
-          const day = d?.day;
-          const activities = Array.isArray(d?.activities) ? d.activities : [];
-          activities.forEach((act) => {
-            if (act?.id && !act.imageDataUrl) {
-              const key = getDraftImageKey(did, `${day}-${act.id}`);
-              imageTasks.push({ day, activityId: act.id, key });
-            }
-          });
-        });
-        
-        const results = await Promise.all(
-          imageTasks.map(async ({ day, activityId, key }) => {
-            const img = await idbGetImage(key);
-            return { day, activityId, img };
-          })
-        );
-        
-        if (cancelled) return;
-
-        setDaysData((prev) => {
-          const prevList = Array.isArray(prev) ? prev : [];
-          if (prevList.length === 0) return prevList;
-          
-          return prevList.map((dayObj) => {
-            const dayResults = results.filter((r) => r.day === dayObj.day);
-            if (dayResults.length === 0) return dayObj;
-            
-            const updatedActivities = dayObj.activities.map((act) => {
-              const match = dayResults.find((r) => r.activityId === act.id);
-              if (!match || !match.img) return act;
-              if (String(act.imageDataUrl || "").trim()) return act;
-              return { ...act, imageDataUrl: match.img };
-            });
-            
-            return { ...dayObj, activities: updatedActivities };
-          });
-        });
-      } catch {
-        // ignore
-      }
-    };
-
-    restore();
-    return () => {
-      cancelled = true;
-    };
-  }, [draft]);
-
-  const buildDraftPayload = () => {
-    return {
-      travelDetails,
-      daysData: (Array.isArray(daysData) ? daysData : []).map((d) => ({
-        ...d,
-        imageDataUrl: "",
-      })),
-      requestSnapshot: null,
-    };
-  };
-
-  const buildItineraryApiPayload = () => {
-    const title = normalized.title || request?.experience || request?.title || travelDetails.destination || "Itinerary";
-    const destination = travelDetails.destination || normalized.location || "";
-    const location = travelDetails.destination || normalized.location || "";
-
-    const date = (travelDetails.startDate || travelDetails.endDate)
-      ? `${travelDetails.startDate || '—'} - ${travelDetails.endDate || '—'}`
-      : "";
-
-    const tripData = {
-      title,
-      destination,
-      location,
-      date,
-      groupSize: normalized.guests ? `${normalized.guests} People` : "",
-      budget: travelDetails.budget || normalized.budget || "",
-      description: travelDetails.preferences || "",
-    };
-
-    const days = (Array.isArray(daysData) ? daysData : []).flatMap((d) => {
-      // Handle both old single-activity format and new multi-activity format
-      const activities = Array.isArray(d.activities) ? d.activities : [d];
-      return activities.map((act, idx) => {
-        const label = act.activity || `Day ${d?.day || ''} Activity ${idx + 1}`;
-        return {
-          day: d?.day,
-          title: label,
-          image: act.imageDataUrl || "",
-          morning: { title: "Morning", description: act.description || "" },
-          afternoon: { title: "Afternoon", description: act.location ? `Location: ${act.location}` : "" },
-          evening: { title: "Evening", description: act.cost ? `Estimated Cost: ${act.cost}` : "" },
-          meta: {
-            startTime: act.startTime || "",
-            endTime: act.endTime || "",
-          },
-        };
-      });
-    });
-
-    const rawUser = request?.user;
-    const travelerUserId =
-      request?.userId ||
-      request?.user?._id ||
-      request?.user?.id ||
-      (typeof rawUser === "string" ? rawUser : "") ||
-      request?.travelerId ||
-      request?.customerId ||
-      request?.requestSnapshot?.userId ||
-      "";
-
-    return {
-      userId: travelerUserId,
-      bookingId: currentRequestId || draft?.requestId || "",
-      requestId: currentRequestId || draft?.requestId || "",
-      title,
-      destination,
-      location,
-      tripData,
-      days,
-      status: "Ready",
-    };
-  };
-
-  const saveDraftInternal = async ({ showMessage, navigate } = { showMessage: true, navigate: true }) => {
-    if (blockDraftSaveRef.current) return;
-    
-    const payload = buildDraftPayload();
-    const id = draftIdRef.current || draft?.id || `draft-${Date.now()}`;
-    const title = normalized.title || request?.experience || request?.title || travelDetails.destination || "Itinerary Draft";
-    const author = request?.name || request?.travelerName || request?.contactDetails?.firstName || "Traveler";
-
-    const draftObj = {
-      id,
-      type: "itinerary",
-      requestId: currentRequestId || draft?.requestId || "",
-      title,
-      author,
-      lastEdit: new Date().toISOString(),
-      progress: calcProgress(payload),
-      payload,
-    };
-
-    await persistImagesToIdb(id, daysData);
-
-    const existing = readDrafts();
-    const next = [draftObj, ...existing.filter((d) => d?.id !== id)];
-
-    try {
-      writeDrafts(next);
-    } catch (e) {
-      const msg = String(e?.message || "");
-      const isQuota = e?.name === "QuotaExceededError" || /quota/i.test(msg);
-      if (!isQuota) throw e;
-
-      const shrink = next.map((d) => {
-        if (d?.id !== id) return d;
-        const p = d?.payload || {};
-        const compactDays = (Array.isArray(p?.daysData) ? p.daysData : []).map((day) => {
-          const activities = Array.isArray(day?.activities) ? day.activities : [day];
-          return {
-            day: day?.day,
-            activities: activities.map((act) => ({
-              id: act?.id || `act-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-              activity: act?.activity || "",
-              location: act?.location || "",
-              description: act?.description || "",
-              cost: act?.cost || "",
-              startTime: act?.startTime || "",
-              endTime: act?.endTime || "",
-              imageDataUrl: "",
-            })),
-          };
-        });
-        return {
-          ...d,
-          payload: {
-            travelDetails: p?.travelDetails || {},
-            daysData: compactDays,
-            requestSnapshot: null,
-          },
-        };
-      });
-
-      writeDrafts(shrink);
-    }
-
-    window.dispatchEvent(new Event("kufi_itinerary_drafts_updated"));
-
-    if (showMessage) {
-      setDraftSavedMessage("Saved to drafts");
-    }
-
-    if (navigate) {
-      window.setTimeout(() => {
-        onGoToBookings?.();
-      }, 800);
-    }
-  };
-
-  const handleSaveDraft = async () => {
-    try {
-      setIsSaving(true);
-      setDraftSavedMessage("");
-      setSentSuccessMessage("");
-      await saveDraftInternal({ showMessage: true, navigate: true });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!currentRequestId && !draftIdRef.current) return;
-    if (isSaving || isSending || blockDraftSaveRef.current) return;
-
-    const t = window.setTimeout(() => {
-      saveDraftInternal({ showMessage: false, navigate: false }).catch(() => {});
-    }, 700);
-
-    return () => window.clearTimeout(t);
-  }, [travelDetails, daysData, currentRequestId, isSaving, isSending]);
-
-  const handleSendToTraveler = async () => {
-    try {
-      blockDraftSaveRef.current = true;
-      setIsSending(true);
-      setIsInSendMode(true);
-      setSentSuccessMessage("");
-      setDraftSavedMessage("");
-      const payload = buildDraftPayload();
-
-      const apiPayload = buildItineraryApiPayload();
-      const normalizedApiPayload = {
-        ...apiPayload,
-        userId: apiPayload?.userId ? String(apiPayload.userId) : "",
-        bookingId: apiPayload?.bookingId ? String(apiPayload.bookingId) : "",
-        requestId: apiPayload?.requestId ? String(apiPayload.requestId) : "",
-      };
-
-      console.log("[Itinerary Send] request:", { _id: request?._id, id: request?.id, bookingId: request?.bookingId, userId: request?.userId, user: request?.user });
-      console.log("[Itinerary Send] currentRequestId:", currentRequestId);
-      console.log("[Itinerary Send] apiPayload:", apiPayload);
-
-      if (!normalizedApiPayload.userId || !normalizedApiPayload.destination || !normalizedApiPayload.title || !normalizedApiPayload.bookingId) {
-        console.warn(
-          "Skipping backend itinerary persist: missing userId/title/destination/bookingId",
-          normalizedApiPayload
-        );
-        setSentSuccessMessage("Failed to send itinerary: missing traveler or trip details");
-        return;
-      }
-
-      try {
-        console.log("Sending itinerary to backend:", normalizedApiPayload);
-        await api.post("/itineraries", normalizedApiPayload);
-      } catch (e) {
-        console.error("Failed to persist itinerary to backend:", e?.response?.data || e);
-        const msg =
-          e?.response?.data?.msg ||
-          e?.response?.data?.message ||
-          e?.message ||
-          "Failed to send itinerary";
-        setSentSuccessMessage(String(msg));
-        return;
-      }
-
-      const sentKey = "kufi_supplier_sent_itineraries";
-      const existing = safeParseJson(localStorage.getItem(sentKey));
-      const list = Array.isArray(existing) ? existing : [];
-      // Keep only last 10 records to avoid localStorage quota exceeded
-      const trimmedList = list.slice(0, 9);
-      const record = {
-        id: `sent-${Date.now()}`,
-        requestId: currentRequestId || draft?.requestId || "",
-        title: normalized.title || travelDetails.destination || "Itinerary",
-        createdAt: new Date().toISOString(),
-      };
-      localStorage.setItem(sentKey, JSON.stringify([record, ...trimmedList]));
-
-      if (hasAdjustment) {
-        const replyKey = 'kufi_adjustment_replies';
-        const existingReplies = safeParseJson(localStorage.getItem(replyKey));
-        const replyList = Array.isArray(existingReplies) ? existingReplies : [];
-        const bookingId = currentRequestId || draft?.requestId || "";
-        if (bookingId) {
-          const replyRecord = { bookingId: String(bookingId), repliedAt: new Date().toISOString() };
-          const nextReplies = [replyRecord, ...replyList.filter((x) => String(x?.bookingId || '') !== String(bookingId))];
-          localStorage.setItem(replyKey, JSON.stringify(nextReplies));
-        }
-      }
-
-      // Clear draft from localStorage after successful send
-      const draftId = draftIdRef.current || draft?.id;
-      if (draftId) {
-        const existingDrafts = readDrafts();
-        const nextDrafts = existingDrafts.filter((d) => String(d?.id || '') !== String(draftId));
-        writeDrafts(nextDrafts);
-        window.dispatchEvent(new Event("kufi_itinerary_drafts_updated"));
-      }
-
-      setSentSuccessMessage("Itinerary sent to traveler");
-      window.setTimeout(() => {
-        blockDraftSaveRef.current = false;
-        onGoToBookings?.();
-      }, 900);
-    } finally {
-      setIsSending(false);
-      setIsInSendMode(false);
-      // blockDraftSaveRef stays true until after navigation to prevent auto-save
-    }
-  };
-
-  const toggleDay = (day) => {
-    setExpandedDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
-  };
-
-  const updateDay = (day, patch) => {
-    setDaysData((prev) => prev.map((d) => (d.day === day ? { ...d, ...patch } : d)));
-  };
-
-  const updateActivity = (day, activityId, patch) => {
-    setDaysData((prev) =>
-      prev.map((d) => {
-        if (d.day !== day) return d;
-        if (patch === null) {
-          // Remove activity
-          const remaining = d.activities.filter((a) => a.id !== activityId);
-          return { ...d, activities: remaining.length > 0 ? remaining : [createEmptyActivity()] };
-        }
-        // Update activity
-        return {
-          ...d,
-          activities: d.activities.map((a) =>
-            a.id === activityId ? { ...a, ...patch } : a
-          ),
-        };
-      })
-    );
-  };
-
-  const addActivity = (day) => {
-    setDaysData((prev) =>
-      prev.map((d) => {
-        if (d.day !== day) return d;
-        return {
-          ...d,
-          activities: [...d.activities, createEmptyActivity()],
-        };
-      })
-    );
-  };
-
-  const handleAddNewDay = () => {
-    setDaysData((prev) => {
-      const list = Array.isArray(prev) ? prev : [];
-      const nextDay = list.length + 1;
-      return [...list, createEmptyDay(nextDay, travelDetails?.startDate || "")];
-    });
-  };
+  const dayTotal = activities.reduce((sum, a) => sum + (Number(a.price) || 0), 0);
 
   return (
-    <div className={`space-y-5 transition-colors duration-300 ${darkMode ? "dark" : ""}`}>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-        <h1 className={`text-xl font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Generate Itinerary</h1>
-        <p className={`text-sm transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
-          Finalize trip details and review the budget before sending it to the traveler.
-        </p>
+    <div className="h-full flex flex-col">
+      {/* Arrival / departure banner */}
+      {isArrival && !day.isArrivalDay === false && (
+        <div className={`rounded-lg px-3 py-2 mb-3 text-[11px] font-medium ${darkMode ? "bg-blue-900/30 text-blue-300 border border-blue-900/40" : "bg-blue-50 text-blue-700 border border-blue-100"}`}>
+          Arrival Day — Free Day. Airport to Hotel transfer provided.
         </div>
-
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className={`shrink-0 inline-flex items-center justify-center rounded-full border px-5 py-2 text-xs font-semibold transition-colors ${darkMode ? "bg-slate-900 border-slate-800 text-slate-200 hover:bg-slate-800" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
-          >
-            Back
-          </button>
-        )}
-      </div>
-
-      {draftSavedMessage && (
-        <div
-          className={`rounded-2xl border px-4 py-3 text-xs font-semibold transition-colors ${darkMode ? "bg-emerald-900/20 border-emerald-900/30 text-emerald-300" : "bg-emerald-50 border-emerald-100 text-emerald-700"}`}
-        >
-          {draftSavedMessage}
+      )}
+      {day.isArrivalDay && (
+        <div className={`rounded-lg px-3 py-2 mb-3 text-[11px] font-medium ${darkMode ? "bg-blue-900/30 text-blue-300 border border-blue-900/40" : "bg-blue-50 text-blue-700 border border-blue-100"}`}>
+          Arrival Day — Free Day. Airport to Hotel transfer provided.
+        </div>
+      )}
+      {day.isDepartureDay && (
+        <div className={`rounded-lg px-3 py-2 mb-3 text-[11px] font-medium ${darkMode ? "bg-orange-900/30 text-orange-300 border border-orange-900/40" : "bg-orange-50 text-orange-700 border border-orange-100"}`}>
+          Departure Day — Free Day. Hotel to Airport transfer provided.
         </div>
       )}
 
-      {sentSuccessMessage && (
+      {/* Drop zone */}
+      <SortableContext items={activities.map(a => a.id)} strategy={verticalListSortingStrategy}>
         <div
-          className={`rounded-2xl border px-4 py-3 text-xs font-semibold transition-colors ${darkMode ? "bg-blue-900/20 border-blue-900/30 text-blue-200" : "bg-[#eef4ff] border-blue-100 text-blue-900"}`}
+          className={`flex-1 min-h-[160px] rounded-xl border-2 border-dashed transition-colors p-2 space-y-2 ${
+            isActiveProp
+              ? darkMode ? "border-amber-500 bg-amber-900/10" : "border-amber-400 bg-amber-50"
+              : activities.length === 0
+                ? darkMode ? "border-slate-700 bg-slate-800/30" : "border-gray-200 bg-gray-50/50"
+                : darkMode ? "border-slate-700 bg-transparent" : "border-gray-100 bg-transparent"
+          }`}
         >
-          {sentSuccessMessage}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2.1fr)_360px]">
-        {/* Left: main */}
-        <div className="space-y-5">
-          {/* Travel details */}
-          <div className={`rounded-2xl border px-5 py-5 space-y-4 transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
-            <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Travel Details</h2>
-
-            <div className="grid gap-3 text-xs sm:grid-cols-2">
-              <div className="space-y-1">
-                <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Destination</p>
-                <input
-                  type="text"
-                  value={travelDetails.destination}
-                  onChange={(e) => setTravelDetails((p) => ({ ...p, destination: e.target.value }))}
-                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Budget (USD)</p>
-                <input
-                  type="number"
-                  value={travelDetails.budget}
-                  onChange={(e) => setTravelDetails((p) => ({ ...p, budget: e.target.value }))}
-                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Start Date</p>
-                <input
-                  type="date"
-                  value={travelDetails.startDate}
-                  onChange={(e) => setTravelDetails((p) => ({ ...p, startDate: e.target.value }))}
-                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white icon-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>End Date</p>
-                <input
-                  type="date"
-                  value={travelDetails.endDate}
-                  onChange={(e) => setTravelDetails((p) => ({ ...p, endDate: e.target.value }))}
-                  className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white icon-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
-                />
-              </div>
+          {activities.length === 0 ? (
+            <div className={`flex items-center justify-center h-full text-[11px] pointer-events-none ${darkMode ? "text-slate-600" : "text-gray-400"}`}>
+              Drop activities here
             </div>
-
-            <div className="space-y-1 text-xs">
-              <p className={`font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Preferences</p>
-              <textarea
-                rows={2}
-                value={travelDetails.preferences}
-                onChange={(e) => setTravelDetails((p) => ({ ...p, preferences: e.target.value }))}
-                className={`w-full rounded-lg border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-200 text-gray-700"}`}
+          ) : (
+            activities.map(act => (
+              <SortableActivityCard
+                key={act.id}
+                activity={act}
+                dayIndex={day.day - 1}
+                darkMode={darkMode}
+                onRemove={onRemoveActivity}
               />
-            </div>
-          </div>
-
-          {/* Itinerary details */}
-          <div className={`rounded-2xl border px-5 py-5 space-y-4 transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
-            <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Itinerary Details</h2>
-
-            {hasAdjustment && adjustmentCard && (
-              <div className={`rounded-2xl border px-4 py-4 text-xs transition-colors ${darkMode ? "bg-slate-950/30 border-slate-800" : "bg-amber-50/40 border-amber-100"}`}>
-                <p className={`text-[11px] font-semibold mb-2 transition-colors ${darkMode ? "text-amber-300" : "text-[#a26e35]"}`}>
-                  New Adjustment Card
-                </p>
-                <div className="grid gap-3 sm:grid-cols-[120px_minmax(0,1fr)]">
-                  <div className={`h-20 w-full overflow-hidden rounded-xl border transition-colors ${darkMode ? "border-slate-800 bg-slate-900" : "border-gray-100 bg-white"}`}>
-                    {adjustmentCard.imageDataUrl ? (
-                      <img src={adjustmentCard.imageDataUrl} alt="Adjustment" className="h-full w-full object-cover" />
-                    ) : (
-                      <div className={`h-full w-full flex items-center justify-center ${darkMode ? "text-slate-600" : "text-gray-400"}`}>
-                        No image
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-1 min-w-0">
-                    <p className={`text-sm font-semibold truncate transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-                      {adjustmentCard.title || '—'}
-                    </p>
-                    <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
-                      {adjustmentCard.description || '—'}
-                    </p>
-                    <div className={`flex flex-wrap gap-x-4 gap-y-1 text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
-                      <span><span className="font-semibold">Location:</span> {adjustmentCard.location || '—'}</span>
-                      <span><span className="font-semibold">Cost:</span> {adjustmentCard.cost || '—'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {hasAdjustment && previousItinerary && Array.isArray(previousItinerary?.days) && previousItinerary.days.length > 0 && (
-              <div className={`rounded-2xl border px-4 py-4 space-y-3 text-xs transition-colors ${darkMode ? "bg-slate-950/30 border-slate-800" : "bg-white border-gray-100"}`}>
-                <p className={`text-[11px] font-semibold transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
-                  Previous Itinerary (read-only)
-                </p>
-                <div className="space-y-2">
-                  {previousItinerary.days.slice(0, 3).map((d) => (
-                    <div key={d?.day || d?.title} className={`rounded-xl border px-3 py-2 transition-colors ${darkMode ? "border-slate-800 bg-slate-900/30" : "border-gray-100 bg-gray-50/40"}`}>
-                      <p className={`text-[11px] font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-                        Day {d?.day || ''} {d?.title ? `- ${d.title}` : ''}
-                      </p>
-                      <p className={`text-[11px] mt-1 transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
-                        {d?.morning?.description || ''}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Day cards */}
-            <div className="space-y-2">
-              {(Array.isArray(daysData) ? daysData : []).map((d) => (
-                <DayCard
-                  key={d.day}
-                  day={d.day}
-                  darkMode={darkMode}
-                  expanded={expandedDays.includes(d.day)}
-                  onToggle={toggleDay}
-                  dayData={d}
-                  onUpdateDay={updateDay}
-                  onUpdateActivity={updateActivity}
-                  onAddActivity={addActivity}
-                  onBrowseImage={handleBrowseImage}
-                  onRemoveImage={handleRemoveImage}
-                  activityOptions={activityOptions}
-                  locationOptions={locationOptions}
-                />
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={handleAddNewDay}
-              className={`w-full rounded-2xl border border-dashed transition-colors px-5 py-3 flex items-center justify-center text-xs cursor-pointer ${darkMode ? "bg-slate-900 border-slate-800 text-slate-500 hover:bg-slate-800" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"}`}
-            >
-              <span className="mr-2 text-lg">＋</span>
-              Add New Day
-            </button>
-
-            <div className={`flex flex-col gap-3 border-t pt-4 mt-1 sm:flex-row sm:items-center sm:justify-between transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"}`}>
-              <button
-                type="button"
-                disabled={isSaving}
-                onClick={handleSaveDraft}
-                className={`inline-flex items-center justify-center rounded-full border px-6 py-2 text-xs font-medium transition-colors ${isSaving ? "opacity-70 cursor-not-allowed" : ""} ${darkMode ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
-              >
-                Save Draft
-              </button>
-              <button
-                type="button"
-                disabled={isSending}
-                onClick={handleSendToTraveler}
-                className={`inline-flex items-center justify-center rounded-full bg-[#a26e35] px-8 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#8b5e2d] transition-colors ${isSending ? "opacity-70 cursor-not-allowed" : ""}`}
-              >
-                {hasAdjustment ? 'Resend It' : 'Send to Traveler'}
-              </button>
-            </div>
-          </div>
-
+            ))
+          )}
         </div>
+      </SortableContext>
 
-        {/* Right: itinerary summary */}
-        <aside className="space-y-4">
-          <div className={`rounded-2xl border px-5 py-5 space-y-4 text-xs transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
-            <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>Itinerary Summary</h2>
-
-            <div className={`space-y-2 transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>
-              <div className="flex items-start gap-2">
-                <MapPin className="mt-[2px] h-3.5 w-3.5 text-emerald-500" />
-                <div>
-                  <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-500"}`}>Destination</p>
-                  <p className={`text-xs transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{travelDetails.destination || "—"}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2">
-                <CalendarDays className="mt-[2px] h-3.5 w-3.5 text-emerald-500" />
-                <div>
-                  <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-500"}`}>Duration</p>
-                  <p className={`text-xs transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-                    {(travelDetails.startDate || travelDetails.endDate)
-                      ? `${travelDetails.startDate || '—'} - ${travelDetails.endDate || '—'}`
-                      : '—'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2">
-                <Users className="mt-[2px] h-3.5 w-3.5 text-emerald-500" />
-                <div>
-                  <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-500"}`}>Travelers</p>
-                  <p className={`text-xs transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{normalized.guests || "—"}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className={`border-t transition-colors ${darkMode ? "border-slate-800" : "border-gray-100"} pt-3`} />
-
-            <div className={`space-y-1 text-xs transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>
-              <p className={`text-[11px] font-semibold mb-1 transition-colors ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Cost Breakdown</p>
-              <div className="flex items-center justify-between">
-                <span>User Budget (Max)</span>
-                <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{formatMoney(userBudgetMax)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Activities Cost</span>
-                <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{formatMoney(totalActivitiesCost)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Total Budget</span>
-                <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{formatMoney(totalBudgetValue)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Itinerary Cost</span>
-                <span className={`font-medium transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>{formatRange(clientBudgetRange)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                {/* <span className="opacity-70">Remaining</span> */}
-                {/* <span className="font-semibold text-emerald-600">{remainingBudgetDisplay}</span> */}
-              </div>
-              {remainingBudgetForAutoGen > 0 && (
-                <div className={`mt-2 p-2 rounded-lg text-[10px] ${darkMode ? 'bg-emerald-900/20 text-emerald-400' : 'bg-emerald-50 text-emerald-700'}`}>
-                  <span className="font-semibold">Auto-generated:</span> Added activity with ${remainingBudgetForAutoGen} to utilize remaining budget
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className={`rounded-2xl border transition-colors px-4 py-4 text-[11px] flex gap-2 ${darkMode ? "bg-blue-900/20 border-blue-900/30 text-blue-300" : "bg-[#eef4ff] border-blue-100 text-blue-900"}`}>
-            <div className="mt-0.5">
-              <Info className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="mb-1 text-[11px] font-semibold opacity-100">Ready to send?</p>
-              <p className="opacity-90">
-                Review all activities before sending the itinerary to the traveler.
-              </p>
-            </div>
-          </div>
-        </aside>
-      </div>
+      {/* Per-day total (supplier only) */}
+      {dayTotal > 0 && (
+        <div className={`mt-2 flex items-center justify-end gap-1 text-[11px] font-medium ${darkMode ? "text-amber-400" : "text-amber-600"}`}>
+          <DollarSign className="h-3 w-3" />
+          <span>Day total: ${dayTotal.toLocaleString()}</span>
+        </div>
+      )}
     </div>
   );
-};
+}
 
-export default SupplierGenerateItinerary;
+// ─── Main component ───────────────────────────────────────────────────────────
+
+export default function SupplierGenerateItinerary({ darkMode, request, onGoToBookings, onBack }) {
+  const [itinerary, setItinerary] = useState(null);
+  const [daysData, setDaysData] = useState([]);
+  const [activeDay, setActiveDay] = useState(0);
+  const [generating, setGenerating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
+  const [activeDragId, setActiveDragId] = useState(null);
+  const [activeDragData, setActiveDragData] = useState(null);
+  const [overDayIndex, setOverDayIndex] = useState(null);
+  const generateCalledRef = useRef(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  // ── Load itinerary from request ─────────────────────────────────────────────
+  useEffect(() => {
+    async function loadOrCreate() {
+      if (!request) return;
+
+      const existingId = request.itineraryId || request._id;
+      let itin = null;
+
+      if (existingId) {
+        try {
+          const res = await api.get(`/itineraries/${existingId}`);
+          itin = res.data;
+        } catch {
+          itin = null;
+        }
+      }
+
+      if (!itin) {
+        try {
+          const payload = {
+            userId: request.userId || request.user?._id,
+            title: request.tripDetails?.destination || request.destination || "Trip",
+            destination: request.tripDetails?.destination || request.destination || "",
+            country: request.tripDetails?.country || request.country || "",
+            city: request.tripDetails?.city || request.city || request.tripDetails?.destination || "",
+            startDate: request.tripDetails?.arrivalDate || request.tripDetails?.startDate,
+            endDate: request.tripDetails?.departureDate || request.tripDetails?.endDate,
+            numberOfTravelers: request.tripDetails?.guests || request.tripDetails?.travelers || 2,
+            budget: request.tripDetails?.budget,
+            bookingId: request._id,
+            tripData: request.tripDetails || {},
+          };
+          const res = await api.post("/itineraries", payload);
+          itin = res.data;
+        } catch (err) {
+          console.error("Failed to create itinerary", err);
+          return;
+        }
+      }
+
+      setItinerary(itin);
+
+      if (Array.isArray(itin.days) && itin.days.length > 0) {
+        setDaysData(itin.days);
+      } else if (!generateCalledRef.current) {
+        generateCalledRef.current = true;
+        triggerGenerate(itin);
+      }
+    }
+    loadOrCreate();
+  }, [request]);
+
+  async function triggerGenerate(itin) {
+    if (!itin?._id) return;
+    setGenerating(true);
+    try {
+      const res = await api.post(`/itineraries/${itin._id}/generate`);
+      const updated = res.data.itinerary || res.data;
+      setItinerary(updated);
+      setDaysData(Array.isArray(updated.days) ? updated.days : []);
+    } catch (err) {
+      console.error("Generate failed", err);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  // ── All activityIds already placed in days ──────────────────────────────────
+  const assignedActivityIds = useMemo(() => {
+    const ids = [];
+    daysData.forEach(d => {
+      (d.activities || []).forEach(a => { if (a.activityId) ids.push(a.activityId); });
+    });
+    return ids;
+  }, [daysData]);
+
+  // ── DnD handlers ─────────────────────────────────────────────────────────────
+
+  function handleDragStart({ active }) {
+    setActiveDragId(active.id);
+    setActiveDragData(active.data.current);
+  }
+
+  function handleDragOver({ active, over }) {
+    if (!over) { setOverDayIndex(null); return; }
+    // Determine which day we're hovering over
+    const overData = over.data?.current;
+    if (overData?.source === "day") {
+      setOverDayIndex(overData.dayIndex);
+    } else {
+      // over.id might be the day droppable id like "day-0"
+      const match = String(over.id).match(/^day-(\d+)$/);
+      setOverDayIndex(match ? parseInt(match[1], 10) : null);
+    }
+  }
+
+  function handleDragEnd({ active, over }) {
+    setActiveDragId(null);
+    setActiveDragData(null);
+    setOverDayIndex(null);
+
+    if (!over) return;
+
+    const activeData = active.data.current;
+    const overData = over.data?.current;
+
+    // ── Pool card dropped onto a day ──────────────────────────────────────────
+    if (activeData?.source === "pool") {
+      const activity = activeData.activity;
+      let targetDayIdx = null;
+
+      if (overData?.source === "day") {
+        targetDayIdx = overData.dayIndex;
+      } else {
+        const match = String(over.id).match(/^day-(\d+)$/);
+        if (match) targetDayIdx = parseInt(match[1], 10);
+      }
+
+      if (targetDayIdx == null) return;
+
+      const newAct = {
+        id: `act-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        activityId: String(activity._id || activity.id),
+        title: activity.title || "",
+        description: activity.description || "",
+        image: activity.image || "",
+        price: activity.price || 0,
+        category: activity.category || "",
+        startTime: "",
+        endTime: "",
+        isSupplierOnly: true,
+      };
+
+      setDaysData(prev => prev.map((d, i) => {
+        if (i !== targetDayIdx) return d;
+        return { ...d, activities: [...(d.activities || []), newAct] };
+      }));
+      return;
+    }
+
+    // ── Sorting within / moving between days ──────────────────────────────────
+    if (activeData?.source === "day") {
+      const fromDayIdx = activeData.dayIndex;
+      const overDayIdx = overData?.source === "day" ? overData.dayIndex : fromDayIdx;
+
+      if (fromDayIdx === overDayIdx) {
+        // Reorder within same day
+        setDaysData(prev => prev.map((d, i) => {
+          if (i !== fromDayIdx) return d;
+          const acts = [...(d.activities || [])];
+          const oldIdx = acts.findIndex(a => a.id === active.id);
+          const newIdx = acts.findIndex(a => a.id === over.id);
+          if (oldIdx < 0 || newIdx < 0) return d;
+          return { ...d, activities: arrayMove(acts, oldIdx, newIdx) };
+        }));
+      } else {
+        // Move to different day
+        const movedAct = daysData[fromDayIdx]?.activities?.find(a => a.id === active.id);
+        if (!movedAct) return;
+        setDaysData(prev => prev.map((d, i) => {
+          if (i === fromDayIdx) return { ...d, activities: (d.activities || []).filter(a => a.id !== active.id) };
+          if (i === overDayIdx) return { ...d, activities: [...(d.activities || []), { ...movedAct }] };
+          return d;
+        }));
+      }
+    }
+  }
+
+  function removeActivityFromDay(actId) {
+    setDaysData(prev => prev.map(d => ({
+      ...d,
+      activities: (d.activities || []).filter(a => a.id !== actId),
+    })));
+  }
+
+  // ── Save button ──────────────────────────────────────────────────────────────
+
+  async function handleSave() {
+    if (!itinerary?._id) return;
+    setSaving(true);
+    try {
+      await api.put(`/itineraries/${itinerary._id}/days`, { days: daysData });
+      setSaveMsg("Saved!");
+      setTimeout(() => setSaveMsg(""), 2500);
+    } catch (err) {
+      console.error("Save failed", err);
+      setSaveMsg("Save failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ── Summary calculations ─────────────────────────────────────────────────────
+
+  const hotelData = itinerary?.controlPanel?.hotelId;
+  const nights = nightsBetween(itinerary?.startDate, itinerary?.endDate);
+  const rooms = itinerary?.controlPanel?.numberOfRooms || 1;
+  const hotelCost = hotelData?.pricePerNight ? hotelData.pricePerNight * nights * rooms : 0;
+  const upliftPct = itinerary?.controlPanel?.budgetUplift ?? 0.15;
+
+  const activitiesTotal = useMemo(() =>
+    daysData.reduce((sum, d) =>
+      sum + (d.activities || []).reduce((s, a) => s + (Number(a.price) || 0), 0), 0),
+    [daysData]);
+
+  const totalActivitiesCount = useMemo(() =>
+    daysData.reduce((sum, d) => sum + (d.activities || []).length, 0),
+    [daysData]);
+
+  const grandTotal = Math.round((activitiesTotal + hotelCost) * (1 + upliftPct));
+
+  const currentDay = daysData[activeDay] || null;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const base = darkMode ? "bg-slate-950 text-white" : "bg-gray-50 text-gray-900";
+  const cardCls = `rounded-2xl border ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`;
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <div className={`min-h-screen px-4 py-6 ${base}`}>
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${darkMode ? "border-slate-700 text-slate-400 hover:bg-slate-800" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}
+            >
+              ← Back
+            </button>
+          )}
+          <div>
+            <h1 className={`text-base font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+              {itinerary?.title || "Build Itinerary"}
+            </h1>
+            <p className={`text-[11px] mt-0.5 ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
+              {itinerary?.destination || ""}
+              {itinerary?.aiGenerated && (
+                <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${darkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700"}`}>
+                  AI Generated
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* Generating overlay */}
+        {generating && (
+          <div className={`rounded-2xl border p-8 text-center mb-6 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#a26e35] mx-auto mb-3" />
+            <p className={`text-sm font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+              Building your itinerary with AI…
+            </p>
+            <p className={`text-xs mt-1 ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
+              This may take a few seconds
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+          {/* ── Left: day view ─────────────────────────────────────────────── */}
+          <div className="lg:col-span-2 space-y-4">
+
+            {/* Day tabs */}
+            {daysData.length > 0 && (
+              <div className={`${cardCls} px-4 py-3`}>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {daysData.map((d, idx) => {
+                    const isActive = idx === activeDay;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setActiveDay(idx)}
+                        className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors border ${
+                          isActive
+                            ? "bg-[#a26e35] border-[#a26e35] text-white"
+                            : darkMode
+                              ? "bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700"
+                              : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        Day {d.day}
+                        {d.isArrivalDay && " ✈"}
+                        {d.isDepartureDay && " 🛫"}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Current day panel */}
+            {currentDay && (
+              <div
+                id={`day-${activeDay}`}
+                data-droppable="true"
+                className={`${cardCls} px-4 py-4`}
+              >
+                {/* Day header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className={`text-sm font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                      Day {currentDay.day}
+                      {currentDay.dayName && ` — ${currentDay.dayName}`}
+                    </h2>
+                    {currentDay.date && (
+                      <p className={`text-[11px] mt-0.5 ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
+                        {fmtDate(currentDay.date)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <DayColumn
+                  day={currentDay}
+                  darkMode={darkMode}
+                  isActive={overDayIndex === activeDay}
+                  onRemoveActivity={removeActivityFromDay}
+                />
+              </div>
+            )}
+
+            {/* Summary card */}
+            <div className={`${cardCls} px-4 py-4`}>
+              <h3 className={`text-sm font-semibold mb-3 ${darkMode ? "text-white" : "text-slate-900"}`}>
+                Summary
+              </h3>
+              <div className={`space-y-2 text-xs ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
+                <Row label="Arrival Date" value={itinerary?.startDate ? fmtDate(itinerary.startDate) : "—"} dark={darkMode} />
+                <Row label="Departure Date" value={itinerary?.endDate ? fmtDate(itinerary.endDate) : "—"} dark={darkMode} />
+                <Row label="Travelers" value={itinerary?.numberOfTravelers || "—"} dark={darkMode} />
+                <Row label="Total Activities" value={totalActivitiesCount} dark={darkMode} />
+                <Row label="Hotel" value={hotelData?.name || "Not selected"} dark={darkMode} />
+                <Row label="Transportation" value="Included in itinerary" dark={darkMode} />
+                {hotelCost > 0 && <Row label={`Hotel (${nights} nights × ${rooms} rooms)`} value={`$${hotelCost.toLocaleString()}`} dark={darkMode} />}
+                <Row label="Activities Cost" value={`$${activitiesTotal.toLocaleString()}`} dark={darkMode} />
+                {upliftPct > 0 && <Row label={`Uplift (${Math.round(upliftPct * 100)}%)`} value={`$${Math.round((activitiesTotal + hotelCost) * upliftPct).toLocaleString()}`} dark={darkMode} />}
+                <div className={`border-t pt-2 mt-1 flex justify-between font-bold text-sm ${darkMode ? "border-slate-700 text-white" : "border-gray-100 text-slate-900"}`}>
+                  <span>Total</span>
+                  <span>${grandTotal.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Save button */}
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || !itinerary}
+              className={`w-full rounded-full py-3 text-sm font-semibold transition-colors ${
+                saving ? "opacity-60 cursor-not-allowed" : ""
+              } ${saveMsg === "Saved!" ? "bg-emerald-600 text-white" : "bg-[#a26e35] hover:bg-[#8b5e2d] text-white"}`}
+            >
+              {saving ? "Saving…" : saveMsg || "Save"}
+            </button>
+          </div>
+
+          {/* ── Right: activity pool + control panel ──────────────────────── */}
+          <div className="space-y-4">
+            <ItineraryActivityPool
+              darkMode={darkMode}
+              itinerary={itinerary}
+              assignedActivityIds={assignedActivityIds}
+            />
+            <ItineraryControlPanel
+              darkMode={darkMode}
+              itinerary={itinerary}
+              onSaved={updated => setItinerary(updated)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Drag overlay */}
+      <DragOverlay>
+        {activeDragData?.activity && (
+          <div className={`rounded-xl border shadow-xl overflow-hidden w-36 opacity-90 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
+            <img
+              src={activeDragData.activity.image || "/assets/dest-1.jpeg"}
+              alt=""
+              className="w-full h-20 object-cover"
+            />
+            <p className={`px-2 py-1.5 text-[11px] font-medium truncate ${darkMode ? "text-white" : "text-slate-900"}`}>
+              {activeDragData.activity.title}
+            </p>
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+
+// ─── tiny helper ─────────────────────────────────────────────────────────────
+
+function Row({ label, value, dark }) {
+  return (
+    <div className="flex justify-between items-center">
+      <span className={dark ? "text-slate-500" : "text-gray-500"}>{label}</span>
+      <span className={`font-medium ${dark ? "text-slate-300" : "text-slate-700"}`}>{value}</span>
+    </div>
+  );
+}
