@@ -16,6 +16,16 @@ import {
 } from "lucide-react";
 import SupplierGenerateItinerary from "./supplier-generate-itinerary";
 
+const DEFAULT_ITINERARY_HERO =
+  "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=80";
+
+const handleImageError = (e, fallback = DEFAULT_ITINERARY_HERO) => {
+  if (e.currentTarget.src !== fallback) {
+    e.currentTarget.onerror = null;
+    e.currentTarget.src = fallback;
+  }
+};
+
 const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookings }) => {
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -401,7 +411,7 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
 
   if (view === "itinerary" && itineraryRequest) {
     const itineraryImages = getRequestImages(itineraryRequest);
-    const heroImage = itineraryImages[0] || "https://images.pexels.com/photos/5700446/pexels-photo-5700446.jpeg?auto=compress&cs=tinysrgb&w=1200";
+    const heroImage = itineraryImages[0] || DEFAULT_ITINERARY_HERO;
     const gallery = itineraryImages.slice(0, 3);
     const itineraryActivities = Array.isArray(itineraryRequest?.items)
       ? itineraryRequest.items
@@ -436,6 +446,7 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
             src={heroImage}
             alt="Trip cover"
             className="absolute inset-0 h-full w-full object-cover"
+            onError={(e) => handleImageError(e)}
           />
           <div className="absolute inset-0 bg-black/35" />
           <div className="relative w-full px-4 sm:px-6 pb-4 sm:pb-6 text-white flex flex-col gap-2">
@@ -459,6 +470,7 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                     src={src}
                     alt="Selected activity"
                     className="h-10 w-14 rounded-xl object-cover ring-2 ring-white/60"
+                    onError={(e) => handleImageError(e)}
                   />
                 ))}
               </div>
@@ -583,7 +595,12 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
             <div className="flex items-center justify-center">
               <div className={`w-full max-w-[460px] rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
                 <div className="relative h-44">
-                  <img src={heroImage} alt="Template" className="absolute inset-0 h-full w-full object-cover" />
+                  <img
+                    src={heroImage}
+                    alt="Template"
+                    className="absolute inset-0 h-full w-full object-cover"
+                    onError={(e) => handleImageError(e)}
+                  />
                   <div className="absolute inset-0 bg-black/15" />
                 </div>
                 <div className="px-5 py-4 space-y-3">
@@ -1150,7 +1167,7 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                             item?.activity?.image ||
                             item?.imageUrl ||
                             item?.image ||
-                            "/assets/dest-1.jpeg";
+                            DEFAULT_ITINERARY_HERO;
                           const travelers = item?.travelers;
                           return (
                             <div
@@ -1161,6 +1178,7 @@ const SupplierRequests = ({ darkMode, resumeDraft, onDraftConsumed, onGoToBookin
                                 src={image}
                                 alt={title}
                                 className="h-9 w-10 rounded-lg object-cover shrink-0"
+                                onError={(e) => handleImageError(e)}
                               />
                               <div className="min-w-0 flex-1">
                                 <p className={`text-[11px] font-semibold truncate ${darkMode ? "text-white" : "text-slate-900"}`}>{title}</p>

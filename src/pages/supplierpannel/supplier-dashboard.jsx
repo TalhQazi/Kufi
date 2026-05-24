@@ -22,11 +22,12 @@ import SupplierProfile from "./supplier-profile";
 import SupplierRequests from "./supplier-requests";
 import SupplierHotels from "./supplier-hotels";
 import ProfilePic from "../../components/ui/ProfilePic";
+import { usePersistedDarkMode } from "../../hooks/usePersistedDarkMode";
 
 const SupplierDashboard = ({ onLogout, onHomeClick }) => {
   const [activeSection, setActiveSection] = useState("Dashboard");
   const [experienceView, setExperienceView] = useState("list");
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, handleToggleDarkMode] = usePersistedDarkMode('supplier');
   const [history, setHistory] = useState(["Dashboard"]);
   const [historyIndex, setHistoryIndex] = useState(0);
   // Show placeholder cards immediately so the user sees the layout right away
@@ -218,10 +219,6 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
       setActiveSection(nextSection);
       if (nextSection === "Experience") setExperienceView("list");
     }
-  };
-
-  const handleToggleDarkMode = () => {
-    setDarkMode((prev) => !prev);
   };
 
   return (

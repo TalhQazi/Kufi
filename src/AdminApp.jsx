@@ -28,13 +28,14 @@ import AdminProfile from './pages/adminpannel/AdminProfile'
 import AdminSettings from './pages/adminpannel/AdminSettings'
 import EmailSettings from './pages/adminpannel/EmailSettings'
 import HotelManagement from './pages/adminpannel/HotelManagement'
+import { usePersistedDarkMode } from './hooks/usePersistedDarkMode'
 import './App.css'
 
 
 const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
   const [activePage, setActivePage] = useState(initialPage)
   const [sidebarVisible, setSidebarVisible] = useState(true)
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isDarkMode, toggleDarkMode] = usePersistedDarkMode('admin')
   const [notificationCount, setNotificationCount] = useState(0)
   const [notifications, setNotifications] = useState([])
 
@@ -71,7 +72,6 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
   }
 
   const toggleSidebar = () => setSidebarVisible(!sidebarVisible)
-  const toggleDarkMode = () => setIsDarkMode(!isDarkMode)
 
   const renderPage = () => {
     if (activePage === 'Dashboard') return <Dashboard onNavigate={setActivePage} />

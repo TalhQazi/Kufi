@@ -5,6 +5,7 @@ import { useGoogleLogin } from '@react-oauth/google'
 import { FiMail, FiLock, FiGlobe, FiX } from 'react-icons/fi'
 import { Loader2 } from 'lucide-react'
 import api from '../../api'
+import { cacheDarkModeForUser } from '../../hooks/usePersistedDarkMode'
 
 
 const LegalModal = ({ isOpen, onClose, title, content, loading }) => {
@@ -82,6 +83,7 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                     localStorage.setItem('authToken', response.data.token);
                     localStorage.setItem('currentUser', JSON.stringify(response.data.user));
                     localStorage.setItem('userRole', response.data.user.role);
+                    cacheDarkModeForUser(response.data.user);
 
                     if (onLoginSuccess) onLoginSuccess(response.data.user.role);
                 }
@@ -117,6 +119,7 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                 localStorage.setItem('authToken', response.data.token)
                 localStorage.setItem('currentUser', JSON.stringify(response.data.user))
                 localStorage.setItem('userRole', response.data.user.role)
+                cacheDarkModeForUser(response.data.user)
 
                 if (rememberMe) {
                     localStorage.setItem('rememberedLogin', JSON.stringify({ email: emailOrUsername, password: password }))
