@@ -30,8 +30,10 @@ function parseBudgetValue(value) {
   if (value === null || value === undefined) return undefined;
   if (typeof value === "number" && Number.isFinite(value)) return value;
   const raw = String(value).trim();
-  if (!raw || raw === "—" || raw.toLowerCase() === "n/a") return undefined;
-  const num = Number(raw.replace(/[^0-9.]/g, ""));
+  if (!raw || raw === "—" || raw === "-" || /^n\/?a$/i.test(raw)) return undefined;
+  const match = raw.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
+  if (!match) return undefined;
+  const num = Number(match[1]);
   return Number.isFinite(num) ? num : undefined;
 }
 
@@ -48,7 +50,7 @@ function buildItineraryPayload(request) {
     request.experience ||
     "Trip";
 
-  return {
+  const payload = {
     userId: resolveTravelerUserId(request),
     title: destination,
     destination,
@@ -57,10 +59,16 @@ function buildItineraryPayload(request) {
     startDate: trip.arrivalDate || trip.startDate,
     endDate: trip.departureDate || trip.endDate,
     numberOfTravelers: trip.guests || trip.travelers || request.guests || request.travelers || 2,
-    budget: parseBudgetValue(trip.budget ?? request.amount),
     bookingId: request.id || request._id,
     tripData: trip,
   };
+
+  const budget = parseBudgetValue(trip.budget ?? request.amount);
+  if (budget !== undefined) {
+    payload.budget = budget;
+  }
+
+  return payload;
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
