@@ -2,6 +2,21 @@ import { useEffect, useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import api from "../../../api";
 
+const resolveImageUrl = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith("data:")) return raw;
+  if (raw.startsWith("/")) {
+    const base = String(api?.defaults?.baseURL || "")
+      .replace(/\/$/, "")
+      .replace(/\/api$/, "");
+    if (!base) return raw;
+    return `${base}${raw}`;
+  }
+  return raw;
+};
+
 // ─── Draggable activity card ─────────────────────────────────────────────────
 
 function DraggableCard({ activity, darkMode }) {
@@ -37,7 +52,7 @@ function DraggableCard({ activity, darkMode }) {
       >
         <div className="relative h-24 bg-gray-200 overflow-hidden">
           {activity.image ? (
-            <img src={activity.image} alt={activity.title} className="w-full h-full object-cover" />
+            <img src={resolveImageUrl(activity.image)} alt={activity.title} className="w-full h-full object-cover" />
           ) : (
             <div className={`w-full h-full flex items-center justify-center text-xs ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
               No image

@@ -104,6 +104,21 @@ function nightsBetween(start, end) {
   return Math.max(0, Math.round((b - a) / (1000 * 60 * 60 * 24)));
 }
 
+const resolveImageUrl = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith("data:")) return raw;
+  if (raw.startsWith("/")) {
+    const base = String(api?.defaults?.baseURL || "")
+      .replace(/\/$/, "")
+      .replace(/\/api$/, "");
+    if (!base) return raw;
+    return `${base}${raw}`;
+  }
+  return raw;
+};
+
 // ─── Sortable activity card inside a day ─────────────────────────────────────
 
 function SortableActivityCard({ activity, dayIndex, darkMode, onRemove }) {
@@ -140,7 +155,7 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove }) {
       {actUrl ? (
         <a href={actUrl} target="_blank" rel="noopener noreferrer" className="block shrink-0 w-16 h-16">
           <img
-            src={activity.image || "/assets/dest-1.jpeg"}
+            src={resolveImageUrl(activity.image) || "/assets/dest-1.jpeg"}
             alt={activity.title}
             className="w-full h-full object-cover"
           />
@@ -148,7 +163,7 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove }) {
       ) : (
         <div className="shrink-0 w-16 h-16">
           <img
-            src={activity.image || "/assets/dest-1.jpeg"}
+            src={resolveImageUrl(activity.image) || "/assets/dest-1.jpeg"}
             alt={activity.title}
             className="w-full h-full object-cover"
           />
@@ -737,7 +752,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, onGoToBoo
         {activeDragData?.activity && (
           <div className={`rounded-xl border shadow-xl overflow-hidden w-36 opacity-90 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
             <img
-              src={activeDragData.activity.image || "/assets/dest-1.jpeg"}
+              src={resolveImageUrl(activeDragData.activity.image) || "/assets/dest-1.jpeg"}
               alt=""
               className="w-full h-20 object-cover"
             />

@@ -172,7 +172,9 @@ const CategoryManagement = () => {
         if (raw.startsWith('data:')) return raw
         // Legacy support: if backend previously returned relative paths
         if (raw.startsWith('/')) {
-            const base = String(api?.defaults?.baseURL || '').replace(/\/$/, '')
+            const base = String(api?.defaults?.baseURL || '')
+                .replace(/\/$/, '')
+                .replace(/\/api$/, '')
             if (!base) return raw
             return `${base}${raw}`
         }
