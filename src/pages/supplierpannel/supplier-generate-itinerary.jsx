@@ -14,10 +14,45 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarDays, DollarSign, GripVertical, MapPin, Users } from "lucide-react";
+import { CalendarDays, DollarSign, GripVertical, MapPin, Sparkles, Users } from "lucide-react";
 import api from "../../api";
+import { PROCEED_WITH_AI_LABEL } from "../../constants/itineraryLabels";
 import ItineraryActivityPool from "./components/ItineraryActivityPool";
 import ItineraryControlPanel from "./components/ItineraryControlPanel";
+
+function resolveTravelerUserId(request) {
+  const user = request?.user;
+  if (typeof user === "string") return user;
+  return user?._id || user?.id || request?.userId || null;
+}
+
+function buildItineraryPayload(request) {
+  const trip = request?.tripDetails || {};
+  const country = trip.country || request.country || "";
+  const city = trip.city || request.city || "";
+  const destination =
+    trip.destination ||
+    trip.location ||
+    city ||
+    country ||
+    request.location ||
+    request.experience ||
+    "Trip";
+
+  return {
+    userId: resolveTravelerUserId(request),
+    title: destination,
+    destination,
+    country,
+    city: city || country,
+    startDate: trip.arrivalDate || trip.startDate,
+    endDate: trip.departureDate || trip.endDate,
+    numberOfTravelers: trip.guests || trip.travelers || request.guests || request.travelers || 2,
+    budget: trip.budget || request.amount,
+    bookingId: request.id || request._id,
+    tripData: trip,
+  };
+}
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -219,6 +254,8 @@ export default function SupplierGenerateItinerary({ darkMode, request, onGoToBoo
   const [daysData, setDaysData] = useState([]);
   const [activeDay, setActiveDay] = useState(0);
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [activeDragId, setActiveDragId] = useState(null);
@@ -230,72 +267,98 @@ export default function SupplierGenerateItinerary({ darkMode, request, onGoToBoo
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  // ── Load itinerary from request ─────────────────────────────────────────────
-  useEffect(() => {
-    async function loadOrCreate() {
-      if (!request) return;
+  const requestKey = request?.id || request?._id;
 
-      const existingId = request.itineraryId || request._id;
-      let itin = null;
-
-      if (existingId) {
-        try {
-          const res = await api.get(`/itineraries/${existingId}`);
-          itin = res.data;
-        } catch {
-          itin = null;
-        }
-      }
-
-      if (!itin) {
-        try {
-          const payload = {
-            userId: request.userId || request.user?._id,
-            title: request.tripDetails?.destination || request.destination || "Trip",
-            destination: request.tripDetails?.destination || request.destination || "",
-            country: request.tripDetails?.country || request.country || "",
-            city: request.tripDetails?.city || request.city || request.tripDetails?.destination || "",
-            startDate: request.tripDetails?.arrivalDate || request.tripDetails?.startDate,
-            endDate: request.tripDetails?.departureDate || request.tripDetails?.endDate,
-            numberOfTravelers: request.tripDetails?.guests || request.tripDetails?.travelers || 2,
-            budget: request.tripDetails?.budget,
-            bookingId: request._id,
-            tripData: request.tripDetails || {},
-          };
-          const res = await api.post("/itineraries", payload);
-          itin = res.data;
-        } catch (err) {
-          console.error("Failed to create itinerary", err);
-          return;
-        }
-      }
-
-      setItinerary(itin);
-
-      if (Array.isArray(itin.days) && itin.days.length > 0) {
-        setDaysData(itin.days);
-      } else if (!generateCalledRef.current) {
-        generateCalledRef.current = true;
-        triggerGenerate(itin);
+  async function resolveItineraryRecord() {
+    if (request?.itineraryId) {
+      try {
+        const res = await api.get(`/itineraries/${request.itineraryId}`);
+        return res.data;
+      } catch {
+        // fall through
       }
     }
-    loadOrCreate();
-  }, [request]);
 
-  async function triggerGenerate(itin) {
+    const bookingId = request?.id || request?._id;
+    if (bookingId) {
+      try {
+        const res = await api.get(`/itineraries/booking/${bookingId}`);
+        return res.data;
+      } catch {
+        // not found yet — create below
+      }
+    }
+
+    const payload = buildItineraryPayload(request);
+    if (!payload.userId) {
+      throw new Error("Traveler account is missing on this booking. Cannot create itinerary.");
+    }
+
+    const res = await api.post("/itineraries", payload);
+    return res.data;
+  }
+
+  async function triggerGenerate(itin, { force = false } = {}) {
     if (!itin?._id) return;
     setGenerating(true);
+    setGenerateError("");
     try {
       const res = await api.post(`/itineraries/${itin._id}/generate`);
       const updated = res.data.itinerary || res.data;
       setItinerary(updated);
       setDaysData(Array.isArray(updated.days) ? updated.days : []);
+      if (!updated?.days?.length) {
+        setGenerateError("AI generation finished but no days were returned. Try again.");
+      }
     } catch (err) {
+      const msg =
+        err?.response?.data?.msg ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "AI itinerary generation failed.";
       console.error("Generate failed", err);
+      setGenerateError(msg);
+      if (force) generateCalledRef.current = false;
     } finally {
       setGenerating(false);
     }
   }
+
+  // ── Load itinerary from request ─────────────────────────────────────────────
+  useEffect(() => {
+    generateCalledRef.current = false;
+    setLoadError("");
+    setGenerateError("");
+    setItinerary(null);
+    setDaysData([]);
+
+    async function loadOrCreate() {
+      if (!request) return;
+
+      try {
+        const itin = await resolveItineraryRecord();
+        setItinerary(itin);
+        setLoadError("");
+
+        if (Array.isArray(itin.days) && itin.days.length > 0) {
+          setDaysData(itin.days);
+        } else if (!generateCalledRef.current) {
+          generateCalledRef.current = true;
+          await triggerGenerate(itin);
+        }
+      } catch (err) {
+        const msg =
+          err?.response?.data?.msg ||
+          err?.response?.data?.error ||
+          err?.message ||
+          "Failed to create itinerary for this request.";
+        console.error("Failed to load/create itinerary", err);
+        setLoadError(msg);
+      }
+    }
+
+    loadOrCreate();
+  }, [requestKey]);
 
   // ── All activityIds already placed in days ──────────────────────────────────
   const assignedActivityIds = useMemo(() => {
@@ -468,7 +531,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, onGoToBoo
               ← Back
             </button>
           )}
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className={`text-base font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
               {itinerary?.title || "Build Itinerary"}
             </h1>
@@ -481,7 +544,38 @@ export default function SupplierGenerateItinerary({ darkMode, request, onGoToBoo
               )}
             </p>
           </div>
+          {itinerary?._id && !generating && (
+            <button
+              type="button"
+              onClick={() => triggerGenerate(itinerary, { force: true })}
+              className="inline-flex items-center gap-2 rounded-full bg-[#a26e35] px-4 py-2 text-[11px] font-semibold text-white hover:bg-[#8b5e2d] transition-colors shrink-0"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>{PROCEED_WITH_AI_LABEL}</span>
+            </button>
+          )}
         </div>
+
+        {loadError && (
+          <div className={`rounded-2xl border px-4 py-3 mb-4 text-sm ${darkMode ? "bg-rose-950/40 border-rose-900 text-rose-300" : "bg-rose-50 border-rose-200 text-rose-700"}`}>
+            {loadError}
+          </div>
+        )}
+
+        {generateError && (
+          <div className={`rounded-2xl border px-4 py-3 mb-4 text-sm ${darkMode ? "bg-amber-950/40 border-amber-900 text-amber-200" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+            {generateError}
+            {itinerary?._id && (
+              <button
+                type="button"
+                onClick={() => triggerGenerate(itinerary, { force: true })}
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold underline"
+              >
+                Retry AI generation
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Generating overlay */}
         {generating && (
