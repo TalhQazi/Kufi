@@ -29,6 +29,7 @@ import AdminSettings from './pages/adminpannel/AdminSettings'
 import EmailSettings from './pages/adminpannel/EmailSettings'
 import HotelManagement from './pages/adminpannel/HotelManagement'
 import { usePersistedDarkMode } from './hooks/usePersistedDarkMode'
+import { queueItineraryAiGeneration } from './constants/itineraryLabels'
 import './App.css'
 
 
@@ -94,7 +95,15 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
         />
       )
     if (activePage === 'Supplier Dashboard') return <SupplierDashboard onLogout={onLogout} onHomeClick={onHomeClick} />
-    if (activePage === 'Booking Notifications') return <NotificationsBooking />
+    if (activePage === 'Booking Notifications')
+      return (
+        <NotificationsBooking
+          onProceedWithAI={(requestId) => {
+            queueItineraryAiGeneration(requestId, 'generate')
+            setActivePage('Supplier Dashboard')
+          }}
+        />
+      )
     if (activePage === 'Manage Countries') return <CountryManagement />
     if (activePage === 'Manage Cities') return <CityManagement />
     if (activePage === 'Manage Categories') return <CategoryManagement />

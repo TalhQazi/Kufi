@@ -1,6 +1,7 @@
 import api from "../../api";
 import React, { useState, useEffect } from "react";
-import { Search, Clock3, User, MapPin, Info, CheckCircle2, AlertTriangle, Loader2, ExternalLink, ArrowRight, X } from "lucide-react";
+import { Search, Clock3, User, MapPin, Info, CheckCircle2, AlertTriangle, Loader2, ExternalLink, ArrowRight, X, Sparkles } from "lucide-react";
+import { PROCEED_WITH_AI_LABEL } from "../../constants/itineraryLabels";
 
 const tabs = [
   { label: "All", value: "all" },
@@ -9,7 +10,7 @@ const tabs = [
   { label: "Expired (24h)", value: "expired" },
 ];
 
-const NotificationsBooking = () => {
+const NotificationsBooking = ({ onProceedWithAI }) => {
   const [activeTab, setActiveTab] = useState("all");
   const [requests, setRequests] = useState([]);
   const [systemNotifications, setSystemNotifications] = useState([]);
@@ -582,6 +583,17 @@ const NotificationsBooking = () => {
                   >
                     <span>{req.statusLabel}</span>
                   </span>
+
+                  {req.status === 'accepted' && onProceedWithAI ? (
+                    <button
+                      type="button"
+                      onClick={() => onProceedWithAI(req.id)}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-[10px] sm:text-xs font-semibold text-center bg-[#a26e35] text-white hover:bg-[#8b5e2d] transition-colors"
+                    >
+                      <Sparkles className="w-4 h-4 shrink-0" />
+                      <span>{PROCEED_WITH_AI_LABEL}</span>
+                    </button>
+                  ) : null}
 
                   {req.status !== 'transferred' ? (
                     <button

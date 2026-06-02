@@ -23,9 +23,12 @@ import SupplierRequests from "./supplier-requests";
 import SupplierHotels from "./supplier-hotels";
 import ProfilePic from "../../components/ui/ProfilePic";
 import { usePersistedDarkMode } from "../../hooks/usePersistedDarkMode";
+import { consumeQueuedItineraryAiGeneration } from "../../constants/itineraryLabels";
 
 const SupplierDashboard = ({ onLogout, onHomeClick }) => {
   const [activeSection, setActiveSection] = useState("Dashboard");
+  const [queuedItineraryRequestId, setQueuedItineraryRequestId] = useState(null);
+  const [queuedItineraryView, setQueuedItineraryView] = useState(null);
   const [experienceView, setExperienceView] = useState("list");
   const [darkMode, handleToggleDarkMode] = usePersistedDarkMode('supplier');
   const [history, setHistory] = useState(["Dashboard"]);
@@ -50,6 +53,17 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [resumeItineraryDraft, setResumeItineraryDraft] = useState(null);
+
+  useEffect(() => {
+    const queued = consumeQueuedItineraryAiGeneration();
+    if (queued?.requestId) {
+      setQueuedItineraryRequestId(queued.requestId);
+      setQueuedItineraryView(queued.view);
+      setActiveSection("Requests");
+      setHistory(["Dashboard", "Requests"]);
+      setHistoryIndex(1);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchSupplierDashboard = async () => {
@@ -517,6 +531,12 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
             resumeDraft={resumeItineraryDraft}
             onDraftConsumed={() => setResumeItineraryDraft(null)}
             onGoToBookings={() => navigateTo("Booking")}
+            initialItineraryRequestId={queuedItineraryRequestId}
+            initialView={queuedItineraryView}
+            onInitialNavigationConsumed={() => {
+              setQueuedItineraryRequestId(null);
+              setQueuedItineraryView(null);
+            }}
           />
         )}
       </div>
