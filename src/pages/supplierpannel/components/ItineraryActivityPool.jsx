@@ -105,7 +105,7 @@ export default function ItineraryActivityPool({ darkMode, itinerary, assignedAct
       try {
         const [catRes, actRes] = await Promise.all([
           api.get("/categories"),
-          api.get("/activities"),
+          api.get("/activities?includeImages=true"),
         ]);
 
         setCategories(catRes.data || []);
