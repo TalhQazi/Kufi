@@ -35,7 +35,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, onSaved }) 
         hotelId: itinerary.controlPanel.hotelId?._id || itinerary.controlPanel.hotelId || "",
       });
     }
-  }, [itinerary?._id]);
+  }, [itinerary]);
 
   // Fetch hotels for country/city
   useEffect(() => {

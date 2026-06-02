@@ -6,6 +6,7 @@ import {
   closestCenter,
   useSensor,
   useSensors,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -205,6 +206,11 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity }) 
 
   const dayTotal = activities.reduce((sum, a) => sum + (Number(a.price) || 0), 0);
 
+  const { setNodeRef } = useDroppable({
+    id: `day-${day.day - 1}`,
+    data: { source: "day", dayIndex: day.day - 1 },
+  });
+
   return (
     <div className="h-full flex flex-col">
       {/* Arrival / departure banner */}
@@ -227,6 +233,7 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity }) 
       {/* Drop zone */}
       <SortableContext items={activities.map(a => a.id)} strategy={verticalListSortingStrategy}>
         <div
+          ref={setNodeRef}
           className={`flex-1 min-h-[160px] rounded-xl border-2 border-dashed transition-colors p-2 space-y-2 ${
             isActiveProp
               ? darkMode ? "border-amber-500 bg-amber-900/10" : "border-amber-400 bg-amber-50"
@@ -359,7 +366,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, onGoToBoo
         setItinerary(itin);
         setLoadError("");
 
-        if (Array.isArray(itin.days) && itin.days.length > 0) {
+        if (Array.isArray(itin.days) && itin.days.length > 0 && itin.aiGenerated) {
           setDaysData(itin.days);
         } else if (!generateCalledRef.current) {
           generateCalledRef.current = true;
