@@ -26,6 +26,15 @@ function resolveTravelerUserId(request) {
   return user?._id || user?.id || request?.userId || null;
 }
 
+function parseBudgetValue(value) {
+  if (value === null || value === undefined) return undefined;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const raw = String(value).trim();
+  if (!raw || raw === "—" || raw.toLowerCase() === "n/a") return undefined;
+  const num = Number(raw.replace(/[^0-9.]/g, ""));
+  return Number.isFinite(num) ? num : undefined;
+}
+
 function buildItineraryPayload(request) {
   const trip = request?.tripDetails || {};
   const country = trip.country || request.country || "";
@@ -48,7 +57,7 @@ function buildItineraryPayload(request) {
     startDate: trip.arrivalDate || trip.startDate,
     endDate: trip.departureDate || trip.endDate,
     numberOfTravelers: trip.guests || trip.travelers || request.guests || request.travelers || 2,
-    budget: trip.budget || request.amount,
+    budget: parseBudgetValue(trip.budget ?? request.amount),
     bookingId: request.id || request._id,
     tripData: trip,
   };
@@ -307,7 +316,9 @@ export default function SupplierGenerateItinerary({ darkMode, request, onGoToBoo
       const updated = res.data.itinerary || res.data;
       setItinerary(updated);
       setDaysData(Array.isArray(updated.days) ? updated.days : []);
-      if (!updated?.days?.length) {
+      if (res.data?.warning) {
+        setGenerateError(res.data.warning);
+      } else if (!updated?.days?.length) {
         setGenerateError("AI generation finished but no days were returned. Try again.");
       }
     } catch (err) {

@@ -200,9 +200,13 @@ const SupplierRequests = ({
             ? Number(bookingLevelGuests)
             : fallbackItemGuests;
 
+        const travelerUserId =
+          r.user?._id || r.user?.id || (typeof r.user === "string" ? r.user : null) || r.userId || null;
+
         return {
           ...r,
           id: bookingId,
+          userId: travelerUserId,
           // Prefer populated user fields, then contactDetails, then fallback
           name: (r.contactDetails?.firstName ? `${r.contactDetails.firstName} ${r.contactDetails.lastName || ''}`.trim() : "") || r.user?.name || (r.name ?? r.travelerName ?? r.userName ?? "—"),
           email: r.contactDetails?.email || r.user?.email || r.email || r.contactEmail || r.travelerEmail || "",
