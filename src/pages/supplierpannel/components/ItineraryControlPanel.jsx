@@ -14,7 +14,7 @@ const DEFAULT_CP = {
   budgetUplift: 15,
 };
 
-export default function ItineraryControlPanel({ darkMode, itinerary, onSaved }) {
+export default function ItineraryControlPanel({ darkMode, itinerary, onSaved, onChange }) {
   const [cp, setCp] = useState(DEFAULT_CP);
   const [hotels, setHotels] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -48,7 +48,14 @@ export default function ItineraryControlPanel({ darkMode, itinerary, onSaved }) 
       .catch(() => setHotels([]));
   }, [country, city]);
 
-  const set = (key, value) => setCp(prev => ({ ...prev, [key]: value }));
+  const set = (key, value) => {
+    setCp(prev => {
+      const next = { ...prev, [key]: value };
+      const selectedHotel = hotels.find(h => h._id === next.hotelId) || null;
+      onChange?.(next, selectedHotel);
+      return next;
+    });
+  };
 
   // Per-day overrides helpers
   const tripDates = buildTripDates(itinerary);
@@ -62,7 +69,10 @@ export default function ItineraryControlPanel({ darkMode, itinerary, onSaved }) 
       } else {
         overrides.push({ date, [field]: value });
       }
-      return { ...prev, perDayOverrides: overrides };
+      const next = { ...prev, perDayOverrides: overrides };
+      const selectedHotel = hotels.find(h => h._id === next.hotelId) || null;
+      onChange?.(next, selectedHotel);
+      return next;
     });
   }
 

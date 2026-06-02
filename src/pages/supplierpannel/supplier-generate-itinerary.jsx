@@ -300,6 +300,8 @@ export default function SupplierGenerateItinerary({ darkMode, request, onGoToBoo
   const [activeDragId, setActiveDragId] = useState(null);
   const [activeDragData, setActiveDragData] = useState(null);
   const [overDayIndex, setOverDayIndex] = useState(null);
+  const [localCP, setLocalCP] = useState(null);
+  const [localHotel, setLocalHotel] = useState(null);
   const generateCalledRef = useRef(false);
 
   const sensors = useSensors(
@@ -372,6 +374,8 @@ export default function SupplierGenerateItinerary({ darkMode, request, onGoToBoo
     setGenerateError("");
     setItinerary(null);
     setDaysData([]);
+    setLocalCP(null);
+    setLocalHotel(null);
 
     async function loadOrCreate() {
       if (!request) return;
@@ -526,13 +530,18 @@ export default function SupplierGenerateItinerary({ darkMode, request, onGoToBoo
     }
   }
 
+  const handleControlPanelChange = useCallback((newCp, selectedHotel) => {
+    setLocalCP(newCp);
+    setLocalHotel(selectedHotel);
+  }, []);
+
   // ── Summary calculations ─────────────────────────────────────────────────────
 
-  const hotelData = itinerary?.controlPanel?.hotelId;
+  const hotelData = localCP ? localHotel : itinerary?.controlPanel?.hotelId;
   const nights = nightsBetween(itinerary?.startDate, itinerary?.endDate);
-  const rooms = itinerary?.controlPanel?.numberOfRooms || 1;
+  const rooms = localCP ? localCP.numberOfRooms : (itinerary?.controlPanel?.numberOfRooms || 1);
   const hotelCost = hotelData?.pricePerNight ? hotelData.pricePerNight * nights * rooms : 0;
-  const upliftPct = itinerary?.controlPanel?.budgetUplift ?? 0.15;
+  const upliftPct = localCP ? (localCP.budgetUplift / 100) : (itinerary?.controlPanel?.budgetUplift ?? 0.15);
 
   const activitiesTotal = useMemo(() =>
     daysData.reduce((sum, d) =>
@@ -741,7 +750,12 @@ export default function SupplierGenerateItinerary({ darkMode, request, onGoToBoo
             <ItineraryControlPanel
               darkMode={darkMode}
               itinerary={itinerary}
-              onSaved={updated => setItinerary(updated)}
+              onSaved={updated => {
+                setItinerary(updated);
+                setLocalCP(null);
+                setLocalHotel(null);
+              }}
+              onChange={handleControlPanelChange}
             />
           </div>
         </div>
