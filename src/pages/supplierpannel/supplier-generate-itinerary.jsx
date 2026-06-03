@@ -288,7 +288,7 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity }) 
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function SupplierGenerateItinerary({ darkMode, request, onGoToBookings, onBack }) {
+export default function SupplierGenerateItinerary({ darkMode, request, draft, mode = "ai", onGoToBookings, onBack }) {
   const [itinerary, setItinerary] = useState(null);
   const [daysData, setDaysData] = useState([]);
   const [activeDay, setActiveDay] = useState(0);
@@ -339,12 +339,12 @@ export default function SupplierGenerateItinerary({ darkMode, request, onGoToBoo
     return res.data;
   }
 
-  async function triggerGenerate(itin, { force = false } = {}) {
+  async function triggerGenerate(itin, { force = false, genMode = mode } = {}) {
     if (!itin?._id) return;
     setGenerating(true);
     setGenerateError("");
     try {
-      const res = await api.post(`/itineraries/${itin._id}/generate`);
+      const res = await api.post(`/itineraries/${itin._id}/generate`, { mode: genMode });
       const updated = res.data.itinerary || res.data;
       setItinerary(updated);
       setDaysData(Array.isArray(updated.days) ? updated.days : []);
@@ -389,7 +389,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, onGoToBoo
           setDaysData(itin.days);
         } else if (!generateCalledRef.current) {
           generateCalledRef.current = true;
-          await triggerGenerate(itin);
+          await triggerGenerate(itin, { genMode: mode });
         }
       } catch (err) {
         const msg =

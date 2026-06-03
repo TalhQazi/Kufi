@@ -23,6 +23,8 @@ const About = lazy(() => import('./pages/userpannel/About.jsx'))
 const BlogListing = lazy(() => import('./pages/userpannel/BlogListing.jsx'))
 const ResetPassword = lazy(() => import('./pages/userpannel/ResetPassword.jsx'))
 const AdminApp = lazy(() => import('./AdminApp.jsx'))
+const SupplierDashboard = lazy(() => import('./pages/supplierpannel/supplier-dashboard.jsx'))
+
 
 import Header from './components/layout/Header.jsx'
 import Footer from './components/layout/Footer.jsx'
@@ -391,7 +393,7 @@ export default function App() {
     if (role === 'admin') {
       navigateTo('admin')
     } else if (role === 'supplier') {
-      navigateTo('supplier')
+      navigateTo('supplier-profile')
     } else {
       navigateTo('user-profile')
     }
@@ -464,7 +466,7 @@ export default function App() {
         return
       }
 
-      if (role === 'supplier' && newPage !== 'supplier') {
+      if (role === 'supplier' && !String(newPage || '').startsWith('supplier')) {
         setIsPopState(true);
         setPage('supplier');
         window.history.replaceState({ page: 'supplier' }, '', '#supplier')
@@ -913,14 +915,44 @@ export default function App() {
     return <AdminApp initialPage="Settings" onLogout={handleLogout} onHomeClick={() => navigateTo('admin')} />
   }
 
-  if (page === 'supplier') {
+  if (page.startsWith('supplier')) {
     const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
     if (!hasAuthToken() || role !== 'supplier') {
       if (window.location.hash !== '#home') window.location.hash = '#home'
       if (!showModal) setShowModal('login')
       return renderUserPage()
     }
-    return <AdminApp initialPage="Supplier Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('supplier')} />
+    let initialSection = "Dashboard"
+    let initialTab = undefined
+    if (page === 'supplier-experience') {
+      initialSection = "Experience"
+    } else if (page === 'supplier-booking') {
+      initialSection = "Booking"
+    } else if (page === 'supplier-analytics') {
+      initialSection = "Analytics"
+    } else if (page === 'supplier-profile') {
+      initialSection = "Profile"
+      initialTab = "Profile"
+    } else if (page === 'supplier-settings') {
+      initialSection = "Profile"
+      initialTab = "Settings"
+    } else if (page === 'supplier-requests') {
+      initialSection = "Requests"
+    } else if (page === 'supplier-hotels') {
+      initialSection = "Hotels"
+    }
+    return (
+      <SupplierDashboard 
+        initialSection={initialSection}
+        initialTab={initialTab}
+        onLogout={handleLogout} 
+        onHomeClick={() => navigateTo('home')} 
+        onBack={goBack}
+        onForward={goForward}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+      />
+    )
   }
 
   const hideUniversalHeaderFooter =
@@ -929,7 +961,8 @@ export default function App() {
     page === 'travel-booking' ||
    page === 'payment' ||
     page === 'explore' ||
-    page === 'reset-password'
+    page === 'reset-password' ||
+    page.startsWith('supplier')
 
   return (
     <div className="flex flex-col min-h-screen">

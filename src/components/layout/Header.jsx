@@ -189,6 +189,9 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                                                 if (currentUser.role === 'admin') {
                                                     window.location.hash = '#admin-profile';
                                                     setProfileDropdownOpen(false);
+                                                } else if (currentUser.role === 'supplier') {
+                                                    window.location.hash = '#supplier-profile';
+                                                    setProfileDropdownOpen(false);
                                                 } else if (onProfileClick) {
                                                     onProfileClick();
                                                     setProfileDropdownOpen(false);
@@ -228,7 +231,7 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                                                 if (currentUser.role === 'admin') {
                                                     window.location.hash = '#admin-settings';
                                                 } else if (currentUser.role === 'supplier') {
-                                                    window.location.hash = '#supplier';
+                                                    window.location.hash = '#supplier-settings';
                                                 } else {
                                                     if (onSettingsClick) {
                                                         onSettingsClick()
@@ -306,9 +309,13 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                                             <p className="text-xs text-slate-500">{currentUser.email}</p>
                                         </div>
                                     </div>
-                                    <button
+                                     <button
                                         onClick={() => {
-                                            onProfileClick && onProfileClick()
+                                            if (currentUser.role === 'supplier') {
+                                                window.location.hash = '#supplier-profile';
+                                            } else {
+                                                onProfileClick && onProfileClick()
+                                            }
                                             setMobileMenuOpen(false)
                                         }}
                                         className="flex items-center gap-3 py-2 px-1 text-slate-700 font-medium"
@@ -319,9 +326,9 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
                                     <button
                                         onClick={() => {
                                             if (currentUser.role === 'admin') {
-                                                window.location.hash = '#admin';
+                                                window.location.hash = '#admin-settings';
                                             } else if (currentUser.role === 'supplier') {
-                                                window.location.hash = '#supplier';
+                                                window.location.hash = '#supplier-settings';
                                             } else {
                                                 window.location.hash = '#traveler-profile';
                                             }

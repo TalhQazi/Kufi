@@ -2,11 +2,17 @@ import React, { useRef, useState, useEffect } from "react";
 import { Check, Upload, Mail, Phone, MapPin, Info, Building } from "lucide-react";
 import api from "../../api";
 
-const SupplierProfile = ({ darkMode }) => {
+const SupplierProfile = ({ darkMode, initialTab }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState('Profile');
+  const [activeTab, setActiveTab] = useState(initialTab || 'Profile');
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [passwordError, setPasswordError] = useState('');

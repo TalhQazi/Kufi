@@ -25,12 +25,27 @@ import ProfilePic from "../../components/ui/ProfilePic";
 import { usePersistedDarkMode } from "../../hooks/usePersistedDarkMode";
 import { consumeQueuedItineraryAiGeneration } from "../../constants/itineraryLabels";
 
-const SupplierDashboard = ({ onLogout, onHomeClick }) => {
-  const [activeSection, setActiveSection] = useState("Dashboard");
+const SupplierDashboard = ({ 
+  onLogout, 
+  onHomeClick, 
+  initialSection = "Dashboard", 
+  initialTab, 
+  onBack, 
+  onForward, 
+  canGoBack, 
+  canGoForward 
+}) => {
+  const [activeSection, setActiveSection] = useState(initialSection);
   const [queuedItineraryRequestId, setQueuedItineraryRequestId] = useState(null);
   const [queuedItineraryView, setQueuedItineraryView] = useState(null);
   const [experienceView, setExperienceView] = useState("list");
   const [darkMode, handleToggleDarkMode] = usePersistedDarkMode('supplier');
+
+  useEffect(() => {
+    if (initialSection) {
+      setActiveSection(initialSection);
+    }
+  }, [initialSection]);
   const [history, setHistory] = useState(["Dashboard"]);
   const [historyIndex, setHistoryIndex] = useState(0);
   // Show placeholder cards immediately so the user sees the layout right away
@@ -207,32 +222,10 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
   }, [activeSection]);
 
   const navigateTo = (section, resetExperienceView = true) => {
-    if (section === activeSection && (!resetExperienceView || experienceView === "list")) return;
-
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(section);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-    setActiveSection(section);
+    const sectionLower = String(section || '').toLowerCase();
+    const hash = sectionLower === 'dashboard' ? 'supplier' : `supplier-${sectionLower}`;
+    window.location.hash = `#${hash}`;
     if (resetExperienceView) setExperienceView("list");
-  };
-
-  const goBack = () => {
-    if (historyIndex > 0) {
-      const prevSection = history[historyIndex - 1];
-      setHistoryIndex(historyIndex - 1);
-      setActiveSection(prevSection);
-      if (prevSection === "Experience") setExperienceView("list");
-    }
-  };
-
-  const goForward = () => {
-    if (historyIndex < history.length - 1) {
-      const nextSection = history[historyIndex + 1];
-      setHistoryIndex(historyIndex + 1);
-      setActiveSection(nextSection);
-      if (nextSection === "Experience") setExperienceView("list");
-    }
   };
 
   return (
@@ -246,22 +239,23 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
         onLogout={onLogout}
         darkMode={darkMode}
         onToggleDarkMode={handleToggleDarkMode}
+        onHomeClick={onHomeClick}
       />
 
       <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-y-auto">
         <div className={`mb-4 flex items-center justify-between rounded-b-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900 border-b border-slate-800" : "bg-white"}`}>
           <div className="flex items-center gap-2">
             <button
-              onClick={goBack}
-              disabled={historyIndex === 0}
-              className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${historyIndex === 0 ? "opacity-50 cursor-not-allowed" : ""} ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+              onClick={onBack}
+              disabled={!canGoBack}
+              className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${!canGoBack ? "opacity-50 cursor-not-allowed" : ""} ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
             >
               <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             <button
-              onClick={goForward}
-              disabled={historyIndex === history.length - 1}
-              className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${historyIndex === history.length - 1 ? "opacity-50 cursor-not-allowed" : ""} ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+              onClick={onForward}
+              disabled={!canGoForward}
+              className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${!canGoForward ? "opacity-50 cursor-not-allowed" : ""} ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
             >
               <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
@@ -276,14 +270,19 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
               <span className="absolute -top-0.5 -right-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-red-500 border-2 border-white" />
             </button>
             <button
-              onClick={() => navigateTo("Profile")}
+              onClick={() => { window.location.hash = "#supplier-settings"; }}
               className={`hidden sm:flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+              title="Settings"
             >
               <Settings className="w-4 h-4" />
             </button>
-            <div className="hidden sm:block">
+            <button
+              onClick={() => { window.location.hash = "#supplier-profile"; }}
+              className="hidden sm:block focus:outline-none hover:opacity-85 transition-opacity"
+              title="Profile"
+            >
               <ProfilePic user={JSON.parse(localStorage.getItem('currentUser'))} size="sm" />
-            </div>
+            </button>
           </div>
         </div>
 
@@ -523,7 +522,7 @@ const SupplierDashboard = ({ onLogout, onHomeClick }) => {
           />
         )}
         {activeSection === "Analytics" && <SupplierAnalytics darkMode={darkMode} />}
-        {activeSection === "Profile" && <SupplierProfile darkMode={darkMode} />}
+        {activeSection === "Profile" && <SupplierProfile darkMode={darkMode} initialTab={initialTab} />}
         {activeSection === "Hotels" && <SupplierHotels darkMode={darkMode} />}
         {activeSection === "Requests" && (
           <SupplierRequests
