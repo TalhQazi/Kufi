@@ -589,7 +589,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, draft, mo
               {itinerary?.destination || ""}
               {itinerary?.aiGenerated && (
                 <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${darkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700"}`}>
-                  AI Generated
+                  {itinerary?.generationSource === 'template' ? 'Template Generated' : 'AI Generated'}
                 </span>
               )}
             </p>
