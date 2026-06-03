@@ -490,6 +490,7 @@ const SupplierDashboard = ({
             darkMode={darkMode}
             view={experienceView}
             onViewChange={setExperienceView}
+            navigateTo={navigateTo}
           />
         )}
         {activeSection === "Booking" && (

@@ -892,7 +892,11 @@ export default function App() {
       if (!showModal) setShowModal('login')
       return renderUserPage()
     }
-    return <AdminApp initialPage="Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('admin')} />
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a26e35]"></div></div>}>
+        <AdminApp initialPage="Dashboard" onLogout={handleLogout} onHomeClick={() => navigateTo('admin')} />
+      </Suspense>
+    )
   }
 
   if (page === 'admin-profile') {
@@ -902,7 +906,11 @@ export default function App() {
       if (!showModal) setShowModal('login')
       return renderUserPage()
     }
-    return <AdminApp initialPage="Profile" onLogout={handleLogout} onHomeClick={() => navigateTo('admin')} />
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a26e35]"></div></div>}>
+        <AdminApp initialPage="Profile" onLogout={handleLogout} onHomeClick={() => navigateTo('admin')} />
+      </Suspense>
+    )
   }
 
   if (page === 'admin-settings') {
@@ -912,7 +920,11 @@ export default function App() {
       if (!showModal) setShowModal('login')
       return renderUserPage()
     }
-    return <AdminApp initialPage="Settings" onLogout={handleLogout} onHomeClick={() => navigateTo('admin')} />
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a26e35]"></div></div>}>
+        <AdminApp initialPage="Settings" onLogout={handleLogout} onHomeClick={() => navigateTo('admin')} />
+      </Suspense>
+    )
   }
 
   if (page.startsWith('supplier')) {
@@ -942,16 +954,18 @@ export default function App() {
       initialSection = "Hotels"
     }
     return (
-      <SupplierDashboard 
-        initialSection={initialSection}
-        initialTab={initialTab}
-        onLogout={handleLogout} 
-        onHomeClick={() => navigateTo('home')} 
-        onBack={goBack}
-        onForward={goForward}
-        canGoBack={canGoBack}
-        canGoForward={canGoForward}
-      />
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a26e35]"></div></div>}>
+        <SupplierDashboard 
+          initialSection={initialSection}
+          initialTab={initialTab}
+          onLogout={handleLogout} 
+          onHomeClick={() => navigateTo('home')} 
+          onBack={goBack}
+          onForward={goForward}
+          canGoBack={canGoBack}
+          canGoForward={canGoForward}
+        />
+      </Suspense>
     )
   }
 
