@@ -419,7 +419,7 @@ export default function App() {
 
   useEffect(() => {
     const handleNavigationChange = (event) => {
-      const newPage = (event.type === 'popstate' ? event.state?.page : window.location.hash.slice(1)) || 'home';
+      const newPage = (event.type === 'popstate' && event.state?.page ? event.state.page : window.location.hash.slice(1)) || 'home';
       const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
       const isAdminRoute = String(newPage || '').startsWith('admin')
       const isSupplierRoute = String(newPage || '').startsWith('supplier')
@@ -493,6 +493,10 @@ export default function App() {
       const pageIndex = history.indexOf(newPage);
       if (pageIndex !== -1) {
         setCurrentIndex(pageIndex);
+      } else {
+        const newHistory = [...history, newPage];
+        setHistory(newHistory);
+        setCurrentIndex(newHistory.length - 1);
       }
     };
 
