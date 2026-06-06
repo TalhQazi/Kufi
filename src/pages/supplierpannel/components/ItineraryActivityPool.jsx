@@ -41,43 +41,37 @@ function DraggableCard({ activity, darkMode }) {
         isDragging ? "opacity-50 shadow-xl" : ""
       } ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"}`}
     >
-      {/* Image — hyperlink */}
-      <a
-        href={activityUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={e => e.stopPropagation()}
-        onPointerDown={e => e.stopPropagation()}
-        className="block"
-      >
-        <div className="relative h-24 bg-gray-200 overflow-hidden">
-          {activity.image ? (
-            <img src={resolveImageUrl(activity.image)} alt={activity.title} className="w-full h-full object-cover" />
-          ) : (
-            <div className={`w-full h-full flex items-center justify-center text-xs ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
-              No image
-            </div>
-          )}
-          {activity.category && (
-            <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full text-[9px] font-medium bg-black/40 text-white">
-              {activity.category}
-            </span>
-          )}
-        </div>
-      </a>
+      <div className="relative h-24 bg-gray-200 overflow-hidden">
+        {activity.image ? (
+          <img src={resolveImageUrl(activity.image)} alt={activity.title} className="w-full h-full object-cover" />
+        ) : (
+          <div className={`w-full h-full flex items-center justify-center text-xs ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
+            No image
+          </div>
+        )}
+        {activity.category && (
+          <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full text-[9px] font-medium bg-black/40 text-white">
+            {activity.category}
+          </span>
+        )}
+      </div>
 
-      {/* Title — hyperlink */}
       <div className="px-2 py-1.5">
-        <a
-          href={activityUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={e => e.stopPropagation()}
-          onPointerDown={e => e.stopPropagation()}
-          className={`text-[11px] font-medium leading-tight hover:underline block truncate ${darkMode ? "text-white" : "text-slate-900"}`}
-        >
-          {activity.title}
-        </a>
+        {activityUrl ? (
+          <a
+            href={activityUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onPointerDown={(e) => e.stopPropagation()}
+            className={`text-[11px] font-medium leading-tight block truncate hover:underline ${darkMode ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-800"}`}
+          >
+            {activity.title}
+          </a>
+        ) : (
+          <h4 className={`text-[11px] font-medium leading-tight block truncate ${darkMode ? "text-white" : "text-slate-900"}`}>
+            {activity.title}
+          </h4>
+        )}
         {activity.duration && (
           <p className={`text-[10px] mt-0.5 ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
             {activity.duration}

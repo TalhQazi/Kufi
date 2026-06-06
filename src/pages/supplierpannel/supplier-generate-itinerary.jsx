@@ -19,15 +19,15 @@ import { CalendarDays, DollarSign, GripVertical, MapPin, Sparkles, Users } from 
 import api from "../../api";
 import { PROCEED_WITH_AI_LABEL } from "../../constants/itineraryLabels";
 import ItineraryActivityPool from "./components/ItineraryActivityPool";
-import ItineraryControlPanel from "./components/ItineraryControlPanel";
 
-function resolveTravelerUserId(request) {
+
+export function resolveTravelerUserId(request) {
   const user = request?.user;
   if (typeof user === "string") return user;
   return user?._id || user?.id || request?.userId || null;
 }
 
-function parseBudgetValue(value) {
+export function parseBudgetValue(value) {
   if (value === null || value === undefined) return undefined;
   if (typeof value === "number" && Number.isFinite(value)) return value;
   const raw = String(value).trim();
@@ -38,7 +38,7 @@ function parseBudgetValue(value) {
   return Number.isFinite(num) ? num : undefined;
 }
 
-function buildItineraryPayload(request) {
+export function buildItineraryPayload(request, overviewItinerary = null) {
   const trip = request?.tripDetails || {};
   const country = trip.country || request.country || "";
   const city = trip.city || request.city || "";
@@ -57,8 +57,8 @@ function buildItineraryPayload(request) {
     destination,
     country,
     city: city || country,
-    startDate: trip.arrivalDate || trip.startDate,
-    endDate: trip.departureDate || trip.endDate,
+    startDate: overviewItinerary?.startDate || trip.arrivalDate || trip.startDate,
+    endDate: overviewItinerary?.endDate || trip.departureDate || trip.endDate,
     numberOfTravelers: trip.guests || trip.travelers || request.guests || request.travelers || 2,
     bookingId: request.id || request._id,
     tripData: trip,
@@ -74,7 +74,7 @@ function buildItineraryPayload(request) {
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function fmtTime(t) {
   if (!t) return "";
@@ -137,38 +137,26 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-xl border overflow-hidden flex gap-0 ${
-        darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"
-      }`}
+      {...attributes}
+      {...listeners}
+      className={`rounded-xl border overflow-hidden flex gap-0 cursor-grab active:cursor-grabbing ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"
+        }`}
     >
-      {/* Drag handle */}
-      <button
-        type="button"
-        {...attributes}
-        {...listeners}
-        className={`flex items-center px-1.5 cursor-grab active:cursor-grabbing ${darkMode ? "text-slate-600 hover:text-slate-400" : "text-gray-300 hover:text-gray-500"}`}
+      {/* Drag handle icon */}
+      <div
+        className={`flex items-center px-1.5 ${darkMode ? "text-slate-600" : "text-gray-300"}`}
       >
         <GripVertical className="h-3.5 w-3.5" />
-      </button>
+      </div>
 
-      {/* Image — hyperlink */}
-      {actUrl ? (
-        <a href={actUrl} target="_blank" rel="noopener noreferrer" className="block shrink-0 w-16 h-16">
-          <img
-            src={resolveImageUrl(activity.image) || "/assets/dest-1.jpeg"}
-            alt={activity.title}
-            className="w-full h-full object-cover"
-          />
-        </a>
-      ) : (
-        <div className="shrink-0 w-16 h-16">
-          <img
-            src={resolveImageUrl(activity.image) || "/assets/dest-1.jpeg"}
-            alt={activity.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      )}
+      {/* Image */}
+      <div className="shrink-0 w-16 h-16">
+        <img
+          src={resolveImageUrl(activity.image) || "/assets/dest-1.jpeg"}
+          alt={activity.title}
+          className="w-full h-full object-cover"
+        />
+      </div>
 
       {/* Info */}
       <div className="flex-1 px-2 py-1.5 min-w-0">
@@ -177,7 +165,8 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove }) {
             href={actUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className={`text-[11px] font-semibold leading-tight hover:underline block truncate ${darkMode ? "text-white" : "text-slate-900"}`}
+            onPointerDown={(e) => e.stopPropagation()}
+            className={`text-[11px] font-semibold leading-tight truncate hover:underline ${darkMode ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-800"}`}
           >
             {activity.title}
           </a>
@@ -203,7 +192,11 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove }) {
       {/* Remove */}
       <button
         type="button"
-        onClick={() => onRemove(activity.id)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(activity.id, dayIndex);
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
         className={`px-2 text-[10px] transition-colors ${darkMode ? "text-red-500 hover:text-red-400" : "text-red-400 hover:text-red-600"}`}
       >
         ✕
@@ -249,13 +242,12 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity }) 
       <SortableContext items={activities.map(a => a.id)} strategy={verticalListSortingStrategy}>
         <div
           ref={setNodeRef}
-          className={`flex-1 min-h-[160px] rounded-xl border-2 border-dashed transition-colors p-2 space-y-2 ${
-            isActiveProp
-              ? darkMode ? "border-amber-500 bg-amber-900/10" : "border-amber-400 bg-amber-50"
-              : activities.length === 0
-                ? darkMode ? "border-slate-700 bg-slate-800/30" : "border-gray-200 bg-gray-50/50"
-                : darkMode ? "border-slate-700 bg-transparent" : "border-gray-100 bg-transparent"
-          }`}
+          className={`flex-1 min-h-[160px] rounded-xl border-2 border-dashed transition-colors p-2 space-y-2 ${isActiveProp
+            ? darkMode ? "border-amber-500 bg-amber-900/10" : "border-amber-400 bg-amber-50"
+            : activities.length === 0
+              ? darkMode ? "border-slate-700 bg-slate-800/30" : "border-gray-200 bg-gray-50/50"
+              : darkMode ? "border-slate-700 bg-transparent" : "border-gray-100 bg-transparent"
+            }`}
         >
           {activities.length === 0 ? (
             <div className={`flex items-center justify-center h-full text-[11px] pointer-events-none ${darkMode ? "text-slate-600" : "text-gray-400"}`}>
@@ -288,7 +280,7 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity }) 
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function SupplierGenerateItinerary({ darkMode, request, draft, mode = "ai", onGoToBookings, onBack }) {
+export default function SupplierGenerateItinerary({ darkMode, request, overviewItinerary, draft, mode = "ai", onGoToBookings, onBack, forceGenerateOnMount, onClearForceGenerate }) {
   const [itinerary, setItinerary] = useState(null);
   const [daysData, setDaysData] = useState([]);
   const [activeDay, setActiveDay] = useState(0);
@@ -300,37 +292,69 @@ export default function SupplierGenerateItinerary({ darkMode, request, draft, mo
   const [activeDragId, setActiveDragId] = useState(null);
   const [activeDragData, setActiveDragData] = useState(null);
   const [overDayIndex, setOverDayIndex] = useState(null);
-  const [localCP, setLocalCP] = useState(null);
-  const [localHotel, setLocalHotel] = useState(null);
   const generateCalledRef = useRef(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
+  const updateDaysData = useCallback((days) => {
+    if (!Array.isArray(days)) return [];
+    return days.map((day) => {
+      const activities = Array.isArray(day.activities) ? day.activities : [];
+      const updatedActivities = activities.map((act, actIdx) => {
+        if (!act.id) {
+          const uniqueId = `act-${day.day}-${actIdx}-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+          return { ...act, id: uniqueId };
+        }
+        return act;
+      });
+      return { ...day, activities: updatedActivities };
+    });
+  }, []);
+
   const requestKey = request?.id || request?._id;
 
   async function resolveItineraryRecord() {
+    let existingItin = null;
+
     if (request?.itineraryId) {
       try {
         const res = await api.get(`/itineraries/${request.itineraryId}`);
-        return res.data;
+        existingItin = res.data;
       } catch {
         // fall through
       }
     }
 
     const bookingId = request?.id || request?._id;
-    if (bookingId) {
+    if (!existingItin && bookingId) {
       try {
         const res = await api.get(`/itineraries/booking/${bookingId}`);
-        return res.data;
+        existingItin = res.data;
       } catch {
-        // not found yet — create below
+        // not found yet
       }
     }
 
-    const payload = buildItineraryPayload(request);
+    if (existingItin) {
+      // Update the existing itinerary with the latest Control Panel dates & settings before generating
+      try {
+        const payload = {
+          startDate: overviewItinerary?.startDate || existingItin.startDate,
+          endDate: overviewItinerary?.endDate || existingItin.endDate,
+          ...(overviewItinerary?.controlPanel || {})
+        };
+        const res = await api.put(`/itineraries/${existingItin._id}/control-panel`, payload);
+        return res.data;
+      } catch (err) {
+        console.error("Failed to sync control panel data before generation", err);
+        return existingItin;
+      }
+    }
+
+    // Otherwise, create a new one
+    const payload = buildItineraryPayload(request, overviewItinerary);
     if (!payload.userId) {
       throw new Error("Traveler account is missing on this booking. Cannot create itinerary.");
     }
@@ -347,7 +371,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, draft, mo
       const res = await api.post(`/itineraries/${itin._id}/generate`, { mode: genMode });
       const updated = res.data.itinerary || res.data;
       setItinerary(updated);
-      setDaysData(Array.isArray(updated.days) ? updated.days : []);
+      setDaysData(updateDaysData(Array.isArray(updated.days) ? updated.days : []));
       if (res.data?.warning) {
         setGenerateError(res.data.warning);
       } else if (!updated?.days?.length) {
@@ -367,15 +391,13 @@ export default function SupplierGenerateItinerary({ darkMode, request, draft, mo
     }
   }
 
-  // ── Load itinerary from request ─────────────────────────────────────────────
+
   useEffect(() => {
     generateCalledRef.current = false;
     setLoadError("");
     setGenerateError("");
     setItinerary(null);
     setDaysData([]);
-    setLocalCP(null);
-    setLocalHotel(null);
 
     async function loadOrCreate() {
       if (!request) return;
@@ -385,8 +407,13 @@ export default function SupplierGenerateItinerary({ darkMode, request, draft, mo
         setItinerary(itin);
         setLoadError("");
 
-        if (Array.isArray(itin.days) && itin.days.length > 0 && itin.aiGenerated) {
-          setDaysData(itin.days);
+        if (forceGenerateOnMount && !generateCalledRef.current) {
+          generateCalledRef.current = true;
+          onClearForceGenerate?.();
+          await triggerGenerate(itin, { force: true, genMode: mode });
+        } else if (itin?.aiGenerated || (Array.isArray(itin?.days) && itin.days.length > 0)) {
+          setDaysData(updateDaysData(itin?.days || []));
+          generateCalledRef.current = true;
         } else if (!generateCalledRef.current) {
           generateCalledRef.current = true;
           await triggerGenerate(itin, { genMode: mode });
@@ -506,11 +533,16 @@ export default function SupplierGenerateItinerary({ darkMode, request, draft, mo
     }
   }
 
-  function removeActivityFromDay(actId) {
-    setDaysData(prev => prev.map(d => ({
-      ...d,
-      activities: (d.activities || []).filter(a => a.id !== actId),
-    })));
+  function removeActivityFromDay(actId, dayIndex) {
+    setDaysData(prev => prev.map((d, i) => {
+      if (i === dayIndex) {
+        return {
+          ...d,
+          activities: (d.activities || []).filter(a => a.id !== actId),
+        };
+      }
+      return d;
+    }));
   }
 
   // ── Save button ──────────────────────────────────────────────────────────────
@@ -530,18 +562,19 @@ export default function SupplierGenerateItinerary({ darkMode, request, draft, mo
     }
   }
 
-  const handleControlPanelChange = useCallback((newCp, selectedHotel) => {
-    setLocalCP(newCp);
-    setLocalHotel(selectedHotel);
-  }, []);
-
   // ── Summary calculations ─────────────────────────────────────────────────────
 
-  const hotelData = localCP ? localHotel : itinerary?.controlPanel?.hotelId;
+  const hotelData = itinerary?.controlPanel?.hotelId;
   const nights = nightsBetween(itinerary?.startDate, itinerary?.endDate);
-  const rooms = localCP ? localCP.numberOfRooms : (itinerary?.controlPanel?.numberOfRooms || 1);
+  const rooms = itinerary?.controlPanel?.numberOfRooms || 1;
   const hotelCost = hotelData?.pricePerNight ? hotelData.pricePerNight * nights * rooms : 0;
-  const upliftPct = localCP ? (localCP.budgetUplift / 100) : (itinerary?.controlPanel?.budgetUplift ?? 0.15);
+  const upliftRaw = itinerary?.controlPanel?.budgetUplift ?? 15;
+  // If value is a decimal like 0.15 (legacy), use as-is; otherwise divide by 100 (e.g. 15 → 0.15)
+  // Clamp to [0, 1] to guard against corrupted DB values
+  const upliftPct = Math.min(Math.max(
+    (upliftRaw > 0 && upliftRaw < 1) ? upliftRaw : (Number(upliftRaw) / 100),
+    0
+  ), 1);
 
   const activitiesTotal = useMemo(() =>
     daysData.reduce((sum, d) =>
@@ -572,15 +605,6 @@ export default function SupplierGenerateItinerary({ darkMode, request, draft, mo
       <div className={`min-h-screen px-4 py-6 ${base}`}>
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          {onBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${darkMode ? "border-slate-700 text-slate-400 hover:bg-slate-800" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}
-            >
-              ← Back
-            </button>
-          )}
           <div className="flex-1 min-w-0">
             <h1 className={`text-base font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
               {itinerary?.title || "Build Itinerary"}
@@ -589,21 +613,11 @@ export default function SupplierGenerateItinerary({ darkMode, request, draft, mo
               {itinerary?.destination || ""}
               {itinerary?.aiGenerated && (
                 <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${darkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700"}`}>
-                  {itinerary?.generationSource === 'template' ? 'Template Generated' : 'AI Generated'}
+                  AI Generated
                 </span>
               )}
             </p>
           </div>
-          {itinerary?._id && !generating && (
-            <button
-              type="button"
-              onClick={() => triggerGenerate(itinerary, { force: true })}
-              className="inline-flex items-center gap-2 rounded-full bg-[#a26e35] px-4 py-2 text-[11px] font-semibold text-white hover:bg-[#8b5e2d] transition-colors shrink-0"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>{PROCEED_WITH_AI_LABEL}</span>
-            </button>
-          )}
         </div>
 
         {loadError && (
@@ -613,12 +627,12 @@ export default function SupplierGenerateItinerary({ darkMode, request, draft, mo
         )}
 
         {generateError && (
-          <div className={`rounded-2xl border px-4 py-3 mb-4 text-sm ${darkMode ? "bg-amber-950/40 border-amber-900 text-amber-200" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+          <div className={`rounded-2xl border px-4 py-3 mb-4 text-sm ${darkMode ? "bg-rose-950/40 border-rose-900 text-rose-300" : "bg-rose-50 border-rose-200 text-rose-700"}`}>
             {generateError}
             {itinerary?._id && (
               <button
                 type="button"
-                onClick={() => triggerGenerate(itinerary, { force: true })}
+                onClick={() => triggerGenerate(itinerary, { force: true, genMode: "ai" })}
                 className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold underline"
               >
                 Retry AI generation
@@ -645,39 +659,11 @@ export default function SupplierGenerateItinerary({ darkMode, request, draft, mo
           {/* ── Left: day view ─────────────────────────────────────────────── */}
           <div className="lg:col-span-2 space-y-4">
 
-            {/* Day tabs */}
-            {daysData.length > 0 && (
-              <div className={`${cardCls} px-4 py-3`}>
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {daysData.map((d, idx) => {
-                    const isActive = idx === activeDay;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setActiveDay(idx)}
-                        className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors border ${
-                          isActive
-                            ? "bg-[#a26e35] border-[#a26e35] text-white"
-                            : darkMode
-                              ? "bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700"
-                              : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-                        }`}
-                      >
-                        Day {d.day}
-                        {d.isArrivalDay && " ✈"}
-                        {d.isDepartureDay && " 🛫"}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Current day panel */}
-            {currentDay && (
+            {/* Vertical Days List View */}
+            {daysData.map((day, idx) => (
               <div
-                id={`day-${activeDay}`}
+                key={idx}
+                id={`day-${idx}`}
                 data-droppable="true"
                 className={`${cardCls} px-4 py-4`}
               >
@@ -685,25 +671,27 @@ export default function SupplierGenerateItinerary({ darkMode, request, draft, mo
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className={`text-sm font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
-                      Day {currentDay.day}
-                      {currentDay.dayName && ` — ${currentDay.dayName}`}
+                      Day {day.day}
+                      {day.dayName && ` — ${day.dayName}`}
+                      {day.isArrivalDay && " ✈"}
+                      {day.isDepartureDay && " 🛫"}
                     </h2>
-                    {currentDay.date && (
+                    {day.date && (
                       <p className={`text-[11px] mt-0.5 ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
-                        {fmtDate(currentDay.date)}
+                        {fmtDate(day.date)}
                       </p>
                     )}
                   </div>
                 </div>
 
                 <DayColumn
-                  day={currentDay}
+                  day={day}
                   darkMode={darkMode}
-                  isActive={overDayIndex === activeDay}
+                  isActive={overDayIndex === idx}
                   onRemoveActivity={removeActivityFromDay}
                 />
               </div>
-            )}
+            ))}
 
             {/* Summary card */}
             <div className={`${cardCls} px-4 py-4`}>
@@ -732,30 +720,19 @@ export default function SupplierGenerateItinerary({ darkMode, request, draft, mo
               type="button"
               onClick={handleSave}
               disabled={saving || !itinerary}
-              className={`w-full rounded-full py-3 text-sm font-semibold transition-colors ${
-                saving ? "opacity-60 cursor-not-allowed" : ""
-              } ${saveMsg === "Saved!" ? "bg-emerald-600 text-white" : "bg-[#a26e35] hover:bg-[#8b5e2d] text-white"}`}
+              className={`w-full rounded-full py-3 text-sm font-semibold transition-colors ${saving ? "opacity-60 cursor-not-allowed" : ""
+                } ${saveMsg === "Saved!" ? "bg-emerald-600 text-white" : "bg-[#a26e35] hover:bg-[#8b5e2d] text-white"}`}
             >
               {saving ? "Saving…" : saveMsg || "Save"}
             </button>
           </div>
 
-          {/* ── Right: activity pool + control panel ──────────────────────── */}
+          {/* ── Right: activity pool ──────────────────────── */}
           <div className="space-y-4">
             <ItineraryActivityPool
               darkMode={darkMode}
               itinerary={itinerary}
               assignedActivityIds={assignedActivityIds}
-            />
-            <ItineraryControlPanel
-              darkMode={darkMode}
-              itinerary={itinerary}
-              onSaved={updated => {
-                setItinerary(updated);
-                setLocalCP(null);
-                setLocalHotel(null);
-              }}
-              onChange={handleControlPanelChange}
             />
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import api from "../../../api";
 
 const DEFAULT_CP = {
@@ -14,11 +14,22 @@ const DEFAULT_CP = {
   budgetUplift: 15,
 };
 
-export default function ItineraryControlPanel({ darkMode, itinerary, onSaved, onChange }) {
+export default function ItineraryControlPanel({ darkMode, itinerary, request, onSaved, onChange }) {
   const [cp, setCp] = useState(DEFAULT_CP);
   const [hotels, setHotels] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [startDate, setStartDate] = useState(() => {
+    let start = itinerary?.startDate;
+    if (!start && request) start = request?.tripDetails?.arrivalDate || request?.tripDetails?.startDate || request?.arrivalDate;
+    return start ? new Date(start).toISOString().slice(0, 10) : "";
+  });
+  
+  const [endDate, setEndDate] = useState(() => {
+    let end = itinerary?.endDate;
+    if (!end && request) end = request?.tripDetails?.departureDate || request?.tripDetails?.endDate || request?.departureDate;
+    return end ? new Date(end).toISOString().slice(0, 10) : "";
+  });
 
   const country = itinerary?.country || itinerary?.tripData?.country || "";
   const city = itinerary?.city || itinerary?.tripData?.city || itinerary?.destination || "";
@@ -30,7 +41,9 @@ export default function ItineraryControlPanel({ darkMode, itinerary, onSaved, on
         ...DEFAULT_CP,
         ...itinerary.controlPanel,
         budgetUplift: itinerary.controlPanel.budgetUplift != null
-          ? Math.round(itinerary.controlPanel.budgetUplift * 100)
+          ? (itinerary.controlPanel.budgetUplift < 1 && itinerary.controlPanel.budgetUplift > 0
+              ? Math.round(itinerary.controlPanel.budgetUplift * 100)
+              : Number(itinerary.controlPanel.budgetUplift))
           : 15,
         hotelId: itinerary.controlPanel.hotelId?._id || itinerary.controlPanel.hotelId || "",
       });
@@ -81,24 +94,41 @@ export default function ItineraryControlPanel({ darkMode, itinerary, onSaved, on
     return o?.[field] || "";
   }
 
-  async function handleSave() {
-    setSaving(true);
-    try {
-      const payload = {
-        ...cp,
-        budgetUplift: (Number(cp.budgetUplift) || 15) / 100,
-        hotelId: cp.hotelId || null,
-      };
-      const res = await api.put(`/itineraries/${itinerary._id}/control-panel`, payload);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-      onSaved?.(res.data);
-    } catch (err) {
-      console.error("Failed to save control panel", err);
-    } finally {
-      setSaving(false);
-    }
-  }
+  const cpRef = useRef(cp);
+  const datesRef = useRef({ startDate, endDate });
+  const pendingSaveRef = useRef(null);
+
+  useEffect(() => {
+    cpRef.current = cp;
+    datesRef.current = { startDate, endDate };
+  }, [cp, startDate, endDate]);
+
+  // Pass changes to parent component without saving to backend yet
+  useEffect(() => {
+    const payload = {
+      ...cp,
+      budgetUplift: Math.min(Math.max(Number(cp.budgetUplift) || 15, 0), 100),
+      hotelId: cp.hotelId || null,
+      startDate: startDate || null,
+      endDate: endDate || null,
+    };
+    const selectedHotel = hotels.find(h => h._id === cp.hotelId) || null;
+    onChange?.(payload, selectedHotel);
+  }, [cp, startDate, endDate, hotels, onChange]);
+
+  const formatTripDate = (value) => {
+    if (!value) return "—";
+    const v = String(value).trim();
+    if (!v) return "—";
+    const isoMatch = v.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (isoMatch?.[1]) return isoMatch[1];
+    const t = Date.parse(v);
+    if (Number.isFinite(t)) return new Date(t).toISOString().slice(0, 10);
+    return v;
+  };
+
+  const requestedArrival = formatTripDate(request?.tripDetails?.arrivalDate || request?.tripDetails?.startDate || request?.arrivalDate);
+  const requestedDeparture = formatTripDate(request?.tripDetails?.departureDate || request?.tripDetails?.endDate || request?.departureDate);
 
   const base = darkMode
     ? "bg-slate-900 border-slate-800 text-slate-300"
@@ -109,24 +139,34 @@ export default function ItineraryControlPanel({ darkMode, itinerary, onSaved, on
 
   return (
     <div className={`rounded-2xl border text-xs space-y-4 px-4 py-4 ${base}`}>
-      <h3 className={`text-sm font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>
-        Control Panel
+      <h3 className={`text-sm font-semibold flex items-center justify-between ${darkMode ? "text-white" : "text-slate-900"}`}>
+        <span>Control Panel</span>
       </h3>
 
-      {/* Dates (read-only) */}
+      {/* Dates (Editable) */}
       <div className={sectionCls}>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <span className={labelCls}>Arrival Date</span>
-            <div className={`${inputCls} opacity-60 cursor-not-allowed`}>
-              {itinerary?.startDate ? new Date(itinerary.startDate).toLocaleDateString() : "—"}
+            <div className="flex items-center justify-between mb-0.5">
+              <span className={`text-[11px] font-medium ${darkMode ? "text-slate-400" : "text-gray-500"}`}>Arrival Date</span>
             </div>
+            <input
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              className={inputCls}
+            />
           </div>
           <div>
-            <span className={labelCls}>Departure Date</span>
-            <div className={`${inputCls} opacity-60 cursor-not-allowed`}>
-              {itinerary?.endDate ? new Date(itinerary.endDate).toLocaleDateString() : "—"}
+            <div className="flex items-center justify-between mb-0.5">
+              <span className={`text-[11px] font-medium ${darkMode ? "text-slate-400" : "text-gray-500"}`}>Departure Date</span>
             </div>
+            <input
+              type="date"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              className={inputCls}
+            />
           </div>
         </div>
       </div>
@@ -264,15 +304,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, onSaved, on
         </div>
       </div>
 
-      {/* Save Button */}
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={saving}
-        className={`w-full rounded-full py-2.5 text-xs font-semibold transition-colors ${saving ? "opacity-60 cursor-not-allowed" : ""} ${saved ? "bg-emerald-600 text-white" : "bg-[#a26e35] hover:bg-[#8b5e2d] text-white"}`}
-      >
-        {saving ? "Saving…" : saved ? "Saved!" : "Save"}
-      </button>
+
     </div>
   );
 }

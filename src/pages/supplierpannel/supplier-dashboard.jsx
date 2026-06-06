@@ -39,6 +39,7 @@ const SupplierDashboard = ({
   const [queuedItineraryRequestId, setQueuedItineraryRequestId] = useState(null);
   const [queuedItineraryView, setQueuedItineraryView] = useState(null);
   const [experienceView, setExperienceView] = useState("list");
+  const [requestsView, setRequestsView] = useState("list");
   const [darkMode, handleToggleDarkMode] = usePersistedDarkMode('supplier');
 
   useEffect(() => {
@@ -226,6 +227,37 @@ const SupplierDashboard = ({
     const hash = sectionLower === 'dashboard' ? 'supplier' : `supplier-${sectionLower}`;
     window.location.hash = `#${hash}`;
     if (resetExperienceView) setExperienceView("list");
+    setRequestsView("list");
+  };
+
+  const effectiveCanGoBack = 
+    (activeSection === "Requests" && requestsView !== "list") ||
+    (activeSection === "Experience" && experienceView !== "list") ||
+    canGoBack;
+
+  const effectiveCanGoForward = 
+    !(activeSection === "Requests" && requestsView !== "list") &&
+    !(activeSection === "Experience" && experienceView !== "list") &&
+    canGoForward;
+
+  const handleBack = () => {
+    if (activeSection === "Requests" && requestsView !== "list") {
+      if (requestsView === "generate") {
+        setRequestsView("itinerary");
+      } else if (requestsView === "itinerary") {
+        setRequestsView("list");
+      }
+    } else if (activeSection === "Experience" && experienceView !== "list") {
+      setExperienceView("list");
+    } else if (canGoBack && onBack) {
+      onBack();
+    }
+  };
+
+  const handleForward = () => {
+    if (effectiveCanGoForward && onForward) {
+      onForward();
+    }
   };
 
   return (
@@ -246,18 +278,12 @@ const SupplierDashboard = ({
         <div className={`mb-4 flex items-center justify-between rounded-b-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm transition-colors duration-300 ${darkMode ? "bg-slate-900 border-b border-slate-800" : "bg-white"}`}>
           <div className="flex items-center gap-2">
             <button
-              onClick={onBack}
-              disabled={!canGoBack}
-              className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${!canGoBack ? "opacity-50 cursor-not-allowed" : ""} ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+              onClick={effectiveCanGoBack ? handleBack : handleForward}
+              disabled={!effectiveCanGoBack && !effectiveCanGoForward}
+              className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${(!effectiveCanGoBack && !effectiveCanGoForward) ? "opacity-50 cursor-not-allowed" : ""} ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
+              title={effectiveCanGoBack ? "Back" : "Forward"}
             >
-              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
-            <button
-              onClick={onForward}
-              disabled={!canGoForward}
-              className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border transition-colors ${!canGoForward ? "opacity-50 cursor-not-allowed" : ""} ${darkMode ? "border-slate-800 bg-slate-800 text-slate-400 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"}`}
-            >
-              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              {effectiveCanGoBack ? <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
             </button>
           </div>
 
@@ -528,6 +554,8 @@ const SupplierDashboard = ({
         {activeSection === "Requests" && (
           <SupplierRequests
             darkMode={darkMode}
+            view={requestsView}
+            onViewChange={setRequestsView}
             resumeDraft={resumeItineraryDraft}
             onDraftConsumed={() => setResumeItineraryDraft(null)}
             onGoToBookings={() => navigateTo("Booking")}

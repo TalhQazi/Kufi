@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import SupplierGenerateItinerary from "./supplier-generate-itinerary";
+import SupplierGenerateItinerary, { buildItineraryPayload, resolveTravelerUserId } from "./supplier-generate-itinerary";
+import ItineraryControlPanel from "./components/ItineraryControlPanel";
 import { PROCEED_WITH_AI_LABEL } from "../../constants/itineraryLabels";
 
 const openCreateItinerary = (setItineraryRequestId, setView, requestId) => {
@@ -48,15 +49,22 @@ const SupplierRequests = ({
   initialItineraryRequestId = null,
   initialView = null,
   onInitialNavigationConsumed,
+  view: propView,
+  onViewChange,
 }) => {
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshingOverview, setIsRefreshingOverview] = useState(false);
+  const [localCPData, setLocalCPData] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
-  const [view, setView] = useState("list"); // 'list' | 'itinerary' | 'generate'
+  const [localView, setLocalView] = useState("list");
+  const view = propView !== undefined ? propView : localView;
+  const setView = onViewChange !== undefined ? onViewChange : setLocalView;
   const [itineraryRequestId, setItineraryRequestId] = useState(null);
+  const [overviewItinerary, setOverviewItinerary] = useState(null);
   const [resumeItineraryDraft, setResumeItineraryDraft] = useState(null);
-  const [showTemplate, setShowTemplate] = useState(false);
   const [generateMode, setGenerateMode] = useState("ai");
+  const [forceGenerateOnMount, setForceGenerateOnMount] = useState(false);
 
   useEffect(() => {
     if (!initialItineraryRequestId) return;
@@ -235,13 +243,15 @@ const SupplierRequests = ({
           adjustmentRequestedAt: r?.adjustmentRequestedAt || adjustmentRecord?.createdAt || null,
         };
       });
-      // Frontend safety: prefer only pending, but if nothing matches, show all
-      const finalList = [...normalized].sort((a, b) => {
-        const aPending = String(a.status || '').trim().toLowerCase() === 'pending'
-        const bPending = String(b.status || '').trim().toLowerCase() === 'pending'
-        if (aPending === bPending) return 0
-        return aPending ? -1 : 1
-      });
+      // Frontend safety: filter out requests that already have an itinerary created
+      const finalList = [...normalized]
+        .filter(r => !r.itinerary)
+        .sort((a, b) => {
+          const aPending = String(a.status || '').trim().toLowerCase() === 'pending'
+          const bPending = String(b.status || '').trim().toLowerCase() === 'pending'
+          if (aPending === bPending) return 0
+          return aPending ? -1 : 1
+        });
 
       setRequests(finalList);
 
@@ -331,26 +341,26 @@ const SupplierRequests = ({
 
   useEffect(() => {
     if (!resumeDraft) return;
+    
+    // We store it locally in resumedRequest so it persists after onDraftConsumed clears it
+    setResumedRequest(resumeDraft);
+    
+    // Also keep the old state for compatibility
     setResumeItineraryDraft(resumeDraft);
 
-    const snap = resumeDraft?.payload?.requestSnapshot;
+    const snap = resumeDraft?.payload?.requestSnapshot || resumeDraft;
     const snapId = snap?._id || snap?.id;
 
-    if (snap && snapId) {
+    if (snapId) {
       setItineraryRequestId(snapId);
       setSelectedId(snapId);
-    } else if (resumeDraft?.requestId) {
-      setItineraryRequestId(resumeDraft.requestId);
-      setSelectedId(resumeDraft.requestId);
     }
 
     setView("generate");
     onDraftConsumed?.();
   }, [resumeDraft, onDraftConsumed]);
 
-  useEffect(() => {
-    if (view === "itinerary") setShowTemplate(false);
-  }, [view]);
+
 
   const handleStatusUpdate = async (id, status) => {
     try {
@@ -407,6 +417,8 @@ const SupplierRequests = ({
     return images;
   };
 
+  const [resumedRequest, setResumedRequest] = useState(null);
+
   // Find selected request from either flat array or grouped requests (for child requests)
   const selected = useMemo(() => {
     // First try to find in flat requests array
@@ -424,7 +436,54 @@ const SupplierRequests = ({
   }, [requests, selectedId, groupedRequests]);
   
   const itineraryRequest =
-    requests.find((r) => (r.id || r._id) === itineraryRequestId) || selected || resumeItineraryDraft?.payload?.requestSnapshot || null;
+    requests.find((r) => (r.id || r._id) === itineraryRequestId) || 
+    (resumedRequest?.payload ? resumedRequest.payload.requestSnapshot : resumedRequest) ||
+    selected || 
+    null;
+
+  useEffect(() => {
+    let active = true;
+    async function loadOverviewItinerary() {
+      if (!itineraryRequest) {
+        setOverviewItinerary(null);
+        return;
+      }
+      try {
+        let res;
+        if (itineraryRequest.itineraryId) {
+          try {
+            res = await api.get(`/itineraries/${itineraryRequest.itineraryId}`);
+            if (active) setOverviewItinerary(res.data);
+            return;
+          } catch (e) {
+            // fall through
+          }
+        }
+        const bookingId = itineraryRequest.id || itineraryRequest._id;
+        try {
+          res = await api.get(`/itineraries/booking/${bookingId}`);
+          if (active) setOverviewItinerary(res.data);
+          return;
+        } catch (e) {
+          // not found, create
+        }
+
+        const payload = buildItineraryPayload(itineraryRequest);
+        if (payload.userId) {
+          res = await api.post("/itineraries", payload);
+          if (active) setOverviewItinerary(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load overview itinerary:", err);
+      }
+    }
+    // Small delay to let any Control Panel unmount flush save complete
+    const timer = setTimeout(() => loadOverviewItinerary(), 600);
+    return () => { active = false; clearTimeout(timer); };
+  // Reload when the selected request changes OR when the view changes.
+  // This ensures that dates saved by the Control Panel's unmount-flush
+  // are reflected immediately when navigating to the "Proceed" page.
+  }, [itineraryRequest, view]);
 
   if (isLoading) {
     return (
@@ -537,6 +596,18 @@ const SupplierRequests = ({
               </p>
               <p className={`text-sm transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
                 {(() => {
+                  // Prefer the saved itinerary dates (e.g. from local Control Panel or DB)
+                  const finalStartDate = localCPData?.startDate || overviewItinerary?.startDate;
+                  const finalEndDate = localCPData?.endDate || overviewItinerary?.endDate;
+                  
+                  if (finalStartDate || finalEndDate) {
+                    const start = formatTripDate(finalStartDate);
+                    const end = formatTripDate(finalEndDate);
+                    if (start !== "—" && end !== "—") return `${start} - ${end}`;
+                    if (start !== "—") return `From ${start}`;
+                    if (end !== "—") return `Until ${end}`;
+                  }
+                  // Fallback to original booking request dates
                   const arrival = formatTripDate(itineraryRequest?.tripDetails?.arrivalDate);
                   const departure = formatTripDate(itineraryRequest?.tripDetails?.departureDate);
                   if (arrival !== "—" && departure !== "—") {
@@ -609,137 +680,21 @@ const SupplierRequests = ({
             )}
           </div>
         </div>
-         <div className="flex flex-col items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => setShowTemplate(true)}
-            className={`inline-flex w-full max-w-[720px] items-center justify-center gap-2 rounded-full border px-8 py-3 text-xs font-semibold transition-colors ${
-              darkMode
-                ? "bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700"
-                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            <span>Proceed to auto generate Itinerary</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setGenerateMode("ai");
-              setView("generate");
-            }}
-            className="inline-flex w-full max-w-[720px] items-center justify-center gap-2 rounded-full bg-[#a26e35] px-8 py-3 text-xs font-semibold text-white shadow-sm hover:bg-[#8b5e2d] transition-colors"
-          >
-            <Sparkles className="h-4 w-4" />
-            <span>{PROCEED_WITH_AI_LABEL}</span>
-          </button>
-        </div>
-
-        {showTemplate && (
-          <div className="space-y-3">
-            <h2 className={`text-sm font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-              Recommended Itinerary Template
-            </h2>
-
-            <div className="flex items-center justify-center">
-              <div className={`w-full max-w-[460px] rounded-2xl border shadow-sm overflow-hidden transition-colors duration-300 ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`}>
-                <div className="relative h-44">
-                  <img
-                    src={heroImage}
-                    alt="Template"
-                    className="absolute inset-0 h-full w-full object-cover"
-                    onError={(e) => handleImageError(e)}
-                  />
-                  <div className="absolute inset-0 bg-black/15" />
-                </div>
-                <div className="px-5 py-4 space-y-3">
-                  <p className={`text-[11px] font-semibold uppercase tracking-wider ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
-                    Template
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={itineraryRequest.avatar || "/assets/profile-avatar.jpeg"}
-                      alt={travelerName}
-                      className="h-10 w-10 rounded-full object-cover"
-                    />
-                    <div className="min-w-0">
-                      <p className={`text-sm font-semibold truncate transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
-                        {travelerName}
-                      </p>
-                      <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
-                        {formatStatusLabel(itineraryRequest.status)} Request
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className={`text-[10px] uppercase tracking-wider font-bold ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
-                      Activities
-                    </p>
-                    <p className={`text-[11px] transition-colors ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
-                      {itineraryActivities.length > 0 ? itineraryActivities.join(', ') : '—'}
-                    </p>
-                  </div>
-
-                  <div className={`grid grid-cols-2 gap-3 text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-600"}`}>
-                    <div className="inline-flex items-center gap-2">
-                      <Users className="h-3.5 w-3.5 text-emerald-500" />
-                      <span className={`${darkMode ? "text-slate-200" : "text-slate-800"}`}>
-                        {itineraryRequest.guests ?? itineraryRequest.travelers ?? 0} Travelers
-                      </span>
-                    </div>
-                    <div className="inline-flex items-center gap-2">
-                      <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-                      <span className={`${darkMode ? "text-slate-200" : "text-slate-800"}`}>
-                        {itineraryRequest.amount ?? "—"}
-                      </span>
-                    </div>
-                    <div className="inline-flex items-center gap-2">
-                      <CalendarDays className="h-3.5 w-3.5 text-emerald-500" />
-                      <span className={`truncate ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
-                        {(() => {
-                          const arrival = formatTripDate(itineraryRequest?.tripDetails?.arrivalDate);
-                          const departure = formatTripDate(itineraryRequest?.tripDetails?.departureDate);
-                          if (arrival !== "—" && departure !== "—") {
-                            return `${arrival} - ${departure}`;
-                          }
-                          return itineraryRequest.dateRange || itineraryRequest.date || "—";
-                        })()}
-                      </span>
-                    </div>
-                    <div className="inline-flex items-center gap-2">
-                      <MapPin className="h-3.5 w-3.5 text-emerald-500" />
-                      <span className={`truncate ${darkMode ? "text-slate-200" : "text-slate-800"}`}>
-                        {itineraryRequest.location || "—"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setGenerateMode("template");
-                      setView("generate");
-                    }}
-                    className={`w-full inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-semibold transition-colors ${darkMode ? "bg-slate-800 text-slate-200 hover:bg-[#a26e35]" : "bg-[#a26e35] text-white hover:bg-[#a26e35]"}`}
-                  >
-                    Select Template
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center justify-center mt-6">
+            <button
+              type="button"
+              onClick={() => {
+                setGenerateMode("ai");
+                setForceGenerateOnMount(true);
+                setView("generate");
+              }}
+              className="inline-flex w-full max-w-[720px] items-center justify-center gap-2 rounded-full bg-[#a26e35] px-8 py-3 text-xs font-semibold text-white shadow-sm hover:bg-[#8b5e2d] transition-colors"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>{PROCEED_WITH_AI_LABEL}</span>
+            </button>
           </div>
-        )}
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-2">
-          <button
-            type="button"
-            onClick={() => setView("list")}
-            className={`inline-flex w-full sm:w-auto items-center justify-center rounded-full border px-6 py-3 text-xs font-medium transition-colors ${darkMode ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"}`}
-          >
-            Back to Requests
-          </button>
         </div>
-      </div>
     );
   }
 
@@ -748,10 +703,21 @@ const SupplierRequests = ({
       <SupplierGenerateItinerary
         darkMode={darkMode}
         request={itineraryRequest}
+        overviewItinerary={{ 
+          ...overviewItinerary, 
+          startDate: localCPData?.startDate || overviewItinerary?.startDate,
+          endDate: localCPData?.endDate || overviewItinerary?.endDate,
+          controlPanel: {
+            ...overviewItinerary?.controlPanel,
+            ...localCPData
+          }
+        }}
         draft={resumeItineraryDraft}
         mode={generateMode}
         onGoToBookings={onGoToBookings}
         onBack={() => setView("itinerary")}
+        forceGenerateOnMount={forceGenerateOnMount}
+        onClearForceGenerate={() => setForceGenerateOnMount(false)}
       />
     );
   }
@@ -884,36 +850,28 @@ const SupplierRequests = ({
 
                   <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t transition-colors pt-4" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
                     <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full lg:w-auto">
-                      <button
-                        type="button"
-                        disabled={!hasAdjustment(parentRequest) && !isRequestConfirmed(parentRequest)}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (hasAdjustment(parentRequest)) {
+                      {hasAdjustment(parentRequest) ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
                             openAiItinerary(setItineraryRequestId, setView, parentRequest.id || parentRequest._id);
-                            return;
-                          }
-                          openCreateItinerary(setItineraryRequestId, setView, parentRequest.id || parentRequest._id);
-                        }}
-                        className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${
-                          hasAdjustment(parentRequest) || isRequestConfirmed(parentRequest)
-                            ? darkMode
+                          }}
+                          className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${
+                            darkMode
                               ? "bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700"
                               : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
-                            : darkMode
-                              ? "bg-slate-800 text-slate-600 cursor-not-allowed"
-                              : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                        }`}
-                      >
-                        <span>{hasAdjustment(parentRequest) ? "View Adjustment" : "Create Itinerary"}</span>
-                      </button>
-                      {!hasAdjustment(parentRequest) && (
+                          }`}
+                        >
+                          View Adjustment
+                        </button>
+                      ) : (
                         <button
                           type="button"
                           disabled={!isRequestConfirmed(parentRequest)}
                           onClick={(e) => {
                             e.stopPropagation();
-                            openAiItinerary(setItineraryRequestId, setView, parentRequest.id || parentRequest._id);
+                            openCreateItinerary(setItineraryRequestId, setView, parentRequest.id || parentRequest._id);
                           }}
                           className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[10px] sm:text-xs font-semibold text-center transition-all ${
                             isRequestConfirmed(parentRequest)
@@ -1101,36 +1059,28 @@ const SupplierRequests = ({
 
                             <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t transition-colors pt-4" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
                               <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full lg:w-auto">
-                                <button
-                                  type="button"
-                                  disabled={!hasAdjustment(childReq) && !isRequestConfirmed(childReq)}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (hasAdjustment(childReq)) {
+                                {hasAdjustment(childReq) ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       openAiItinerary(setItineraryRequestId, setView, childReq.id || childReq._id);
-                                      return;
-                                    }
-                                    openCreateItinerary(setItineraryRequestId, setView, childReq.id || childReq._id);
-                                  }}
-                                  className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${
-                                    hasAdjustment(childReq) || isRequestConfirmed(childReq)
-                                      ? darkMode
+                                    }}
+                                    className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${
+                                      darkMode
                                         ? "bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700"
                                         : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
-                                      : darkMode
-                                        ? "bg-slate-800 text-slate-600 cursor-not-allowed"
-                                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                  }`}
-                                >
-                                  <span>{hasAdjustment(childReq) ? "View Adjustment" : "Create Itinerary"}</span>
-                                </button>
-                                {!hasAdjustment(childReq) && (
+                                    }`}
+                                  >
+                                    View Adjustment
+                                  </button>
+                                ) : (
                                   <button
                                     type="button"
                                     disabled={!isRequestConfirmed(childReq)}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      openAiItinerary(setItineraryRequestId, setView, childReq.id || childReq._id);
+                                      openCreateItinerary(setItineraryRequestId, setView, childReq.id || childReq._id);
                                     }}
                                     className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[10px] sm:text-xs font-semibold text-center transition-all ${
                                       isRequestConfirmed(childReq)
@@ -1352,6 +1302,24 @@ const SupplierRequests = ({
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {selected && (
+          <div className="h-full">
+            {overviewItinerary ? (
+              <ItineraryControlPanel
+                key={overviewItinerary._id}
+                darkMode={darkMode}
+                itinerary={overviewItinerary}
+                request={selected}
+                onChange={(updatedCP) => setLocalCPData(updatedCP)}
+              />
+            ) : (
+              <div className={`w-full rounded-2xl border px-6 py-6 text-center text-sm transition-colors ${darkMode ? "bg-slate-900 border-slate-800 text-slate-400" : "bg-white border-gray-100 text-gray-500"}`}>
+                Loading control panel...
+              </div>
+            )}
           </div>
         )}
       </aside>

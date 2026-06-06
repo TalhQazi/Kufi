@@ -90,12 +90,43 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         return parseFloat(digits) || 0;
     };
 
-    // Calculate sum from itinerary days if available
-    const itinerarySum = Array.isArray(bookingData?.days) 
-        ? bookingData.days.reduce((sum, day) => sum + parseAmount(day.evening?.description || day.evening || ''), 0)
-        : 0;
+    // Calculate total itinerary price from activities + hotel + uplift if available
+    const calculateItineraryTotal = () => {
+        const daysData = bookingData?.days || [];
+        const itinerary = bookingData?.tripData;
+        if (!daysData.length && !itinerary) return 0;
 
-    const totalAmount = (itinerarySum > 0 ? itinerarySum : null) || 
+        // Calculate activities total
+        const activitiesTotal = daysData.reduce((sum, d) => {
+            const activities = d.activities || [];
+            return sum + activities.reduce((s, a) => s + (Number(a.price || a.cost || 0) || 0), 0);
+        }, 0);
+
+        // Calculate hotel cost
+        const controlPanel = itinerary?.controlPanel;
+        const hotelData = controlPanel?.hotelId;
+        const startDate = itinerary?.startDate || bookingData?.startDate || bookingData?.tripDetails?.arrivalDate;
+        const endDate = itinerary?.endDate || bookingData?.endDate || bookingData?.tripDetails?.departureDate;
+
+        let hotelCost = 0;
+        if (hotelData?.pricePerNight && startDate && endDate) {
+            const a = new Date(startDate), b = new Date(endDate);
+            const nights = Math.max(0, Math.round((b - a) / (1000 * 60 * 60 * 24)));
+            const rooms = controlPanel?.numberOfRooms || 1;
+            hotelCost = hotelData.pricePerNight * nights * rooms;
+        }
+
+        // Calculate budget uplift
+        const upliftPct = controlPanel?.budgetUplift != null ? controlPanel.budgetUplift : 0.15;
+
+        // Grand Total
+        const calculatedTotal = Math.round((activitiesTotal + hotelCost) * (1 + upliftPct));
+        return calculatedTotal;
+    };
+
+    const calculatedItineraryPrice = calculateItineraryTotal();
+
+    const totalAmount = (calculatedItineraryPrice > 0 ? calculatedItineraryPrice : null) || 
                         bookingData?.totalAmount || 
                         bookingData?.amount || 
                         bookingData?.budget ||

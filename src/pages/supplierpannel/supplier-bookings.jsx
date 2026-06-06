@@ -9,15 +9,7 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
   const [timeFilter, setTimeFilter] = useState('all');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
-  const readItineraryDrafts = () => {
-    try {
-      const raw = localStorage.getItem("kufi_supplier_itinerary_drafts");
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  };
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -85,7 +77,37 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
         });
 
         setBookings(normalized);
-        setDrafts(readItineraryDrafts());
+
+        // Extract real drafts from the backend response
+        const backendDrafts = normalized
+          .filter(b => {
+            if (!b.itinerary) return false;
+            const status = String(b.itinerary.status || '').toLowerCase();
+            return status !== 'completed' && status !== 'ready';
+          })
+          .map(b => {
+            const itin = b.itinerary;
+            
+            // Calculate a simple progress heuristic
+            let progress = 0.1; // Base progress for having an itinerary created
+            if (itin.aiGenerated) progress += 0.3; // AI generated
+            if (itin.days && itin.days.length > 0) progress += 0.4; // Days populated
+            if (itin.startDate && itin.endDate) progress += 0.2; // Dates are finalized
+            if (progress > 1) progress = 1;
+
+            return {
+              id: b.id,
+              itineraryId: itin._id,
+              title: itin.title || b.experience || "Untitled Itinerary",
+              destination: itin.destination || "Unknown Destination",
+              author: "AI Generated",
+              progress: progress,
+              lastEdit: itin.updatedAt ? new Date(itin.updatedAt).toLocaleDateString() : "Just now",
+              originalBooking: b
+            };
+          });
+
+        setDrafts(backendDrafts);
       } catch (error) {
         console.error("Error fetching supplier bookings:", error);
       } finally {
@@ -93,22 +115,6 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
       }
     };
     fetchData();
-  }, []);
-
-  useEffect(() => {
-    const onStorage = (e) => {
-      if (e?.key === "kufi_supplier_itinerary_drafts") {
-        setDrafts(readItineraryDrafts());
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-
-  useEffect(() => {
-    const onUpdated = () => setDrafts(readItineraryDrafts());
-    window.addEventListener("kufi_itinerary_drafts_updated", onUpdated);
-    return () => window.removeEventListener("kufi_itinerary_drafts_updated", onUpdated);
   }, []);
 
   const filteredBookings = useMemo(() => {
@@ -415,17 +421,10 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
 
                 <div className="mt-3 flex items-center justify-between">
                   <button
-                    onClick={() => onResumeDraft?.(draft)}
+                    onClick={() => onResumeDraft?.(draft.originalBooking)}
                     className="rounded-full bg-[#a26e35] px-4 py-1.5 text-[11px] font-semibold text-white hover:bg-[#8b5e2d] transition-colors"
                   >
                     Resume
-                  </button>
-                  <button
-                    onClick={() => onRemoveDraft?.(draft.id)}
-                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors ${darkMode ? "border-slate-700 bg-slate-900 text-rose-400 hover:bg-slate-800" : "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"}`}
-                  >
-                    <span aria-hidden>🗑</span>
-                    <span>Remove</span>
                   </button>
                 </div>
               </div>
