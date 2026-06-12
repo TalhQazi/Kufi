@@ -563,7 +563,7 @@ export default function App() {
       ? {
         ...activity,
         id: activity.id || activity._id,
-        image: activity.image || activity.imageUrl || activity.images?.[0] || activity.Picture,
+        image: activity.image || activity.imageUrl || activity.images?.[0] || activity.Picture || '/assets/activity1.jpeg',
         location: activity.location || [activity.city?.name, activity.country?.name].filter(Boolean).join(', ') || activity.country || activity.city,
       }
       : null
