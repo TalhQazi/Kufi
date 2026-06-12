@@ -27,12 +27,16 @@ export default function NotificationsModal({ onClose, onPaymentClick, onViewItin
                         actions = ['View Itinerary', 'Proceed to Payment']
                     }
 
+                    const supplier = trip.supplierId
+                    const supplierName = supplier?.name || trip.supplierName || 'Travel Partner'
+                    const supplierAvatar = supplier?.avatar || supplier?.profileImage || trip.imageUrl || trip.image || '/assets/hero-card1.jpeg'
+
                     return {
                         id: trip._id || trip.id,
-                        trip: trip, // Store original trip object
+                        trip: trip,
                         type: 'inquiry',
-                        supplier: trip.supplierName || 'Travel Partner',
-                        avatar: trip.imageUrl || trip.image || '/assets/hero-card1.jpeg',
+                        supplier: supplierName,
+                        avatar: supplierAvatar,
                         message: `Your trip request for '${trip.title}' is ${trip.status || 'in progress'}.`,
                         time: new Date(trip.createdAt).toLocaleDateString(),
                         status: mappedStatus,
