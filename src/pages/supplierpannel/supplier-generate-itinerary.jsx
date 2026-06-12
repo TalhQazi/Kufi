@@ -32,10 +32,11 @@ export function parseBudgetValue(value) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   const raw = String(value).trim();
   if (!raw || raw === "—" || raw === "-" || /^n\/?a$/i.test(raw)) return undefined;
-  const match = raw.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
-  if (!match) return undefined;
-  const num = Number(match[1]);
-  return Number.isFinite(num) ? num : undefined;
+  const matches = raw.replace(/,/g, "").match(/\d+(?:\.\d+)?/g);
+  if (!matches || matches.length === 0) return undefined;
+  const numbers = matches.map(Number).filter(Number.isFinite);
+  if (numbers.length === 0) return undefined;
+  return Math.max(...numbers);
 }
 
 export function buildItineraryPayload(request, overviewItinerary = null) {
@@ -62,6 +63,7 @@ export function buildItineraryPayload(request, overviewItinerary = null) {
     numberOfTravelers: trip.guests || trip.travelers || request.guests || request.travelers || 2,
     bookingId: request.id || request._id,
     tripData: trip,
+    controlPanel: overviewItinerary?.controlPanel || undefined,
   };
 
   const budget = parseBudgetValue(trip.budget ?? request.amount);

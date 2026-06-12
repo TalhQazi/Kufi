@@ -86,8 +86,12 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
 
     const parseAmount = (budget) => {
         if (!budget) return 0;
-        const digits = String(budget).replace(/[^0-9.]/g, '');
-        return parseFloat(digits) || 0;
+        const raw = String(budget).trim();
+        const matches = raw.replace(/,/g, '').match(/\d+(?:\.\d+)?/g);
+        if (!matches || matches.length === 0) return 0;
+        const numbers = matches.map(Number).filter(Number.isFinite);
+        if (numbers.length === 0) return 0;
+        return Math.max(...numbers);
     };
 
     // Calculate total itinerary price from activities + hotel + uplift if available

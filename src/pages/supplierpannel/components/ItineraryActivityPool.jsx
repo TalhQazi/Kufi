@@ -19,6 +19,32 @@ const resolveImageUrl = (value) => {
 
 // ─── Draggable activity card ─────────────────────────────────────────────────
 
+const getCategoryPlaceholder = (category, title) => {
+  const cat = String(category || "").toLowerCase();
+  const text = String(title || "").toLowerCase();
+  
+  if (cat.includes("food") || cat.includes("drink") || text.includes("food") || text.includes("eat") || text.includes("culinary") || text.includes("dining") || text.includes("wine") || text.includes("dinner") || text.includes("cooking")) {
+    return "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=250&auto=format&fit=crop&q=70";
+  }
+  if (cat.includes("hike") || cat.includes("hiking") || cat.includes("adventure") || text.includes("hike") || text.includes("trek") || text.includes("adventure") || text.includes("climb") || text.includes("mountain") || text.includes("canyon") || text.includes("camp") || text.includes("jeep") || text.includes("gorge")) {
+    return "https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=250&auto=format&fit=crop&q=70";
+  }
+  if (cat.includes("water") || cat.includes("sea") || text.includes("water") || text.includes("sea") || text.includes("boat") || text.includes("snorkeling") || text.includes("cruise") || text.includes("swim") || text.includes("beach") || text.includes("float")) {
+    return "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=250&auto=format&fit=crop&q=70";
+  }
+  if (cat.includes("air") || text.includes("air") || text.includes("balloon") || text.includes("sky") || text.includes("fly") || text.includes("flight") || text.includes("sunrise")) {
+    return "https://images.unsplash.com/photo-1530841377377-3ff06c0ca713?w=250&auto=format&fit=crop&q=70";
+  }
+  if (cat.includes("wellness") || text.includes("spa") || text.includes("massage") || text.includes("wellness") || text.includes("yoga") || text.includes("relax") || text.includes("thermal")) {
+    return "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=250&auto=format&fit=crop&q=70";
+  }
+  if (cat.includes("culture") || cat.includes("sightseeing") || text.includes("tour") || text.includes("city") || text.includes("museum") || text.includes("guide") || text.includes("palace") || text.includes("history") || text.includes("temple") || text.includes("ruins") || text.includes("grotto") || text.includes("walking")) {
+    return "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=250&auto=format&fit=crop&q=70";
+  }
+  // Default travel placeholder
+  return "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=250&auto=format&fit=crop&q=70";
+};
+
 function DraggableCard({ activity, darkMode }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `pool-${activity._id || activity.id}`,
@@ -30,6 +56,7 @@ function DraggableCard({ activity, darkMode }) {
     : undefined;
 
   const activityUrl = `/activities/${activity._id || activity.id}`;
+  const displayImage = activity.image ? resolveImageUrl(activity.image) : getCategoryPlaceholder(activity.category, activity.title);
 
   return (
     <div
@@ -42,8 +69,8 @@ function DraggableCard({ activity, darkMode }) {
       } ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"}`}
     >
       <div className="relative h-24 bg-gray-200 overflow-hidden">
-        {activity.image ? (
-          <img src={resolveImageUrl(activity.image)} alt={activity.title} className="w-full h-full object-cover" />
+        {displayImage ? (
+          <img src={displayImage} alt={activity.title} className="w-full h-full object-cover" />
         ) : (
           <div className={`w-full h-full flex items-center justify-center text-xs ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
             No image
@@ -99,7 +126,7 @@ export default function ItineraryActivityPool({ darkMode, itinerary, assignedAct
       try {
         const [catRes, actRes] = await Promise.all([
           api.get("/categories"),
-          api.get("/activities?includeImages=true"),
+          api.get("/activities"),
         ]);
 
         setCategories(catRes.data || []);

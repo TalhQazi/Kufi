@@ -189,6 +189,13 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
         let matchDetails = null
         list.forEach((it) => {
             if (matched) return
+
+            // Skip draft itineraries that are not sent to traveler yet
+            const itStatus = String(it?.status || '').trim().toLowerCase()
+            if (itStatus === 'pending' || itStatus === 'pending review') {
+                return
+            }
+
             // Primary: match by bookingId/requestId
             const rawCandidate =
                 it?.bookingId ||

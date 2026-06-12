@@ -214,7 +214,7 @@ const Dashboard = ({ onNavigate }) => {
 
         // Process Analytics data
         try {
-            const analyticsRes = await api.get('/admin/analytics').catch(() => ({ data: [] }));
+            const analyticsRes = await api.get('/analytics/admin').catch(() => ({ data: [] }));
             const analyticsArray = Array.isArray(analyticsRes.data) ? analyticsRes.data : (analyticsRes.data?.data || []);
             
             if (analyticsArray.length > 0) {

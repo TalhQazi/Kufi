@@ -444,7 +444,7 @@ const SupplierRequests = ({
   useEffect(() => {
     let active = true;
     async function loadOverviewItinerary() {
-      if (!itineraryRequest) {
+      if (!itineraryRequest || (view !== "itinerary" && view !== "generate")) {
         setOverviewItinerary(null);
         return;
       }
@@ -1307,19 +1307,13 @@ const SupplierRequests = ({
 
         {selected && (
           <div className="h-full">
-            {overviewItinerary ? (
-              <ItineraryControlPanel
-                key={overviewItinerary._id}
-                darkMode={darkMode}
-                itinerary={overviewItinerary}
-                request={selected}
-                onChange={(updatedCP) => setLocalCPData(updatedCP)}
-              />
-            ) : (
-              <div className={`w-full rounded-2xl border px-6 py-6 text-center text-sm transition-colors ${darkMode ? "bg-slate-900 border-slate-800 text-slate-400" : "bg-white border-gray-100 text-gray-500"}`}>
-                Loading control panel...
-              </div>
-            )}
+            <ItineraryControlPanel
+              key={overviewItinerary?._id || selected.id || selected._id}
+              darkMode={darkMode}
+              itinerary={overviewItinerary}
+              request={selected}
+              onChange={(updatedCP) => setLocalCPData(updatedCP)}
+            />
           </div>
         )}
       </aside>
