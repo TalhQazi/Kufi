@@ -64,9 +64,12 @@ export default function Explore({
   }, [])
 
   useEffect(() => {
-    updateScrollArrows()
+    const timer = setTimeout(updateScrollArrows, 300)
     window.addEventListener('resize', updateScrollArrows)
-    return () => window.removeEventListener('resize', updateScrollArrows)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', updateScrollArrows)
+    }
   }, [updateScrollArrows])
 
   const normalizeCategory = (value) => {
@@ -167,7 +170,7 @@ export default function Explore({
         const list = Array.isArray(res?.data) ? res.data : []
         const activeOnly = list.filter((c) => String(c?.status || '').toLowerCase() !== 'draft')
         setCategories(activeOnly)
-        setTimeout(updateScrollArrows, 50)
+        setTimeout(updateScrollArrows, 100)
       } catch (error) {
         console.error('Error fetching categories:', error)
         setCategories([])
