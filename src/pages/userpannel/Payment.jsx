@@ -20,7 +20,6 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         zip: '',
         country: 'United States'
     })
-    const [useWallet, setUseWallet] = useState(false)
     const [showSuccessModal, setShowSuccessModal] = useState(false)
     const [loading, setLoading] = useState(false)
     const [settings, setSettings] = useState({ commissionPercentage: 10, stripePublicKey: '' })
@@ -492,31 +491,6 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                         </div>
                                     </div>
                                 )}
-                            </div>
-
-
-                            {/* Wallet Balance */}
-                            <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
-                                <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        <svg width="18" height="18" className="sm:w-5 sm:h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#9B6F40" strokeWidth="2">
-                                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                                            <line x1="1" y1="10" x2="23" y2="10" />
-                                        </svg>
-                                        <div className="min-w-0">
-                                            <h3 className="text-xs sm:text-sm font-semibold text-slate-900">Use Wallet Balance</h3>
-                                        </div>
-                                    </div>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={useWallet}
-                                            onChange={(e) => setUseWallet(e.target.checked)}
-                                            className="sr-only peer"
-                                        />
-                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-brown/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-brown"></div>
-                                    </label>
-                                </div>
                             </div>
                         </div>
 
