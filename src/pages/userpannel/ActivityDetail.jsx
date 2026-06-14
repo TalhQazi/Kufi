@@ -442,7 +442,7 @@ export default function ActivityDetail({
                         <div key={item.id || item._id} className="pb-3 border-b border-slate-200 last:border-0">
                             <div className="flex items-center gap-3">
                                 <img
-                                    src={item.image || item.imageUrl || item.images?.[0] || "/assets/activity1.jpeg"}
+                                    src={item.image || item.imageUrl || item.images?.[0] || item.Picture || "/assets/activity1.jpeg"}
                                     alt={item.title}
                                     className="w-16 h-16 rounded-lg object-cover"
                                 />

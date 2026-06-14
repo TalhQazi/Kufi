@@ -495,10 +495,8 @@ const SupplierRequests = ({
         }
 
         const payload = buildItineraryPayload(itineraryRequest);
-        if (payload.userId) {
-          res = await api.post("/itineraries", payload);
-          if (active) setOverviewItinerary(res.data);
-        }
+        res = await api.post("/itineraries", payload);
+        if (active) setOverviewItinerary(res.data);
       } catch (err) {
         console.error("Failed to load overview itinerary:", err);
       }
@@ -798,9 +796,8 @@ const SupplierRequests = ({
               const userKey = group.user.email || group.user.name || `group-${groupIndex}`;
               const isExpanded = expandedGroups.has(userKey);
               const parentRequest = group.requests[0];
-              const parentStatus = String(parentRequest.status || '').trim().toLowerCase();
-              const hideChildren = parentStatus === 'confirmed' || parentStatus === 'accepted';
-              const childRequests = hideChildren ? [] : group.requests.slice(1);
+              const hideChildren = false;
+              const childRequests = group.requests.slice(1);
               const hasChildren = childRequests.length > 0;
 
             return (

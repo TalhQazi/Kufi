@@ -1,4 +1,4 @@
-export const PROCEED_WITH_AI_LABEL = "Proceed With AI Generated Itinerary";
+export const PROCEED_WITH_AI_LABEL = "Build Itinerary with AI";
 export const PENDING_ITINERARY_REQUEST_KEY = "kufiPendingItineraryRequestId";
 export const PENDING_ITINERARY_VIEW_KEY = "kufiPendingItineraryView";
 

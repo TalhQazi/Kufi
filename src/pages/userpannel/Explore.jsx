@@ -725,7 +725,7 @@ export default function Explore({
                   {selectedActivities.map(activity => (
                     <div key={activity.id} className="pb-3 border-b border-slate-200 last:border-0">
                       <div className="flex items-center gap-3 mb-2">
-                        <img src={activity.image || activity.imageUrl || activity.images?.[0] || "/assets/activity1.jpeg"} alt={activity.title} className="w-16 h-16 rounded-lg object-cover" />
+                        <img src={activity.image || activity.imageUrl || activity.images?.[0] || activity.Picture || "/assets/activity1.jpeg"} alt={activity.title} className="w-16 h-16 rounded-lg object-cover" />
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm font-semibold text-slate-900 truncate">{activity.title}</h4>
                           <p className="text-xs text-slate-500 truncate">{activity.location}</p>

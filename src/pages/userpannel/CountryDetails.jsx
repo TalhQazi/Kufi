@@ -382,7 +382,7 @@ export default function CountryDetails({
                                     className="flex items-center gap-2 mb-1 cursor-pointer hover:opacity-80 transition-opacity"
                                     onClick={() => onActivityClick && onActivityClick(activity?.id || activity?._id)}
                                 >
-                                    <img src={activity?.image} alt={activity?.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                                    <img src={activity?.image || activity?.imageUrl || activity?.images?.[0] || activity?.Picture || "/assets/activity1.jpeg"} alt={activity?.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <h4 className="text-xs font-semibold text-slate-900 truncate">{activity?.title}</h4>
                                         <p className="text-[11px] text-slate-500 truncate">{activity?.location}</p>

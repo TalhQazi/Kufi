@@ -357,10 +357,6 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
 
     // Otherwise, create a new one
     const payload = buildItineraryPayload(request, overviewItinerary);
-    if (!payload.userId) {
-      throw new Error("Traveler account is missing on this booking. Cannot create itinerary.");
-    }
-
     const res = await api.post("/itineraries", payload);
     return res.data;
   }
