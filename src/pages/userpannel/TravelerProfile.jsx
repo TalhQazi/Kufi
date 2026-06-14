@@ -5,7 +5,7 @@ import NotificationsModal from './NotificationsModal'
 import Footer from '../../components/layout/Footer'
 import ProfilePic from '../../components/ui/ProfilePic'
 
-export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSettingsClick, onHomeClick, initialTab = null, hideHeaderFooter = false }) {
+export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSettingsClick, onHomeClick, initialTab = null, hideHeaderFooter = false, onItineraryClick, onPaymentClick }) {
     const [activeTab, setActiveTab] = useState('Personal Info')
     const [showProfileDropdown, setShowProfileDropdown] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
@@ -16,6 +16,87 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
     const [passwordSuccess, setPasswordSuccess] = useState('')
     const [isLoading, setIsLoading] = useState(true)
     const [bookings, setBookings] = useState([])
+    const [userItineraries, setUserItineraries] = useState([])
+
+    const getTripKey = (trip) => {
+        const raw =
+            trip?.bookingId ||
+            trip?.requestId ||
+            trip?.booking ||
+            trip?.request ||
+            trip?.tripId ||
+            trip?.id ||
+            trip?._id ||
+            ''
+        const value = (raw && typeof raw === 'object') ? (raw?._id || raw?.id) : raw
+        return String(value || '')
+    }
+
+    const hasSupplierItinerary = (trip) => {
+        const bookingKey = getTripKey(trip)
+        const tripTitle = String(trip?.title || trip?.experience || '').trim().toLowerCase()
+        const tripDest = String(trip?.destination || trip?.location || '').trim().toLowerCase()
+        const list = Array.isArray(userItineraries) ? userItineraries : []
+        let matched = false
+        list.forEach((it) => {
+            if (matched) return
+            const itStatus = String(it?.status || '').trim().toLowerCase()
+            if (itStatus === 'pending' || itStatus === 'pending review') {
+                return
+            }
+            const rawCandidate =
+                it?.bookingId ||
+                it?.requestId ||
+                it?.booking ||
+                it?.request ||
+                it?._id ||
+                it?.id ||
+                ''
+            const candidateValue = (rawCandidate && typeof rawCandidate === 'object') ? (rawCandidate?._id || rawCandidate?.id) : rawCandidate
+            const candidate = String(candidateValue || '')
+            const idMatch = candidate && bookingKey && candidate === bookingKey
+            const itTitle = String(it?.title || it?.tripData?.title || '').trim().toLowerCase()
+            const itDest = String(it?.destination || it?.tripData?.destination || it?.tripData?.location || '').trim().toLowerCase()
+            const titleMatch = tripTitle && itTitle && tripDest && itDest && tripTitle === itTitle && tripDest === itDest
+            if (idMatch || titleMatch) {
+                matched = true
+            }
+        })
+        return matched
+    }
+
+    const getItineraryObjectForTrip = (trip) => {
+        const bookingKey = getTripKey(trip)
+        const tripTitle = String(trip?.title || trip?.experience || '').trim().toLowerCase()
+        const tripDest = String(trip?.destination || trip?.location || '').trim().toLowerCase()
+        const list = Array.isArray(userItineraries) ? userItineraries : []
+        let found = null
+        list.forEach((it) => {
+            if (found) return
+            const itStatus = String(it?.status || '').trim().toLowerCase()
+            if (itStatus === 'pending' || itStatus === 'pending review') {
+                return
+            }
+            const rawCandidate =
+                it?.bookingId ||
+                it?.requestId ||
+                it?.booking ||
+                it?.request ||
+                it?._id ||
+                it?.id ||
+                ''
+            const candidateValue = (rawCandidate && typeof rawCandidate === 'object') ? (rawCandidate?._id || rawCandidate?.id) : rawCandidate
+            const candidate = String(candidateValue || '')
+            const idMatch = candidate && bookingKey && candidate === bookingKey
+            const itTitle = String(it?.title || it?.tripData?.title || '').trim().toLowerCase()
+            const itDest = String(it?.destination || it?.tripData?.destination || it?.tripData?.location || '').trim().toLowerCase()
+            const titleMatch = tripTitle && itTitle && tripDest && itDest && tripTitle === itTitle && tripDest === itDest
+            if (idMatch || titleMatch) {
+                found = it
+            }
+        })
+        return found
+    }
     const [profileData, setProfileData] = useState(() => {
         try {
             const saved = localStorage.getItem('kufi_user_profile')
@@ -141,23 +222,19 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
 
                 const storedUserRaw = localStorage.getItem('currentUser')
                 const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null
-                const currentUserId = storedUser?._id || storedUser?.id
 
-                const [profileRes, bookingsList] = await Promise.all([
+                const [profileRes, bookingsList, itinerariesRes, wishlistRes] = await Promise.all([
                     api.get('/auth/profile').catch(() => ({ data: null })),
-                    (async () => {
-                        try {
-                            const res = await api.get('/bookings')
-                            const raw =
-                                res?.data?.bookings ??
-                                res?.data?.requests ??
-                                res?.data?.data ??
-                                res?.data
-                            return Array.isArray(raw) ? raw : []
-                        } catch {
-                            return []
-                        }
-                    })(),
+                    api.get('/bookings').then(res => {
+                        const raw =
+                            res?.data?.bookings ??
+                            res?.data?.requests ??
+                            res?.data?.data ??
+                            res?.data
+                        return Array.isArray(raw) ? raw : []
+                    }).catch(() => []),
+                    api.get('/itineraries', { timeout: 8000 }).catch(() => ({ data: [] })),
+                    api.get('/auth/wishlist').catch(() => ({ data: [] }))
                 ])
 
                 const profile = profileRes?.data || {}
@@ -177,25 +254,23 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                     nationality: profile.nationality || storedUser?.nationality || ''
                 })
 
-                setBookings(Array.isArray(bookingsList) ? bookingsList : [])
+                setBookings(bookingsList)
                 
-                // Fetch wishlist from backend
-                try {
-                    const wishlistRes = await api.get('/auth/wishlist')
-                    const backendWishlist = Array.isArray(wishlistRes?.data) ? wishlistRes.data : []
-                    // Transform backend format to frontend format
-                    const transformed = backendWishlist.map(item => ({
-                        _id: item.countryId,
-                        name: item.countryName,
-                        image: item.countryImage,
-                        country: item.countryName,
-                        addedAt: item.addedAt
-                    }))
-                    setWishlist(transformed)
-                } catch (wlError) {
-                    console.error('Error fetching wishlist:', wlError)
-                    setWishlist([])
-                }
+                const rawItineraries = itinerariesRes?.data
+                const extractedItineraries = Array.isArray(rawItineraries)
+                    ? rawItineraries
+                    : (rawItineraries?.itineraries ?? rawItineraries?.requests ?? rawItineraries?.data ?? [])
+                setUserItineraries(Array.isArray(extractedItineraries) ? extractedItineraries : [])
+
+                const backendWishlist = Array.isArray(wishlistRes?.data) ? wishlistRes.data : []
+                const transformed = backendWishlist.map(item => ({
+                    _id: item.countryId,
+                    name: item.countryName,
+                    image: item.countryImage,
+                    country: item.countryName,
+                    addedAt: item.addedAt
+                }))
+                setWishlist(transformed)
             } catch (error) {
                 console.error('Error fetching profile:', error)
             } finally {
@@ -382,7 +457,41 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
         return { preferredDestinations, preferredTripTypes }
     }, [normalizedBookings])
 
-    const tabs = ['Personal Info', 'Preferences', 'Travel History', 'Wishlist', 'Settings']
+    const itineraryTrips = React.useMemo(() => {
+        return normalizedBookings.filter((trip) => {
+            const payStatus = String(trip?.paymentStatus || 'unpaid').toLowerCase().trim()
+            const status = String(trip?._status || '').toLowerCase().trim()
+            return payStatus !== 'paid' && status !== 'cancelled'
+        })
+    }, [normalizedBookings])
+
+    const upcomingTrips = React.useMemo(() => {
+        return normalizedBookings.filter((trip) => {
+            const payStatus = String(trip?.paymentStatus || 'unpaid').toLowerCase().trim()
+            if (payStatus !== 'paid') return false
+            if (!trip?._endDate) return true
+            try {
+                return new Date(trip._endDate).getTime() > Date.now()
+            } catch {
+                return true
+            }
+        })
+    }, [normalizedBookings])
+
+    const pastTrips = React.useMemo(() => {
+        return normalizedBookings.filter((trip) => {
+            const payStatus = String(trip?.paymentStatus || 'unpaid').toLowerCase().trim()
+            if (payStatus !== 'paid') return false
+            if (!trip?._endDate) return false
+            try {
+                return new Date(trip._endDate).getTime() <= Date.now()
+            } catch {
+                return false
+            }
+        })
+    }, [normalizedBookings])
+
+    const tabs = ['Personal Info', 'Preferences', 'Itinerary', 'Upcoming Trip', 'Travel History', 'Wishlist', 'Settings']
 
     if (isLoading) {
         return (
@@ -1131,23 +1240,18 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                         </div>
                     )}
 
-                    {activeTab === 'Travel History' && (
+                    {activeTab === 'Itinerary' && (
                         <div className="bg-white rounded-2xl p-6 shadow-sm">
-                            <h3 className="text-lg font-bold text-slate-900 mb-6">Travel History</h3>
-
+                            <h3 className="text-lg font-bold text-slate-900 mb-6">Itinerary Drafts</h3>
                             <div className="space-y-4">
-                                {normalizedBookings.length > 0 ? normalizedBookings.map((trip) => {
+                                {itineraryTrips.length > 0 ? itineraryTrips.map((trip) => {
                                     const createdAt = trip?._createdAt ? new Date(trip._createdAt) : null
                                     const dateLabel = createdAt && !Number.isNaN(createdAt.valueOf())
                                         ? createdAt.toLocaleDateString()
                                         : '—'
-                                    const status = String(trip?._status || '').toLowerCase().trim()
-                                    const statusLabel = status || 'pending'
-                                    const statusClass = ['confirmed', 'accepted', 'completed'].includes(status)
-                                        ? 'bg-green-100 text-green-700'
-                                        : ['pending', 'processing', 'in progress'].includes(status)
-                                            ? 'bg-yellow-100 text-yellow-700'
-                                            : 'bg-slate-100 text-slate-600'
+                                    
+                                    const hasIt = hasSupplierItinerary(trip)
+                                    const itObj = getItineraryObjectForTrip(trip)
 
                                     return (
                                         <div key={trip._id || trip.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
@@ -1183,22 +1287,159 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                                 </div>
                                             </div>
                                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
-                                                {status !== 'cancelled' && (
-                                                    <button 
-                                                        onClick={() => setSelectedItinerary(trip)}
-                                                        className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap"
-                                                    >
-                                                        View Itinerary
-                                                    </button>
+                                                {hasIt ? (
+                                                    <>
+                                                        <button 
+                                                            onClick={() => onItineraryClick && onItineraryClick(itObj)}
+                                                            className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap text-center"
+                                                        >
+                                                            View Itinerary
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => onPaymentClick && onPaymentClick(itObj)}
+                                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold whitespace-nowrap text-center"
+                                                        >
+                                                            Purchase
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold whitespace-nowrap text-center">
+                                                        Awaiting Itinerary
+                                                    </span>
                                                 )}
-                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap text-center ${statusClass}`}>
-                                                    {statusLabel}
+                                            </div>
+                                        </div>
+                                    )
+                                }) : (
+                                    <div className="py-10 text-center text-sm text-slate-500">No itinerary drafts found</div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'Upcoming Trip' && (
+                        <div className="bg-white rounded-2xl p-6 shadow-sm">
+                            <h3 className="text-lg font-bold text-slate-900 mb-6">Upcoming Trips</h3>
+                            <div className="space-y-4">
+                                {upcomingTrips.length > 0 ? upcomingTrips.map((trip) => {
+                                    const createdAt = trip?._createdAt ? new Date(trip._createdAt) : null
+                                    const dateLabel = createdAt && !Number.isNaN(createdAt.valueOf())
+                                        ? createdAt.toLocaleDateString()
+                                        : '—'
+                                    const itObj = getItineraryObjectForTrip(trip)
+
+                                    return (
+                                        <div key={trip._id || trip.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
+                                            <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0 bg-slate-100">
+                                                {trip._imageUrl ? (
+                                                    <img
+                                                        src={trip._imageUrl}
+                                                        alt={trip._experience}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : null}
+                                            </div>
+                                            <div className="flex-1 min-w-0 w-full sm:w-auto">
+                                                <h4 className="font-bold text-slate-900 mb-2 truncate">{trip._experience}</h4>
+                                                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
+                                                    <div className="flex items-center gap-1">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                            <circle cx="12" cy="10" r="3" />
+                                                        </svg>
+                                                        <span className="truncate">{trip._destination}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                                            <line x1="16" y1="2" x2="16" y2="6" />
+                                                            <line x1="8" y1="2" x2="8" y2="6" />
+                                                            <line x1="3" y1="10" x2="21" y2="10" />
+                                                        </svg>
+                                                        <span>{dateLabel}</span>
+                                                    </div>
+                                                    {trip._durationLabel ? <span>• {trip._durationLabel}</span> : null}
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
+                                                <button 
+                                                    onClick={() => onItineraryClick && onItineraryClick(itObj || trip)}
+                                                    className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap text-center"
+                                                >
+                                                    View Itinerary
+                                                </button>
+                                                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold whitespace-nowrap text-center">
+                                                    Purchased
                                                 </span>
                                             </div>
                                         </div>
                                     )
                                 }) : (
-                                    <div className="py-10 text-center text-sm text-slate-500">No trips found yet</div>
+                                    <div className="py-10 text-center text-sm text-slate-500">No upcoming trips found</div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'Travel History' && (
+                        <div className="bg-white rounded-2xl p-6 shadow-sm">
+                            <h3 className="text-lg font-bold text-slate-900 mb-6">Travel History</h3>
+                            <div className="space-y-4">
+                                {pastTrips.length > 0 ? pastTrips.map((trip) => {
+                                    const createdAt = trip?._createdAt ? new Date(trip._createdAt) : null
+                                    const dateLabel = createdAt && !Number.isNaN(createdAt.valueOf())
+                                        ? createdAt.toLocaleDateString()
+                                        : '—'
+                                    const itObj = getItineraryObjectForTrip(trip)
+
+                                    return (
+                                        <div key={trip._id || trip.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 hover:shadow-md transition-shadow">
+                                            <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0 bg-slate-100">
+                                                {trip._imageUrl ? (
+                                                    <img
+                                                        src={trip._imageUrl}
+                                                        alt={trip._experience}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : null}
+                                            </div>
+                                            <div className="flex-1 min-w-0 w-full sm:w-auto">
+                                                <h4 className="font-bold text-slate-900 mb-2 truncate">{trip._experience}</h4>
+                                                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 mb-3 sm:mb-0">
+                                                    <div className="flex items-center gap-1">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                            <circle cx="12" cy="10" r="3" />
+                                                        </svg>
+                                                        <span className="truncate">{trip._destination}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                                            <line x1="16" y1="2" x2="16" y2="6" />
+                                                            <line x1="8" y1="2" x2="8" y2="6" />
+                                                            <line x1="3" y1="10" x2="21" y2="10" />
+                                                        </svg>
+                                                        <span>{dateLabel}</span>
+                                                    </div>
+                                                    {trip._durationLabel ? <span>• {trip._durationLabel}</span> : null}
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
+                                                <button 
+                                                    onClick={() => onItineraryClick && onItineraryClick(itObj || trip)}
+                                                    className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap text-center"
+                                                >
+                                                    View Itinerary
+                                                </button>
+                                                <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold whitespace-nowrap text-center">
+                                                    Executed
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )
+                                }) : (
+                                    <div className="py-10 text-center text-sm text-slate-500">No past executed trips found</div>
                                 )}
                             </div>
                         </div>
@@ -1321,12 +1562,17 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
             {showNotifications && (
                 <NotificationsModal
                     onClose={() => setShowNotifications(false)}
-                    onPaymentClick={() => {
+                    onPaymentClick={(trip) => {
                         setShowNotifications(false)
-                        setActiveTab('Travel History')
+                        if (onPaymentClick) {
+                            onPaymentClick(trip)
+                        }
                     }}
-                    onViewItinerary={() => {
+                    onViewItinerary={(trip) => {
                         setShowNotifications(false)
+                        if (onItineraryClick) {
+                            onItineraryClick(trip)
+                        }
                     }}
                 />
             )}

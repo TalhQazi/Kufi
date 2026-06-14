@@ -601,6 +601,8 @@ export default function App() {
       setCurrentIndex(newIndex)
       setPage(prevPage)
       window.history.back()
+    } else {
+      navigateTo('home')
     }
   }
 
@@ -838,6 +840,11 @@ export default function App() {
         onHomeClick={() => navigateTo('home')}
         initialTab={travelerProfileInitialTab}
         hideHeaderFooter={true}
+        onItineraryClick={handleItineraryClick}
+        onPaymentClick={(itineraryData) => {
+          setBookingData(itineraryData)
+          navigateTo('payment')
+        }}
       />
     )
 

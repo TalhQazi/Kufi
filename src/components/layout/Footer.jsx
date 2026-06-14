@@ -231,16 +231,17 @@ export default function Footer({ onLegalClick }) {
                         )}
                         <div className="flex gap-2 items-center pl-1 flex-wrap">
                             {paymentMethods.map((method, idx) => (
-                                <img
-                                    key={idx}
-                                    src={method.iconImage}
-                                    alt={method.name}
-                                    className={`h-5 object-contain rounded shadow-sm hover:scale-110 transition-transform ${
-                                        method.name.toLowerCase().includes('visa')
-                                            ? 'brightness-0 invert opacity-90 h-2.5'
-                                            : ''
-                                    }`}
-                                />
+                                <div key={idx} className="w-10 h-7 flex items-center justify-center bg-white/10 rounded shadow-sm hover:scale-110 transition-transform p-0.5">
+                                    <img
+                                        src={method.iconImage}
+                                        alt={method.name}
+                                        className={`max-w-full max-h-full object-contain rounded ${
+                                            method.name.toLowerCase().includes('visa')
+                                                ? 'brightness-0 invert opacity-90'
+                                                : ''
+                                        }`}
+                                    />
+                                </div>
                             ))}
                         </div>
                     </div>

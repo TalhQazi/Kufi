@@ -69,6 +69,8 @@ const SupplierDashboard = ({
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [resumeItineraryDraft, setResumeItineraryDraft] = useState(null);
+  const [newRequestsCount, setNewRequestsCount] = useState(0);
+  const [unfinishedDraftsCount, setUnfinishedDraftsCount] = useState(0);
 
   useEffect(() => {
     const queued = consumeQueuedItineraryAiGeneration();
@@ -169,9 +171,17 @@ const SupplierDashboard = ({
           .filter((b) => String(b?.status || '').trim().toLowerCase() === 'pending')
           .map(normalizeBooking);
         setPendingRequests(pendingList);
+        setNewRequestsCount(pendingList.length);
 
         const normalizedAllRequests = allBookings.map(normalizeBooking);
         setAllRequests(normalizedAllRequests);
+
+        const draftItineraries = allBookings.filter(b => {
+          if (!b.itinerary) return false;
+          const itinStatus = String(b.itinerary.status || '').toLowerCase();
+          return itinStatus === 'pending' || itinStatus === 'pending review';
+        });
+        setUnfinishedDraftsCount(draftItineraries.length);
 
         const recentList = [...allBookings]
           .sort((a, b) => {
@@ -272,6 +282,7 @@ const SupplierDashboard = ({
         darkMode={darkMode}
         onToggleDarkMode={handleToggleDarkMode}
         onHomeClick={onHomeClick}
+        newRequestsCount={newRequestsCount}
       />
 
       <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-y-auto">
@@ -320,6 +331,58 @@ const SupplierDashboard = ({
                 Welcome back! Here is your overview.
               </p>
             </div>
+
+            {(newRequestsCount > 0 || unfinishedDraftsCount > 0) && (
+              <div className="mb-6 space-y-3">
+                {newRequestsCount > 0 && (
+                  <div className={`flex items-start gap-3 p-4 rounded-2xl border transition-all duration-300 ${
+                    darkMode 
+                      ? "bg-amber-950/20 border-amber-800/40 text-amber-200" 
+                      : "bg-amber-50 border-amber-200 text-amber-800"
+                  }`}>
+                    <div className="p-1 rounded-lg bg-amber-500/10 text-amber-500 shrink-0">
+                      <Bell className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold">Pending Requests</h4>
+                      <p className="text-xs opacity-90 mt-0.5">
+                        You have {newRequestsCount} traveler request{newRequestsCount > 1 ? 's' : ''} awaiting your review. Please accept or decline them under the Requests tab.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => navigateTo("Requests")}
+                      className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition-colors whitespace-nowrap"
+                    >
+                      Review
+                    </button>
+                  </div>
+                )}
+
+                {unfinishedDraftsCount > 0 && (
+                  <div className={`flex items-start gap-3 p-4 rounded-2xl border transition-all duration-300 ${
+                    darkMode 
+                      ? "bg-blue-950/20 border-blue-800/40 text-blue-200" 
+                      : "bg-blue-50 border-blue-200 text-blue-800"
+                  }`}>
+                    <div className="p-1 rounded-lg bg-blue-500/10 text-blue-500 shrink-0">
+                      <Clock3 className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold">Unfinished Itinerary Drafts</h4>
+                      <p className="text-xs opacity-90 mt-0.5">
+                        You have {unfinishedDraftsCount} itinerary draft{unfinishedDraftsCount > 1 ? 's' : ''} in progress. Don't forget to complete and send them to the travelers.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => navigateTo("Booking")}
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors whitespace-nowrap"
+                    >
+                      Complete
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="mb-6 grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {stats?.map((card) => {

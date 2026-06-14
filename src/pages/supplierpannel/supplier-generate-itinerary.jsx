@@ -555,10 +555,16 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     try {
       await api.put(`/itineraries/${itinerary._id}/days`, { days: daysData });
       setSaveMsg("Saved!");
-      setTimeout(() => setSaveMsg(""), 2500);
+      setTimeout(() => {
+        setSaveMsg("");
+        if (onGoToBookings) {
+          onGoToBookings();
+        }
+      }, 1000);
     } catch (err) {
       console.error("Save failed", err);
       setSaveMsg("Save failed");
+      setTimeout(() => setSaveMsg(""), 2500);
     } finally {
       setSaving(false);
     }

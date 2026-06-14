@@ -83,7 +83,7 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
           .filter(b => {
             if (!b.itinerary) return false;
             const status = String(b.itinerary.status || '').toLowerCase();
-            return status !== 'completed' && status !== 'ready';
+            return status === 'pending' || status === 'pending review';
           })
           .map(b => {
             const itin = b.itinerary;

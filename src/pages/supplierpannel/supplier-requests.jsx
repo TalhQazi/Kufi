@@ -120,11 +120,29 @@ const SupplierRequests = ({
     return fields.some((v) => String(v || "").trim());
   };
 
+  const [subTab, setSubTab] = useState("new");
+
+  const filteredRequestsByTab = useMemo(() => {
+    return requests.filter((r) => {
+      const status = String(r.status || '').trim().toLowerCase();
+      const payStatus = String(r.paymentStatus || 'unpaid').trim().toLowerCase();
+
+      if (subTab === 'new') {
+        return status === 'pending';
+      } else if (subTab === 'in_progress') {
+        return (status === 'confirmed' || status === 'accepted') && payStatus !== 'paid';
+      } else if (subTab === 'upcoming') {
+        return (status === 'confirmed' || status === 'accepted') && payStatus === 'paid';
+      }
+      return true;
+    });
+  }, [requests, subTab]);
+
   // Group requests by user email - creates parent-child node structure
   const groupedRequests = useMemo(() => {
     const groups = {};
     
-    requests.forEach((req) => {
+    filteredRequestsByTab.forEach((req) => {
       // Use email as unique identifier for user, fallback to name
       const userKey = req.email || req.name || 'unknown';
       if (!groups[userKey]) {
@@ -150,7 +168,18 @@ const SupplierRequests = ({
         return dateB - dateA;
       }),
     }));
-  }, [requests]);
+  }, [filteredRequestsByTab]);
+
+  useEffect(() => {
+    if (filteredRequestsByTab.length > 0) {
+      const exists = filteredRequestsByTab.some(r => String(r.id || r._id) === String(selectedId));
+      if (!exists) {
+        setSelectedId(filteredRequestsByTab[0].id || filteredRequestsByTab[0]._id);
+      }
+    } else {
+      setSelectedId(null);
+    }
+  }, [subTab, filteredRequestsByTab]);
 
   // Toggle group expand/collapse
   const toggleGroup = (userKey) => {
@@ -243,9 +272,7 @@ const SupplierRequests = ({
           adjustmentRequestedAt: r?.adjustmentRequestedAt || adjustmentRecord?.createdAt || null,
         };
       });
-      // Frontend safety: filter out requests that already have an itinerary created
       const finalList = [...normalized]
-        .filter(r => !r.itinerary)
         .sort((a, b) => {
           const aPending = String(a.status || '').trim().toLowerCase() === 'pending'
           const bPending = String(b.status || '').trim().toLowerCase() === 'pending'
@@ -412,7 +439,6 @@ const SupplierRequests = ({
 
     push(req?.imageUrl);
     push(req?.image);
-    push(req?.avatar);
 
     return images;
   };
@@ -422,12 +448,12 @@ const SupplierRequests = ({
   // Find selected request from either flat array or grouped requests (for child requests)
   const selected = useMemo(() => {
     // First try to find in flat requests array
-    const fromRequests = requests.find((r) => (r.id || r._id) === selectedId);
+    const fromRequests = requests.find((r) => String(r.id || r._id) === String(selectedId));
     if (fromRequests) return fromRequests;
     
     // If not found, search through grouped requests (child requests)
     for (const group of Object.values(groupedRequests)) {
-      const fromGroup = group.requests.find((r) => (r.id || r._id) === selectedId);
+      const fromGroup = group.requests.find((r) => String(r.id || r._id) === String(selectedId));
       if (fromGroup) return fromGroup;
     }
     
@@ -436,7 +462,7 @@ const SupplierRequests = ({
   }, [requests, selectedId, groupedRequests]);
   
   const itineraryRequest =
-    requests.find((r) => (r.id || r._id) === itineraryRequestId) || 
+    requests.find((r) => String(r.id || r._id) === String(itineraryRequestId)) || 
     (resumedRequest?.payload ? resumedRequest.payload.requestSnapshot : resumedRequest) ||
     selected || 
     null;
@@ -734,14 +760,48 @@ const SupplierRequests = ({
           </div>
         </div>
 
+        {/* Sub-tabs Selection */}
+        <div className="flex gap-2 border-b border-gray-100 pb-px">
+          {[
+            { id: "new", label: "New Requests" },
+            { id: "in_progress", label: "In Progress Itinerary" },
+            { id: "upcoming", label: "Upcoming Trip" }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setSubTab(tab.id)}
+              className={`px-4 py-2 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+                subTab === tab.id
+                  ? (darkMode 
+                      ? "border-amber-500 text-amber-500" 
+                      : "border-[#a26e35] text-[#a26e35]")
+                  : (darkMode 
+                      ? "border-transparent text-slate-400 hover:text-slate-200" 
+                      : "border-transparent text-gray-500 hover:text-gray-900")
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         <div className="space-y-6">
           {/* Node Tree Structure - Grouped by User */}
-          {Object.values(groupedRequests).map((group, groupIndex) => {
-            const userKey = group.user.email || group.user.name || `group-${groupIndex}`;
-            const isExpanded = expandedGroups.has(userKey);
-            const parentRequest = group.requests[0];
-            const childRequests = group.requests.slice(1);
-            const hasChildren = childRequests.length > 0;
+          {filteredRequestsByTab.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 border border-dashed border-gray-200 rounded-2xl">
+              <p className={`text-sm ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                No requests found in this tab.
+              </p>
+            </div>
+          ) : (
+            Object.values(groupedRequests).map((group, groupIndex) => {
+              const userKey = group.user.email || group.user.name || `group-${groupIndex}`;
+              const isExpanded = expandedGroups.has(userKey);
+              const parentRequest = group.requests[0];
+              const parentStatus = String(parentRequest.status || '').trim().toLowerCase();
+              const hideChildren = parentStatus === 'confirmed' || parentStatus === 'accepted';
+              const childRequests = hideChildren ? [] : group.requests.slice(1);
+              const hasChildren = childRequests.length > 0;
 
             return (
               <div key={userKey} className="relative">
@@ -756,7 +816,7 @@ const SupplierRequests = ({
                 {/* PARENT CARD - Largest */}
                 <div
                   className={`rounded-2xl border px-6 py-5 shadow-md cursor-pointer transition-all relative z-10 ${
-                    (parentRequest.id || parentRequest._id) === selectedId 
+                    String(parentRequest.id || parentRequest._id) === String(selectedId) 
                       ? (darkMode ? "border-amber-500/50 bg-slate-800/70" : "border-[#a26e35]/50 bg-amber-50/50") 
                       : (darkMode ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white")
                   }`}
@@ -789,6 +849,11 @@ const SupplierRequests = ({
                         <p className={`text-base font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
                           {parentRequest.name}
                         </p>
+                        {parentRequest.createdAt && (
+                          <p className={`text-xs mt-0.5 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                            Received: {new Date(parentRequest.createdAt).toLocaleDateString()} {new Date(parentRequest.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        )}
                         <div className="flex items-center gap-2 mt-1">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
                             darkMode ? "bg-amber-900/40 text-amber-400" : "bg-amber-50 text-amber-700"
@@ -984,7 +1049,7 @@ const SupplierRequests = ({
                           <div
                             key={childReq.id || childReq._id}
                             className={`rounded-2xl border px-6 py-5 shadow-md cursor-pointer transition-all relative ${
-                              (childReq.id || childReq._id) === selectedId 
+                              String(childReq.id || childReq._id) === String(selectedId) 
                                 ? (darkMode ? "border-emerald-500/50 bg-slate-800/70" : "border-emerald-400/50 bg-emerald-50/50") 
                                 : (darkMode ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white")
                             }`}
@@ -1133,7 +1198,7 @@ const SupplierRequests = ({
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
       </div>
 
