@@ -15,10 +15,16 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarDays, DollarSign, GripVertical, MapPin, Sparkles, Users } from "lucide-react";
+import { CalendarDays, GripVertical, Plus, Trash2 } from "lucide-react";
 import api from "../../api";
-import { PROCEED_WITH_AI_LABEL } from "../../constants/itineraryLabels";
 import ItineraryActivityPool from "./components/ItineraryActivityPool";
+import {
+  daysBetween as calendarDaysBetween,
+  formatDisplayDate,
+  getDayName as calendarDayName,
+  nightsBetween as calendarNightsBetween,
+  toDateString,
+} from "../../utils/calendarDate";
 
 
 export function resolveTravelerUserId(request) {
@@ -76,8 +82,6 @@ export function buildItineraryPayload(request, overviewItinerary = null) {
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
 function fmtTime(t) {
   if (!t) return "";
   const [h, m] = t.split(":");
@@ -88,22 +92,15 @@ function fmtTime(t) {
 }
 
 function fmtDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  return formatDisplayDate(dateStr) || dateStr || "";
 }
 
 function getDayName(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? "" : DAY_NAMES[d.getDay()];
+  return calendarDayName(dateStr);
 }
 
 function nightsBetween(start, end) {
-  if (!start || !end) return 0;
-  const a = new Date(start), b = new Date(end);
-  return Math.max(0, Math.round((b - a) / (1000 * 60 * 60 * 24)));
+  return calendarNightsBetween(start, end);
 }
 
 const resolveImageUrl = (value) => {
@@ -121,9 +118,17 @@ const resolveImageUrl = (value) => {
   return raw;
 };
 
+function newExtraField() {
+  return {
+    id: `ef-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    label: "",
+    value: "",
+  };
+}
+
 // ─── Sortable activity card inside a day ─────────────────────────────────────
 
-function SortableActivityCard({ activity, dayIndex, darkMode, onRemove }) {
+function SortableActivityCard({ activity, dayIndex, darkMode, onRemove, onChange }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: activity.id, data: { source: "day", dayIndex, activity } });
 
@@ -133,25 +138,26 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove }) {
     opacity: isDragging ? 0.4 : 1,
   };
 
-  const actUrl = activity.activityId ? `/activities/${activity.activityId}` : null;
+  const inputCls = `w-full rounded border px-1.5 py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${
+    darkMode ? "bg-slate-900 border-slate-600 text-white" : "bg-white border-gray-200 text-slate-900"
+  }`;
+
+  const setField = (field, value) => onChange?.(activity.id, dayIndex, field, value);
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      className={`rounded-xl border overflow-hidden flex gap-0 cursor-grab active:cursor-grabbing ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"
-        }`}
+      className={`rounded-xl border overflow-hidden flex gap-0 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"}`}
     >
-      {/* Drag handle icon */}
       <div
-        className={`flex items-center px-1.5 ${darkMode ? "text-slate-600" : "text-gray-300"}`}
+        className={`flex items-center px-1.5 cursor-grab active:cursor-grabbing ${darkMode ? "text-slate-600" : "text-gray-300"}`}
+        {...attributes}
+        {...listeners}
       >
         <GripVertical className="h-3.5 w-3.5" />
       </div>
 
-      {/* Image */}
       <div className="shrink-0 w-16 h-16">
         <img
           src={resolveImageUrl(activity.image) || "/assets/dest-1.jpeg"}
@@ -160,38 +166,45 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove }) {
         />
       </div>
 
-      {/* Info */}
-      <div className="flex-1 px-2 py-1.5 min-w-0">
-        {actUrl ? (
-          <a
-            href={actUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onPointerDown={(e) => e.stopPropagation()}
-            className={`text-[11px] font-semibold leading-tight truncate hover:underline ${darkMode ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-800"}`}
-          >
-            {activity.title}
-          </a>
-        ) : (
-          <p className={`text-[11px] font-semibold leading-tight truncate ${darkMode ? "text-white" : "text-slate-900"}`}>
-            {activity.title}
-          </p>
-        )}
-
-        {/* Supplier-only: times + price */}
-        <div className={`flex items-center gap-2 mt-0.5 text-[10px] ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
-          {activity.startTime && activity.endTime && (
-            <span>{fmtTime(activity.startTime)} – {fmtTime(activity.endTime)}</span>
-          )}
-          {activity.price > 0 && (
-            <span className={`font-medium ${darkMode ? "text-amber-400" : "text-amber-600"}`}>
-              ${activity.price}
-            </span>
-          )}
+      <div className="flex-1 px-2 py-1.5 min-w-0 space-y-1" onPointerDown={(e) => e.stopPropagation()}>
+        <input
+          className={inputCls}
+          value={activity.title || ""}
+          onChange={(e) => setField("title", e.target.value)}
+          placeholder="Activity title"
+        />
+        <div className="flex items-center gap-1">
+          <input
+            type="time"
+            className={`${inputCls} w-[5.5rem]`}
+            value={activity.startTime || ""}
+            onChange={(e) => setField("startTime", e.target.value)}
+          />
+          <span className={`text-[10px] ${darkMode ? "text-slate-500" : "text-gray-400"}`}>–</span>
+          <input
+            type="time"
+            className={`${inputCls} w-[5.5rem]`}
+            value={activity.endTime || ""}
+            onChange={(e) => setField("endTime", e.target.value)}
+          />
+          <input
+            type="number"
+            min="0"
+            step="1"
+            className={`${inputCls} w-16`}
+            value={activity.price ?? ""}
+            onChange={(e) => setField("price", Number(e.target.value) || 0)}
+            placeholder="$"
+          />
         </div>
+        <input
+          className={inputCls}
+          value={activity.description || ""}
+          onChange={(e) => setField("description", e.target.value)}
+          placeholder="Description (optional)"
+        />
       </div>
 
-      {/* Remove */}
       <button
         type="button"
         onClick={(e) => {
@@ -209,11 +222,8 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove }) {
 
 // ─── Droppable day column ─────────────────────────────────────────────────────
 
-function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity }) {
+function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, onChangeActivity }) {
   const activities = Array.isArray(day.activities) ? day.activities : [];
-  const isArrival = day.isArrivalDay || day.day === 1;
-  const isDeparture = day.isDepartureDay;
-
   const dayTotal = activities.reduce((sum, a) => sum + (Number(a.price) || 0), 0);
 
   const { setNodeRef } = useDroppable({
@@ -223,58 +233,48 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity }) 
 
   return (
     <div className="h-full flex flex-col">
-      {/* Arrival / departure banner */}
-      {isArrival && !day.isArrivalDay === false && (
-        <div className={`rounded-lg px-3 py-2 mb-3 text-[11px] font-medium ${darkMode ? "bg-blue-900/30 text-blue-300 border border-blue-900/40" : "bg-blue-50 text-blue-700 border border-blue-100"}`}>
-          Arrival Day — Free Day. Airport to Hotel transfer provided.
-        </div>
-      )}
       {day.isArrivalDay && (
         <div className={`rounded-lg px-3 py-2 mb-3 text-[11px] font-medium ${darkMode ? "bg-blue-900/30 text-blue-300 border border-blue-900/40" : "bg-blue-50 text-blue-700 border border-blue-100"}`}>
-          Arrival Day — Free Day. Airport to Hotel transfer provided.
+          {day.arrivalNote || "Arrival Day — Airport to Hotel transfer provided."}
         </div>
       )}
       {day.isDepartureDay && (
         <div className={`rounded-lg px-3 py-2 mb-3 text-[11px] font-medium ${darkMode ? "bg-orange-900/30 text-orange-300 border border-orange-900/40" : "bg-orange-50 text-orange-700 border border-orange-100"}`}>
-          Departure Day — Free Day. Hotel to Airport transfer provided.
+          {day.departureNote || "Departure Day — Hotel to Airport transfer provided."}
         </div>
       )}
 
-      {/* Drop zone */}
-      <SortableContext items={activities.map(a => a.id)} strategy={verticalListSortingStrategy}>
-        <div
-          ref={setNodeRef}
-          className={`flex-1 min-h-[160px] rounded-xl border-2 border-dashed transition-colors p-2 space-y-2 ${isActiveProp
-            ? darkMode ? "border-amber-500 bg-amber-900/10" : "border-amber-400 bg-amber-50"
-            : activities.length === 0
-              ? darkMode ? "border-slate-700 bg-slate-800/30" : "border-gray-200 bg-gray-50/50"
-              : darkMode ? "border-slate-700 bg-transparent" : "border-gray-100 bg-transparent"
-            }`}
-        >
-          {activities.length === 0 ? (
-            <div className={`flex items-center justify-center h-full text-[11px] pointer-events-none ${darkMode ? "text-slate-600" : "text-gray-400"}`}>
-              Drop activities here
-            </div>
-          ) : (
-            activities.map(act => (
-              <SortableActivityCard
-                key={act.id}
-                activity={act}
-                dayIndex={day.day - 1}
-                darkMode={darkMode}
-                onRemove={onRemoveActivity}
-              />
-            ))
-          )}
-        </div>
-      </SortableContext>
+      <div
+        ref={setNodeRef}
+        className={`flex-1 rounded-xl border border-dashed p-2 space-y-2 min-h-[80px] transition-colors ${
+          isActiveProp
+            ? (darkMode ? "border-amber-500 bg-amber-950/20" : "border-[#a26e35] bg-amber-50/50")
+            : (darkMode ? "border-slate-700" : "border-gray-200")
+        }`}
+      >
+        <SortableContext items={activities.map((a) => a.id)} strategy={verticalListSortingStrategy}>
+          {activities.map((act) => (
+            <SortableActivityCard
+              key={act.id}
+              activity={act}
+              dayIndex={day.day - 1}
+              darkMode={darkMode}
+              onRemove={onRemoveActivity}
+              onChange={onChangeActivity}
+            />
+          ))}
+        </SortableContext>
+        {activities.length === 0 && (
+          <p className={`text-[11px] text-center py-4 ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
+            Drag activities here
+          </p>
+        )}
+      </div>
 
-      {/* Per-day total (supplier only) */}
       {dayTotal > 0 && (
-        <div className={`mt-2 flex items-center justify-end gap-1 text-[11px] font-medium ${darkMode ? "text-amber-400" : "text-amber-600"}`}>
-          <DollarSign className="h-3 w-3" />
-          <span>Day total: ${dayTotal.toLocaleString()}</span>
-        </div>
+        <p className={`text-[10px] text-right mt-2 font-medium ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+          Day total: ${dayTotal.toLocaleString()}
+        </p>
       )}
     </div>
   );
@@ -290,7 +290,10 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   const [generateError, setGenerateError] = useState("");
   const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [extraFields, setExtraFields] = useState([]);
   const [activeDragId, setActiveDragId] = useState(null);
   const [activeDragData, setActiveDragData] = useState(null);
   const [overDayIndex, setOverDayIndex] = useState(null);
@@ -370,6 +373,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       const updated = res.data.itinerary || res.data;
       setItinerary(updated);
       setDaysData(updateDaysData(Array.isArray(updated.days) ? updated.days : []));
+      setExtraFields(Array.isArray(updated.extraFields) ? updated.extraFields : []);
       if (res.data?.warning) {
         setGenerateError(res.data.warning);
       } else if (!updated?.days?.length) {
@@ -403,6 +407,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       try {
         const itin = await resolveItineraryRecord();
         setItinerary(itin);
+        setExtraFields(Array.isArray(itin?.extraFields) ? itin.extraFields : []);
         setLoadError("");
 
         if (forceGenerateOnMount && !generateCalledRef.current) {
@@ -543,20 +548,80 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     }));
   }
 
-  // ── Save button ──────────────────────────────────────────────────────────────
+  function changeActivityField(actId, dayIndex, field, value) {
+    setDaysData((prev) =>
+      prev.map((d, i) => {
+        if (i !== dayIndex) return d;
+        return {
+          ...d,
+          activities: (d.activities || []).map((a) =>
+            a.id === actId ? { ...a, [field]: value } : a
+          ),
+        };
+      })
+    );
+  }
 
-  async function handleSave() {
+  function addDay() {
+    setDaysData((prev) => {
+      const last = prev[prev.length - 1];
+      const nextDate = last?.date ? (() => {
+        const parts = toDateString(last.date)?.split("-").map(Number);
+        if (!parts) return "";
+        const dt = new Date(parts[0], parts[1] - 1, parts[2] + 1);
+        const y = dt.getFullYear();
+        const m = String(dt.getMonth() + 1).padStart(2, "0");
+        const d = String(dt.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      })() : "";
+      const next = {
+        day: prev.length + 1,
+        date: nextDate,
+        dayName: getDayName(nextDate),
+        isArrivalDay: false,
+        isDepartureDay: true,
+        departureNote: "Departure Day — Hotel to Airport transfer provided.",
+        activities: [],
+      };
+      return [
+        ...prev.map((d, i) => ({
+          ...d,
+          isDepartureDay: false,
+          departureNote: undefined,
+          day: i + 1,
+        })),
+        next,
+      ];
+    });
+  }
+
+  function removeDay(dayIndex) {
+    setDaysData((prev) => {
+      if (prev.length <= 1) return prev;
+      const next = prev.filter((_, i) => i !== dayIndex).map((d, i) => ({
+        ...d,
+        day: i + 1,
+        isArrivalDay: i === 0,
+        isDepartureDay: i === prev.length - 2,
+      }));
+      return next;
+    });
+  }
+
+  // ── Save / Submit ────────────────────────────────────────────────────────────
+
+  async function handleSaveDraft() {
     if (!itinerary?._id) return;
     setSaving(true);
+    setSubmitError("");
     try {
-      await api.put(`/itineraries/${itinerary._id}/days`, { days: daysData });
-      setSaveMsg("Saved!");
-      setTimeout(() => {
-        setSaveMsg("");
-        if (onGoToBookings) {
-          onGoToBookings();
-        }
-      }, 1000);
+      const res = await api.put(`/itineraries/${itinerary._id}/days`, {
+        days: daysData,
+        extraFields,
+      });
+      setItinerary(res.data);
+      setSaveMsg("Draft saved");
+      setTimeout(() => setSaveMsg(""), 2500);
     } catch (err) {
       console.error("Save failed", err);
       setSaveMsg("Save failed");
@@ -566,10 +631,39 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     }
   }
 
+  async function handleSubmitToTraveler() {
+    if (!itinerary?._id) return;
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const res = await api.post(`/itineraries/${itinerary._id}/submit`, {
+        days: daysData,
+        extraFields,
+      });
+      setItinerary(res.data);
+      setSaveMsg("Submitted to traveller");
+      setTimeout(() => {
+        setSaveMsg("");
+        if (onGoToBookings) onGoToBookings();
+      }, 1200);
+    } catch (err) {
+      const errors = err?.response?.data?.errors;
+      const msg =
+        (Array.isArray(errors) && errors.join(". ")) ||
+        err?.response?.data?.msg ||
+        err?.message ||
+        "Submit failed";
+      setSubmitError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   // ── Summary calculations ─────────────────────────────────────────────────────
 
   const hotelData = itinerary?.controlPanel?.hotelId;
   const nights = nightsBetween(itinerary?.startDate, itinerary?.endDate);
+  const tripDays = calendarDaysBetween(itinerary?.startDate, itinerary?.endDate);
   const rooms = itinerary?.controlPanel?.numberOfRooms || 1;
   const hotelCost = hotelData?.pricePerNight ? hotelData.pricePerNight * nights * rooms : 0;
   const upliftRaw = itinerary?.controlPanel?.budgetUplift ?? 15;
@@ -580,6 +674,25 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     0
   ), 1);
 
+  const customCosts = Array.isArray(itinerary?.controlPanel?.customCosts)
+    ? itinerary.controlPanel.customCosts
+    : [];
+  const customCostLines = customCosts
+    .map((c) => {
+      const amount = Number(c?.amount) || 0;
+      if (!amount) return null;
+      const days = Math.max(1, tripDays || 1);
+      const total = c?.unit === "per_day" ? amount * days : amount;
+      const unitLabel = c?.unit === "per_day" ? ` ($${amount}/day × ${days})` : "";
+      return {
+        id: c?.id || c?.label,
+        label: `${c?.label || "Custom cost"}${unitLabel}`,
+        total,
+      };
+    })
+    .filter(Boolean);
+  const customCostsTotal = customCostLines.reduce((sum, c) => sum + c.total, 0);
+
   const activitiesTotal = useMemo(() =>
     daysData.reduce((sum, d) =>
       sum + (d.activities || []).reduce((s, a) => s + (Number(a.price) || 0), 0), 0),
@@ -589,7 +702,8 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     daysData.reduce((sum, d) => sum + (d.activities || []).length, 0),
     [daysData]);
 
-  const grandTotal = Math.round((activitiesTotal + hotelCost) * (1 + upliftPct));
+  const subtotalBeforeUplift = activitiesTotal + hotelCost + customCostsTotal;
+  const grandTotal = Math.round(subtotalBeforeUplift * (1 + upliftPct));
 
   const currentDay = daysData[activeDay] || null;
 
@@ -686,6 +800,15 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                       </p>
                     )}
                   </div>
+                  {daysData.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeDay(idx)}
+                      className={`text-[10px] px-2 py-1 rounded-lg ${darkMode ? "text-red-400 hover:bg-slate-800" : "text-red-500 hover:bg-red-50"}`}
+                    >
+                      Remove day
+                    </button>
+                  )}
                 </div>
 
                 <DayColumn
@@ -693,9 +816,72 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                   darkMode={darkMode}
                   isActive={overDayIndex === idx}
                   onRemoveActivity={removeActivityFromDay}
+                  onChangeActivity={changeActivityField}
                 />
               </div>
             ))}
+
+            <button
+              type="button"
+              onClick={addDay}
+              className={`w-full rounded-xl border border-dashed py-2 text-xs font-medium flex items-center justify-center gap-1 ${
+                darkMode ? "border-slate-700 text-slate-400 hover:bg-slate-900" : "border-gray-300 text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              <Plus className="w-3.5 h-3.5" /> Add day
+            </button>
+
+            {/* Extra fields */}
+            <div className={`${cardCls} px-4 py-4 space-y-3`}>
+              <div className="flex items-center justify-between">
+                <h3 className={`text-sm font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                  Extra Fields
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setExtraFields((prev) => [...prev, newExtraField()])}
+                  className="text-[11px] font-semibold text-[#a26e35] flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" /> Add field
+                </button>
+              </div>
+              {extraFields.length === 0 && (
+                <p className={`text-[11px] ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
+                  Add custom label/value pairs for the traveller itinerary.
+                </p>
+              )}
+              {extraFields.map((field, idx) => (
+                <div key={field.id || idx} className="flex gap-2 items-start">
+                  <input
+                    className={`flex-1 rounded-lg border px-2 py-1.5 text-xs ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-200"}`}
+                    placeholder="Field name"
+                    value={field.label || ""}
+                    onChange={(e) =>
+                      setExtraFields((prev) =>
+                        prev.map((f, i) => (i === idx ? { ...f, label: e.target.value } : f))
+                      )
+                    }
+                  />
+                  <input
+                    className={`flex-[1.4] rounded-lg border px-2 py-1.5 text-xs ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-200"}`}
+                    placeholder="Value"
+                    value={field.value || ""}
+                    onChange={(e) =>
+                      setExtraFields((prev) =>
+                        prev.map((f, i) => (i === idx ? { ...f, value: e.target.value } : f))
+                      )
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setExtraFields((prev) => prev.filter((_, i) => i !== idx))}
+                    className={`p-1.5 rounded-lg ${darkMode ? "text-red-400 hover:bg-slate-800" : "text-red-500 hover:bg-red-50"}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
 
             {/* Summary card */}
             <div className={`${cardCls} px-4 py-4`}>
@@ -711,7 +897,10 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                 <Row label="Transportation" value="Included in itinerary" dark={darkMode} />
                 {hotelCost > 0 && <Row label={`Hotel (${nights} nights × ${rooms} rooms)`} value={`$${hotelCost.toLocaleString()}`} dark={darkMode} />}
                 <Row label="Activities Cost" value={`$${activitiesTotal.toLocaleString()}`} dark={darkMode} />
-                {upliftPct > 0 && <Row label={`Uplift (${Math.round(upliftPct * 100)}%)`} value={`$${Math.round((activitiesTotal + hotelCost) * upliftPct).toLocaleString()}`} dark={darkMode} />}
+                {customCostLines.map((line) => (
+                  <Row key={line.id} label={line.label} value={`$${line.total.toLocaleString()}`} dark={darkMode} />
+                ))}
+                {upliftPct > 0 && <Row label={`Uplift (${Math.round(upliftPct * 100)}%)`} value={`$${Math.round(subtotalBeforeUplift * upliftPct).toLocaleString()}`} dark={darkMode} />}
                 <div className={`border-t pt-2 mt-1 flex justify-between font-bold text-sm ${darkMode ? "border-slate-700 text-white" : "border-gray-100 text-slate-900"}`}>
                   <span>Total</span>
                   <span>${grandTotal.toLocaleString()}</span>
@@ -719,20 +908,59 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
               </div>
             </div>
 
-            {/* Save button */}
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving || !itinerary}
-              className={`w-full rounded-full py-3 text-sm font-semibold transition-colors ${saving ? "opacity-60 cursor-not-allowed" : ""
-                } ${saveMsg === "Saved!" ? "bg-emerald-600 text-white" : "bg-[#a26e35] hover:bg-[#8b5e2d] text-white"}`}
-            >
-              {saving ? "Saving…" : saveMsg || "Save"}
-            </button>
+            {submitError && (
+              <div className={`rounded-xl border px-3 py-2 text-xs ${darkMode ? "bg-rose-950/40 border-rose-900 text-rose-300" : "bg-rose-50 border-rose-200 text-rose-700"}`}>
+                {submitError}
+              </div>
+            )}
+
+            {/* Save / Submit */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={handleSaveDraft}
+                disabled={saving || submitting || !itinerary}
+                className={`w-full rounded-full py-3 text-sm font-semibold transition-colors border ${
+                  saving ? "opacity-60 cursor-not-allowed" : ""
+                } ${darkMode ? "border-slate-600 text-white hover:bg-slate-800" : "border-gray-300 text-slate-800 hover:bg-gray-50"}`}
+              >
+                {saving ? "Saving…" : saveMsg === "Draft saved" ? "Draft saved" : "Save as Draft"}
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitToTraveler}
+                disabled={saving || submitting || !itinerary}
+                className={`w-full rounded-full py-3 text-sm font-semibold transition-colors ${
+                  submitting ? "opacity-60 cursor-not-allowed" : ""
+                } ${saveMsg === "Submitted to traveller" ? "bg-emerald-600 text-white" : "bg-[#a26e35] hover:bg-[#8b5e2d] text-white"}`}
+              >
+                {submitting ? "Submitting…" : saveMsg === "Submitted to traveller" ? "Submitted!" : "Submit to Traveller"}
+              </button>
+            </div>
           </div>
 
-          {/* ── Right: activity pool ──────────────────────── */}
-          <div className="space-y-4">
+          {/* ── Right: original request + activity pool ──────────────────────── */}
+          <div className="space-y-4 lg:sticky lg:top-4 self-start">
+            <div className={`${cardCls} px-4 py-4 space-y-2`}>
+              <h3 className={`text-sm font-semibold flex items-center gap-1.5 ${darkMode ? "text-white" : "text-slate-900"}`}>
+                <CalendarDays className="w-4 h-4 text-[#a26e35]" /> Original Request
+              </h3>
+              <Row label="Destination" value={request?.tripDetails?.destination || request?.destination || request?.location || itinerary?.destination || "—"} dark={darkMode} />
+              <Row label="Arrival" value={fmtDate(request?.tripDetails?.arrivalDate || request?.tripDetails?.startDate || request?.arrivalDate) || "—"} dark={darkMode} />
+              <Row label="Departure" value={fmtDate(request?.tripDetails?.departureDate || request?.tripDetails?.endDate || request?.departureDate) || "—"} dark={darkMode} />
+              <Row label="Travelers" value={request?.tripDetails?.guests || request?.guests || request?.travelers || "—"} dark={darkMode} />
+              <Row label="Budget" value={request?.tripDetails?.budget || request?.amount || "—"} dark={darkMode} />
+              <Row label="Customer" value={request?.name || request?.contactDetails?.firstName || request?.email || "—"} dark={darkMode} />
+              {(request?.tripDetails?.notes || request?.notes || request?.tripDetails?.requirements || request?.message) && (
+                <div className={`text-[11px] pt-2 border-t ${darkMode ? "border-slate-700 text-slate-300" : "border-gray-100 text-gray-700"}`}>
+                  <p className={`font-medium mb-1 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>Notes / Requirements</p>
+                  <p className="whitespace-pre-wrap">
+                    {request?.tripDetails?.notes || request?.notes || request?.tripDetails?.requirements || request?.message}
+                  </p>
+                </div>
+              )}
+            </div>
+
             <ItineraryActivityPool
               darkMode={darkMode}
               itinerary={itinerary}

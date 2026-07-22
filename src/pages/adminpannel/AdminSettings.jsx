@@ -17,7 +17,8 @@ const AdminSettings = () => {
     const [financialSettings, setFinancialSettings] = useState({
         commissionPercentage: 10,
         stripePublicKey: '',
-        googleAnalyticsId: ''
+        googleAnalyticsId: '',
+        countdownMinutes: 30,
     });
     const [updatingSettings, setUpdatingSettings] = useState(false);
 
@@ -227,6 +228,21 @@ const AdminSettings = () => {
                                     placeholder="G-XXXXXXXXXX"
                                 />
                                 <p className="text-[10px] text-gray-400 mt-1.5">Enter your Google Analytics 4 Measurement ID to enable tracking across the whole website.</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase">Payment Session Hold (minutes)</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="180"
+                                    step="1"
+                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-[#704b24] focus:ring-1 focus:ring-[#704b24] outline-none transition-all text-sm"
+                                    value={financialSettings.countdownMinutes ?? 30}
+                                    onChange={(e) => setFinancialSettings({ ...financialSettings, countdownMinutes: e.target.value })}
+                                    placeholder="30"
+                                />
+                                <p className="text-[10px] text-gray-400 mt-1.5">Countdown shown on the traveler payment page. Default is 30 minutes.</p>
                             </div>
                         </div>
 

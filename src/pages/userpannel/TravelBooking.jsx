@@ -681,7 +681,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                             {/* Budget Range */}
                             <div className="mb-6">
                                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                                    Choose your budget range <span className="text-red-500">*</span>
+                                    Choose your budget <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     value={formData.budget}
@@ -689,15 +689,19 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                     className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm text-slate-500"
                                     required
                                 >
-                                    <option value="">Choose your budget range</option>
-                                    <option value="<1000">Less than $1,000</option>
-                                    <option value="1000-3000">$1,000 - $3,000</option>
-                                    <option value="3000-5000">$3,000 - $5,000</option>
-                                    <option value="5000-10000">$5,000 - $10,000</option>
-                                    <option value=">10000">More than $10,000</option>
+                                    <option value="">Choose your budget</option>
+                                    {Array.from({ length: 40 }, (_, i) => {
+                                        const amount = (i + 1) * 500;
+                                        return (
+                                            <option key={amount} value={String(amount)}>
+                                                ${amount.toLocaleString()}
+                                            </option>
+                                        );
+                                    })}
+                                    <option value="20000+">$20,000+</option>
                                 </select>
                                 <p className="mt-1 text-xs text-slate-500">
-                                    Based on {payloadActivities.length} selected activity{payloadActivities.length !== 1 ? 'ies' : 'y'}
+                                    This budget is for the full package.
                                 </p>
                             </div>
 

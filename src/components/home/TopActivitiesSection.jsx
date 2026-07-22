@@ -95,6 +95,15 @@ export default function TopActivitiesSection({ onActivityClick }) {
 
     const activeItem = carouselItems[activeIndex]
 
+    const openActivity = (e, id) => {
+        if (!id) return
+        // Left-click without modifier → SPA navigation; otherwise allow new tab / middle-click
+        if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+            e.preventDefault()
+            onActivityClick && onActivityClick(id)
+        }
+    }
+
     return (
         <section className="py-12 sm:py-16 px-4 sm:px-8 lg:px-20 bg-[#E8DED0]" id="top-activities">
             <div className="max-w-[1200px] mx-auto">
@@ -112,10 +121,11 @@ export default function TopActivitiesSection({ onActivityClick }) {
                             ))
                         ) : (
                             leftCards.map((card) => (
-                                <article
+                                <a
                                     key={card.id}
-                                    className="relative h-56 sm:h-[210px] rounded-2xl overflow-hidden shadow-lg cursor-pointer group"
-                                    onClick={() => onActivityClick && onActivityClick(card.id)}
+                                    href={`#activity-detail/${card.id}`}
+                                    className="relative h-56 sm:h-[210px] rounded-2xl overflow-hidden shadow-lg cursor-pointer group block"
+                                    onClick={(e) => openActivity(e, card.id)}
                                 >
                                     <div className="absolute inset-0 w-full h-full overflow-hidden">
                                         <img 
@@ -139,15 +149,16 @@ export default function TopActivitiesSection({ onActivityClick }) {
                                             {card.subtitle}
                                         </p>
                                     </div>
-                                </article>
+                                </a>
                             ))
                         )}
                     </div>
 
                     {/* Right Column: Carousel */}
-                    <article
-                        className="relative h-[360px] md:h-[436px] rounded-2xl overflow-hidden shadow-2xl group cursor-pointer bg-slate-200"
-                        onClick={() => onActivityClick && activeItem?.id && onActivityClick(activeItem.id)}
+                    <a
+                        href={activeItem?.id ? `#activity-detail/${activeItem.id}` : undefined}
+                        className="relative h-[360px] md:h-[436px] rounded-2xl overflow-hidden shadow-2xl group cursor-pointer bg-slate-200 block"
+                        onClick={(e) => openActivity(e, activeItem?.id)}
                     >
                         {isLoading ? (
                             <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
@@ -255,7 +266,7 @@ export default function TopActivitiesSection({ onActivityClick }) {
                                 </div>
                             </>
                         )}
-                    </article>
+                    </a>
                 </div>
             </div>
         </section>

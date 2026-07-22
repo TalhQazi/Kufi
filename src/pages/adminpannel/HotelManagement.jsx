@@ -1,18 +1,31 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../../api";
 
 const EMPTY = {
-  name: "", country: "", city: "", pricePerNight: "", rooms: 1,
-  rating: 4.0, description: "", amenities: "", status: "active", images: "",
+  name: "",
+  country: "",
+  city: "",
+  pricePerNight: "",
+  rooms: 1,
+  rating: 4.0,
+  description: "",
+  amenities: "",
+  status: "active",
+  images: [],
+  sortOrder: 0,
 };
 
 export default function HotelManagement({ darkMode }) {
   const [hotels, setHotels] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [selectedCountryId, setSelectedCountryId] = useState("");
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [reordering, setReordering] = useState(false);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
@@ -20,7 +33,9 @@ export default function HotelManagement({ darkMode }) {
     setLoading(true);
     try {
       const res = await api.get("/hotels/all");
-      setHotels(res.data || []);
+      const list = Array.isArray(res.data) ? res.data : [];
+      list.sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0) || String(a.name || "").localeCompare(String(b.name || "")));
+      setHotels(list);
     } catch (err) {
       console.error(err);
     } finally {
@@ -28,22 +43,117 @@ export default function HotelManagement({ darkMode }) {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    api.get("/countries")
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : (res.data?.countries || []);
+        setCountries(list);
+      })
+      .catch((err) => {
+        console.error("Error fetching countries:", err);
+        setCountries([]);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!selectedCountryId) {
+      setCities([]);
+      return;
+    }
+    api.get(`/cities?country=${encodeURIComponent(selectedCountryId)}`)
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        setCities(list);
+      })
+      .catch((err) => {
+        console.error("Error fetching cities:", err);
+        setCities([]);
+      });
+  }, [selectedCountryId]);
+
+  // Resolve country id once countries finish loading (e.g. opening edit early)
+  useEffect(() => {
+    if (!showForm || !form.country || selectedCountryId || countries.length === 0) return;
+    const id = resolveCountryId(form.country);
+    if (id) setSelectedCountryId(id);
+  }, [showForm, form.country, selectedCountryId, countries]);
+
+  function resolveCountryId(countryName) {
+    if (!countryName) return "";
+    const match = countries.find(
+      (c) => String(c.name || "").toLowerCase() === String(countryName).toLowerCase()
+    );
+    return match?._id || match?.id || "";
+  }
 
   function openAdd() {
     setEditing(null);
-    setForm(EMPTY);
+    const nextOrder = hotels.reduce((max, h) => Math.max(max, Number(h.sortOrder) || 0), -1) + 1;
+    setForm({ ...EMPTY, sortOrder: nextOrder, images: [] });
+    setSelectedCountryId("");
+    setCities([]);
     setShowForm(true);
   }
 
   function openEdit(hotel) {
     setEditing(hotel._id);
+    const imageList = Array.isArray(hotel.images) ? hotel.images : (hotel.images ? [hotel.images] : []);
     setForm({
-      ...hotel,
+      name: hotel.name || "",
+      country: hotel.country || "",
+      city: hotel.city || "",
+      pricePerNight: hotel.pricePerNight ?? "",
+      rooms: hotel.rooms ?? 1,
+      rating: hotel.rating ?? 4.0,
+      description: hotel.description || "",
       amenities: Array.isArray(hotel.amenities) ? hotel.amenities.join(", ") : hotel.amenities || "",
-      images: Array.isArray(hotel.images) ? hotel.images.join(", ") : hotel.images || "",
+      status: hotel.status || "active",
+      images: imageList,
+      sortOrder: Number(hotel.sortOrder) || 0,
     });
+    setSelectedCountryId(resolveCountryId(hotel.country));
     setShowForm(true);
+  }
+
+  function handleCountryChange(countryId) {
+    setSelectedCountryId(countryId);
+    const country = countries.find((c) => String(c._id || c.id) === String(countryId));
+    setForm((p) => ({
+      ...p,
+      country: country?.name || "",
+      city: "",
+    }));
+  }
+
+  function handleCityChange(cityName) {
+    setForm((p) => ({ ...p, city: cityName }));
+  }
+
+  function handleImageUpload(files) {
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach((file) => {
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image must be 5MB or less");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm((prev) => ({
+          ...prev,
+          images: [...(prev.images || []), reader.result],
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function removeImage(index) {
+    setForm((prev) => ({
+      ...prev,
+      images: (prev.images || []).filter((_, i) => i !== index),
+    }));
   }
 
   async function handleSubmit(e) {
@@ -51,12 +161,17 @@ export default function HotelManagement({ darkMode }) {
     setSaving(true);
     try {
       const payload = {
-        ...form,
+        name: form.name,
+        country: form.country,
+        city: form.city,
         pricePerNight: Number(form.pricePerNight),
         rooms: Number(form.rooms),
         rating: Number(form.rating),
-        amenities: form.amenities ? form.amenities.split(",").map(s => s.trim()).filter(Boolean) : [],
-        images: form.images ? form.images.split(",").map(s => s.trim()).filter(Boolean) : [],
+        description: form.description || "",
+        amenities: form.amenities ? form.amenities.split(",").map((s) => s.trim()).filter(Boolean) : [],
+        images: Array.isArray(form.images) ? form.images.filter(Boolean) : [],
+        status: form.status,
+        sortOrder: Number(form.sortOrder) || 0,
       };
       if (editing) {
         await api.put(`/hotels/${editing}`, payload);
@@ -67,6 +182,7 @@ export default function HotelManagement({ darkMode }) {
       setShowForm(false);
     } catch (err) {
       console.error(err);
+      alert("Failed to save hotel");
     } finally {
       setSaving(false);
     }
@@ -76,17 +192,69 @@ export default function HotelManagement({ darkMode }) {
     if (!confirm("Delete this hotel?")) return;
     try {
       await api.delete(`/hotels/${id}`);
-      setHotels(prev => prev.filter(h => h._id !== id));
+      setHotels((prev) => prev.filter((h) => h._id !== id));
     } catch (err) {
       console.error(err);
     }
   }
 
-  const filtered = hotels.filter(h => {
-    const matchSearch = !search ||
-      h.name.toLowerCase().includes(search.toLowerCase()) ||
-      h.city.toLowerCase().includes(search.toLowerCase()) ||
-      h.country.toLowerCase().includes(search.toLowerCase());
+  async function moveHotel(index, direction) {
+    const sorted = [...hotels].sort(
+      (a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0) || String(a.name || "").localeCompare(String(b.name || ""))
+    );
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= sorted.length) return;
+
+    const current = sorted[index];
+    const neighbor = sorted[swapIndex];
+    const currentOrder = Number(current.sortOrder) || 0;
+    const neighborOrder = Number(neighbor.sortOrder) || 0;
+
+    // If equal orders, assign sequential then swap
+    let nextCurrentOrder = neighborOrder;
+    let nextNeighborOrder = currentOrder;
+    if (currentOrder === neighborOrder) {
+      nextCurrentOrder = swapIndex;
+      nextNeighborOrder = index;
+    }
+
+    setReordering(true);
+    try {
+      await Promise.all([
+        api.put(`/hotels/${current._id}`, { sortOrder: nextCurrentOrder }),
+        api.put(`/hotels/${neighbor._id}`, { sortOrder: nextNeighborOrder }),
+      ]);
+      setHotels((prev) =>
+        prev
+          .map((h) => {
+            if (h._id === current._id) return { ...h, sortOrder: nextCurrentOrder };
+            if (h._id === neighbor._id) return { ...h, sortOrder: nextNeighborOrder };
+            return h;
+          })
+          .sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0) || String(a.name || "").localeCompare(String(b.name || "")))
+      );
+    } catch (err) {
+      console.error("Error reordering hotels:", err);
+      alert("Failed to reorder hotel");
+    } finally {
+      setReordering(false);
+    }
+  }
+
+  const sortedHotels = useMemo(
+    () =>
+      [...hotels].sort(
+        (a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0) || String(a.name || "").localeCompare(String(b.name || ""))
+      ),
+    [hotels]
+  );
+
+  const filtered = sortedHotels.filter((h) => {
+    const matchSearch =
+      !search ||
+      h.name?.toLowerCase().includes(search.toLowerCase()) ||
+      h.city?.toLowerCase().includes(search.toLowerCase()) ||
+      h.country?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === "all" || h.status === filterStatus;
     return matchSearch && matchStatus;
   });
@@ -111,10 +279,10 @@ export default function HotelManagement({ darkMode }) {
           type="text"
           placeholder="Search name, city, country…"
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           className={`${inputCls} max-w-xs`}
         />
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className={`${inputCls} w-36`}>
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className={`${inputCls} w-36`}>
           <option value="all">All Status</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
@@ -132,33 +300,68 @@ export default function HotelManagement({ darkMode }) {
             <table className="w-full text-xs">
               <thead>
                 <tr className={`border-b text-left ${darkMode ? "border-slate-800 text-slate-500" : "border-gray-100 text-gray-500"}`}>
-                  {["Name", "Country", "City", "Price/Night", "Rooms", "Rating", "Status", "Actions"].map(h => (
+                  {["Order", "Name", "Country", "City", "Price/Night", "Rooms", "Rating", "Status", "Actions"].map((h) => (
                     <th key={h} className="px-4 py-3 font-semibold">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(hotel => (
-                  <tr key={hotel._id} className={`border-b last:border-0 ${darkMode ? "border-slate-800 hover:bg-slate-800/50" : "border-gray-50 hover:bg-gray-50"}`}>
-                    <td className={`px-4 py-3 font-medium ${darkMode ? "text-white" : "text-slate-900"}`}>{hotel.name}</td>
-                    <td className="px-4 py-3 text-gray-500">{hotel.country}</td>
-                    <td className="px-4 py-3 text-gray-500">{hotel.city}</td>
-                    <td className="px-4 py-3 font-medium text-amber-600">${hotel.pricePerNight?.toLocaleString()}</td>
-                    <td className="px-4 py-3">{hotel.rooms}</td>
-                    <td className="px-4 py-3">⭐ {hotel.rating}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${hotel.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
-                        {hotel.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <button onClick={() => openEdit(hotel)} className="text-blue-500 hover:underline">Edit</button>
-                        <button onClick={() => handleDelete(hotel._id)} className="text-red-400 hover:underline">Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((hotel) => {
+                  const fullIndex = sortedHotels.findIndex((h) => h._id === hotel._id);
+                  return (
+                    <tr key={hotel._id} className={`border-b last:border-0 ${darkMode ? "border-slate-800 hover:bg-slate-800/50" : "border-gray-50 hover:bg-gray-50"}`}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <span className={`tabular-nums mr-1 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                            {Number(hotel.sortOrder) || 0}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={reordering || fullIndex <= 0 || !!search || filterStatus !== "all"}
+                            onClick={() => moveHotel(fullIndex, "up")}
+                            className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                            title="Move up"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            disabled={reordering || fullIndex < 0 || fullIndex >= sortedHotels.length - 1 || !!search || filterStatus !== "all"}
+                            onClick={() => moveHotel(fullIndex, "down")}
+                            className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                            title="Move down"
+                          >
+                            ↓
+                          </button>
+                        </div>
+                      </td>
+                      <td className={`px-4 py-3 font-medium ${darkMode ? "text-white" : "text-slate-900"}`}>
+                        <div className="flex items-center gap-2">
+                          {hotel.images?.[0] && (
+                            <img src={hotel.images[0]} alt="" className="w-8 h-8 rounded object-cover" />
+                          )}
+                          {hotel.name}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">{hotel.country}</td>
+                      <td className="px-4 py-3 text-gray-500">{hotel.city}</td>
+                      <td className="px-4 py-3 font-medium text-amber-600">${hotel.pricePerNight?.toLocaleString()}</td>
+                      <td className="px-4 py-3">{hotel.rooms}</td>
+                      <td className="px-4 py-3">⭐ {hotel.rating}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${hotel.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
+                          {hotel.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <button onClick={() => openEdit(hotel)} className="text-blue-500 hover:underline">Edit</button>
+                          <button onClick={() => handleDelete(hotel._id)} className="text-red-400 hover:underline">Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -178,47 +381,100 @@ export default function HotelManagement({ darkMode }) {
 
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div>
+                <div className="col-span-2">
                   <label className={labelCls}>Hotel Name *</label>
-                  <input required value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className={inputCls} placeholder="e.g. Riad Atlas" />
+                  <input required value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} className={inputCls} placeholder="e.g. Riad Atlas" />
                 </div>
                 <div>
                   <label className={labelCls}>Country *</label>
-                  <input required value={form.country} onChange={e => setForm(p => ({ ...p, country: e.target.value }))} className={inputCls} placeholder="Morocco" />
+                  <select
+                    required
+                    value={selectedCountryId}
+                    onChange={(e) => handleCountryChange(e.target.value)}
+                    className={inputCls}
+                  >
+                    <option value="">Select country</option>
+                    {countries.map((c) => (
+                      <option key={c._id || c.id} value={c._id || c.id}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className={labelCls}>City *</label>
-                  <input required value={form.city} onChange={e => setForm(p => ({ ...p, city: e.target.value }))} className={inputCls} placeholder="Marrakech" />
+                  <select
+                    required
+                    value={form.city}
+                    onChange={(e) => handleCityChange(e.target.value)}
+                    className={inputCls}
+                    disabled={!selectedCountryId}
+                  >
+                    <option value="">{selectedCountryId ? "Select city" : "Select country first"}</option>
+                    {cities.map((c) => (
+                      <option key={c._id || c.id} value={c.name}>{c.name}</option>
+                    ))}
+                    {form.city && !cities.some((c) => c.name === form.city) && (
+                      <option value={form.city}>{form.city}</option>
+                    )}
+                  </select>
                 </div>
                 <div>
                   <label className={labelCls}>Price Per Night ($) *</label>
-                  <input required type="number" min={0} value={form.pricePerNight} onChange={e => setForm(p => ({ ...p, pricePerNight: e.target.value }))} className={inputCls} placeholder="120" />
+                  <input required type="number" min={0} value={form.pricePerNight} onChange={(e) => setForm((p) => ({ ...p, pricePerNight: e.target.value }))} className={inputCls} placeholder="120" />
                 </div>
                 <div>
                   <label className={labelCls}>Rooms Available</label>
-                  <input type="number" min={1} value={form.rooms} onChange={e => setForm(p => ({ ...p, rooms: e.target.value }))} className={inputCls} />
+                  <input type="number" min={1} value={form.rooms} onChange={(e) => setForm((p) => ({ ...p, rooms: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
                   <label className={labelCls}>Rating (0-5)</label>
-                  <input type="number" min={0} max={5} step={0.1} value={form.rating} onChange={e => setForm(p => ({ ...p, rating: e.target.value }))} className={inputCls} />
+                  <input type="number" min={0} max={5} step={0.1} value={form.rating} onChange={(e) => setForm((p) => ({ ...p, rating: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Sort Order</label>
+                  <input type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))} className={inputCls} />
                 </div>
               </div>
 
               <div>
                 <label className={labelCls}>Description</label>
-                <textarea rows={2} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className={inputCls} placeholder="Brief description…" />
+                <textarea rows={2} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} className={inputCls} placeholder="Brief description…" />
               </div>
               <div>
                 <label className={labelCls}>Amenities (comma-separated)</label>
-                <input value={form.amenities} onChange={e => setForm(p => ({ ...p, amenities: e.target.value }))} className={inputCls} placeholder="WiFi, Pool, Breakfast" />
+                <input value={form.amenities} onChange={(e) => setForm((p) => ({ ...p, amenities: e.target.value }))} className={inputCls} placeholder="WiFi, Pool, Breakfast" />
               </div>
               <div>
-                <label className={labelCls}>Image URLs (comma-separated)</label>
-                <input value={form.images} onChange={e => setForm(p => ({ ...p, images: e.target.value }))} className={inputCls} placeholder="https://…" />
+                <label className={labelCls}>Images</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => {
+                    handleImageUpload(e.target.files);
+                    e.target.value = "";
+                  }}
+                  className="w-full text-sm"
+                />
+                {form.images?.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {form.images.map((img, i) => (
+                      <div key={i} className="relative">
+                        <img src={img} alt="" className="w-16 h-16 rounded object-cover border border-gray-200" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(i)}
+                          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <label className={labelCls}>Status</label>
-                <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} className={inputCls}>
+                <select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))} className={inputCls}>
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>

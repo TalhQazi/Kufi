@@ -8,16 +8,24 @@ export default function SupplierHotels({ darkMode }) {
 
   useEffect(() => {
     api.get("/hotels")
-      .then(r => setHotels(r.data || []))
+      .then((r) => {
+        const list = Array.isArray(r.data) ? r.data : [];
+        list.sort(
+          (a, b) =>
+            (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0) ||
+            String(a.name || "").localeCompare(String(b.name || ""))
+        );
+        setHotels(list);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = hotels.filter(h =>
+  const filtered = hotels.filter((h) =>
     !search ||
-    h.name.toLowerCase().includes(search.toLowerCase()) ||
-    h.city.toLowerCase().includes(search.toLowerCase()) ||
-    h.country.toLowerCase().includes(search.toLowerCase())
+    h.name?.toLowerCase().includes(search.toLowerCase()) ||
+    h.city?.toLowerCase().includes(search.toLowerCase()) ||
+    h.country?.toLowerCase().includes(search.toLowerCase())
   );
 
   const base = darkMode ? "bg-slate-950 text-white" : "bg-gray-50 text-gray-900";

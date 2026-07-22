@@ -1,5 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import api from "../../../api";
+import { toDateString, buildTripDates as buildTripDateRange } from "../../../utils/calendarDate";
+
+const DEFAULT_CUSTOM_COSTS = [
+  { id: "min-charge", label: "Minimum charge", amount: 0, unit: "flat" },
+  { id: "transportation", label: "Transportation", amount: 0, unit: "per_day" },
+  { id: "food", label: "Food", amount: 0, unit: "per_day" },
+];
 
 const DEFAULT_CP = {
   activityStartTime: "09:00",
@@ -7,28 +14,51 @@ const DEFAULT_CP = {
   lunchStart: "13:00",
   lunchEnd: "14:00",
   startOnArrival: false,
-  endOnDeparture: false,
+  endOnDeparture: true,
   perDayOverrides: [],
   hotelId: "",
   numberOfRooms: 1,
   budgetUplift: 15,
+  customCosts: DEFAULT_CUSTOM_COSTS,
 };
 
+function seedCustomCosts(list) {
+  if (Array.isArray(list) && list.length > 0) {
+    return list.map((c, i) => ({
+      id: c.id || `cost-${i}-${Date.now()}`,
+      label: c.label || "",
+      amount: Number(c.amount) || 0,
+      unit: c.unit === "per_day" ? "per_day" : "flat",
+    }));
+  }
+  return DEFAULT_CUSTOM_COSTS.map((c) => ({ ...c }));
+}
+
+function newCustomCost() {
+  return {
+    id: `cost-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    label: "",
+    amount: 0,
+    unit: "flat",
+  };
+}
+
 export default function ItineraryControlPanel({ darkMode, itinerary, request, onSaved, onChange }) {
-  const [cp, setCp] = useState(DEFAULT_CP);
+  const [cp, setCp] = useState(() => ({
+    ...DEFAULT_CP,
+    customCosts: seedCustomCosts([]),
+  }));
   const [hotels, setHotels] = useState([]);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [startDate, setStartDate] = useState(() => {
     let start = itinerary?.startDate;
     if (!start && request) start = request?.tripDetails?.arrivalDate || request?.tripDetails?.startDate || request?.arrivalDate;
-    return start ? new Date(start).toISOString().slice(0, 10) : "";
+    return toDateString(start) || "";
   });
-  
+
   const [endDate, setEndDate] = useState(() => {
     let end = itinerary?.endDate;
     if (!end && request) end = request?.tripDetails?.departureDate || request?.tripDetails?.endDate || request?.departureDate;
-    return end ? new Date(end).toISOString().slice(0, 10) : "";
+    return toDateString(end) || "";
   });
 
   const country = itinerary?.country || itinerary?.tripData?.country || "";
@@ -46,7 +76,13 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
               : Number(itinerary.controlPanel.budgetUplift))
           : 15,
         hotelId: itinerary.controlPanel.hotelId?._id || itinerary.controlPanel.hotelId || "",
+        customCosts: seedCustomCosts(itinerary.controlPanel.customCosts),
       });
+    } else {
+      setCp((prev) => ({
+        ...prev,
+        customCosts: seedCustomCosts(prev.customCosts),
+      }));
     }
   }, [itinerary]);
 
@@ -70,8 +106,38 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     });
   };
 
+  const updateCustomCost = (id, field, value) => {
+    setCp((prev) => {
+      const customCosts = (prev.customCosts || []).map((c) =>
+        c.id === id ? { ...c, [field]: field === "amount" ? Number(value) || 0 : value } : c
+      );
+      const next = { ...prev, customCosts };
+      const selectedHotel = hotels.find((h) => h._id === next.hotelId) || null;
+      onChange?.(next, selectedHotel);
+      return next;
+    });
+  };
+
+  const addCustomCost = () => {
+    setCp((prev) => {
+      const next = { ...prev, customCosts: [...(prev.customCosts || []), newCustomCost()] };
+      const selectedHotel = hotels.find((h) => h._id === next.hotelId) || null;
+      onChange?.(next, selectedHotel);
+      return next;
+    });
+  };
+
+  const removeCustomCost = (id) => {
+    setCp((prev) => {
+      const next = { ...prev, customCosts: (prev.customCosts || []).filter((c) => c.id !== id) };
+      const selectedHotel = hotels.find((h) => h._id === next.hotelId) || null;
+      onChange?.(next, selectedHotel);
+      return next;
+    });
+  };
+
   // Per-day overrides helpers
-  const tripDates = buildTripDates(itinerary);
+  const tripDates = buildTripDates(itinerary, startDate, endDate);
 
   function setOverride(date, field, value) {
     setCp(prev => {
@@ -96,7 +162,6 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
 
   const cpRef = useRef(cp);
   const datesRef = useRef({ startDate, endDate });
-  const pendingSaveRef = useRef(null);
 
   useEffect(() => {
     cpRef.current = cp;
@@ -111,24 +176,11 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
       hotelId: cp.hotelId || null,
       startDate: startDate || null,
       endDate: endDate || null,
+      customCosts: Array.isArray(cp.customCosts) ? cp.customCosts : [],
     };
     const selectedHotel = hotels.find(h => h._id === cp.hotelId) || null;
     onChange?.(payload, selectedHotel);
   }, [cp, startDate, endDate, hotels, onChange]);
-
-  const formatTripDate = (value) => {
-    if (!value) return "—";
-    const v = String(value).trim();
-    if (!v) return "—";
-    const isoMatch = v.match(/^(\d{4}-\d{2}-\d{2})/);
-    if (isoMatch?.[1]) return isoMatch[1];
-    const t = Date.parse(v);
-    if (Number.isFinite(t)) return new Date(t).toISOString().slice(0, 10);
-    return v;
-  };
-
-  const requestedArrival = formatTripDate(request?.tripDetails?.arrivalDate || request?.tripDetails?.startDate || request?.arrivalDate);
-  const requestedDeparture = formatTripDate(request?.tripDetails?.departureDate || request?.tripDetails?.endDate || request?.departureDate);
 
   const base = darkMode
     ? "bg-slate-900 border-slate-800 text-slate-300"
@@ -304,6 +356,70 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
         </div>
       </div>
 
+      {/* Custom Costs */}
+      <div className={sectionCls}>
+        <div className="flex items-center justify-between">
+          <span className={labelCls}>Custom Costs</span>
+          <button
+            type="button"
+            onClick={addCustomCost}
+            className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-colors ${
+              darkMode
+                ? "border-slate-600 text-slate-300 hover:bg-slate-700"
+                : "border-gray-200 text-gray-600 hover:bg-white"
+            }`}
+          >
+            + Add
+          </button>
+        </div>
+        <div className="space-y-2">
+          {(cp.customCosts || []).map((cost) => (
+            <div
+              key={cost.id}
+              className={`rounded-lg border p-2 space-y-2 ${darkMode ? "border-slate-700 bg-slate-900/40" : "border-gray-200 bg-white"}`}
+            >
+              <div className="grid grid-cols-[1fr_auto] gap-2">
+                <input
+                  type="text"
+                  value={cost.label}
+                  onChange={(e) => updateCustomCost(cost.id, "label", e.target.value)}
+                  placeholder="Label"
+                  className={inputCls}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeCustomCost(cost.id)}
+                  className={`px-2 rounded-lg text-[10px] font-medium ${
+                    darkMode ? "text-rose-400 hover:bg-slate-800" : "text-rose-500 hover:bg-rose-50"
+                  }`}
+                  aria-label={`Remove ${cost.label || "cost"}`}
+                >
+                  Remove
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={cost.amount}
+                  onChange={(e) => updateCustomCost(cost.id, "amount", e.target.value)}
+                  placeholder="Amount"
+                  className={inputCls}
+                />
+                <select
+                  value={cost.unit}
+                  onChange={(e) => updateCustomCost(cost.id, "unit", e.target.value)}
+                  className={inputCls}
+                >
+                  <option value="flat">Flat</option>
+                  <option value="per_day">Per day</option>
+                </select>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
     </div>
   );
@@ -340,14 +456,8 @@ function Toggle({ label, value, onChange, darkMode }) {
   );
 }
 
-function buildTripDates(itinerary) {
-  if (!itinerary?.startDate || !itinerary?.endDate) return [];
-  const dates = [];
-  const cur = new Date(itinerary.startDate);
-  const end = new Date(itinerary.endDate);
-  while (cur <= end) {
-    dates.push(cur.toISOString().split("T")[0]);
-    cur.setDate(cur.getDate() + 1);
-  }
-  return dates;
+function buildTripDates(itinerary, localStart, localEnd) {
+  const start = localStart || itinerary?.startDate;
+  const end = localEnd || itinerary?.endDate;
+  return buildTripDateRange(start, end);
 }

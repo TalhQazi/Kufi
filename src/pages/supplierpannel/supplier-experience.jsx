@@ -332,6 +332,17 @@ const ExperiencesListing = ({ darkMode, experiences, drafts = [], onAddExperienc
 };
 
 const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
+  const normalizeDuration = (raw) => {
+    if (raw == null) return "";
+    const s = String(raw).trim().toLowerCase();
+    if (!s) return "";
+    const match = s.match(/(\d+(?:\.\d+)?)/);
+    const n = match ? Number(match[1]) : NaN;
+    if (!Number.isFinite(n)) return s;
+    const clamped = Math.min(10, Math.max(0.5, Math.round(n * 2) / 2));
+    return clamped === 1 ? "1 hour" : `${clamped} hours`;
+  };
+
   const [formData, setFormData] = useState({
     title: experience?.title || "",
     location: experience?.location || "",
@@ -339,7 +350,7 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
     description: experience?.description || "",
     price: experience?.price || "",
     image: experience?.image || experience?.imageUrl || "",
-    duration: experience?.duration || "",
+    duration: normalizeDuration(experience?.duration),
     difficulty: experience?.difficulty || "Easy",
     season: experience?.season || "Summer",
     highlights: experience?.highlights || [""],
@@ -650,13 +661,23 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Duration (hours)</label>
-                  <input
-                    type="text"
+                  <select
                     value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    placeholder="e.g., 2 hours"
                     className={`w-full rounded-lg border px-3 py-2 text-sm ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-gray-200"}`}
-                  />
+                  >
+                    <option value="">Select hours</option>
+                    {Array.from({ length: 20 }, (_, i) => {
+                      const h = (i + 1) * 0.5;
+                      const value = h === 1 ? "1 hour" : `${h} hours`;
+                      const label = h === 1 ? "1 Hour" : `${h} Hours`;
+                      return (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                  </select>
                 </div>
                 <div className="space-y-1.5">
                   <label className={`text-xs font-medium transition-colors ${darkMode ? "text-slate-400" : "text-gray-700"}`}>Price ($)</label>

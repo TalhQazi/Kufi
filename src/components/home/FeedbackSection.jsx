@@ -55,17 +55,19 @@ export default function FeedbackSection() {
         const fetchFeedbacks = async () => {
             try {
                 setIsLoading(true);
-                const response = await api.get('/reviews?type=feedback&isActive=true');
-                const reviews = response.data || [];
-                // Map API reviews to component format
-                const mappedReviews = reviews.map(review => ({
+                const response = await api.get('/reviews?type=feedback');
+                const reviews = Array.isArray(response.data) ? response.data : [];
+                // API already returns active reviews sorted by sortOrder
+                const mappedReviews = reviews.map((review) => ({
                     _id: review._id,
                     text: review.note,
                     name: review.name,
                     nameLabel: review.role,
                     avatar: review.image,
                     rating: review.rating,
+                    sortOrder: Number(review.sortOrder) || 0,
                 }));
+                mappedReviews.sort((a, b) => a.sortOrder - b.sortOrder);
                 setFeedbackItems(mappedReviews);
             } catch (error) {
                 console.error("Error fetching feedbacks:", error);

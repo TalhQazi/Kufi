@@ -121,22 +121,15 @@ const SupplierRequests = ({
   };
 
   const [subTab, setSubTab] = useState("new");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
 
-  const filteredRequestsByTab = useMemo(() => {
-    return requests.filter((r) => {
-      const status = String(r.status || '').trim().toLowerCase();
-      const payStatus = String(r.paymentStatus || 'unpaid').trim().toLowerCase();
-
-      if (subTab === 'new') {
-        return status === 'pending';
-      } else if (subTab === 'in_progress') {
-        return (status === 'confirmed' || status === 'accepted') && payStatus !== 'paid';
-      } else if (subTab === 'upcoming') {
-        return (status === 'confirmed' || status === 'accepted') && payStatus === 'paid';
-      }
-      return true;
-    });
-  }, [requests, subTab]);
+  // When using server-side tab/search, show requests as returned (still group client-side)
+  const filteredRequestsByTab = useMemo(() => requests, [requests]);
 
   // Group requests by user email - creates parent-child node structure
   const groupedRequests = useMemo(() => {
@@ -196,8 +189,16 @@ const SupplierRequests = ({
   const fetchRequests = async ({ silent = false } = {}) => {
     try {
       if (!silent) setIsLoading(true);
-      // Uses supplier bookings endpoint from backend; it may return all statuses
-      const response = await api.get("/supplier/bookings");
+      const params = new URLSearchParams({
+        tab: subTab,
+        page: String(page),
+        limit: "20",
+        sort: sortBy,
+        order: sortOrder,
+      });
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+
+      const response = await api.get(`/supplier/bookings?${params.toString()}`);
       // Be flexible with backend response shapes: {bookings}, {requests}, {data}, or array
       const raw =
         response.data?.bookings ??
@@ -205,6 +206,11 @@ const SupplierRequests = ({
         response.data?.data ??
         response.data;
       const list = Array.isArray(raw) ? raw : [];
+      if (response.data?.pagination) {
+        setPagination(response.data.pagination);
+      } else {
+        setPagination({ page: 1, limit: list.length || 20, total: list.length, totalPages: 1 });
+      }
       const adjustments = readAdjustmentStore();
       // Normalize for DB fields (id/_id, name, email, experience, location, date, guests, etc.)
       const normalized = list.map((r) => {
@@ -266,6 +272,7 @@ const SupplierRequests = ({
             r.price
           ) ?? "N/A",
           status: String(r.status || "pending").trim().toLowerCase(),
+          paymentStatus: String(r.paymentStatus || "unpaid").trim().toLowerCase(),
           avatar: r.user?.avatar ?? r.avatar ?? r.image ?? r.profileImage ?? "",
           preferences: r.preferences || {},
           adjustmentCard: r?.adjustmentCard || adjustmentRecord?.card || null,
@@ -362,9 +369,22 @@ const SupplierRequests = ({
   };
 
   useEffect(() => {
-    fetchRequests();
     fetchBookingTerms();
   }, []);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [subTab, page, searchQuery, sortBy, sortOrder]);
+
+  // Auto-refresh every 45s
+  useEffect(() => {
+    const id = setInterval(() => fetchRequests({ silent: true }), 45000);
+    return () => clearInterval(id);
+  }, [subTab, page, searchQuery, sortBy, sortOrder]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [subTab, searchQuery]);
 
   useEffect(() => {
     if (!resumeDraft) return;
@@ -703,6 +723,16 @@ const SupplierRequests = ({
               <p className={`text-[11px] ${darkMode ? "text-slate-500" : "text-gray-500"}`}>No activities selected</p>
             )}
           </div>
+
+          <div className="mt-5 pt-4 border-t transition-colors" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
+            <ItineraryControlPanel
+              key={overviewItinerary?._id || itineraryRequest.id || itineraryRequest._id}
+              darkMode={darkMode}
+              itinerary={overviewItinerary}
+              request={itineraryRequest}
+              onChange={(updatedCP) => setLocalCPData(updatedCP)}
+            />
+          </div>
         </div>
           <div className="flex items-center justify-center mt-6">
             <button
@@ -759,7 +789,7 @@ const SupplierRequests = ({
         </div>
 
         {/* Sub-tabs Selection */}
-        <div className="flex gap-2 border-b border-gray-100 pb-px">
+        <div className="flex gap-2 border-b border-gray-100 pb-px overflow-x-auto">
           {[
             { id: "new", label: "New Requests" },
             { id: "in_progress", label: "In Progress Itinerary" },
@@ -781,6 +811,46 @@ const SupplierRequests = ({
               {tab.label}
             </button>
           ))}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+          <form
+            className="flex flex-1 gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setSearchQuery(searchInput);
+            }}
+          >
+            <input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search name, email, destination…"
+              className={`flex-1 rounded-xl border px-3 py-2 text-xs ${
+                darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-slate-800"
+              }`}
+            />
+            <button
+              type="submit"
+              className="px-3 py-2 rounded-xl text-xs font-semibold bg-[#a26e35] text-white"
+            >
+              Search
+            </button>
+          </form>
+          <select
+            value={`${sortBy}:${sortOrder}`}
+            onChange={(e) => {
+              const [s, o] = e.target.value.split(":");
+              setSortBy(s);
+              setSortOrder(o);
+            }}
+            className={`rounded-xl border px-3 py-2 text-xs ${
+              darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200"
+            }`}
+          >
+            <option value="createdAt:desc">Newest first</option>
+            <option value="createdAt:asc">Oldest first</option>
+            <option value="status:asc">Status A–Z</option>
+          </select>
         </div>
 
         <div className="space-y-6">
@@ -1121,41 +1191,15 @@ const SupplierRequests = ({
 
                             <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t transition-colors pt-4" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
                               <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full lg:w-auto">
-                                {hasAdjustment(childReq) ? (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openAiItinerary(setItineraryRequestId, setView, childReq.id || childReq._id);
-                                    }}
-                                    className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${
-                                      darkMode
-                                        ? "bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700"
-                                        : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
-                                    }`}
-                                  >
-                                    View Adjustment
-                                  </button>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    disabled={!isRequestConfirmed(childReq)}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openCreateItinerary(setItineraryRequestId, setView, childReq.id || childReq._id);
-                                    }}
-                                    className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[10px] sm:text-xs font-semibold text-center transition-all ${
-                                      isRequestConfirmed(childReq)
-                                        ? "bg-[#a26e35] text-white shadow-sm hover:bg-[#8b5e2d]"
-                                        : darkMode
-                                          ? "bg-slate-800 text-slate-600 cursor-not-allowed"
-                                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                    }`}
-                                  >
-                                    <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                                    <span>{PROCEED_WITH_AI_LABEL}</span>
-                                  </button>
-                                )}
+                                <span
+                                  className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[10px] sm:text-xs font-semibold border ${
+                                    darkMode
+                                      ? "bg-slate-800/80 border-slate-700 text-slate-300"
+                                      : "bg-gray-50 border-gray-200 text-gray-600"
+                                  }`}
+                                >
+                                  Covered by parent request
+                                </span>
                               </div>
 
                               {/* Button Area - Accept/Reject */}
@@ -1196,6 +1240,37 @@ const SupplierRequests = ({
               </div>
             );
           }))}
+          )}
+
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <p className={`text-xs ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border disabled:opacity-40 ${
+                    darkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"
+                  }`}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  disabled={page >= pagination.totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border disabled:opacity-40 ${
+                    darkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1367,17 +1442,6 @@ const SupplierRequests = ({
           </div>
         )}
 
-        {selected && (
-          <div className="h-full">
-            <ItineraryControlPanel
-              key={overviewItinerary?._id || selected.id || selected._id}
-              darkMode={darkMode}
-              itinerary={overviewItinerary}
-              request={selected}
-              onChange={(updatedCP) => setLocalCPData(updatedCP)}
-            />
-          </div>
-        )}
       </aside>
     </div>
   );

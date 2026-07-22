@@ -21,6 +21,7 @@ import {
   Scale,
   Mail,
   Hotel,
+  CalendarDays,
 } from "lucide-react";
 
 
@@ -37,6 +38,7 @@ const navItems = [
   { label: "Manage Cities", icon: MapPin },
   { label: "Manage Categories", icon: Tag },
   { label: "Hotel Management", icon: Hotel },
+  { label: "Itineraries", icon: CalendarDays },
   { label: "Reviews", icon: MessageSquare },
   { label: "Booking Terms", icon: FileText },
   { label: "Footer", icon: Layout },

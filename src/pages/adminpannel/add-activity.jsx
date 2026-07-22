@@ -81,7 +81,7 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
       const n = match ? Number(match[1]) : NaN
       if (!Number.isFinite(n)) return ""
 
-      const clamped = Math.min(10, Math.max(1, Math.round(n)))
+      const clamped = Math.min(10, Math.max(0.5, Math.round(n * 2) / 2))
       return clamped === 1 ? '1 hour' : `${clamped} hours`
     }
     const normalizeAddOns = () => {
@@ -409,8 +409,8 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
             onChange={handleChange}
             options={[
               { label: 'Select hours', value: '' },
-              ...Array.from({ length: 10 }, (_, i) => {
-                const h = i + 1
+              ...Array.from({ length: 20 }, (_, i) => {
+                const h = (i + 1) * 0.5
                 const value = h === 1 ? '1 hour' : `${h} hours`
                 const label = h === 1 ? '1 Hour' : `${h} Hours`
                 return { label, value }

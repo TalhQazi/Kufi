@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Pencil, Plus, Search, Trash2, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import api from '../../api'
 
 const emptyDraft = {
@@ -38,6 +38,7 @@ export default function ReviewController() {
 
   const [modalOpen, setModalOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [reordering, setReordering] = useState(false)
   const [editingId, setEditingId] = useState('')
   const [draft, setDraft] = useState(emptyDraft)
 
@@ -46,6 +47,7 @@ export default function ReviewController() {
       setLoading(true)
       const res = await api.get(`/reviews?type=${encodeURIComponent(type)}&includeInactive=true`)
       const data = Array.isArray(res.data) ? res.data : []
+      data.sort((a, b) => (Number(a?.sortOrder) || 0) - (Number(b?.sortOrder) || 0))
       setItems(data)
     } catch (e) {
       console.error('Error fetching reviews:', e)
@@ -87,21 +89,67 @@ export default function ReviewController() {
     }
   }, [modalOpen, activeType, countries.length, countriesLoading])
 
+  const sortedItems = useMemo(() => {
+    return [...items].sort((a, b) => (Number(a?.sortOrder) || 0) - (Number(b?.sortOrder) || 0))
+  }, [items])
+
   const filtered = useMemo(() => {
     const q = String(query || '').toLowerCase().trim()
-    if (!q) return items
-    return items.filter((r) => {
+    if (!q) return sortedItems
+    return sortedItems.filter((r) => {
       return (
         String(r?.name || '').toLowerCase().includes(q) ||
         String(r?.note || '').toLowerCase().includes(q) ||
         String(r?.country || '').toLowerCase().includes(q)
       )
     })
-  }, [items, query])
+  }, [sortedItems, query])
+
+  const moveReview = async (index, direction) => {
+    const swapIndex = direction === 'up' ? index - 1 : index + 1
+    if (swapIndex < 0 || swapIndex >= sortedItems.length) return
+
+    const current = sortedItems[index]
+    const neighbor = sortedItems[swapIndex]
+    const currentId = current?._id || current?.id
+    const neighborId = neighbor?._id || neighbor?.id
+    if (!currentId || !neighborId) return
+
+    let nextCurrentOrder = Number(neighbor?.sortOrder) || 0
+    let nextNeighborOrder = Number(current?.sortOrder) || 0
+    if (nextCurrentOrder === nextNeighborOrder) {
+      nextCurrentOrder = swapIndex
+      nextNeighborOrder = index
+    }
+
+    setReordering(true)
+    try {
+      await Promise.all([
+        api.patch(`/reviews/${currentId}`, { sortOrder: nextCurrentOrder }),
+        api.patch(`/reviews/${neighborId}`, { sortOrder: nextNeighborOrder }),
+      ])
+      setItems((prev) =>
+        prev
+          .map((r) => {
+            const id = r?._id || r?.id
+            if (String(id) === String(currentId)) return { ...r, sortOrder: nextCurrentOrder }
+            if (String(id) === String(neighborId)) return { ...r, sortOrder: nextNeighborOrder }
+            return r
+          })
+          .sort((a, b) => (Number(a?.sortOrder) || 0) - (Number(b?.sortOrder) || 0))
+      )
+    } catch (e) {
+      console.error('Error reordering review:', e)
+      alert('Failed to reorder review')
+    } finally {
+      setReordering(false)
+    }
+  }
 
   const openAdd = () => {
     setEditingId('')
-    setDraft({ ...emptyDraft, type: activeType })
+    const nextOrder = items.reduce((max, r) => Math.max(max, Number(r?.sortOrder) || 0), -1) + 1
+    setDraft({ ...emptyDraft, type: activeType, sortOrder: nextOrder })
     setModalOpen(true)
   }
 
@@ -249,6 +297,7 @@ export default function ReviewController() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500">
               <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Order</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Client</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Role</th>
                 {activeType === 'country' && (
@@ -262,24 +311,49 @@ export default function ReviewController() {
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={activeType === 'country' ? 6 : 5} className="py-14 text-center">
+                  <td colSpan={activeType === 'country' ? 7 : 6} className="py-14 text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown mx-auto"></div>
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={activeType === 'country' ? 6 : 5} className="py-12 text-center text-gray-500">
+                  <td colSpan={activeType === 'country' ? 7 : 6} className="py-12 text-center text-gray-500">
                     No reviews found.
                   </td>
                 </tr>
               ) : (
                 filtered.map((item) => {
                   const id = item?._id || item?.id
+                  const fullIndex = sortedItems.findIndex((r) => String(r?._id || r?.id) === String(id))
                   const hasImage = Boolean(String(item?.image || '').trim())
                   const initials = String(item?.name || 'C').trim().slice(0, 1).toUpperCase()
+                  const canReorder = !query.trim()
 
                   return (
                     <tr key={id} className="bg-white hover:bg-gray-50/50 transition-colors">
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-gray-500 tabular-nums mr-1">{Number(item?.sortOrder) || 0}</span>
+                          <button
+                            type="button"
+                            disabled={reordering || !canReorder || fullIndex <= 0}
+                            onClick={() => moveReview(fullIndex, 'up')}
+                            className="p-1 rounded text-gray-400 hover:text-gray-700 disabled:opacity-30"
+                            title="Move up"
+                          >
+                            <ChevronUp className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={reordering || !canReorder || fullIndex < 0 || fullIndex >= sortedItems.length - 1}
+                            onClick={() => moveReview(fullIndex, 'down')}
+                            className="p-1 rounded text-gray-400 hover:text-gray-700 disabled:opacity-30"
+                            title="Move down"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
                           {hasImage ? (

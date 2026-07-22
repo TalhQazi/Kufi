@@ -22,13 +22,16 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
     })
     const [showSuccessModal, setShowSuccessModal] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [settings, setSettings] = useState({ commissionPercentage: 10, stripePublicKey: '' })
+    const [settings, setSettings] = useState({ commissionPercentage: 10, stripePublicKey: '', countdownMinutes: 30 })
     const [countries, setCountries] = useState([])
     const [travelerInfo, setTravelerInfo] = useState({
         fullName: '',
         email: '',
         phone: ''
     })
+    const [secondsLeft, setSecondsLeft] = useState(null)
+    const [sessionExpired, setSessionExpired] = useState(false)
+    const [sessionEndsAt, setSessionEndsAt] = useState(null)
 
     useEffect(() => {
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
@@ -57,13 +60,36 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
             try {
                 const res = await api.get('/payment/settings');
                 setSettings(res.data);
+                const mins = Number(res.data?.countdownMinutes);
+                const durationSec = (Number.isFinite(mins) && mins > 0 ? mins : 30) * 60;
+                setSessionEndsAt(Date.now() + durationSec * 1000);
             } catch (err) {
                 console.error('Error fetching settings:', err);
+                setSessionEndsAt(Date.now() + 30 * 60 * 1000);
             }
         };
 
         fetchSettings();
     }, []);
+
+    useEffect(() => {
+        if (!sessionEndsAt) return undefined
+        const tick = () => {
+            const left = Math.max(0, Math.ceil((sessionEndsAt - Date.now()) / 1000))
+            setSecondsLeft(left)
+            if (left <= 0) setSessionExpired(true)
+        }
+        tick()
+        const id = window.setInterval(tick, 1000)
+        return () => window.clearInterval(id)
+    }, [sessionEndsAt])
+
+    const formatCountdown = (totalSeconds) => {
+        const s = Math.max(0, Number(totalSeconds) || 0)
+        const m = Math.floor(s / 60)
+        const sec = s % 60
+        return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+    }
 
     // Fetch countries from API
     useEffect(() => {
@@ -112,18 +138,33 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         const endDate = itinerary?.endDate || bookingData?.endDate || bookingData?.tripDetails?.departureDate;
 
         let hotelCost = 0;
-        if (hotelData?.pricePerNight && startDate && endDate) {
+        let tripDays = 1;
+        if (startDate && endDate) {
             const a = new Date(startDate), b = new Date(endDate);
             const nights = Math.max(0, Math.round((b - a) / (1000 * 60 * 60 * 24)));
-            const rooms = controlPanel?.numberOfRooms || 1;
-            hotelCost = hotelData.pricePerNight * nights * rooms;
+            tripDays = Math.max(1, nights + 1);
+            if (hotelData?.pricePerNight) {
+                const rooms = controlPanel?.numberOfRooms || 1;
+                hotelCost = hotelData.pricePerNight * nights * rooms;
+            }
         }
 
-        // Calculate budget uplift
-        const upliftPct = controlPanel?.budgetUplift != null ? controlPanel.budgetUplift : 0.15;
+        const customCostsTotal = (Array.isArray(controlPanel?.customCosts) ? controlPanel.customCosts : []).reduce((sum, cost) => {
+            const amount = Number(cost?.amount) || 0;
+            if (!amount) return sum;
+            if (cost?.unit === 'per_day') return sum + (amount * tripDays);
+            return sum + amount;
+        }, 0);
+
+        // Calculate budget uplift (support legacy 0.15 and percent 15)
+        const upliftRaw = controlPanel?.budgetUplift != null ? Number(controlPanel.budgetUplift) : 0.15;
+        const upliftPct = Math.min(Math.max(
+            (upliftRaw > 0 && upliftRaw < 1) ? upliftRaw : (upliftRaw / 100),
+            0
+        ), 1);
 
         // Grand Total
-        const calculatedTotal = Math.round((activitiesTotal + hotelCost) * (1 + upliftPct));
+        const calculatedTotal = Math.round((activitiesTotal + hotelCost + customCostsTotal) * (1 + upliftPct));
         return calculatedTotal;
     };
 
@@ -157,6 +198,11 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
 
     const handlePayment = async (e) => {
         e.preventDefault()
+
+        if (sessionExpired) {
+            alert('Your payment session hold has expired. Please go back and reopen payment to continue.')
+            return
+        }
         
         if (paymentMethod === 'stripe') {
             try {
@@ -263,13 +309,24 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                         </div>
                     </div>
 
-                    {/* Info Banner */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-start gap-3">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-blue-600 shrink-0 mt-0.5">
+                    {/* Session hold countdown */}
+                    <div className={`rounded-lg p-4 mb-6 flex items-start gap-3 border ${sessionExpired ? 'bg-red-50 border-red-200' : secondsLeft != null && secondsLeft <= 120 ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className={`shrink-0 mt-0.5 ${sessionExpired ? 'text-red-600' : secondsLeft != null && secondsLeft <= 120 ? 'text-amber-600' : 'text-blue-600'}`}>
                             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                            <path d="M12 16v-4M12 8h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
-                        <p className="text-sm text-blue-800">Please review your trip details and complete your payment to confirm your booking.</p>
+                        <div className="flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <p className={`text-sm ${sessionExpired ? 'text-red-800' : secondsLeft != null && secondsLeft <= 120 ? 'text-amber-800' : 'text-blue-800'}`}>
+                                {sessionExpired
+                                    ? 'Your payment session hold has expired. Go back and reopen payment to continue.'
+                                    : 'Please complete payment before your session hold expires.'}
+                            </p>
+                            {secondsLeft != null && (
+                                <span className={`text-sm font-bold font-mono tabular-nums ${sessionExpired ? 'text-red-700' : secondsLeft <= 120 ? 'text-amber-700' : 'text-blue-700'}`}>
+                                    {formatCountdown(secondsLeft)}
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     <div className="grid lg:grid-cols-3 gap-6">
@@ -536,7 +593,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
 
                                 <button
                                     onClick={handlePayment}
-                                    disabled={loading}
+                                    disabled={loading || sessionExpired}
                                     className="w-full bg-primary-brown hover:bg-primary-dark disabled:opacity-50 text-white py-3 sm:py-4 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary-brown/20 mb-4 text-sm sm:text-base active:scale-[0.98]"
                                 >
                                     {loading ? (
@@ -546,7 +603,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                             <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                                         </svg>
                                     )}
-                                    {loading ? 'Processing...' : 'Confirm & Pay Now'}
+                                    {sessionExpired ? 'Session Expired' : loading ? 'Processing...' : 'Confirm & Pay Now'}
                                 </button>
 
                                 <button

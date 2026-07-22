@@ -56,6 +56,7 @@ export default function ItineraryView({
             evening: { title: "Evening", description: "Welcome dinner..." }
         }
     ])
+    const [extraFields, setExtraFields] = useState([])
 
     const bookingKey = String(request?.id || request?._id || itineraryId || '')
 
@@ -153,6 +154,7 @@ export default function ItineraryView({
                 status: request?.status || 'pending',
             })
             setDays([])
+            setExtraFields([])
         }
 
         const fetchItinerary = async () => {
@@ -167,6 +169,7 @@ export default function ItineraryView({
                     if (match) {
                         setTripData(match.tripData || match)
                         setDays(match.days || [])
+                        setExtraFields(Array.isArray(match.extraFields) ? match.extraFields : [])
                     }
 
                     setLoading(false)
@@ -183,6 +186,7 @@ export default function ItineraryView({
                 if (response.data) {
                     setTripData(response.data.tripData || response.data)
                     setDays(response.data.days || [])
+                    setExtraFields(Array.isArray(response.data.extraFields) ? response.data.extraFields : [])
                 }
             } catch (error) {
                 setLoadError(error)
@@ -595,6 +599,26 @@ export default function ItineraryView({
                             </div>
                         </div>
                     </section>
+
+                    {Array.isArray(extraFields) && extraFields.filter((f) => String(f?.label || '').trim() || String(f?.value || '').trim()).length > 0 && (
+                        <section className="mb-8 sm:mb-10">
+                            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4">Additional Details</h2>
+                            <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 space-y-3">
+                                {extraFields
+                                    .filter((f) => String(f?.label || '').trim() || String(f?.value || '').trim())
+                                    .map((field, idx) => (
+                                        <div key={field.id || idx} className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4 border-b border-slate-100 last:border-0 pb-3 last:pb-0">
+                                            <dt className="text-xs font-bold uppercase tracking-wide text-slate-500 sm:w-40 shrink-0">
+                                                {field.label || 'Detail'}
+                                            </dt>
+                                            <dd className="text-sm text-slate-800 whitespace-pre-wrap">
+                                                {field.value || '—'}
+                                            </dd>
+                                        </div>
+                                    ))}
+                            </div>
+                        </section>
+                    )}
 
                     <section className="mb-8 sm:mb-12">
                         <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4 sm:mb-6">Day-by-Day Itinerary</h2>

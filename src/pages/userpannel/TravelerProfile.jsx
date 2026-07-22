@@ -4,6 +4,7 @@ import api from '../../api'
 import NotificationsModal from './NotificationsModal'
 import Footer from '../../components/layout/Footer'
 import ProfilePic from '../../components/ui/ProfilePic'
+import { mapCustomerStatus, customerStatusColor } from '../../utils/customerStatus'
 
 export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSettingsClick, onHomeClick, initialTab = null, hideHeaderFooter = false, onItineraryClick, onPaymentClick }) {
     const [activeTab, setActiveTab] = useState('Personal Info')
@@ -15,8 +16,10 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
     const [passwordError, setPasswordError] = useState('')
     const [passwordSuccess, setPasswordSuccess] = useState('')
     const [isLoading, setIsLoading] = useState(true)
+    const [loadError, setLoadError] = useState(null)
     const [bookings, setBookings] = useState([])
     const [userItineraries, setUserItineraries] = useState([])
+    const [unreadCount, setUnreadCount] = useState(0)
 
     const getTripKey = (trip) => {
         const raw =
@@ -219,11 +222,12 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
         const fetchProfile = async () => {
             try {
                 setIsLoading(true)
+                setLoadError(null)
 
                 const storedUserRaw = localStorage.getItem('currentUser')
                 const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null
 
-                const [profileRes, bookingsList, itinerariesRes, wishlistRes] = await Promise.all([
+                const [profileRes, bookingsList, itinerariesRes, wishlistRes, notifRes] = await Promise.all([
                     api.get('/auth/profile').catch(() => ({ data: null })),
                     api.get('/bookings').then(res => {
                         const raw =
@@ -234,7 +238,8 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                         return Array.isArray(raw) ? raw : []
                     }).catch(() => []),
                     api.get('/itineraries', { timeout: 8000 }).catch(() => ({ data: [] })),
-                    api.get('/auth/wishlist').catch(() => ({ data: [] }))
+                    api.get('/auth/wishlist').catch(() => ({ data: [] })),
+                    api.get('/notifications').catch(() => ({ data: { unreadCount: 0 } })),
                 ])
 
                 const profile = profileRes?.data || {}
@@ -271,8 +276,10 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                     addedAt: item.addedAt
                 }))
                 setWishlist(transformed)
+                setUnreadCount(Number(notifRes?.data?.unreadCount) || 0)
             } catch (error) {
                 console.error('Error fetching profile:', error)
+                setLoadError('Unable to load your profile. Please refresh and try again.')
             } finally {
                 setIsLoading(false)
             }
@@ -491,12 +498,33 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
         })
     }, [normalizedBookings])
 
-    const tabs = ['Personal Info', 'Preferences', 'Itinerary', 'Upcoming Trip', 'Travel History', 'Wishlist', 'Settings']
+    const tabs = ['Personal Info', 'Preferences', 'Trip Requests', 'Itinerary', 'Upcoming Trip', 'Travel History', 'Wishlist', 'Settings']
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-white">
+            <div className="min-h-screen flex flex-col items-center justify-center bg-white gap-3 px-4">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
+                <p className="text-sm text-slate-500">Loading your profile…</p>
+            </div>
+        )
+    }
+
+    if (loadError) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-white gap-4 px-6 text-center">
+                <p className="text-slate-700 font-medium">{loadError}</p>
+                <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="px-5 py-2.5 rounded-lg bg-[#A67C52] text-white text-sm font-semibold hover:bg-[#8e6a45]"
+                >
+                    Retry
+                </button>
+                {onBack && (
+                    <button type="button" onClick={onBack} className="text-sm text-slate-500 hover:underline">
+                        Go back
+                    </button>
+                )}
             </div>
         )
     }
@@ -531,7 +559,13 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                                     <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                                 </svg>
-                                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                                {unreadCount > 0 ? (
+                                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
+                                ) : (
+                                    <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full opacity-0"></span>
+                                )}
                             </button>
 
 
@@ -746,12 +780,12 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
 
                 {/* Tabs */}
                 <div className="bg-white rounded-2xl p-2 sm:p-3 mb-6 sm:mb-8 shadow-sm">
-                    <div className="flex flex-nowrap gap-2 overflow-x-auto hide-scrollbar">
+                    <div className="flex flex-nowrap gap-1.5 sm:gap-2 overflow-x-auto hide-scrollbar -mx-1 px-1">
                         {tabs.map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-6 py-2.5 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap rounded-lg ${activeTab === tab
+                                className={`px-3 sm:px-6 py-2 sm:py-2.5 text-[11px] sm:text-sm font-semibold transition-colors whitespace-nowrap rounded-lg ${activeTab === tab
                                     ? 'bg-[#F0F4F8] text-slate-900'
                                     : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                                     }`}
@@ -1240,6 +1274,69 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                         </div>
                     )}
 
+                    {activeTab === 'Trip Requests' && (
+                        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm overflow-hidden">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+                                <h3 className="text-lg font-bold text-slate-900">My Trip Requests</h3>
+                                <a
+                                    href="#my-trip-requests"
+                                    className="text-xs font-semibold text-[#A67C52] hover:underline w-fit"
+                                >
+                                    Open full requests page →
+                                </a>
+                            </div>
+                            <div className="space-y-3">
+                                {normalizedBookings.length > 0 ? normalizedBookings.map((trip) => {
+                                    const itObj = getItineraryObjectForTrip(trip)
+                                    const statusLabel = mapCustomerStatus(itObj?.status || trip.status, {
+                                        hasItinerary: Boolean(itObj),
+                                        paymentStatus: trip.paymentStatus,
+                                    })
+                                    const itineraryId = itObj?._id || itObj?.id
+                                    return (
+                                        <div key={trip._id || trip.id} className="border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-slate-900 truncate">{trip._experience || trip.title || 'Trip Request'}</p>
+                                                <p className="text-xs text-slate-500 mt-1 truncate">{trip._destination || '—'}</p>
+                                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${customerStatusColor(statusLabel)}`}>
+                                                        {statusLabel}
+                                                    </span>
+                                                    <span className="text-[11px] text-slate-400">
+                                                        {trip._createdAt ? new Date(trip._createdAt).toLocaleDateString() : '—'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                                {itineraryId ? (
+                                                    <a
+                                                        href={`#itinerary/${itineraryId}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 text-center"
+                                                    >
+                                                        View Itinerary
+                                                    </a>
+                                                ) : null}
+                                                {itineraryId && onPaymentClick ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onPaymentClick(itObj)}
+                                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold text-center"
+                                                    >
+                                                        Purchase
+                                                    </button>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    )
+                                }) : (
+                                    <p className="text-sm text-slate-500 text-center py-8">No trip requests yet.</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {activeTab === 'Itinerary' && (
                         <div className="bg-white rounded-2xl p-6 shadow-sm">
                             <h3 className="text-lg font-bold text-slate-900 mb-6">Itinerary Drafts</h3>
@@ -1289,12 +1386,14 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
                                                 {hasIt ? (
                                                     <>
-                                                        <button 
-                                                            onClick={() => onItineraryClick && onItineraryClick(itObj)}
+                                                        <a
+                                                            href={`#itinerary/${itObj?._id || itObj?.id}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
                                                             className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap text-center"
                                                         >
                                                             View Itinerary
-                                                        </button>
+                                                        </a>
                                                         <button 
                                                             onClick={() => onPaymentClick && onPaymentClick(itObj)}
                                                             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold whitespace-nowrap text-center"
@@ -1362,12 +1461,14 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                                 </div>
                                             </div>
                                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
-                                                <button 
-                                                    onClick={() => onItineraryClick && onItineraryClick(itObj || trip)}
+                                                <a
+                                                    href={`#itinerary/${(itObj || trip)?._id || (itObj || trip)?.id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
                                                     className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap text-center"
                                                 >
                                                     View Itinerary
-                                                </button>
+                                                </a>
                                                 <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold whitespace-nowrap text-center">
                                                     Purchased
                                                 </span>
@@ -1426,12 +1527,14 @@ export default function TravelerProfile({ onBack, onLogout, onProfileClick, onSe
                                                 </div>
                                             </div>
                                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
-                                                <button 
-                                                    onClick={() => onItineraryClick && onItineraryClick(itObj || trip)}
+                                                <a
+                                                    href={`#itinerary/${(itObj || trip)?._id || (itObj || trip)?.id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
                                                     className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap text-center"
                                                 >
                                                     View Itinerary
-                                                </button>
+                                                </a>
                                                 <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold whitespace-nowrap text-center">
                                                     Executed
                                                 </span>

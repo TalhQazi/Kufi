@@ -18,6 +18,7 @@ const Payment = lazy(() => import('./pages/userpannel/Payment.jsx'))
 const PaymentResult = lazy(() => import('./pages/userpannel/PaymentResult.jsx'))
 const ItineraryView = lazy(() => import('./pages/userpannel/ItineraryView.jsx'))
 const TravelerProfile = lazy(() => import('./pages/userpannel/TravelerProfile.jsx'))
+const MyTripRequests = lazy(() => import('./pages/userpannel/MyTripRequests.jsx'))
 const BlogDetail = lazy(() => import('./pages/userpannel/BlogDetail.jsx'))
 const About = lazy(() => import('./pages/userpannel/About.jsx'))
 const BlogListing = lazy(() => import('./pages/userpannel/BlogListing.jsx'))
@@ -32,6 +33,29 @@ import LegalModal from './components/ui/LegalModal.jsx'
 
 export default function App() {
   const SELECTED_ACTIVITIES_STORAGE_KEY = 'kufi_selected_activities'
+
+  const getActivityIdFromHash = (rawHash = window.location.hash.slice(1)) => {
+    const path = String(rawHash || '')
+    if (!path.startsWith('activity-detail')) return null
+    const parts = path.split('/')
+    return parts.length > 1 ? parts.slice(1).join('/') || null : null
+  }
+
+  const getItineraryIdFromHash = (rawHash = window.location.hash.slice(1)) => {
+    const path = String(rawHash || '')
+    if (!path.startsWith('itinerary/') && path !== 'itinerary') return null
+    const parts = path.split('/')
+    return parts.length > 1 ? parts.slice(1).join('/') || null : null
+  }
+
+  const normalizeHashPage = (rawHash) => {
+    const path = String(rawHash || 'home')
+    if (path.startsWith('activity-detail')) return 'activity-detail'
+    if (path.startsWith('itinerary/') || path === 'itinerary') return 'itinerary-view'
+    if (path === 'my-trip-requests' || path === 'trip-requests') return 'my-trip-requests'
+    if (path.startsWith('reset-password/')) return 'reset-password'
+    return path || 'home'
+  }
 
   const getInitialPage = () => {
     const rawHash = window.location.hash.slice(1)
@@ -50,6 +74,9 @@ export default function App() {
     if ((path === 'home' || !rawHash) && role === 'supplier' && token) return 'supplier'
     if ((path === 'home' || !rawHash) && role === 'admin' && token) return 'admin'
     if (path.startsWith('reset-password/')) return 'reset-password'
+    if (path.startsWith('activity-detail')) return 'activity-detail'
+    if (path.startsWith('itinerary/') || path === 'itinerary') return 'itinerary-view'
+    if (path === 'my-trip-requests' || path === 'trip-requests') return 'my-trip-requests'
     return path
   }
 
@@ -85,6 +112,8 @@ export default function App() {
 
   const [selectedItineraryId, setSelectedItineraryId] = useState(() => {
     try {
+      const fromHash = getItineraryIdFromHash()
+      if (fromHash) return fromHash
       return localStorage.getItem('kufi_selected_itinerary_id') || null
     } catch {
       return null
@@ -100,7 +129,7 @@ export default function App() {
     }
   })
 
-  const [selectedActivityId, setSelectedActivityId] = useState(null)
+  const [selectedActivityId, setSelectedActivityId] = useState(() => getActivityIdFromHash())
   const [selectedCountryName, setSelectedCountryName] = useState('Italy')
   const [selectedCategoryName, setSelectedCategoryName] = useState('Camping Adventures')
   const [selectedCityName, setSelectedCityName] = useState(null)
@@ -314,7 +343,7 @@ export default function App() {
 
   const handleActivityClick = (id) => {
     setSelectedActivityId(id)
-    navigateTo('activity-detail')
+    navigateTo('activity-detail', id ? `activity-detail/${id}` : 'activity-detail')
   }
 
   const handleCountryClick = async (payload) => {
@@ -368,7 +397,13 @@ export default function App() {
     const id = payload?._id || payload?.id || payload
     setSelectedItineraryId(id || null)
     setSelectedItineraryRequest(payload && typeof payload === 'object' ? payload : null)
-    navigateTo('itinerary-view')
+    navigateTo('itinerary-view', id ? `itinerary/${id}` : 'itinerary-view')
+  }
+
+  const handleMyRequestsClick = () => {
+    if (!requireUserAuth()) return
+    setTravelerProfileInitialTab(null)
+    navigateTo('my-trip-requests')
   }
 
   const handleServiceClick = (categoryKey) => {
@@ -399,12 +434,6 @@ export default function App() {
     }
   }
 
-  const handleMyRequestsClick = () => {
-    if (!requireUserAuth()) return
-    setTravelerProfileInitialTab(null)
-    navigateTo('user-profile')
-  }
-
   const handleMyProfileClick = () => {
     if (!requireUserAuth()) return
     setTravelerProfileInitialTab('Personal Info')
@@ -419,7 +448,17 @@ export default function App() {
 
   useEffect(() => {
     const handleNavigationChange = (event) => {
-      const newPage = (event.type === 'popstate' && event.state?.page ? event.state.page : window.location.hash.slice(1)) || 'home';
+      const rawHash = (event.type === 'popstate' && event.state?.page ? event.state.page : window.location.hash.slice(1)) || 'home'
+      const activityIdFromHash = getActivityIdFromHash(window.location.hash.slice(1))
+      if (activityIdFromHash) setSelectedActivityId(activityIdFromHash)
+      const itineraryIdFromHash = getItineraryIdFromHash(window.location.hash.slice(1))
+      if (itineraryIdFromHash) {
+        setSelectedItineraryId(itineraryIdFromHash)
+      }
+
+      const newPage = normalizeHashPage(
+        event.type === 'popstate' && event.state?.page ? event.state.page : rawHash
+      )
       const role = (currentUser?.role || localStorage.getItem('userRole') || '').toLowerCase()
       const isAdminRoute = String(newPage || '').startsWith('admin')
       const isSupplierRoute = String(newPage || '').startsWith('supplier')
@@ -428,7 +467,9 @@ export default function App() {
         newPage === 'travel-booking' ||
         newPage === 'traveler-profile' ||
         newPage === 'user-profile' ||
-        newPage === 'itinerary-view'
+        newPage === 'itinerary-view' ||
+        newPage === 'my-trip-requests' ||
+        newPage === 'payment'
 
       if (isUserProtectedRoute && !isUserAuthenticated()) {
         setIsPopState(true)
@@ -503,8 +544,21 @@ export default function App() {
     window.addEventListener('popstate', handleNavigationChange);
     window.addEventListener('hashchange', handleNavigationChange);
 
+    const resolveHash = (p) => {
+      const currentHash = window.location.hash.slice(1)
+      if (p === 'activity-detail') {
+        if (currentHash.startsWith('activity-detail/')) return currentHash
+        if (selectedActivityId) return `activity-detail/${selectedActivityId}`
+      }
+      if (p === 'itinerary-view') {
+        if (currentHash.startsWith('itinerary/')) return currentHash
+        if (selectedItineraryId) return `itinerary/${selectedItineraryId}`
+      }
+      return p
+    }
+
     if (!window.history.state) {
-      window.history.replaceState({ page: page }, '', `#${page}`);
+      window.history.replaceState({ page: page }, '', `#${resolveHash(page)}`);
     }
 
     try {
@@ -512,7 +566,7 @@ export default function App() {
       const guardKey = role === 'supplier' ? 'kufi_supplier_back_guard' : role === 'admin' ? 'kufi_admin_back_guard' : ''
       if (guardKey && !sessionStorage.getItem(guardKey)) {
         sessionStorage.setItem(guardKey, '1')
-        window.history.pushState({ page: page }, '', `#${page}`)
+        window.history.pushState({ page: page }, '', `#${resolveHash(page)}`)
       }
     } catch {
     }
@@ -583,14 +637,14 @@ export default function App() {
     setSelectedActivities(prev => prev.filter(a => (a.id || a._id) !== activityId))
   }
 
-  const navigateTo = (newPage) => {
-    if (page === newPage) return
+  const navigateTo = (newPage, hashPath = null) => {
+    if (page === newPage && !hashPath) return
     const newHistory = history.slice(0, currentIndex + 1)
     newHistory.push(newPage)
     setHistory(newHistory)
     setCurrentIndex(newHistory.length - 1)
     setPage(newPage)
-    window.history.pushState({ page: newPage }, '', `#${newPage}`)
+    window.history.pushState({ page: newPage }, '', `#${hashPath || newPage}`)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -709,6 +763,20 @@ export default function App() {
         onMyRequestsClick={handleMyRequestsClick}
         onSettingsClick={handleSettingsClick}
         onCountryClick={handleCountryClick}
+        hideHeaderFooter={true}
+      />
+    )
+
+    if (page === 'my-trip-requests') return (
+      <MyTripRequests
+        onLogout={handleLogout}
+        onBack={goBack}
+        onHomeClick={() => navigateTo('home')}
+        onNotificationClick={() => setShowNotifications(true)}
+        onProfileClick={handleMyRequestsClick}
+        onMyProfileClick={handleMyProfileClick}
+        onSettingsClick={handleSettingsClick}
+        onItineraryClick={handleItineraryClick}
         hideHeaderFooter={true}
       />
     )
@@ -982,6 +1050,7 @@ export default function App() {
 
   const hideUniversalHeaderFooter =
     page === 'user-profile' ||
+    page === 'my-trip-requests' ||
     page === 'traveler-profile' ||
     page === 'travel-booking' ||
    page === 'payment' ||

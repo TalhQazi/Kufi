@@ -5,6 +5,8 @@ import api from '../../api'
 import Footer from '../../components/layout/Footer'
 import ProfilePic from '../../components/ui/ProfilePic'
 
+import { mapCustomerStatus } from '../../utils/customerStatus'
+
 // Custom Alert Modal Component
 const ItineraryAlertModal = ({ isOpen, onClose, message }) => {
     if (!isOpen) return null
@@ -41,6 +43,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
     const [cities, setCities] = useState([])
     const [isLoading, setIsLoading] = useState(true)
     const [alertModal, setAlertModal] = useState({ isOpen: false, message: '' })
+    const [unreadCount, setUnreadCount] = useState(0)
     const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {}
     const dropdownRef = useRef(null)
 
@@ -121,20 +124,22 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                     return []
                 }
 
-                const [rawBookings, itinerariesRes, countriesRes, citiesRes] = await Promise.all([
+                const [rawBookings, itinerariesRes, countriesRes, citiesRes, notifRes] = await Promise.all([
                     fetchBookingsFromBestEndpoint(),
                     fetchItinerariesFast().catch((err) => {
                         console.error('[UserDashboard] initial /itineraries error:', err?.response?.status, err?.response?.data, err?.message)
                         return { data: [] }
                     }),
                     api.get('/countries').catch(() => ({ data: [] })),
-                    api.get('/cities').catch(() => ({ data: [] }))
+                    api.get('/cities').catch(() => ({ data: [] })),
+                    api.get('/notifications').catch(() => ({ data: { unreadCount: 0 } })),
                 ])
 
                 setTripRequests(Array.isArray(rawBookings) ? rawBookings : [])
                 setUserItineraries(extractItineraryList(itinerariesRes?.data))
                 setCountries(countriesRes?.data || [])
                 setCities(citiesRes?.data || [])
+                setUnreadCount(Number(notifRes?.data?.unreadCount) || 0)
             } catch (error) {
                 console.error("Error fetching dashboard data:", error)
             } finally {
@@ -441,18 +446,7 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
     }
 
     const getStatusLabel = (status) => {
-        const s = String(status || '').trim().toLowerCase()
-        if (s === 'adjustment replied') return 'Adjustment Replied'
-        if (s === 'accepted') return 'Accepted by Supplier'
-        if (s === 'confirmed') return 'Accepted by Supplier'
-        if (s === 'supplier replied back') return 'Supplier Replied'
-        if (s === 'ready') return 'Ready'
-        if (s === 'payment completed') return 'Payment Completed'
-        if (s === 'completed') return 'Completed'
-        if (s === 'cancelled' || s === 'canceled') return 'Cancelled'
-        if (s === 'pending review') return 'Pending Review'
-        if (s === 'pending') return 'Pending'
-        return status || 'Pending'
+        return mapCustomerStatus(status)
     }
 
     if (isLoading) {
@@ -487,7 +481,11 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                             onClick={() => onNotificationClick && onNotificationClick()}
                         >
                             <FiBell size={22} />
-                            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
                         </button>
                         <div className="relative" ref={dropdownRef}>
                             <button
@@ -612,7 +610,15 @@ export default function UserDashboard({ onLogout, onBack, onForward, canGoBack, 
                     {/* Left Column - Trip Requests */}
                     <div className="min-w-0">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-                            <h2 className="text-xl md:text-2xl font-bold text-gray-900">My Trip Requests</h2>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                <h2 className="text-xl md:text-2xl font-bold text-gray-900">My Trip Requests</h2>
+                                <a
+                                    href="#my-trip-requests"
+                                    className="text-xs font-semibold text-[#A67C52] hover:underline"
+                                >
+                                    View all details →
+                                </a>
+                            </div>
 
                             <div className="flex items-center gap-4 md:gap-6 text-sm text-gray-600 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
                                 <button className="flex items-center gap-2 hover:text-gray-900 whitespace-nowrap">

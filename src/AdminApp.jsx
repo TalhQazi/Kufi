@@ -28,6 +28,7 @@ import AdminProfile from './pages/adminpannel/AdminProfile'
 import AdminSettings from './pages/adminpannel/AdminSettings'
 import EmailSettings from './pages/adminpannel/EmailSettings'
 import HotelManagement from './pages/adminpannel/HotelManagement'
+import AdminItineraries from './pages/adminpannel/AdminItineraries'
 import { usePersistedDarkMode } from './hooks/usePersistedDarkMode'
 import { queueItineraryAiGeneration } from './constants/itineraryLabels'
 import './App.css'
@@ -108,6 +109,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
     if (activePage === 'Manage Cities') return <CityManagement />
     if (activePage === 'Manage Categories') return <CategoryManagement />
     if (activePage === 'Hotel Management') return <HotelManagement darkMode={isDarkMode} />
+    if (activePage === 'Itineraries') return <AdminItineraries darkMode={isDarkMode} />
     if (activePage === 'Reviews') return <ReviewController />
     if (activePage === 'Booking Terms') return <BookingTermsController />
     if (activePage === 'Footer') return <FooterController />
