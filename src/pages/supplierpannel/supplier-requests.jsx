@@ -1239,8 +1239,8 @@ const SupplierRequests = ({
                 </div>
               </div>
             );
-          }))}
-          )}
+          })
+        )}
 
           {pagination.totalPages > 1 && (
             <div className="flex items-center justify-between pt-2">
