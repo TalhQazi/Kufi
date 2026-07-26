@@ -26,10 +26,16 @@ export default function TopActivitiesSection({ onActivityClick }) {
             try {
                 setIsLoading(true);
                 const response = await api.get('/activities');
-                const data = Array.isArray(response.data) ? response.data : [];
+                const rawData = Array.isArray(response.data) ? response.data : [];
                 
-                // Use all available activities (no strict status filter for now to ensure loading)
-                const allActivities = data.length > 0 ? data : [];
+                const allActivities = [...rawData].sort((a, b) => {
+                    const orderA = Number(a.order) || 0;
+                    const orderB = Number(b.order) || 0;
+                    if (orderA > 0 && orderB > 0) return orderA - orderB;
+                    if (orderA > 0 && orderB === 0) return -1;
+                    if (orderA === 0 && orderB > 0) return 1;
+                    return 0;
+                });
 
                 const getImage = (act, fallback) => {
                     return (act.images && act.images.length > 0 ? act.images[0] : null)

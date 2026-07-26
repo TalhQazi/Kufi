@@ -86,8 +86,15 @@ const Activity = ({ onAddNew }) => {
         country: item?.country || item?.location || 'N/A',
         price: item?.price ? `$${item.price}` : 'Contact for Price',
         status: item?.status || 'pending',
-        order: item?.order != null ? item.order : 0,
-      }));
+        order: item?.order != null ? Number(item.order) : 0,
+      })).sort((a, b) => {
+        const orderA = a.order || 0;
+        const orderB = b.order || 0;
+        if (orderA > 0 && orderB > 0) return orderA - orderB;
+        if (orderA > 0 && orderB === 0) return -1;
+        if (orderA === 0 && orderB > 0) return 1;
+        return 0;
+      });
 
       setListingData(transformedListings);
     } catch (error) {
