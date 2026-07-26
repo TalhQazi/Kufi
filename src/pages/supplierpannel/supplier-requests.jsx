@@ -1045,14 +1045,18 @@ const SupplierRequests = ({
 
                     {/* Parent Button Area - Accept/Reject */}
                     <div className="flex items-center justify-end gap-2 w-full lg:w-auto">
-                      {/* Accept Button - Hidden when confirmed */}
+                      {/* Accept Button - Shows Accepted badge when confirmed */}
                       {(() => {
                         const parentStatus = String(parentRequest.status || '').trim().toLowerCase();
-                        const isParentConfirmed = parentStatus === 'confirmed';
+                        const isParentConfirmed = parentStatus === 'confirmed' || parentStatus === 'accepted';
                         const isParentCancelled = parentStatus === 'cancelled';
                         return (
                           <>
-                            {!isParentConfirmed && !isParentCancelled && (
+                            {isParentConfirmed ? (
+                              <span className="flex-1 lg:flex-none inline-flex items-center justify-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-4 py-2 text-xs font-bold text-emerald-700">
+                                ✓ Accepted
+                              </span>
+                            ) : !isParentCancelled && (
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -1222,14 +1226,18 @@ const SupplierRequests = ({
                                       : "bg-gray-50 border-gray-200 text-gray-600"
                                   }`}
                                 >
-                                  Covered by parent request
+                              Covered by parent request
                                 </span>
                               </div>
 
                               {/* Button Area - Accept/Reject */}
                               <div className="flex items-center justify-end gap-2 w-full lg:w-auto">
-                                {/* Accept Button - Hidden when confirmed */}
-                                {!isConfirmed && !isCancelled && (
+                                {/* Accept Button - Shows Accepted badge when confirmed */}
+                                {isConfirmed ? (
+                                  <span className="flex-1 lg:flex-none inline-flex items-center justify-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-4 py-2 text-xs font-bold text-emerald-700">
+                                    ✓ Accepted
+                                  </span>
+                                ) : !isCancelled && (
                                   <button
                                     type="button"
                                     onClick={(e) => {
