@@ -61,7 +61,7 @@ export default function TopLocationsSection({ onCountryClick, sectionInfo }) {
                                     image={item?.image || item?.imageUrl || item?.Picture || '/assets/dest-1.jpeg'}
                                     title={item?.name}
                                    // location={item?.country?.name || item?.country || ''}
-                                    rating="4.4"
+                                    rating={item?.rating ? Number(item.rating).toFixed(1) : "4.9"}
                                     className="rounded-[20px] shadow-card-hover"
                                     imageClassName="h-64 sm:h-[280px] min-[2560px]:h-[400px]"
                                     onClick={() => {

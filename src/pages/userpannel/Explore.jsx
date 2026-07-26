@@ -647,10 +647,17 @@ export default function Explore({
                         <h3 className="m-0 mb-2 text-base font-semibold text-slate-900 line-clamp-2">{activity.title}</h3>
 
                         <div className="flex items-center gap-2 mb-2">
-                          <div className="flex text-gold">
-                            <span>★</span><span>★</span><span>★</span><span>★</span><span className="text-slate-300">★</span>
+                          <div className="flex text-[#FFB21E]">
+                            {[1, 2, 3, 4, 5].map((star) => {
+                              const currentRating = Number(activity.rating) || 5;
+                              return (
+                                <span key={star} className={star <= Math.round(currentRating) ? "text-[#FFB21E]" : "text-slate-300"}>
+                                  ★
+                                </span>
+                              );
+                            })}
                           </div>
-                          <span className="text-sm font-semibold text-slate-900">{activity.rating || 4.2}</span>
+                          <span className="text-sm font-semibold text-slate-900">{activity.rating ? Number(activity.rating).toFixed(1) : "5.0"}</span>
                           <span className="text-xs text-slate-500">({activity.reviewsCount || activity.reviews || 0} reviews)</span>
                         </div>
 

@@ -54,7 +54,7 @@ export default function DestinationsSection({ onCountryClick }) {
                                     image={item.image || item.imageUrl || '/assets/hero-card1.jpeg'}
                                     title={item.name || item.title}
                                     location={item.description?.substring(0, 20) || item.location}
-                                    rating="4.4"
+                                    rating={item.rating ? Number(item.rating).toFixed(1) : "4.8"}
                                     imageClassName="h-64 min-[2560px]:h-[400px]"
                                     onClick={() => {
                                         if (onCountryClick) {

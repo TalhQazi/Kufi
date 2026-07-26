@@ -48,12 +48,42 @@ export default function App() {
     return parts.length > 1 ? parts.slice(1).join('/') || null : null
   }
 
+  const getCountryFromHash = (rawHash = window.location.hash.slice(1)) => {
+    const path = String(rawHash || '')
+    if (path.startsWith('country-details/')) {
+      return decodeURIComponent(path.slice('country-details/'.length))
+    }
+    return null
+  }
+
+  const getCategoryFromHash = (rawHash = window.location.hash.slice(1)) => {
+    const path = String(rawHash || '')
+    if (path.startsWith('category-page/')) {
+      return decodeURIComponent(path.slice('category-page/'.length))
+    }
+    if (path.startsWith('category-')) {
+      return decodeURIComponent(path.slice('category-'.length))
+    }
+    return null
+  }
+
+  const getBlogIdFromHash = (rawHash = window.location.hash.slice(1)) => {
+    const path = String(rawHash || '')
+    if (path.startsWith('blog-detail/')) {
+      return decodeURIComponent(path.slice('blog-detail/'.length))
+    }
+    return null
+  }
+
   const normalizeHashPage = (rawHash) => {
     const path = String(rawHash || 'home')
     if (path.startsWith('activity-detail')) return 'activity-detail'
     if (path.startsWith('itinerary/') || path === 'itinerary') return 'itinerary-view'
     if (path === 'my-trip-requests' || path === 'trip-requests') return 'my-trip-requests'
     if (path.startsWith('reset-password/')) return 'reset-password'
+    if (path.startsWith('country-details')) return 'country-details'
+    if (path.startsWith('category-') || path.startsWith('category-page')) return 'category-page'
+    if (path.startsWith('blog-detail')) return 'blog-detail'
     return path || 'home'
   }
 
@@ -77,6 +107,9 @@ export default function App() {
     if (path.startsWith('activity-detail')) return 'activity-detail'
     if (path.startsWith('itinerary/') || path === 'itinerary') return 'itinerary-view'
     if (path === 'my-trip-requests' || path === 'trip-requests') return 'my-trip-requests'
+    if (path.startsWith('country-details')) return 'country-details'
+    if (path.startsWith('category-') || path.startsWith('category-page')) return 'category-page'
+    if (path.startsWith('blog-detail')) return 'blog-detail'
     return path
   }
 
@@ -130,10 +163,10 @@ export default function App() {
   })
 
   const [selectedActivityId, setSelectedActivityId] = useState(() => getActivityIdFromHash())
-  const [selectedCountryName, setSelectedCountryName] = useState('Italy')
-  const [selectedCategoryName, setSelectedCategoryName] = useState('Camping Adventures')
+  const [selectedCountryName, setSelectedCountryName] = useState(() => getCountryFromHash() || 'Italy')
+  const [selectedCategoryName, setSelectedCategoryName] = useState(() => getCategoryFromHash() || 'Camping Adventures')
   const [selectedCityName, setSelectedCityName] = useState(null)
-  const [selectedBlogId, setSelectedBlogId] = useState(null)
+  const [selectedBlogId, setSelectedBlogId] = useState(() => getBlogIdFromHash() || null)
   const [exploreInitialCategory, setExploreInitialCategory] = useState(null)
   const [travelerProfileInitialTab, setTravelerProfileInitialTab] = useState(null)
   const [history, setHistory] = useState([getInitialPage()])
@@ -451,10 +484,20 @@ export default function App() {
       const rawHash = (event.type === 'popstate' && event.state?.page ? event.state.page : window.location.hash.slice(1)) || 'home'
       const activityIdFromHash = getActivityIdFromHash(window.location.hash.slice(1))
       if (activityIdFromHash) setSelectedActivityId(activityIdFromHash)
+      
       const itineraryIdFromHash = getItineraryIdFromHash(window.location.hash.slice(1))
       if (itineraryIdFromHash) {
         setSelectedItineraryId(itineraryIdFromHash)
       }
+
+      const countryFromHash = getCountryFromHash(window.location.hash.slice(1))
+      if (countryFromHash) setSelectedCountryName(countryFromHash)
+
+      const categoryFromHash = getCategoryFromHash(window.location.hash.slice(1))
+      if (categoryFromHash) setSelectedCategoryName(categoryFromHash)
+
+      const blogIdFromHash = getBlogIdFromHash(window.location.hash.slice(1))
+      if (blogIdFromHash) setSelectedBlogId(blogIdFromHash)
 
       const newPage = normalizeHashPage(
         event.type === 'popstate' && event.state?.page ? event.state.page : rawHash
