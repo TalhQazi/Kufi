@@ -137,12 +137,18 @@ export default function Footer({ onLegalClick }) {
                         <h4 className="text-base font-bold mb-6">Our Services</h4>
                         <ul className="space-y-2.5 text-[14px] text-white/90">
                             <li>
-                                <button 
-                                    onClick={() => handleLegalClick('about', 'About Us')}
+                                <a 
+                                    href="#about"
+                                    onClick={(e) => {
+                                        if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && e.button === 0) {
+                                            e.preventDefault()
+                                            handleLegalClick('about', 'About Us')
+                                        }
+                                    }}
                                     className="hover:text-white transition-colors text-left"
                                 >
                                     About Us
-                                </button>
+                                </a>
                             </li>
                             <li>
                                 <a href="#explore" className="hover:text-white transition-colors">Destinations</a>
@@ -158,36 +164,60 @@ export default function Footer({ onLegalClick }) {
                         <h4 className="text-base font-bold mb-6">Quick Link</h4>
                         <ul className="space-y-2.5 text-[14px] text-white/90">
                             <li>
-                                <button 
-                                    onClick={() => handleLegalClick('faqs', "FAQ's")}
+                                <a 
+                                    href="#faqs"
+                                    onClick={(e) => {
+                                        if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && e.button === 0) {
+                                            e.preventDefault()
+                                            handleLegalClick('faqs', "FAQ's")
+                                        }
+                                    }}
                                     className="hover:text-white transition-colors text-left"
                                 >
                                     FAQ's
-                                </button>
+                                </a>
                             </li>
                             <li>
-                                <button 
-                                    onClick={() => handleLegalClick('privacy', 'Privacy Policy')}
+                                <a 
+                                    href="#privacy"
+                                    onClick={(e) => {
+                                        if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && e.button === 0) {
+                                            e.preventDefault()
+                                            handleLegalClick('privacy', 'Privacy Policy')
+                                        }
+                                    }}
                                     className="hover:text-white transition-colors text-left"
                                 >
                                     Privacy Policy
-                                </button>
+                                </a>
                             </li>
                             <li>
-                                <button 
-                                    onClick={() => handleLegalClick('terms', 'Terms & Conditions')}
+                                <a 
+                                    href="#terms"
+                                    onClick={(e) => {
+                                        if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && e.button === 0) {
+                                            e.preventDefault()
+                                            handleLegalClick('terms', 'Terms & Conditions')
+                                        }
+                                    }}
                                     className="hover:text-white transition-colors text-left"
                                 >
                                     Terms
-                                </button>
+                                </a>
                             </li>
                             <li>
-                                <button 
-                                    onClick={() => handleLegalClick('support', 'Support')}
+                                <a 
+                                    href="#support"
+                                    onClick={(e) => {
+                                        if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && e.button === 0) {
+                                            e.preventDefault()
+                                            handleLegalClick('support', 'Support')
+                                        }
+                                    }}
                                     className="hover:text-white transition-colors text-left"
                                 >
                                     Support
-                                </button>
+                                </a>
                             </li>
                         </ul>
                     </div>

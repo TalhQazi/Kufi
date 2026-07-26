@@ -244,12 +244,16 @@ export default function CategoriesSection({ onCategoryClick, sectionInfo }) {
                             const hasUrlImage = hasImage && isIconUrl(image)
                             const builtInIcon = iconByKey[String(image || '')]
                             return (
-                                <div
+                                <a
                                     key={id}
-                                    className="flex flex-col items-center gap-3 cursor-pointer transition-transform duration-300 hover:-translate-y-2"
-                                    onClick={() => {
-                                        if (onCategoryClick) {
-                                            onCategoryClick(name)
+                                    href={`#category-${encodeURIComponent(name)}`}
+                                    className="flex flex-col items-center gap-3 cursor-pointer transition-transform duration-300 hover:-translate-y-2 no-underline"
+                                    onClick={(e) => {
+                                        if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && e.button === 0) {
+                                            e.preventDefault()
+                                            if (onCategoryClick) {
+                                                onCategoryClick(name)
+                                            }
                                         }
                                     }}
                                 >
@@ -268,7 +272,7 @@ export default function CategoriesSection({ onCategoryClick, sectionInfo }) {
                                         )}
                                     </div>
                                     <p className="m-0 text-sm sm:text-base font-bold text-[#1a1a1a] text-center">{name}</p>
-                                </div>
+                                </a>
                             )
                         })}
                     </div>

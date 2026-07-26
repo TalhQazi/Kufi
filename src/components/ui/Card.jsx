@@ -8,13 +8,23 @@ export default function Card({
     className = '',
     imageClassName = '',
     variant = 'destination',
+    href,
     onClick
 }) {
     if (variant === 'destination') {
+        const linkHref = href || `#destination-${encodeURIComponent(title || '')}`
         return (
-            <article 
-                onClick={onClick}
-                className={`relative rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-200 cursor-pointer ${className}`}
+            <a 
+                href={linkHref}
+                onClick={(e) => {
+                    if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && e.button === 0) {
+                        if (onClick) {
+                            e.preventDefault()
+                            onClick(e)
+                        }
+                    }
+                }}
+                className={`relative rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-200 cursor-pointer block no-underline ${className}`}
             >
                 <div className={`relative w-full h-64 bg-slate-200 overflow-hidden ${imageClassName}`}>
                     <img 
@@ -35,7 +45,7 @@ export default function Card({
                         <div className="text-sm text-yellow-400">★ {rating}</div>
                     )}
                 </div>
-            </article>
+            </a>
         )
     }
 

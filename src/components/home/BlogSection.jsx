@@ -97,12 +97,16 @@ export default function BlogSection({ onBlogClick }) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 min-[2560px]:grid-cols-4 gap-4 min-[2560px]:gap-6 transition-all duration-500 place-items-center">
                     {visibleBlogs.filter(Boolean).map((item, index) => (
-                        <article
+                        <a
                             key={`${item.id}-${index}-${startIndex}`}
-                            className="relative rounded-2xl overflow-hidden h-80 sm:h-[420px] w-full min-[2560px]:h-[520px] min-[2560px]:w-full group cursor-pointer shadow-lg animate-fadeIn"
-                            onClick={() => {
-                                const id = item?._id || item?.id
-                                if (id && onBlogClick) onBlogClick(id)
+                            href={`#blog-detail/${item._id || item.id}`}
+                            className="relative rounded-2xl overflow-hidden h-80 sm:h-[420px] w-full min-[2560px]:h-[520px] min-[2560px]:w-full group cursor-pointer shadow-lg animate-fadeIn block no-underline"
+                            onClick={(e) => {
+                                if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && e.button === 0) {
+                                    e.preventDefault()
+                                    const id = item?._id || item?.id
+                                    if (id && onBlogClick) onBlogClick(id)
+                                }
                             }}
                         >
                             <div
@@ -125,7 +129,7 @@ export default function BlogSection({ onBlogClick }) {
                                     </button>
                                 )}
                             </div>
-                        </article>
+                        </a>
                     ))}
                 </div>
 

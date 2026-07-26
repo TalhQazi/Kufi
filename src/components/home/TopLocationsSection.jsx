@@ -57,6 +57,7 @@ export default function TopLocationsSection({ onCountryClick, sectionInfo }) {
                             <div key={item?._id || `${item?.name}-${index}`} className="w-full">
                                 <Card
                                     variant="destination"
+                                    href={`#country-details/${encodeURIComponent(item?.name || '')}`}
                                     image={item?.image || item?.imageUrl || item?.Picture || '/assets/dest-1.jpeg'}
                                     title={item?.name}
                                    // location={item?.country?.name || item?.country || ''}

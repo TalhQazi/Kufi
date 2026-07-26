@@ -109,18 +109,22 @@ export default function Header({ onSignupClick, onSigninClick, onHomeClick, curr
         <header className="w-full bg-white mb-0 sticky top-0 z-50 shadow-sm">
             <div className="max-w-[1400px] 2xl:max-w-[1800px] min-[2560px]:max-w-[2400px] mx-auto flex items-center justify-between gap-4 py-4 px-4 sm:px-6 lg:px-12 2xl:px-6 min-[2560px]:px-4">
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => {
-                            if (onHomeClick) {
-                                onHomeClick()
-                            } else {
-                                window.location.hash = '#home'
+                    <a
+                        href="#home"
+                        onClick={(e) => {
+                            if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && e.button === 0) {
+                                e.preventDefault()
+                                if (onHomeClick) {
+                                    onHomeClick()
+                                } else {
+                                    window.location.hash = '#home'
+                                }
                             }
                         }}
                         className="h-12 w-20 sm:h-[66px] sm:w-28 block cursor-pointer hover:opacity-80 transition-opacity"
                     >
                         <img src={logo} alt="Kufi Travel" className="w-full h-full object-contain" />
-                    </button>
+                    </a>
                 </div>
 
                 <nav className="hidden md:flex items-center gap-6 lg:gap-10 min-[2560px]:gap-16 text-sm font-medium min-[2560px]:absolute min-[2560px]:left-1/2 min-[2560px]:-translate-x-1/2">

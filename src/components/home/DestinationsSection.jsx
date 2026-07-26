@@ -50,6 +50,7 @@ export default function DestinationsSection({ onCountryClick }) {
                             <div key={`${item._id || item.id}-${index}`} className="w-full">
                                 <Card
                                     variant="destination"
+                                    href={`#country-details/${encodeURIComponent(item.name || '')}`}
                                     image={item.image || item.imageUrl || '/assets/hero-card1.jpeg'}
                                     title={item.name || item.title}
                                     location={item.description?.substring(0, 20) || item.location}
