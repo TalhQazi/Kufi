@@ -555,22 +555,7 @@ const SupplierRequests = ({
   // are reflected immediately when navigating to the "Proceed" page.
   }, [itineraryRequest, view]);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-[400px] items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a26e35]"></div>
-      </div>
-    );
-  }
 
-  if (requests.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[400px] gap-4">
-        <Sparkles className="h-12 w-12 text-[#a26e35] opacity-20" />
-        <p className={`text-sm ${darkMode ? "text-slate-400" : "text-gray-500"}`}>No requests found</p>
-      </div>
-    );
-  }
 
   if (view === "itinerary" && itineraryRequest) {
     const itineraryImages = getRequestImages(itineraryRequest);
@@ -881,7 +866,11 @@ const SupplierRequests = ({
 
         <div className="space-y-6">
           {/* Node Tree Structure - Grouped by User */}
-          {filteredRequestsByTab.length === 0 ? (
+          {isLoading ? (
+            <div className="flex h-[250px] items-center justify-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#a26e35]"></div>
+            </div>
+          ) : filteredRequestsByTab.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 border border-dashed border-gray-200 rounded-2xl">
               <p className={`text-sm ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
                 No requests found in this tab.
