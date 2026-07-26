@@ -64,9 +64,12 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
   const country = itinerary?.country || itinerary?.tripData?.country || "";
   const city = itinerary?.city || itinerary?.tripData?.city || itinerary?.destination || "";
 
-  // Populate from existing itinerary controlPanel
+  const isInitializedRef = useRef(false);
+
+  // Populate from existing itinerary controlPanel on load / id change
   useEffect(() => {
-    if (itinerary?.controlPanel) {
+    if (itinerary?.controlPanel && (!isInitializedRef.current || isInitializedRef.current !== (itinerary._id || itinerary.id))) {
+      isInitializedRef.current = itinerary._id || itinerary.id || true;
       setCp({
         ...DEFAULT_CP,
         ...itinerary.controlPanel,
@@ -78,13 +81,8 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
         hotelId: itinerary.controlPanel.hotelId?._id || itinerary.controlPanel.hotelId || "",
         customCosts: seedCustomCosts(itinerary.controlPanel.customCosts),
       });
-    } else {
-      setCp((prev) => ({
-        ...prev,
-        customCosts: seedCustomCosts(prev.customCosts),
-      }));
     }
-  }, [itinerary]);
+  }, [itinerary?._id, itinerary?.id]);
 
   // Fetch hotels for country/city
   useEffect(() => {
