@@ -314,6 +314,8 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   const [saveMsg, setSaveMsg] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [extraFields, setExtraFields] = useState([]);
+  const [showControlPanel, setShowControlPanel] = useState(true);
+  const [showActivitiesPool, setShowActivitiesPool] = useState(true);
   const [activeDragId, setActiveDragId] = useState(null);
   const [activeDragData, setActiveDragData] = useState(null);
   const [overDayIndex, setOverDayIndex] = useState(null);
@@ -797,7 +799,29 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
               )}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowControlPanel(prev => !prev)}
+              className={`rounded-full px-3.5 py-2 text-xs font-semibold border transition-colors flex items-center gap-1.5 ${
+                showControlPanel
+                  ? (darkMode ? "bg-amber-500/20 border-amber-500/50 text-amber-300" : "bg-amber-50 border-[#a26e35] text-[#a26e35]")
+                  : (darkMode ? "border-slate-700 text-slate-400 hover:bg-slate-800" : "border-gray-300 text-slate-600 hover:bg-gray-100")
+              }`}
+            >
+              {showControlPanel ? "Hide Control Panel" : "Show Control Panel"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowActivitiesPool(prev => !prev)}
+              className={`rounded-full px-3.5 py-2 text-xs font-semibold border transition-colors flex items-center gap-1.5 ${
+                showActivitiesPool
+                  ? (darkMode ? "bg-amber-500/20 border-amber-500/50 text-amber-300" : "bg-amber-50 border-[#a26e35] text-[#a26e35]")
+                  : (darkMode ? "border-slate-700 text-slate-400 hover:bg-slate-800" : "border-gray-300 text-slate-600 hover:bg-gray-100")
+              }`}
+            >
+              {showActivitiesPool ? "Hide Activities Pool" : "Show Activities Pool"}
+            </button>
             <button
               type="button"
               onClick={handleSaveDraft}
@@ -858,7 +882,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* ── Left: day view ─────────────────────────────────────────────── */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className={`${(showControlPanel || showActivitiesPool) ? "lg:col-span-2" : "lg:col-span-3"} space-y-4`}>
 
             {/* Vertical Days List View */}
             {daysData.map((day, idx) => (
@@ -1024,41 +1048,49 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
           </div>
 
           {/* ── Right: control panel + original request + activity pool ──────────────────────── */}
-          <div className="space-y-4 lg:sticky lg:top-4 self-start">
-            <ItineraryControlPanel
-              key={itinerary?._id || request?.id || request?._id}
-              darkMode={darkMode}
-              itinerary={itinerary}
-              request={request}
-              onChange={handleControlPanelChange}
-            />
+          {(showControlPanel || showActivitiesPool) && (
+            <div className="space-y-4 lg:sticky lg:top-4 self-start">
+              {showControlPanel && (
+                <>
+                  <ItineraryControlPanel
+                    key={itinerary?._id || request?.id || request?._id}
+                    darkMode={darkMode}
+                    itinerary={itinerary}
+                    request={request}
+                    onChange={handleControlPanelChange}
+                  />
 
-            <div className={`${cardCls} px-4 py-4 space-y-2`}>
-              <h3 className={`text-sm font-semibold flex items-center gap-1.5 ${darkMode ? "text-white" : "text-slate-900"}`}>
-                <CalendarDays className="w-4 h-4 text-[#a26e35]" /> Original Request
-              </h3>
-              <Row label="Destination" value={request?.tripDetails?.destination || request?.destination || request?.location || itinerary?.destination || "—"} dark={darkMode} />
-              <Row label="Arrival" value={fmtDate(request?.tripDetails?.arrivalDate || request?.tripDetails?.startDate || request?.arrivalDate) || "—"} dark={darkMode} />
-              <Row label="Departure" value={fmtDate(request?.tripDetails?.departureDate || request?.tripDetails?.endDate || request?.departureDate) || "—"} dark={darkMode} />
-              <Row label="Travelers" value={request?.tripDetails?.guests || request?.guests || request?.travelers || "—"} dark={darkMode} />
-              <Row label="Budget" value={request?.tripDetails?.budget || request?.amount || "—"} dark={darkMode} />
-              <Row label="Customer" value={request?.name || request?.contactDetails?.firstName || request?.email || "—"} dark={darkMode} />
-              {(request?.tripDetails?.notes || request?.notes || request?.tripDetails?.requirements || request?.message) && (
-                <div className={`text-[11px] pt-2 border-t ${darkMode ? "border-slate-700 text-slate-300" : "border-gray-100 text-gray-700"}`}>
-                  <p className={`font-medium mb-1 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>Notes / Requirements</p>
-                  <p className="whitespace-pre-wrap">
-                    {request?.tripDetails?.notes || request?.notes || request?.tripDetails?.requirements || request?.message}
-                  </p>
-                </div>
+                  <div className={`${cardCls} px-4 py-4 space-y-2`}>
+                    <h3 className={`text-sm font-semibold flex items-center gap-1.5 ${darkMode ? "text-white" : "text-slate-900"}`}>
+                      <CalendarDays className="w-4 h-4 text-[#a26e35]" /> Original Request
+                    </h3>
+                    <Row label="Destination" value={request?.tripDetails?.destination || request?.destination || request?.location || itinerary?.destination || "—"} dark={darkMode} />
+                    <Row label="Arrival" value={fmtDate(request?.tripDetails?.arrivalDate || request?.tripDetails?.startDate || request?.arrivalDate) || "—"} dark={darkMode} />
+                    <Row label="Departure" value={fmtDate(request?.tripDetails?.departureDate || request?.tripDetails?.endDate || request?.departureDate) || "—"} dark={darkMode} />
+                    <Row label="Travelers" value={request?.tripDetails?.guests || request?.guests || request?.travelers || "—"} dark={darkMode} />
+                    <Row label="Budget" value={request?.tripDetails?.budget || request?.amount || "—"} dark={darkMode} />
+                    <Row label="Customer" value={request?.name || request?.contactDetails?.firstName || request?.email || "—"} dark={darkMode} />
+                    {(request?.tripDetails?.notes || request?.notes || request?.tripDetails?.requirements || request?.message) && (
+                      <div className={`text-[11px] pt-2 border-t ${darkMode ? "border-slate-700 text-slate-300" : "border-gray-100 text-gray-700"}`}>
+                        <p className={`font-medium mb-1 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>Notes / Requirements</p>
+                        <p className="whitespace-pre-wrap">
+                          {request?.tripDetails?.notes || request?.notes || request?.tripDetails?.requirements || request?.message}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {showActivitiesPool && (
+                <ItineraryActivityPool
+                  darkMode={darkMode}
+                  itinerary={itinerary}
+                  assignedActivityIds={assignedActivityIds}
+                />
               )}
             </div>
-
-            <ItineraryActivityPool
-              darkMode={darkMode}
-              itinerary={itinerary}
-              assignedActivityIds={assignedActivityIds}
-            />
-          </div>
+          )}
         </div>
       </div>
 
