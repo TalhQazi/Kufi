@@ -640,20 +640,54 @@ export default function ItineraryView({
                                         <div className="md:w-1/2 p-4 sm:p-6 relative">
                                             <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-4 sm:mb-5">{day.title}</h3>
 
-                                            <div className="space-y-4">
-                                                {['morning', 'afternoon', 'evening'].map((time) => (
-                                                    <div key={time} className="flex items-start gap-3">
-                                                        <div className="mt-1">
-                                                            {time === 'morning' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2"><circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>}
-                                                            {time === 'afternoon' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2"><circle cx="12" cy="12" r="5" /><path d="M12 1v2" /></svg>}
-                                                            {time === 'evening' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>}
+                                            <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1">
+                                                {Array.isArray(day.activities) && day.activities.length > 0 ? (
+                                                    day.activities.map((act, aIdx) => (
+                                                        <div key={act.id || aIdx} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0 space-y-1.5">
+                                                            <div className="flex items-center justify-between">
+                                                                <p className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                                                                    <span className="text-[#A67C52]">●</span> {act.title || 'Activity'}
+                                                                </p>
+                                                                {(act.startTime || act.endTime) && (
+                                                                    <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                                                                        {act.startTime || ''} {act.endTime ? `– ${act.endTime}` : ''}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="flex items-start gap-2 text-xs">
+                                                                <span className="font-bold text-slate-700 min-w-[75px] shrink-0">Description:</span>
+                                                                <span className="text-slate-600 leading-relaxed">{act.description || 'Included in day itinerary'}</span>
+                                                            </div>
+
+                                                            <div className="flex items-start gap-2 text-xs">
+                                                                <span className="font-bold text-slate-700 min-w-[75px] shrink-0">Location:</span>
+                                                                <span className="text-slate-600">{act.location || tripData.location || 'Included in destination'}</span>
+                                                            </div>
+
+                                                            <div className="flex items-start gap-2 text-xs">
+                                                                <span className="font-bold text-slate-700 min-w-[75px] shrink-0">Cost:</span>
+                                                                <span className="text-emerald-700 font-semibold">
+                                                                    {act.price != null && act.price !== '' ? `$${act.price}` : 'Included in Package'}
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex-1">
-                                                            <p className="text-xs font-bold text-slate-900 mb-1">{time === 'morning' ? 'Description' : time === 'afternoon' ? 'Location' : 'Cost'}</p>
-                                                            <p className="text-xs text-slate-600 leading-relaxed">{day[time]?.description || ''}</p>
+                                                    ))
+                                                ) : (
+                                                    ['morning', 'afternoon', 'evening'].map((time) => (
+                                                        <div key={time} className="flex items-start gap-3">
+                                                            <div className="mt-1">
+                                                                {time === 'morning' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2"><circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>}
+                                                                {time === 'afternoon' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2"><circle cx="12" cy="12" r="5" /><path d="M12 1v2" /></svg>}
+                                                                {time === 'evening' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>}
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="text-xs font-bold text-slate-900 mb-1">{time === 'morning' ? 'Description' : time === 'afternoon' ? 'Location' : 'Cost'}</p>
+                                                                <p className="text-xs text-slate-600 leading-relaxed">{day[time]?.description || 'Included in itinerary'}</p>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    ))
+                                                )}
                                             </div>
                                         </div>
                                     </div>

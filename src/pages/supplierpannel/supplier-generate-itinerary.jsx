@@ -201,6 +201,12 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove, onChange
         </div>
         <input
           className={inputCls}
+          value={activity.location || ""}
+          onChange={(e) => setField("location", e.target.value)}
+          placeholder="Location (e.g. Dubai Marina)"
+        />
+        <input
+          className={inputCls}
           value={activity.description || ""}
           onChange={(e) => setField("description", e.target.value)}
           placeholder="Description (optional)"

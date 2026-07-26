@@ -33,6 +33,7 @@ export default function Explore({
   const [isLoading, setIsLoading] = useState(true)
   const [categories, setCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState(initialCategory)
+  const [unreadCount, setUnreadCount] = useState(0)
   const currentUser = (() => {
     try {
       const parsed = JSON.parse(localStorage.getItem('currentUser'))
@@ -62,6 +63,19 @@ export default function Explore({
     setCanScrollLeft(el.scrollLeft > 0)
     setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
   }, [])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    let active = true
+    api.get('/notifications')
+      .then((res) => {
+        if (!active) return
+        const count = Number(res?.data?.unreadCount) || (Array.isArray(res?.data?.notifications) ? res.data.notifications.filter(n => !n.read).length : 0)
+        setUnreadCount(count)
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [isAuthenticated])
 
   useEffect(() => {
     const timer = setTimeout(updateScrollArrows, 300)
@@ -407,13 +421,19 @@ export default function Explore({
 
           <div className="flex items-center gap-2 sm:gap-4">
             <button
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors relative"
               onClick={() => onNotificationClick && onNotificationClick()}
+              aria-label="Notifications"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center border-2 border-white shadow-sm">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
 
 
