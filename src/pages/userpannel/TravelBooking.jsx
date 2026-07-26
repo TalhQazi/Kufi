@@ -710,9 +710,6 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                         +
                                     </button>
                                 </div>
-                                <p className="mt-1 text-xs text-slate-500">
-                                    This budget is for the full package (increments of $500).
-                                </p>
                             </div>
 
                             {/* Submit Button */}
