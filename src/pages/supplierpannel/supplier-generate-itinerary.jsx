@@ -351,9 +351,14 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   async function resolveItineraryRecord() {
     let existingItin = null;
 
-    if (request?.itineraryId) {
+    if (request?.itinerary && typeof request.itinerary === 'object' && request.itinerary._id) {
+      existingItin = request.itinerary;
+    }
+
+    const itinId = request?.itineraryId || (typeof request?.itinerary === 'string' ? request.itinerary : null);
+    if (!existingItin && itinId) {
       try {
-        const res = await api.get(`/itineraries/${request.itineraryId}`);
+        const res = await api.get(`/itineraries/${itinId}`);
         existingItin = res.data;
       } catch {
         // fall through

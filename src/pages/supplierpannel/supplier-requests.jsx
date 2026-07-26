@@ -506,8 +506,10 @@ const SupplierRequests = ({
   }, [requests, selectedId, groupedRequests]);
   
   const itineraryRequest =
+    (resumedRequest && String(resumedRequest.id || resumedRequest._id) === String(itineraryRequestId) ? resumedRequest : null) ||
+    (resumedRequest?.payload ? resumedRequest.payload.requestSnapshot : null) ||
+    resumedRequest ||
     requests.find((r) => String(r.id || r._id) === String(itineraryRequestId)) || 
-    (resumedRequest?.payload ? resumedRequest.payload.requestSnapshot : resumedRequest) ||
     selected || 
     null;
 
