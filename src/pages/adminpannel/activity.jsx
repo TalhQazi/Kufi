@@ -86,6 +86,7 @@ const Activity = ({ onAddNew }) => {
         country: item?.country || item?.location || 'N/A',
         price: item?.price ? `$${item.price}` : 'Contact for Price',
         status: item?.status || 'pending',
+        order: item?.order != null ? item.order : 0,
       }));
 
       setListingData(transformedListings);
@@ -340,6 +341,7 @@ const Activity = ({ onAddNew }) => {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
               <tr>
+                <th className="text-left px-6 py-3 font-semibold">Order</th>
                 <th className="text-left px-6 py-3 font-semibold">Listing</th>
                 <th className="text-left px-6 py-3 font-semibold hidden lg:table-cell">Category</th>
                 <th className="text-left px-6 py-3 font-semibold hidden xl:table-cell">Location</th>
@@ -351,7 +353,7 @@ const Activity = ({ onAddNew }) => {
             <tbody className="divide-y divide-gray-100 bg-white">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-16">
+                  <td colSpan={7} className="py-16">
                     <div className="flex justify-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-brown"></div>
                     </div>
@@ -360,6 +362,7 @@ const Activity = ({ onAddNew }) => {
               ) : (
                 filteredListings.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50/80">
+                    <td className="px-6 py-4 font-bold text-slate-700">#{item.order}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <ListingThumb src={item.image} alt={item.listing} />

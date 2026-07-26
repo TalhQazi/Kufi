@@ -18,12 +18,14 @@ import { CSS } from "@dnd-kit/utilities";
 import { CalendarDays, GripVertical, Plus, Trash2 } from "lucide-react";
 import api from "../../api";
 import ItineraryActivityPool from "./components/ItineraryActivityPool";
+import ItineraryControlPanel from "./components/ItineraryControlPanel";
 import {
   daysBetween as calendarDaysBetween,
   formatDisplayDate,
   getDayName as calendarDayName,
   nightsBetween as calendarNightsBetween,
   toDateString,
+  addDays,
 } from "../../utils/calendarDate";
 
 
@@ -222,7 +224,7 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove, onChange
 
 // ─── Droppable day column ─────────────────────────────────────────────────────
 
-function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, onChangeActivity }) {
+function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, onChangeActivity, onUpdateDayNote }) {
   const activities = Array.isArray(day.activities) ? day.activities : [];
   const dayTotal = activities.reduce((sum, a) => sum + (Number(a.price) || 0), 0);
 
@@ -234,13 +236,31 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, on
   return (
     <div className="h-full flex flex-col">
       {day.isArrivalDay && (
-        <div className={`rounded-lg px-3 py-2 mb-3 text-[11px] font-medium ${darkMode ? "bg-blue-900/30 text-blue-300 border border-blue-900/40" : "bg-blue-50 text-blue-700 border border-blue-100"}`}>
-          {day.arrivalNote || "Arrival Day — Airport to Hotel transfer provided."}
+        <div className={`rounded-lg p-2.5 mb-3 text-[11px] font-medium space-y-1 ${darkMode ? "bg-blue-900/30 text-blue-300 border border-blue-900/40" : "bg-blue-50 text-blue-700 border border-blue-100"}`}>
+          <div className="flex items-center justify-between">
+            <span className="font-bold uppercase text-[10px]">Arrival Day Note</span>
+          </div>
+          <input
+            type="text"
+            value={day.arrivalNote || ""}
+            onChange={(e) => onUpdateDayNote?.(day.day - 1, "arrivalNote", e.target.value)}
+            placeholder="Arrival Day — Airport to Hotel transfer provided."
+            className={`w-full rounded border px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-blue-200 text-slate-900"}`}
+          />
         </div>
       )}
       {day.isDepartureDay && (
-        <div className={`rounded-lg px-3 py-2 mb-3 text-[11px] font-medium ${darkMode ? "bg-orange-900/30 text-orange-300 border border-orange-900/40" : "bg-orange-50 text-orange-700 border border-orange-100"}`}>
-          {day.departureNote || "Departure Day — Hotel to Airport transfer provided."}
+        <div className={`rounded-lg p-2.5 mb-3 text-[11px] font-medium space-y-1 ${darkMode ? "bg-orange-900/30 text-orange-300 border border-orange-900/40" : "bg-orange-50 text-orange-700 border border-orange-100"}`}>
+          <div className="flex items-center justify-between">
+            <span className="font-bold uppercase text-[10px]">Departure Day Note</span>
+          </div>
+          <input
+            type="text"
+            value={day.departureNote || ""}
+            onChange={(e) => onUpdateDayNote?.(day.day - 1, "departureNote", e.target.value)}
+            placeholder="Departure Day — Hotel to Airport transfer provided."
+            className={`w-full rounded border px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-orange-200 text-slate-900"}`}
+          />
         </div>
       )}
 
@@ -548,6 +568,47 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     }));
   }
 
+  function updateDayNote(dayIndex, field, value) {
+    setDaysData((prev) =>
+      prev.map((d, i) => {
+        if (i !== dayIndex) return d;
+        return { ...d, [field]: value };
+      })
+    );
+  }
+
+  const handleControlPanelChange = useCallback((updatedCp, selectedHotel) => {
+    setItinerary((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        startDate: updatedCp.startDate || prev.startDate,
+        endDate: updatedCp.endDate || prev.endDate,
+        controlPanel: {
+          ...(prev.controlPanel || {}),
+          ...updatedCp,
+          hotelId: selectedHotel || updatedCp.hotelId,
+        },
+      };
+    });
+
+    if (updatedCp.startDate) {
+      const start = toDateString(updatedCp.startDate);
+      if (start) {
+        setDaysData((prev) =>
+          prev.map((d, idx) => {
+            const nextDate = addDays(start, idx);
+            return {
+              ...d,
+              date: nextDate,
+              dayName: getDayName(nextDate),
+            };
+          })
+        );
+      }
+    }
+  }, []);
+
   function changeActivityField(actId, dayIndex, field, value) {
     setDaysData((prev) =>
       prev.map((d, i) => {
@@ -722,7 +783,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     >
       <div className={`min-h-screen px-4 py-6 ${base}`}>
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div className="flex-1 min-w-0">
             <h1 className={`text-base font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
               {itinerary?.title || "Build Itinerary"}
@@ -735,6 +796,28 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                 </span>
               )}
             </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              disabled={saving || submitting || !itinerary}
+              className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors border ${
+                saving ? "opacity-60 cursor-not-allowed" : ""
+              } ${darkMode ? "border-slate-600 text-white hover:bg-slate-800" : "border-gray-300 text-slate-800 hover:bg-gray-50"}`}
+            >
+              {saving ? "Saving…" : saveMsg === "Draft saved" ? "Draft saved" : "Save as Draft"}
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmitToTraveler}
+              disabled={saving || submitting || !itinerary}
+              className={`rounded-full px-5 py-2 text-xs font-semibold transition-colors ${
+                submitting ? "opacity-60 cursor-not-allowed" : ""
+              } ${saveMsg === "Submitted to traveller" ? "bg-emerald-600 text-white" : "bg-[#a26e35] hover:bg-[#8b5e2d] text-white"}`}
+            >
+              {submitting ? "Submitting…" : saveMsg === "Submitted to traveller" ? "Submitted!" : "Submit to Traveller"}
+            </button>
           </div>
         </div>
 
@@ -817,6 +900,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                   isActive={overDayIndex === idx}
                   onRemoveActivity={removeActivityFromDay}
                   onChangeActivity={changeActivityField}
+                  onUpdateDayNote={updateDayNote}
                 />
               </div>
             ))}
@@ -939,8 +1023,16 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
             </div>
           </div>
 
-          {/* ── Right: original request + activity pool ──────────────────────── */}
+          {/* ── Right: control panel + original request + activity pool ──────────────────────── */}
           <div className="space-y-4 lg:sticky lg:top-4 self-start">
+            <ItineraryControlPanel
+              key={itinerary?._id || request?.id || request?._id}
+              darkMode={darkMode}
+              itinerary={itinerary}
+              request={request}
+              onChange={handleControlPanelChange}
+            />
+
             <div className={`${cardCls} px-4 py-4 space-y-2`}>
               <h3 className={`text-sm font-semibold flex items-center gap-1.5 ${darkMode ? "text-white" : "text-slate-900"}`}>
                 <CalendarDays className="w-4 h-4 text-[#a26e35]" /> Original Request

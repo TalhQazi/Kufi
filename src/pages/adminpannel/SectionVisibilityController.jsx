@@ -51,6 +51,21 @@ export default function SectionVisibilityController() {
         }
     };
 
+    const handleSaveDraft = async () => {
+        try {
+            setSaving(true);
+            setSuccess(false);
+
+            await api.put('/sections', { sections, isDraft: true });
+            alert('Section visibility draft saved successfully!');
+        } catch (err) {
+            console.error('Error saving section visibility draft:', err);
+            setError('Failed to save draft');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const handleReset = async () => {
         if (!confirm('Are you sure you want to reset all sections to default? This cannot be undone.')) {
             return;
@@ -290,23 +305,33 @@ export default function SectionVisibilityController() {
                     Reset to Defaults
                 </button>
 
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="flex items-center gap-2 px-6 py-3 bg-[#a67c52] text-white rounded-lg hover:bg-[#8f643e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {saving ? (
-                        <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            Saving...
-                        </>
-                    ) : (
-                        <>
-                            <Save className="w-5 h-5" />
-                            Save Changes
-                        </>
-                    )}
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleSaveDraft}
+                        disabled={saving}
+                        className="flex items-center gap-2 px-6 py-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm"
+                    >
+                        <Save className="w-5 h-5" />
+                        Save Draft
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="flex items-center gap-2 px-6 py-3 bg-[#a67c52] text-white rounded-lg hover:bg-[#8f643e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm"
+                    >
+                        {saving ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <Save className="w-5 h-5" />
+                                Save Changes
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );

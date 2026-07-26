@@ -84,6 +84,38 @@ const AddBlog = ({ onBack, initialData, blogId, onSaved }) => {
     }
   };
 
+  const handleSaveDraft = async () => {
+    const payload = {
+      title: String(formData.title || "").trim(),
+      category: String(formData.category || "").trim(),
+      description: String(formData.description || ""),
+      image: String(formData.image || ""),
+      status: 'draft',
+    };
+
+    if (!payload.title) {
+      alert("Title is required");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      if (blogId) {
+        await api.put(`/blogs/${blogId}`, payload);
+      } else {
+        await api.post("/blogs", payload);
+      }
+      alert('Blog draft saved successfully');
+      if (onSaved) onSaved();
+      if (onBack) onBack();
+    } catch (error) {
+      console.error("Error saving blog draft:", error);
+      alert("Failed to save draft");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -100,6 +132,14 @@ const AddBlog = ({ onBack, initialData, blogId, onSaved }) => {
             type="button"
           >
             Back
+          </button>
+          <button
+            className="inline-flex items-center justify-center gap-2 bg-amber-50 text-amber-700 border border-amber-200 text-xs sm:text-sm font-semibold px-4 sm:px-6 py-2.5 rounded-lg hover:bg-amber-100 transition-colors"
+            onClick={handleSaveDraft}
+            type="button"
+            disabled={saving}
+          >
+            Save Draft
           </button>
           <button
             className={`inline-flex items-center justify-center gap-2 text-white text-xs sm:text-sm font-semibold px-4 sm:px-6 py-2.5 rounded-lg shadow-sm transition-colors ${saving

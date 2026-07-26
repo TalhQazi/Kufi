@@ -14,7 +14,8 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
     difficulty: "Easy",
     location: "",
     season: "Summer",
-    duration: "",
+    duration: "1 hour",
+    order: 0,
     status: "active",
     price: "",
     thumbnail: "",
@@ -33,6 +34,7 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
         country: formData.location,
         location: formData.location,
         duration: formData.duration,
+        order: Number(formData.order) || 0,
         price: formData.price ? Number(formData.price) : undefined,
         image: formData.thumbnail || undefined,
         images: formData.images || [],
@@ -73,15 +75,15 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
 
     const normalizeDurationHours = () => {
       const raw = initialData.duration
-      if (raw == null) return ""
+      if (raw == null) return "1 hour"
       const s = String(raw).trim().toLowerCase()
-      if (!s) return ""
+      if (!s) return "1 hour"
 
       const match = s.match(/(\d+(?:\.\d+)?)/)
       const n = match ? Number(match[1]) : NaN
-      if (!Number.isFinite(n)) return ""
+      if (!Number.isFinite(n)) return "1 hour"
 
-      const clamped = Math.min(10, Math.max(0.5, Math.round(n * 2) / 2))
+      const clamped = Math.min(24, Math.max(0.5, Math.round(n * 2) / 2))
       return clamped === 1 ? '1 hour' : `${clamped} hours`
     }
     const normalizeAddOns = () => {
@@ -125,7 +127,8 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
       location: initialData.location || initialData.country || "",
       season: initialData.season || prev.season,
       duration: normalizeDurationHours(),
-      status: (initialData.status === 'approved' || initialData.status === 'active') ? 'active' : 'inactive',
+      order: initialData.order != null ? Number(initialData.order) : 0,
+      status: (initialData.status === 'approved' || initialData.status === 'active') ? 'active' : (initialData.status || 'inactive'),
       price: initialData.price != null ? String(initialData.price) : "",
       thumbnail: initialData.thumbnail || initialData.image || "",
       images: Array.isArray(initialData.images) ? initialData.images : [],
@@ -271,6 +274,7 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
         country: formData.location,
         location: formData.location,
         duration: formData.duration,
+        order: Number(formData.order) || 0,
         price: formData.price ? Number(formData.price) : undefined,
         image: formData.thumbnail || undefined,
         images: formData.images || [],
@@ -304,6 +308,15 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
       console.error("Error saving activity:", error);
       alert("Failed to save activity. Please try again.");
     }
+  };
+
+  const handleDurationStep = (delta) => {
+    const raw = String(formData.duration || '1').trim().toLowerCase();
+    const match = raw.match(/(\d+(?:\.\d+)?)/);
+    const current = match ? Number(match[1]) : 1;
+    const nextVal = Math.max(0.5, Math.min(24, Math.round((current + delta) * 2) / 2));
+    const formatted = nextVal === 1 ? '1 hour' : `${nextVal} hours`;
+    setFormData((prev) => ({ ...prev, duration: formatted }));
   };
 
   return (
@@ -402,21 +415,33 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
               { label: "Year Round", value: "Year Round" },
             ]}
           />
-          <SelectField
-            label="Duration (Hours)"
-            name="duration"
-            value={String(formData.duration || '')}
-            onChange={handleChange}
-            options={[
-              { label: 'Select hours', value: '' },
-              ...Array.from({ length: 20 }, (_, i) => {
-                const h = (i + 1) * 0.5
-                const value = h === 1 ? '1 hour' : `${h} hours`
-                const label = h === 1 ? '1 Hour' : `${h} Hours`
-                return { label, value }
-              }),
-            ]}
-          />
+          
+          {/* Duration Stepper (+ / - 0.5 Hours) */}
+          <div>
+            <label className="text-sm font-semibold text-gray-600 mb-2 block">
+              Duration (Hours)
+            </label>
+            <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-2">
+              <button
+                type="button"
+                onClick={() => handleDurationStep(-0.5)}
+                className="w-9 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center font-bold text-gray-700 hover:bg-gray-100 transition-colors shrink-0 shadow-sm"
+              >
+                -
+              </button>
+              <div className="flex-1 text-center font-semibold text-slate-800 text-sm">
+                {formData.duration || '1 hour'}
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDurationStep(0.5)}
+                className="w-9 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center font-bold text-gray-700 hover:bg-gray-100 transition-colors shrink-0 shadow-sm"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
           <LabeledInput
             label="Price ($)"
             name="price"
@@ -424,6 +449,15 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
             onChange={handleChange}
             placeholder="e.g., 150"
           />
+
+          <LabeledInput
+            label="Display Position / Order (e.g. 1, 2, 3)"
+            name="order"
+            value={formData.order}
+            onChange={handleChange}
+            placeholder="e.g., 1"
+          />
+
           <StatusToggle status={formData.status} onChange={handleChange} />
 
           {/* Coordinates Fields */}
@@ -527,15 +561,13 @@ const AddActivity = ({ onBack, initialData, activityId, onSaved }) => {
             >
               Cancel
             </button>
-            {!activityId && (
-              <button
-                onClick={saveDraft}
-                className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
-              >
-                <Save className="w-4 h-4" />
-                Save Draft
-              </button>
-            )}
+            <button
+              onClick={saveDraft}
+              className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              Save Draft
+            </button>
             <button
               onClick={handleSave}
               className="px-5 py-2 rounded-lg text-sm font-semibold bg-[#a26e35] text-white hover:bg-[#8c5c2c]"

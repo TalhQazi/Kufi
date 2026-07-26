@@ -227,6 +227,7 @@ export default function TopActivitiesSection({ onActivityClick }) {
                                                     <button
                                                         key={`dot-${idx}`}
                                                         onClick={(e) => {
+                                                            e.preventDefault()
                                                             e.stopPropagation()
                                                             setActiveIndex(idx)
                                                         }}
@@ -242,6 +243,7 @@ export default function TopActivitiesSection({ onActivityClick }) {
                                             <div className="flex gap-4">
                                                 <button
                                                     onClick={(e) => {
+                                                        e.preventDefault()
                                                         e.stopPropagation()
                                                         handlePrev()
                                                     }}
@@ -252,6 +254,7 @@ export default function TopActivitiesSection({ onActivityClick }) {
                                                 </button>
                                                 <button
                                                     onClick={(e) => {
+                                                        e.preventDefault()
                                                         e.stopPropagation()
                                                         handleNext()
                                                     }}

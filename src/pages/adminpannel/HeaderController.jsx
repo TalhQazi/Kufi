@@ -83,6 +83,35 @@ export default function HeaderController() {
         }
     };
 
+    const handleSaveDraft = async () => {
+        try {
+            setSaving(true);
+            setSuccess(false);
+
+            const payload = {
+                logo,
+                navItems,
+                contactInfo: {
+                    phone: contactPhone,
+                    isActive: contactIsActive
+                },
+                authButton: {
+                    label: authButtonLabel,
+                    isActive: authButtonIsActive
+                },
+                isDraft: true
+            };
+
+            await api.put('/header', payload);
+            alert('Header draft saved successfully!');
+        } catch (err) {
+            console.error('Error saving header draft:', err);
+            setError('Failed to save header draft');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     // Helper function to convert file to base64
     const fileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
@@ -369,12 +398,20 @@ export default function HeaderController() {
                     </div>
                 </div>
 
-                {/* Save Button */}
-                <div className="flex justify-end">
+                {/* Save Buttons */}
+                <div className="flex justify-end gap-3">
+                    <button
+                        onClick={handleSaveDraft}
+                        disabled={saving}
+                        className="flex items-center gap-2 px-6 py-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm"
+                    >
+                        <Save className="w-5 h-5" />
+                        Save Draft
+                    </button>
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex items-center gap-2 px-6 py-3 bg-[#a67c52] text-white rounded-lg hover:bg-[#8f643e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-6 py-3 bg-[#a67c52] text-white rounded-lg hover:bg-[#8f643e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm"
                     >
                         {saving ? (
                             <>

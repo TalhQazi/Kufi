@@ -74,6 +74,29 @@ export default function LegalContentController({ darkMode }) {
     }
   };
 
+  const handleSaveDraft = async () => {
+    try {
+      setSaving(true);
+      setMessage({ type: '', text: '' });
+
+      const currentContent = contents[activeTab] || {};
+      await api.put(`/legal-content/${activeTab}`, {
+        title: currentContent.title,
+        content: currentContent.content,
+        isActive: false
+      });
+
+      setMessage({ type: 'success', text: 'Content saved as draft!' });
+      setHasChanges(false);
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+    } catch (error) {
+      console.error('Error saving draft content:', error);
+      setMessage({ type: 'error', text: 'Failed to save draft' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const currentContent = contents[activeTab] || { title: '', content: '', isActive: true };
   const ActiveIcon = contentTypes.find(t => t.type === activeTab)?.icon || FileText;
 
@@ -103,6 +126,14 @@ export default function LegalContentController({ darkMode }) {
               Unsaved changes
             </span>
           )}
+          <button
+            onClick={handleSaveDraft}
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors"
+          >
+            <Save className="h-4 w-4" />
+            Save Draft
+          </button>
           <button
             onClick={handleSave}
             disabled={saving}

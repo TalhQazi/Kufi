@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { Search, CheckCircle, Clock, MapPin, Users, X, FileText } from "lucide-react";
 import api from "../../api";
 
-const tabs = ["All Users", "All Suppliers", "Active", "Suspended", "Disputes", "Reviews"];
+const tabs = ["All Users", "All Customers", "All Suppliers", "Active", "Suspended", "Disputes", "Reviews"];
 
 const StatusBadge = ({ status }) => {
   const isActive = status === "active";
@@ -105,9 +105,11 @@ const UserManagement = () => {
       const matchesStatus =
         activeTab === "All Users"
           ? true
-          : activeTab === "All Suppliers"
-            ? user.type === "Supplier"
-            : user.status === activeTab.toLowerCase();
+          : activeTab === "All Customers"
+            ? (user.type === "Traveler" || user.role === "user" || user.role === "customer")
+            : activeTab === "All Suppliers"
+              ? user.type === "Supplier"
+              : user.status === activeTab.toLowerCase();
       const matchesQuery =
         !normalizedQuery ||
         (user.name && user.name.toLowerCase().includes(normalizedQuery)) ||

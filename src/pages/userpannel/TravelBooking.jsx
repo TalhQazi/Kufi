@@ -96,7 +96,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
         arrivalDate: '',
         departureDate: '',
         cities: '',
-        budget: '',
+        budget: '500',
         additionalOptions: false,
         activities: [],
         // Dynamic booking terms selections
@@ -678,30 +678,40 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                 })
                             )}
 
-                            {/* Budget Range */}
+                            {/* Budget Range Stepper */}
                             <div className="mb-6">
                                 <label className="block text-sm font-medium text-slate-700 mb-2">
                                     Choose your budget <span className="text-red-500">*</span>
                                 </label>
-                                <select
-                                    value={formData.budget}
-                                    onChange={(e) => handleChange('budget', e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-brown text-sm text-slate-500"
-                                    required
-                                >
-                                    <option value="">Choose your budget</option>
-                                    {Array.from({ length: 40 }, (_, i) => {
-                                        const amount = (i + 1) * 500;
-                                        return (
-                                            <option key={amount} value={String(amount)}>
-                                                ${amount.toLocaleString()}
-                                            </option>
-                                        );
-                                    })}
-                                    <option value="20000+">$20,000+</option>
-                                </select>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const current = Number(formData.budget) || 500
+                                            const nextVal = Math.max(500, current - 500)
+                                            handleChange('budget', String(nextVal))
+                                        }}
+                                        className="w-12 h-11 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-bold hover:bg-slate-100 text-lg transition-colors"
+                                    >
+                                        -
+                                    </button>
+                                    <div className="flex-1 border border-slate-200 rounded-lg px-4 py-2.5 bg-white text-center font-bold text-slate-800 text-base shadow-sm">
+                                        {formData.budget ? `$${Number(formData.budget).toLocaleString()}` : '$500'}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const current = Number(formData.budget) || 0
+                                            const nextVal = current + 500
+                                            handleChange('budget', String(nextVal))
+                                        }}
+                                        className="w-12 h-11 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-bold hover:bg-slate-100 text-lg transition-colors"
+                                    >
+                                        +
+                                    </button>
+                                </div>
                                 <p className="mt-1 text-xs text-slate-500">
-                                    This budget is for the full package.
+                                    This budget is for the full package (increments of $500).
                                 </p>
                             </div>
 

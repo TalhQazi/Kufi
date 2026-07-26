@@ -182,6 +182,51 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     onChange?.(payload, selectedHotel);
   }, [cp, startDate, endDate, hotels, onChange]);
 
+  const handleStartDateChange = (val) => {
+    setStartDate(val);
+    const payload = {
+      ...cp,
+      budgetUplift: Math.min(Math.max(Number(cp.budgetUplift) || 15, 0), 100),
+      hotelId: cp.hotelId || null,
+      startDate: val || null,
+      endDate: endDate || null,
+      customCosts: Array.isArray(cp.customCosts) ? cp.customCosts : [],
+    };
+    const selectedHotel = hotels.find(h => h._id === cp.hotelId) || null;
+    onChange?.(payload, selectedHotel);
+  };
+
+  const handleEndDateChange = (val) => {
+    setEndDate(val);
+    const payload = {
+      ...cp,
+      budgetUplift: Math.min(Math.max(Number(cp.budgetUplift) || 15, 0), 100),
+      hotelId: cp.hotelId || null,
+      startDate: startDate || null,
+      endDate: val || null,
+      customCosts: Array.isArray(cp.customCosts) ? cp.customCosts : [],
+    };
+    const selectedHotel = hotels.find(h => h._id === cp.hotelId) || null;
+    onChange?.(payload, selectedHotel);
+  };
+
+  const addPresetCost = (label, unit, defaultAmount = 0) => {
+    setCp((prev) => {
+      const existing = (prev.customCosts || []).find(c => c.label.toLowerCase() === label.toLowerCase());
+      if (existing) return prev;
+      const newCost = {
+        id: `cost-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        label,
+        amount: defaultAmount,
+        unit: unit === "per_day" ? "per_day" : "flat",
+      };
+      const next = { ...prev, customCosts: [...(prev.customCosts || []), newCost] };
+      const selectedHotel = hotels.find((h) => h._id === next.hotelId) || null;
+      onChange?.(next, selectedHotel);
+      return next;
+    });
+  };
+
   const base = darkMode
     ? "bg-slate-900 border-slate-800 text-slate-300"
     : "bg-white border-gray-200 text-gray-700";
@@ -205,7 +250,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
             <input
               type="date"
               value={startDate}
-              onChange={e => setStartDate(e.target.value)}
+              onChange={e => handleStartDateChange(e.target.value)}
               className={inputCls}
             />
           </div>
@@ -216,7 +261,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
             <input
               type="date"
               value={endDate}
-              onChange={e => setEndDate(e.target.value)}
+              onChange={e => handleEndDateChange(e.target.value)}
               className={inputCls}
             />
           </div>
@@ -369,7 +414,30 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
                 : "border-gray-200 text-gray-600 hover:bg-white"
             }`}
           >
-            + Add
+            + Add Cost
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          <button
+            type="button"
+            onClick={() => addPresetCost("Minimum charge", "flat")}
+            className={`text-[9px] px-2 py-0.5 rounded-md border transition-colors ${darkMode ? "border-amber-700/50 text-amber-400 bg-amber-950/30 hover:bg-amber-900/50" : "border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100"}`}
+          >
+            + Min Charge (Profit)
+          </button>
+          <button
+            type="button"
+            onClick={() => addPresetCost("Transportation", "per_day")}
+            className={`text-[9px] px-2 py-0.5 rounded-md border transition-colors ${darkMode ? "border-blue-700/50 text-blue-400 bg-blue-950/30 hover:bg-blue-900/50" : "border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"}`}
+          >
+            + Transport/day
+          </button>
+          <button
+            type="button"
+            onClick={() => addPresetCost("Food", "per_day")}
+            className={`text-[9px] px-2 py-0.5 rounded-md border transition-colors ${darkMode ? "border-emerald-700/50 text-emerald-400 bg-emerald-950/30 hover:bg-emerald-900/50" : "border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100"}`}
+          >
+            + Food/day
           </button>
         </div>
         <div className="space-y-2">

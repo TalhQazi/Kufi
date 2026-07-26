@@ -90,6 +90,22 @@ const EmailSettings = () => {
     itineraryReply: "Itinerary Update/Reply"
   };
 
+  const handleSaveDraft = async (e) => {
+    if (e) e.preventDefault();
+    setSaving(true);
+    setMessage({ type: "", text: "" });
+
+    try {
+      await api.put("/admin/email-settings", { ...settings, isDraft: true });
+      setMessage({ type: "success", text: "Email configuration saved as draft!" });
+    } catch (err) {
+      console.error("Error saving draft email settings:", err);
+      setMessage({ type: "error", text: "Failed to save draft settings." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -256,7 +272,16 @@ const EmailSettings = () => {
           </div>
         </div>
 
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end gap-3 pt-4">
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            disabled={saving}
+            className="flex items-center gap-2 px-6 py-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-2xl font-bold hover:bg-amber-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Save className="w-5 h-5" />
+            Save Draft
+          </button>
           <button
             type="submit"
             disabled={saving}

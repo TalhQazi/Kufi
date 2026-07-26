@@ -120,6 +120,36 @@ export default function FooterController() {
         }
     };
 
+    const handleSaveDraft = async () => {
+        try {
+            setSaving(true);
+            setSuccess(false);
+
+            const payload = {
+                contactInfo: {
+                    title: contactTitle,
+                    items: contactItems
+                },
+                socialIcons: socialIcons,
+                paymentMethods: paymentMethods,
+                brandSection: {
+                    description: brandDescription,
+                    socialTitle: socialTitle
+                },
+                copyright: copyright,
+                isDraft: true
+            };
+
+            await api.put('/footer', payload);
+            alert('Footer draft saved successfully!');
+        } catch (err) {
+            console.error('Error saving footer draft:', err);
+            setError('Failed to save footer draft');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     // Contact Items Handlers
     const addContactItem = () => {
         setContactItems([...contactItems, { type: 'other', label: '', value: '', icon: 'Globe', sortOrder: contactItems.length, isActive: true }]);
@@ -580,12 +610,20 @@ export default function FooterController() {
                     </div>
                 </div>
 
-                {/* Save Button */}
-                <div className="flex justify-end">
+                {/* Save Buttons */}
+                <div className="flex justify-end gap-3">
+                    <button
+                        onClick={handleSaveDraft}
+                        disabled={saving}
+                        className="flex items-center gap-2 px-6 py-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm"
+                    >
+                        <Save className="w-5 h-5" />
+                        Save Draft
+                    </button>
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex items-center gap-2 px-6 py-3 bg-[#a67c52] text-white rounded-lg hover:bg-[#8f643e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-6 py-3 bg-[#a67c52] text-white rounded-lg hover:bg-[#8f643e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm"
                     >
                         {saving ? (
                             <>

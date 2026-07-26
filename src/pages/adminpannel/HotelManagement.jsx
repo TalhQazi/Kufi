@@ -259,6 +259,38 @@ export default function HotelManagement({ darkMode }) {
     return matchSearch && matchStatus;
   });
 
+  async function handleSaveDraft(e) {
+    if (e) e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        name: form.name,
+        country: form.country,
+        city: form.city,
+        pricePerNight: Number(form.pricePerNight),
+        rooms: Number(form.rooms),
+        rating: Number(form.rating),
+        description: form.description || "",
+        amenities: form.amenities ? form.amenities.split(",").map((s) => s.trim()).filter(Boolean) : [],
+        images: Array.isArray(form.images) ? form.images.filter(Boolean) : [],
+        status: "draft",
+        sortOrder: Number(form.sortOrder) || 0,
+      };
+      if (editing) {
+        await api.put(`/hotels/${editing}`, payload);
+      } else {
+        await api.post("/hotels", payload);
+      }
+      await load();
+      setShowForm(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save draft hotel");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const base = darkMode ? "bg-slate-950 text-white" : "bg-gray-50 text-gray-900";
   const cardCls = `rounded-2xl border ${darkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"}`;
   const inputCls = `w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-500" : "bg-gray-50 border-gray-200 text-gray-800"}`;
@@ -483,6 +515,9 @@ export default function HotelManagement({ darkMode }) {
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowForm(false)} className={`flex-1 rounded-full py-2 text-xs font-medium border ${darkMode ? "border-slate-700 text-slate-400" : "border-gray-200 text-gray-600"}`}>
                   Cancel
+                </button>
+                <button type="button" onClick={handleSaveDraft} disabled={saving} className="flex-1 rounded-full py-2 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors">
+                  Save Draft
                 </button>
                 <button type="submit" disabled={saving} className={`flex-1 rounded-full py-2 text-xs font-semibold text-white bg-[#a26e35] hover:bg-[#8b5e2d] transition-colors ${saving ? "opacity-60" : ""}`}>
                   {saving ? "Saving…" : editing ? "Update" : "Add Hotel"}

@@ -145,6 +145,38 @@ const BookingTermsController = () => {
     }
   };
 
+  const handleSaveDraft = async () => {
+    const payload = {
+      title: draft.title.trim(),
+      options: draft.options.map((o) => o.trim()).filter(Boolean),
+      selectionType: draft.selectionType,
+      isActive: false,
+      sortOrder: Number(draft.sortOrder) || 0,
+    };
+
+    if (!payload.title) {
+      alert("Please enter a term title");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      if (editingId) {
+        await api.put(`/booking-terms/${editingId}`, payload);
+      } else {
+        await api.post("/booking-terms", payload);
+      }
+      alert("Term saved as draft!");
+      await fetchTerms();
+      closeModal();
+    } catch (error) {
+      console.error("Error saving draft term:", error);
+      alert("Failed to save draft.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -391,6 +423,14 @@ const BookingTermsController = () => {
                 onClick={closeModal}
               >
                 Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveDraft}
+                disabled={isSaving}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors"
+              >
+                Save Draft
               </button>
               <button
                 type="button"

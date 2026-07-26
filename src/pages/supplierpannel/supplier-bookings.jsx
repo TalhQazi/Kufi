@@ -8,6 +8,29 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState('all');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [viewItinerary, setViewItinerary] = useState(null);
+  const [loadingItinerary, setLoadingItinerary] = useState(false);
+
+  const handleViewItinerary = async (row) => {
+    try {
+      setLoadingItinerary(true);
+      const itineraryId = row.itinerary?._id || row.itineraryId || row.itinerary;
+      if (typeof itineraryId === 'object' && itineraryId._id) {
+        setViewItinerary(itineraryId);
+      } else if (itineraryId) {
+        const res = await api.get(`/itineraries/${itineraryId}`);
+        setViewItinerary(res.data);
+      } else {
+        const res = await api.get(`/itineraries/booking/${row.id || row._id}`);
+        setViewItinerary(res.data);
+      }
+    } catch (err) {
+      console.error("Error loading itinerary:", err);
+      alert("Could not load itinerary details for this booking.");
+    } finally {
+      setLoadingItinerary(false);
+    }
+  };
 
 
 
@@ -253,6 +276,12 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                   </div>
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-bold text-[#a26e35]">{row.amount}</p>
+                    <button
+                      onClick={() => handleViewItinerary(row)}
+                      className="text-[10px] bg-[#a26e35] text-white hover:bg-[#8b5e2d] font-medium px-2 py-1 rounded"
+                    >
+                      View Itinerary
+                    </button>
                     {row.status !== 'Cancelled' && row.status !== 'Completed' && (
                       <button
                         onClick={async () => {
@@ -317,24 +346,32 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {row.status !== 'Cancelled' && row.status !== 'Completed' && (
+                      <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={async () => {
-                            if (!window.confirm("Are you sure you want to cancel this booking?")) return;
-                            try {
-                              await api.patch(`/bookings/${row.id}/status`, { status: 'cancelled' });
-                              setBookings(prev => prev.map(b => b.id === row.id ? { ...b, status: 'Cancelled' } : b));
-                              alert("Booking cancelled successfully!");
-                            } catch (error) {
-                              console.error("Error cancelling booking:", error);
-                              alert("Failed to cancel booking");
-                            }
-                          }}
-                          className="text-xs text-rose-500 hover:text-rose-700 font-medium"
+                          onClick={() => handleViewItinerary(row)}
+                          className="text-xs bg-[#a26e35] text-white hover:bg-[#8b5e2d] px-2.5 py-1 rounded font-medium transition-colors"
                         >
-                          Cancel
+                          View Itinerary
                         </button>
-                      )}
+                        {row.status !== 'Cancelled' && row.status !== 'Completed' && (
+                          <button
+                            onClick={async () => {
+                              if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+                              try {
+                                await api.patch(`/bookings/${row.id}/status`, { status: 'cancelled' });
+                                setBookings(prev => prev.map(b => b.id === row.id ? { ...b, status: 'Cancelled' } : b));
+                                alert("Booking cancelled successfully!");
+                              } catch (error) {
+                                console.error("Error cancelling booking:", error);
+                                alert("Failed to cancel booking");
+                              }
+                            }}
+                            className="text-xs text-rose-500 hover:text-rose-700 font-medium"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )) : <tr><td colSpan="7" className="text-center py-8 text-gray-400 text-xs">No bookings found</td></tr>}
@@ -432,6 +469,140 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
           </div>
         </div>
       </aside>
+
+      {/* Submitted Itinerary Details Modal */}
+      {viewItinerary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className={`relative w-full max-w-3xl rounded-2xl border shadow-2xl overflow-hidden my-8 ${darkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-gray-100 text-slate-900"}`}>
+            {/* Modal Header */}
+            <div className={`flex items-center justify-between border-b px-6 py-4 ${darkMode ? "border-slate-800 bg-slate-900" : "border-gray-100 bg-gray-50"}`}>
+              <div>
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+                  viewItinerary.status === 'Supplier Replied Back'
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-emerald-100 text-emerald-800"
+                }`}>
+                  {viewItinerary.status || 'Submitted Itinerary'}
+                </span>
+                <h2 className="text-lg font-bold mt-1">{viewItinerary.title || viewItinerary.destination}</h2>
+                <p className={`text-xs ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                  {viewItinerary.destination} • {viewItinerary.numberOfTravelers || 2} Travelers
+                  {viewItinerary.startDate && viewItinerary.endDate && ` • ${String(viewItinerary.startDate).split('T')[0]} to ${String(viewItinerary.endDate).split('T')[0]}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewItinerary(null)}
+                className={`rounded-full px-3 py-1 text-xs font-bold transition-colors ${darkMode ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-gray-200 hover:bg-gray-300 text-gray-700"}`}
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+              {/* Hotel & Pricing breakdown */}
+              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl border ${darkMode ? "bg-slate-800/50 border-slate-700" : "bg-gray-50 border-gray-200"}`}>
+                <div>
+                  <h4 className="text-xs font-semibold text-[#a26e35] uppercase mb-1">Accommodation</h4>
+                  <p className="text-sm font-bold">{viewItinerary.controlPanel?.hotelId?.name || "Not specified"}</p>
+                  {viewItinerary.controlPanel?.hotelId?.pricePerNight && (
+                    <p className={`text-xs ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                      ${viewItinerary.controlPanel.hotelId.pricePerNight}/night • {viewItinerary.controlPanel.numberOfRooms || 1} room(s)
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-[#a26e35] uppercase mb-1">Budget & Uplift</h4>
+                  <p className="text-sm font-bold">Total Budget: ${viewItinerary.budget || 'N/A'}</p>
+                  <p className={`text-xs ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                    Budget Uplift: {viewItinerary.controlPanel?.budgetUplift || 15}%
+                  </p>
+                </div>
+              </div>
+
+              {/* Custom Costs */}
+              {Array.isArray(viewItinerary.controlPanel?.customCosts) && viewItinerary.controlPanel.customCosts.length > 0 && (
+                <div className={`p-4 rounded-xl border space-y-2 ${darkMode ? "bg-slate-800/40 border-slate-700" : "bg-white border-gray-200"}`}>
+                  <h4 className="text-xs font-semibold uppercase text-slate-500">Custom Costs Breakdown</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {viewItinerary.controlPanel.customCosts.map((cost, cIdx) => (
+                      <div key={cIdx} className={`p-2.5 rounded-lg border text-xs ${darkMode ? "bg-slate-900 border-slate-700" : "bg-gray-50 border-gray-100"}`}>
+                        <p className="font-semibold">{cost.label || "Cost Item"}</p>
+                        <p className="text-[#a26e35] font-bold mt-0.5">${cost.amount || 0} <span className="text-[10px] text-gray-400 font-normal">({cost.unit || 'flat'})</span></p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Days & Activities */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wide">Day-by-Day Itinerary Plan</h3>
+                {Array.isArray(viewItinerary.days) && viewItinerary.days.length > 0 ? (
+                  viewItinerary.days.map((day, dIdx) => (
+                    <div key={dIdx} className={`p-4 rounded-xl border ${darkMode ? "bg-slate-800/60 border-slate-700" : "bg-white border-gray-200"}`}>
+                      <div className="flex items-center justify-between border-b pb-2 mb-3 border-gray-200 dark:border-slate-700">
+                        <h4 className="text-sm font-bold">
+                          Day {day.day || dIdx + 1} {day.dayName ? `— ${day.dayName}` : ''}
+                        </h4>
+                        {day.date && <span className="text-xs text-gray-400 font-medium">{day.date}</span>}
+                      </div>
+
+                      {day.arrivalNote && (
+                        <div className="p-2 mb-3 text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-900/40 rounded-lg">
+                          ✈ {day.arrivalNote}
+                        </div>
+                      )}
+                      {day.departureNote && (
+                        <div className="p-2 mb-3 text-xs bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-100 dark:border-orange-900/40 rounded-lg">
+                          🛫 {day.departureNote}
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        {Array.isArray(day.activities) && day.activities.length > 0 ? (
+                          day.activities.map((act, aIdx) => (
+                            <div key={aIdx} className={`p-3 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${darkMode ? "bg-slate-900 border-slate-700" : "bg-gray-50 border-gray-100"}`}>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-bold px-2 py-0.5 bg-[#a26e35]/10 text-[#a26e35] rounded">
+                                    {act.startTime || '09:00'} - {act.endTime || '11:00'}
+                                  </span>
+                                  <h5 className="text-xs font-bold">{act.title}</h5>
+                                </div>
+                                {act.description && (
+                                  <p className={`text-[11px] mt-1 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>{act.description}</p>
+                                )}
+                              </div>
+                              <span className="text-xs font-bold text-[#a26e35] whitespace-nowrap">${act.price || 0}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <p className={`text-xs italic ${darkMode ? "text-slate-500" : "text-gray-400"}`}>No activities scheduled for this day.</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-gray-400 italic">No itinerary days found.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className={`px-6 py-4 border-t flex justify-end ${darkMode ? "border-slate-800 bg-slate-900" : "border-gray-100 bg-gray-50"}`}>
+              <button
+                type="button"
+                onClick={() => setViewItinerary(null)}
+                className="px-5 py-2 text-xs font-semibold rounded-full bg-[#a26e35] text-white hover:bg-[#8b5e2d] transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
