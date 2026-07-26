@@ -5,7 +5,16 @@ import AddActivity from "./add-activity";
 
 const ListingThumb = ({ src, alt, sizeClass = "w-12 h-12" }) => {
   const [errored, setErrored] = React.useState(false);
-  if (!src || errored) {
+  const formattedSrc = React.useMemo(() => {
+    if (!src) return null;
+    const s = String(src).trim();
+    if (s.startsWith("data:") || s.startsWith("http://") || s.startsWith("https://") || s.startsWith("/")) {
+      return s;
+    }
+    return `/${s}`;
+  }, [src]);
+
+  if (!formattedSrc || errored) {
     const initial = String(alt || 'A').trim().charAt(0).toUpperCase() || 'A';
     return (
       <div className={`${sizeClass} rounded-lg border border-gray-200 bg-[#f7f1e7] text-[#a26e35] flex items-center justify-center font-semibold`}>
@@ -15,7 +24,7 @@ const ListingThumb = ({ src, alt, sizeClass = "w-12 h-12" }) => {
   }
   return (
     <img
-      src={src}
+      src={formattedSrc}
       alt={alt}
       onError={() => setErrored(true)}
       className={`${sizeClass} rounded-lg object-cover border border-gray-200`}
