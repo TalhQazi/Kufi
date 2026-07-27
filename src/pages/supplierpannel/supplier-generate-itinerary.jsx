@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarDays, GripVertical, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft } from "lucide-react";
 import api from "../../api";
 import ItineraryActivityPool from "./components/ItineraryActivityPool";
 import ItineraryControlPanel from "./components/ItineraryControlPanel";
@@ -511,11 +511,12 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         activityId: String(activity._id || activity.id),
         title: activity.title || "",
         description: activity.description || "",
+        location: activity.location || activity.country || "",
         image: activity.image || "",
         price: activity.price || 0,
         category: activity.category || "",
-        startTime: "",
-        endTime: "",
+        startTime: activity.startTime || "",
+        endTime: activity.endTime || "",
         isSupplierOnly: true,
       };
 
@@ -624,15 +625,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   function addDay() {
     setDaysData((prev) => {
       const last = prev[prev.length - 1];
-      const nextDate = last?.date ? (() => {
-        const parts = toDateString(last.date)?.split("-").map(Number);
-        if (!parts) return "";
-        const dt = new Date(parts[0], parts[1] - 1, parts[2] + 1);
-        const y = dt.getFullYear();
-        const m = String(dt.getMonth() + 1).padStart(2, "0");
-        const d = String(dt.getDate()).padStart(2, "0");
-        return `${y}-${m}-${d}`;
-      })() : "";
+      const nextDate = last?.date ? addDays(last.date, 1) : "";
       const next = {
         day: prev.length + 1,
         date: nextDate,
@@ -782,18 +775,32 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       <div className={`min-h-screen px-4 py-6 ${base}`}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-          <div className="flex-1 min-w-0">
-            <h1 className={`text-base font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
-              {itinerary?.title || "Build Itinerary"}
-            </h1>
-            <p className={`text-[11px] mt-0.5 ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
-              {itinerary?.destination || ""}
-              {itinerary?.aiGenerated && (
-                <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${darkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700"}`}>
-                  AI Generated
-                </span>
-              )}
-            </p>
+          <div className="flex items-center gap-3 min-w-0">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                  darkMode ? "border-slate-800 bg-slate-800 text-slate-300 hover:bg-slate-700" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                }`}
+                title="Back to Requests"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            )}
+            <div className="flex-1 min-w-0">
+              <h1 className={`text-base font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                {itinerary?.title || "Build Itinerary"}
+              </h1>
+              <p className={`text-[11px] mt-0.5 ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
+                {itinerary?.destination || ""}
+                {itinerary?.aiGenerated && (
+                  <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${darkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700"}`}>
+                    AI Generated
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <button
