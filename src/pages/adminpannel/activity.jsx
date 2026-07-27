@@ -139,6 +139,18 @@ const Activity = ({ onAddNew }) => {
     }
   }
 
+  const handleOrderChange = async (id, newOrder) => {
+    const orderNum = Math.max(0, parseInt(newOrder, 10) || 0);
+    setListingData((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, order: orderNum } : item))
+    );
+    try {
+      await api.put(`/activities/${id}`, { order: orderNum });
+    } catch (error) {
+      console.error("Error updating activity order:", error);
+    }
+  };
+
   const handleStatusChange = async (id, newStatus) => {
     try {
       await api.patch(`/activities/${id}`, { status: newStatus });
@@ -378,7 +390,16 @@ const Activity = ({ onAddNew }) => {
               ) : (
                 filteredListings.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50/80">
-                    <td className="px-6 py-4 font-bold text-slate-700">#{item.order}</td>
+                    <td className="px-6 py-4 font-bold text-slate-700">
+                      <input
+                        type="number"
+                        min="0"
+                        value={item.order || 0}
+                        onChange={(e) => handleOrderChange(item.id, e.target.value)}
+                        className="w-16 px-2 py-1 text-xs border border-gray-200 rounded-lg text-center font-bold text-[#a26e35] focus:outline-none focus:ring-2 focus:ring-[#a26e35]/30 bg-gray-50 hover:bg-white transition-colors"
+                        title="Edit display order"
+                      />
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <ListingThumb src={item.image} alt={item.listing} />

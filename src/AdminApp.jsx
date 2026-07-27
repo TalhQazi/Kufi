@@ -78,7 +78,7 @@ const AdminApp = ({ initialPage = 'Dashboard', onLogout, onHomeClick }) => {
   const renderPage = () => {
     if (activePage === 'Dashboard') return <Dashboard onNavigate={setActivePage} />
     if (activePage.startsWith('Activity')) {
-      if (activePage === 'Activity/Add') return <AddActivity onBack={() => setActivePage('Activity')} />
+      if (activePage === 'Activity/Add') return <AddActivity onBack={() => setActivePage('Activity')} onSaved={() => setActivePage('Activity')} />
       return <Activity onAddNew={() => setActivePage('Activity/Add')} />
     }
     if (activePage.startsWith('Blogs')) {

@@ -428,14 +428,11 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
 
 
   useEffect(() => {
-    generateCalledRef.current = false;
     setLoadError("");
     setGenerateError("");
-    setItinerary(null);
-    setDaysData([]);
 
     async function loadOrCreate() {
-      if (!request) return;
+      if (!requestKey) return;
 
       try {
         const itin = await resolveItineraryRecord();
