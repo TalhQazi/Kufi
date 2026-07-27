@@ -376,19 +376,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     }
 
     if (existingItin) {
-      // Update the existing itinerary with the latest Control Panel dates & settings before generating
-      try {
-        const payload = {
-          startDate: overviewItinerary?.startDate || existingItin.startDate,
-          endDate: overviewItinerary?.endDate || existingItin.endDate,
-          ...(overviewItinerary?.controlPanel || {})
-        };
-        const res = await api.put(`/itineraries/${existingItin._id}/control-panel`, payload);
-        return res.data;
-      } catch (err) {
-        console.error("Failed to sync control panel data before generation", err);
-        return existingItin;
-      }
+      return existingItin;
     }
 
     // Otherwise, create a new one
