@@ -18,37 +18,15 @@ import SupplierGenerateItinerary, { buildItineraryPayload, resolveTravelerUserId
 import ItineraryControlPanel from "./components/ItineraryControlPanel";
 import { PROCEED_WITH_AI_LABEL } from "../../constants/itineraryLabels";
 
-const getParentRequestId = (reqId, requestsList) => {
-  if (!reqId || !Array.isArray(requestsList)) return reqId;
-  const targetId = String(reqId);
-  
-  const groups = {};
-  requestsList.forEach((req) => {
-    const userKey = req.email || req.name || 'unknown';
-    if (!groups[userKey]) groups[userKey] = [];
-    groups[userKey].push(req);
-  });
-
-  for (const list of Object.values(groups)) {
-    const sorted = [...list].sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0));
-    const parent = sorted[0];
-    const isChild = sorted.slice(1).some(r => String(r.id || r._id) === targetId);
-    if (isChild && parent) {
-      return parent.id || parent._id;
-    }
-  }
-  return reqId;
-};
-
-const openCreateItinerary = (setItineraryRequestId, setView, requestId, requestsList = []) => {
-  const parentId = getParentRequestId(requestId, requestsList);
-  setItineraryRequestId(parentId);
+const openCreateItinerary = (setItineraryRequestId, setView, requestId) => {
+  if (!requestId) return;
+  setItineraryRequestId(requestId);
   setView("itinerary");
 };
 
-const openAiItinerary = (setItineraryRequestId, setView, requestId, requestsList = []) => {
-  const parentId = getParentRequestId(requestId, requestsList);
-  setItineraryRequestId(parentId);
+const openAiItinerary = (setItineraryRequestId, setView, requestId) => {
+  if (!requestId) return;
+  setItineraryRequestId(requestId);
   setView("generate");
 };
 
@@ -1002,7 +980,7 @@ const SupplierRequests = ({
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            openAiItinerary(setItineraryRequestId, setView, parentRequest.id || parentRequest._id, requests);
+                            openAiItinerary(setItineraryRequestId, setView, parentRequest.id || parentRequest._id);
                           }}
                           className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all ${
                             darkMode
@@ -1018,7 +996,7 @@ const SupplierRequests = ({
                           disabled={!isRequestConfirmed(parentRequest)}
                           onClick={(e) => {
                             e.stopPropagation();
-                            openCreateItinerary(setItineraryRequestId, setView, parentRequest.id || parentRequest._id, requests);
+                            openCreateItinerary(setItineraryRequestId, setView, parentRequest.id || parentRequest._id);
                           }}
                           className={`inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[10px] sm:text-xs font-semibold text-center transition-all ${
                             isRequestConfirmed(parentRequest)

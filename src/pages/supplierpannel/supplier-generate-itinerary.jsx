@@ -435,9 +435,8 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         } else if (itin?.aiGenerated || (Array.isArray(itin?.days) && itin.days.length > 0)) {
           setDaysData(updateDaysData(itin?.days || []));
           generateCalledRef.current = true;
-        } else if (!generateCalledRef.current) {
-          generateCalledRef.current = true;
-          await triggerGenerate(itin, { genMode: mode });
+        } else {
+          setDaysData(updateDaysData(itin?.days || []));
         }
       } catch (err) {
         const msg =
@@ -666,10 +665,14 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     if (!itinerary?._id) return;
     setSaving(true);
     setSubmitError("");
+    const cleanedExtraFields = extraFields.filter(
+      (f) => String(f.label || "").trim() || String(f.value || "").trim()
+    );
+    setExtraFields(cleanedExtraFields);
     try {
       const res = await api.put(`/itineraries/${itinerary._id}/days`, {
         days: daysData,
-        extraFields,
+        extraFields: cleanedExtraFields,
       });
       setItinerary(res.data);
       setSaveMsg("Draft saved");
@@ -687,10 +690,14 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     if (!itinerary?._id) return;
     setSubmitting(true);
     setSubmitError("");
+    const cleanedExtraFields = extraFields.filter(
+      (f) => String(f.label || "").trim() && String(f.value || "").trim()
+    );
+    setExtraFields(cleanedExtraFields);
     try {
       const res = await api.post(`/itineraries/${itinerary._id}/submit`, {
         days: daysData,
-        extraFields,
+        extraFields: cleanedExtraFields,
       });
       setItinerary(res.data);
       setSaveMsg("Submitted to traveller");
@@ -719,8 +726,6 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   const rooms = itinerary?.controlPanel?.numberOfRooms || 1;
   const hotelCost = hotelData?.pricePerNight ? hotelData.pricePerNight * nights * rooms : 0;
   const upliftRaw = itinerary?.controlPanel?.budgetUplift ?? 15;
-  // If value is a decimal like 0.15 (legacy), use as-is; otherwise divide by 100 (e.g. 15 → 0.15)
-  // Clamp to [0, 1] to guard against corrupted DB values
   const upliftPct = Math.min(Math.max(
     (upliftRaw > 0 && upliftRaw < 1) ? upliftRaw : (Number(upliftRaw) / 100),
     0
@@ -754,8 +759,11 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     daysData.reduce((sum, d) => sum + (d.activities || []).length, 0),
     [daysData]);
 
-  const subtotalBeforeUplift = activitiesTotal + hotelCost + customCostsTotal;
-  const grandTotal = Math.round(subtotalBeforeUplift * (1 + upliftPct));
+  const baseBudget = itinerary?.budget || parseBudgetValue(request?.tripDetails?.budget || request?.amount) || 0;
+  const maxAllowedTotalBudget = baseBudget > 0 ? Math.floor(baseBudget * (1 + upliftPct)) : 0;
+  const grandTotal = activitiesTotal + hotelCost + customCostsTotal;
+  const isWithinBaseBudget = baseBudget > 0 ? grandTotal <= baseBudget : true;
+  const isWithinTolerance = baseBudget > 0 ? grandTotal <= maxAllowedTotalBudget : true;
 
   const currentDay = daysData[activeDay] || null;
 
@@ -1004,6 +1012,10 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                 <Row label="Departure Date" value={itinerary?.endDate ? fmtDate(itinerary.endDate) : "—"} dark={darkMode} />
                 <Row label="Travelers" value={itinerary?.numberOfTravelers || "—"} dark={darkMode} />
                 <Row label="Total Activities" value={totalActivitiesCount} dark={darkMode} />
+                <Row label="Base Budget" value={baseBudget ? `$${baseBudget.toLocaleString()}` : "Flexible"} dark={darkMode} />
+                {upliftPct > 0 && baseBudget > 0 && (
+                  <Row label={`Budget Tolerance (+${Math.round(upliftPct * 100)}%)`} value={`Max $${maxAllowedTotalBudget.toLocaleString()}`} dark={darkMode} />
+                )}
                 <Row label="Hotel" value={hotelData?.name || "Not selected"} dark={darkMode} />
                 <Row label="Transportation" value="Included in itinerary" dark={darkMode} />
                 {hotelCost > 0 && <Row label={`Hotel (${nights} nights × ${rooms} rooms)`} value={`$${hotelCost.toLocaleString()}`} dark={darkMode} />}
@@ -1011,11 +1023,19 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                 {customCostLines.map((line) => (
                   <Row key={line.id} label={line.label} value={`$${line.total.toLocaleString()}`} dark={darkMode} />
                 ))}
-                {upliftPct > 0 && <Row label={`Uplift (${Math.round(upliftPct * 100)}%)`} value={`$${Math.round(subtotalBeforeUplift * upliftPct).toLocaleString()}`} dark={darkMode} />}
-                <div className={`border-t pt-2 mt-1 flex justify-between font-bold text-sm ${darkMode ? "border-slate-700 text-white" : "border-gray-100 text-slate-900"}`}>
-                  <span>Total</span>
+                <div className={`border-t pt-2 mt-1 flex justify-between items-center font-bold text-sm ${darkMode ? "border-slate-700 text-white" : "border-gray-100 text-slate-900"}`}>
+                  <span>Total Calculated Cost</span>
                   <span>${grandTotal.toLocaleString()}</span>
                 </div>
+                {baseBudget > 0 && (
+                  <div className="pt-1 flex justify-end">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      isWithinBaseBudget ? "bg-emerald-100 text-emerald-800" : isWithinTolerance ? "bg-amber-100 text-amber-800" : "bg-rose-100 text-rose-800"
+                    }`}>
+                      {isWithinBaseBudget ? "✓ Within Base Budget" : isWithinTolerance ? `✓ Within +${Math.round(upliftPct * 100)}% Tolerance` : "⚠ Budget Exceeded"}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

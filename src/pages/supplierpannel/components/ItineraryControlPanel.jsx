@@ -383,9 +383,14 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
         )}
       </div>
 
-      {/* Budget Uplift */}
+      {/* Budget Uplift Tolerance */}
       <div className={sectionCls}>
-        <span className={labelCls}>Budget Uplift %</span>
+        <div className="flex items-center justify-between">
+          <span className={labelCls}>Budget Uplift Tolerance %</span>
+          <span className={`text-[10px] ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+            Tolerance allowance above base budget
+          </span>
+        </div>
         <div className="flex items-center gap-2">
           <input
             type="number"
@@ -397,6 +402,9 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
           />
           <span className={darkMode ? "text-slate-400" : "text-gray-500"}>%</span>
         </div>
+        <p className={`text-[10px] mt-1 ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
+          Allows system activity selections to go up to +{cp.budgetUplift}% over customer budget as flexibility tolerance (e.g. $1,000 budget allows up to ${(1000 * (1 + (cp.budgetUplift || 15) / 100)).toLocaleString()} total).
+        </p>
       </div>
 
       {/* Custom Costs */}
