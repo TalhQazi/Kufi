@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import SupplierGenerateItinerary, { buildItineraryPayload, resolveTravelerUserId } from "./supplier-generate-itinerary";
 import ItineraryControlPanel from "./components/ItineraryControlPanel";
-import { PROCEED_WITH_AI_LABEL } from "../../constants/itineraryLabels";
+import { PROCEED_WITH_AI_LABEL, ITINERARY_WORKFLOW_EVENT } from "../../constants/itineraryLabels";
 
 const openCreateItinerary = (pinRequest, setView, request) => {
   if (!pinRequest(request)) return;
@@ -416,6 +416,20 @@ const SupplierRequests = ({
     const id = setInterval(() => fetchRequests({ silent: true }), 45000);
     return () => clearInterval(id);
   }, [subTab, page, searchQuery, sortBy, sortOrder, view]);
+
+  // Saving or sending an itinerary changes which tab its request belongs to. Re-fetch
+  // as soon as that happens (and whenever we come back to the list) so a request that
+  // has just been auto-saved as a draft leaves New Requests immediately.
+  useEffect(() => {
+    const refresh = () => fetchRequests({ silent: true });
+    window.addEventListener(ITINERARY_WORKFLOW_EVENT, refresh);
+    return () => window.removeEventListener(ITINERARY_WORKFLOW_EVENT, refresh);
+  }, [subTab, page, searchQuery, sortBy, sortOrder]);
+
+  useEffect(() => {
+    if (view !== "list") return;
+    fetchRequests({ silent: true });
+  }, [view]);
 
   useEffect(() => {
     setPage(1);

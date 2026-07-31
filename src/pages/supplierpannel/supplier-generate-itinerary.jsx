@@ -17,6 +17,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft } from "lucide-react";
 import api, { getApiBaseUrl, getAuthToken } from "../../api";
+import { notifyItineraryWorkflowChanged } from "../../constants/itineraryLabels";
 import ItineraryActivityPool from "./components/ItineraryActivityPool";
 import ItineraryControlPanel from "./components/ItineraryControlPanel";
 import {
@@ -775,6 +776,8 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       setItinerary(res.data);
       // Saved explicitly — the exit auto-save has nothing left to do.
       savedSnapshotRef.current = serializeBuilderState(daysData, cleanedExtraFields, res.data);
+      // The request now belongs to Drafts, not New Requests — let the other panels resync.
+      notifyItineraryWorkflowChanged();
       setSaveMsg("Draft saved");
       setTimeout(() => setSaveMsg(""), 2500);
     } catch (err) {
@@ -804,6 +807,8 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       // not write it back into the draft list.
       finalizedRef.current = true;
       savedSnapshotRef.current = serializeBuilderState(daysData, cleanedExtraFields, res.data);
+      // Moves out of Drafts and into In Progress — resync the other panels.
+      notifyItineraryWorkflowChanged();
       setSaveMsg("Submitted to traveller");
       setTimeout(() => {
         setSaveMsg("");
@@ -896,6 +901,9 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         .put(path, body)
         .then((res) => {
           savedSnapshotRef.current = snapshot;
+          // The exit auto-save just turned this into a draft. Announce it so New
+          // Requests drops it and Drafts picks it up without a manual refresh.
+          notifyItineraryWorkflowChanged();
           return res;
         })
         .catch((err) => {

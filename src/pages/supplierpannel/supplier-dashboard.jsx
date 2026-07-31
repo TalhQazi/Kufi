@@ -176,15 +176,9 @@ const SupplierDashboard = ({
         const normalizedAllRequests = allBookings.map(normalizeBooking);
         setAllRequests(normalizedAllRequests);
 
-        const draftItineraries = allBookings.filter(b => {
-          if (!b.itinerary) return false;
-          const itinStatus = String(b.itinerary.status || '').toLowerCase();
-          const isDraftStatus = itinStatus === 'pending' || itinStatus === 'pending review';
-          // A record with no days is just the placeholder created when the supplier
-          // opened the request — not an itinerary draft they can resume.
-          const hasContent = Array.isArray(b.itinerary.days) && b.itinerary.days.length > 0;
-          return isDraftStatus && hasContent;
-        });
+        // `workflowStage` is computed server-side so the dashboard, the Drafts panel
+        // and Booking History always agree on where a booking belongs.
+        const draftItineraries = allBookings.filter(b => b.workflowStage === 'draft');
         setUnfinishedDraftsCount(draftItineraries.length);
 
         const recentList = [...allBookings]

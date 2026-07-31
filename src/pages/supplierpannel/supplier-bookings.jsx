@@ -1,6 +1,7 @@
 import api from "../../api";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
+import { ITINERARY_WORKFLOW_EVENT } from "../../constants/itineraryLabels";
 
 const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
   const [bookings, setBookings] = useState([]);
@@ -34,10 +35,9 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
 
 
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = useCallback(async ({ silent = false } = {}) => {
       try {
-        setIsLoading(true);
+        if (!silent) setIsLoading(true);
         const bookingsRes = await api.get('/supplier/bookings');
         const rawBookings = Array.isArray(bookingsRes?.data)
           ? bookingsRes.data
@@ -75,6 +75,8 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
           return {
             ...r,
             id: r.id ?? r._id,
+            // Server-computed section this booking belongs to (see getMyBookings).
+            workflowStage: r.workflowStage || 'new',
             name: (() => {
               const contactName = (r.contactDetails?.firstName
                 ? `${r.contactDetails.firstName} ${r.contactDetails.lastName || ''}`.trim()
@@ -99,19 +101,15 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
           };
         });
 
-        setBookings(normalized);
+        // Booking History only lists real bookings: the traveler has accepted the
+        // itinerary or completed payment. A request that is still a supplier draft or
+        // is merely awaiting the traveler must not appear here.
+        setBookings(normalized.filter(b => b.workflowStage === 'booked'));
 
-        // Extract real drafts from the backend response
+        // Extract real drafts from the backend response. Draft and booked are mutually
+        // exclusive stages, so a request can never be in both sections.
         const backendDrafts = normalized
-          .filter(b => {
-            if (!b.itinerary) return false;
-            const status = String(b.itinerary.status || '').toLowerCase();
-            const isDraftStatus = status === 'pending' || status === 'pending review';
-            // Skip the empty placeholder record that is created the moment a supplier
-            // opens a request — a draft only exists once there is itinerary content.
-            const hasContent = Array.isArray(b.itinerary.days) && b.itinerary.days.length > 0;
-            return isDraftStatus && hasContent;
-          })
+          .filter(b => b.workflowStage === 'draft' && b.itinerary)
           .map(b => {
             const itin = b.itinerary;
 
@@ -150,11 +148,18 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
       } catch (error) {
         console.error("Error fetching supplier bookings:", error);
       } finally {
-        setIsLoading(false);
+        if (!silent) setIsLoading(false);
       }
-    };
-    fetchData();
   }, []);
+
+  useEffect(() => {
+    fetchData();
+    // Saving/sending an itinerary elsewhere in the panel changes which section a
+    // booking belongs to — pick that up without a manual refresh.
+    const refresh = () => fetchData({ silent: true });
+    window.addEventListener(ITINERARY_WORKFLOW_EVENT, refresh);
+    return () => window.removeEventListener(ITINERARY_WORKFLOW_EVENT, refresh);
+  }, [fetchData]);
 
   const filteredBookings = useMemo(() => {
     if (timeFilter === 'all') return bookings;
