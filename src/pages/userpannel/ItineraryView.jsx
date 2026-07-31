@@ -96,6 +96,18 @@ export default function ItineraryView({
         const bookingKey = String(request?.id || request?._id || '')
         if (!bookingKey) return null
 
+        // IMPORTANT: the list endpoint (GET /itineraries) is a metadata projection — it
+        // deliberately omits `days` and `extraFields`. Reading the itinerary from it gave
+        // us a record with `days === undefined`, so the traveler opened a itinerary that
+        // rendered completely empty even though the supplier had sent it. Always resolve
+        // the full document.
+        try {
+            const res = await api.get(`/itineraries/booking/${encodeURIComponent(bookingKey)}`)
+            if (res?.data?._id) return res.data
+        } catch {
+            // Fall through to the list lookup below.
+        }
+
         try {
             const res = await api.get('/itineraries').catch(() => ({ data: [] }))
             const list = Array.isArray(res?.data) ? res.data : []
@@ -103,7 +115,19 @@ export default function ItineraryView({
                 const candidate = String(it?.bookingId || it?.requestId || it?.booking || it?.request || it?._id || it?.id || '')
                 return candidate && candidate === bookingKey
             })
-            return match || null
+            if (!match) return null
+
+            // The match came from the projected list, so re-read it in full before use.
+            const id = match?._id || match?.id
+            if (id) {
+                try {
+                    const full = await api.get(`/itineraries/${id}`)
+                    if (full?.data?._id) return full.data
+                } catch {
+                    // Fall back to the projected record below.
+                }
+            }
+            return match
         } catch {
             return null
         }
@@ -182,11 +206,30 @@ export default function ItineraryView({
                 }
 
                 setLoading(true)
-                const response = await api.get(`/itineraries/${itineraryId}`)
-                if (response.data) {
-                    setTripData(response.data.tripData || response.data)
-                    setDays(response.data.days || [])
-                    setExtraFields(Array.isArray(response.data.extraFields) ? response.data.extraFields : [])
+                // The dashboard opens itineraries by booking id (that is what lands in the
+                // #itinerary/<id> URL), so on a refresh/deep-link this id may be a booking
+                // rather than an itinerary. Try the itinerary first, then the booking.
+                let record = null
+                try {
+                    const response = await api.get(`/itineraries/${itineraryId}`)
+                    record = response?.data?._id ? response.data : null
+                } catch (err) {
+                    if (err?.response?.status !== 404) throw err
+                }
+
+                if (!record) {
+                    const byBooking = await api
+                        .get(`/itineraries/booking/${encodeURIComponent(itineraryId)}`)
+                        .catch(() => null)
+                    record = byBooking?.data?._id ? byBooking.data : null
+                }
+
+                if (record) {
+                    setTripData(record.tripData || record)
+                    setDays(record.days || [])
+                    setExtraFields(Array.isArray(record.extraFields) ? record.extraFields : [])
+                } else {
+                    setLoadError(new Error('Itinerary not found'))
                 }
             } catch (error) {
                 setLoadError(error)

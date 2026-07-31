@@ -8,22 +8,42 @@ export default function Notifications({ onLogout, onBack, onHomeClick, onNotific
     const [unreadCount, setUnreadCount] = useState(0)
     const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {}
 
-    useEffect(() => {
-        const fetchNotifications = async () => {
-            try {
-                setIsLoading(true)
-                const res = await api.get('/notifications')
-                const list = res?.data?.notifications ?? (Array.isArray(res?.data) ? res.data : [])
-                setNotifications(Array.isArray(list) ? list : [])
-                setUnreadCount(Number(res?.data?.unreadCount) || (Array.isArray(list) ? list.filter((n) => !n.read).length : 0))
-            } catch (error) {
-                console.error('Error fetching notifications:', error)
-                setNotifications([])
-            } finally {
-                setIsLoading(false)
-            }
+    const fetchNotifications = async ({ silent = false } = {}) => {
+        try {
+            if (!silent) setIsLoading(true)
+            const res = await api.get('/notifications')
+            const list = res?.data?.notifications ?? (Array.isArray(res?.data) ? res.data : [])
+            setNotifications(Array.isArray(list) ? list : [])
+            setUnreadCount(Number(res?.data?.unreadCount) || (Array.isArray(list) ? list.filter((n) => !n.read).length : 0))
+        } catch (error) {
+            console.error('Error fetching notifications:', error)
+            // Keep whatever is already on screen rather than blanking the list on a
+            // transient failure.
+            if (!silent) setNotifications([])
+        } finally {
+            if (!silent) setIsLoading(false)
         }
+    }
+
+    // Poll so a notification raised while this page is open (e.g. the supplier sending an
+    // itinerary) appears without a manual reload.
+    useEffect(() => {
         fetchNotifications()
+
+        const refresh = () => fetchNotifications({ silent: true })
+        const onVisibility = () => {
+            if (document.visibilityState === 'visible') refresh()
+        }
+
+        window.addEventListener('focus', refresh)
+        document.addEventListener('visibilitychange', onVisibility)
+        const intervalId = window.setInterval(refresh, 60000)
+
+        return () => {
+            window.removeEventListener('focus', refresh)
+            document.removeEventListener('visibilitychange', onVisibility)
+            window.clearInterval(intervalId)
+        }
     }, [])
 
     const markAllRead = async () => {

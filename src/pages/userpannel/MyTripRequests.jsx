@@ -41,10 +41,9 @@ export default function MyTripRequests({
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [dropdown])
 
-    useEffect(() => {
-        const fetchData = async () => {
+        const fetchData = async ({ silent = false } = {}) => {
             try {
-                setIsLoading(true)
+                if (!silent) setIsLoading(true)
                 setLoadError(null)
                 const userId = currentUser?._id || currentUser?.id
                 const email = String(currentUser?.email || '').trim()
@@ -54,11 +53,23 @@ export default function MyTripRequests({
                         .catch(() => api.get('/bookings'))
                     : api.get('/bookings')
 
+                // An itinerary that fails to load must not look like an itinerary that was
+                // never sent — surface it instead of silently rendering an empty list.
+                let itineraryLoadFailed = false
+
                 const [bookingsRes, itinerariesRes, notifRes] = await Promise.all([
                     bookingsPromise.catch(() => ({ data: [] })),
-                    api.get('/itineraries', { timeout: 8000 }).catch(() => ({ data: [] })),
+                    api.get('/itineraries', { timeout: 15000 }).catch((err) => {
+                        console.error('MyTripRequests /itineraries error:', err?.message)
+                        itineraryLoadFailed = true
+                        return { data: [] }
+                    }),
                     api.get('/notifications').catch(() => ({ data: { notifications: [], unreadCount: 0 } })),
                 ])
+
+                if (itineraryLoadFailed) {
+                    setLoadError('We could not load your itineraries just now. Please try again in a moment.')
+                }
 
                 const bookingsRaw =
                     bookingsRes?.data?.bookings ??
@@ -151,10 +162,30 @@ export default function MyTripRequests({
                 console.error('MyTripRequests load error:', err)
                 setLoadError('Unable to load your trip requests. Please try again.')
             } finally {
-                setIsLoading(false)
+                if (!silent) setIsLoading(false)
             }
         }
+
+    // Load once, then keep the panel live so an itinerary the supplier just sent shows up
+    // (and its notification appears) without the traveler reloading the page.
+    useEffect(() => {
         fetchData()
+
+        const refresh = () => fetchData({ silent: true })
+        const onVisibility = () => {
+            if (document.visibilityState === 'visible') refresh()
+        }
+
+        window.addEventListener('focus', refresh)
+        document.addEventListener('visibilitychange', onVisibility)
+        const intervalId = window.setInterval(refresh, 60000)
+
+        return () => {
+            window.removeEventListener('focus', refresh)
+            document.removeEventListener('visibilitychange', onVisibility)
+            window.clearInterval(intervalId)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const formatDate = (value) => {
