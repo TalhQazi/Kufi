@@ -1,6 +1,6 @@
 import * as React from 'react'
 const { useState, useEffect, Suspense, lazy } = React
-import api from './api'
+import api, { hasValidSession, clearStoredSession, SESSION_EXPIRED_EVENT } from './api'
 
 // Lazy load pages for better performance
 const HomePage = lazy(() => import('./pages/userpannel/HomePage.jsx'))
@@ -259,13 +259,36 @@ export default function App() {
     }
   }, [selectedItineraryRequest])
 
+  // An expired token must count as "not signed in". Checking only for the presence of
+  // the string left long-idle users in a zombie session: the panel rendered as logged in
+  // while every API call came back 401.
   const hasAuthToken = () => {
     try {
-      return Boolean(localStorage.getItem('authToken'))
+      return hasValidSession()
     } catch {
       return false
     }
   }
+
+  // When the backend rejects our token mid-session, drop to a logged-out state and ask
+  // for a fresh sign-in instead of leaving the panel up with every request failing.
+  useEffect(() => {
+    const onSessionExpired = () => {
+      setCurrentUser(null)
+      setShowModal('login')
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, onSessionExpired)
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onSessionExpired)
+  }, [])
+
+  // Catch a session that expired while the tab was closed, before any request is made.
+  useEffect(() => {
+    if (currentUser && !hasValidSession()) {
+      clearStoredSession()
+      setCurrentUser(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const isUserAuthenticated = () => {
     if (!hasAuthToken()) return false
