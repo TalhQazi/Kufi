@@ -106,11 +106,23 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
           .filter(b => {
             if (!b.itinerary) return false;
             const status = String(b.itinerary.status || '').toLowerCase();
-            return status === 'pending' || status === 'pending review';
+            const isDraftStatus = status === 'pending' || status === 'pending review';
+            // Skip the empty placeholder record that is created the moment a supplier
+            // opens a request — a draft only exists once there is itinerary content.
+            const hasContent = Array.isArray(b.itinerary.days) && b.itinerary.days.length > 0;
+            return isDraftStatus && hasContent;
           })
           .map(b => {
             const itin = b.itinerary;
-            
+
+            // Traveler identity comes from the original itinerary request (the booking).
+            const firstName = String(
+              b.contactDetails?.firstName || String(b.name || "").split(" ")[0] || ""
+            ).trim();
+            const lastName = String(
+              b.contactDetails?.lastName || String(b.name || "").split(" ").slice(1).join(" ") || ""
+            ).trim();
+
             // Calculate a simple progress heuristic
             let progress = 0.1; // Base progress for having an itinerary created
             if (itin.aiGenerated) progress += 0.3; // AI generated
@@ -123,10 +135,14 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
               itineraryId: itin._id,
               title: itin.title || b.experience || "Untitled Itinerary",
               destination: itin.destination || "Unknown Destination",
+              travelerFirstName: firstName,
+              travelerLastName: lastName,
+              travelerName: [firstName, lastName].filter(Boolean).join(" "),
               author: "AI Generated",
               progress: progress,
               lastEdit: itin.updatedAt ? new Date(itin.updatedAt).toLocaleDateString() : "Just now",
-              originalBooking: b
+              // Carry the itinerary id so Resume reopens this exact draft.
+              originalBooking: { ...b, itineraryId: itin._id }
             };
           });
 
@@ -434,6 +450,9 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                     <h3 className={`text-xs font-semibold transition-colors ${darkMode ? "text-white" : "text-slate-900"}`}>
                       {draft.title}
                     </h3>
+                    <p className={`mt-0.5 text-[11px] font-medium transition-colors ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                      Traveler: {draft.travelerName || "—"}
+                    </p>
                     <p className={`mt-0.5 text-[11px] transition-colors ${darkMode ? "text-slate-400" : "text-gray-500"}`}>{draft.author}</p>
                     <p className={`mt-0.5 text-[10px] transition-colors ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
                       Last edited: {draft.lastEdit || 'Just now'}

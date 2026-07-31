@@ -179,7 +179,11 @@ const SupplierDashboard = ({
         const draftItineraries = allBookings.filter(b => {
           if (!b.itinerary) return false;
           const itinStatus = String(b.itinerary.status || '').toLowerCase();
-          return itinStatus === 'pending' || itinStatus === 'pending review';
+          const isDraftStatus = itinStatus === 'pending' || itinStatus === 'pending review';
+          // A record with no days is just the placeholder created when the supplier
+          // opened the request — not an itinerary draft they can resume.
+          const hasContent = Array.isArray(b.itinerary.days) && b.itinerary.days.length > 0;
+          return isDraftStatus && hasContent;
         });
         setUnfinishedDraftsCount(draftItineraries.length);
 
@@ -588,6 +592,9 @@ const SupplierDashboard = ({
             onResumeDraft={(draft) => {
               setResumeItineraryDraft(draft || null);
               navigateTo("Requests");
+              // navigateTo() resets the requests view to the list; a resumed draft must
+              // land directly in the itinerary builder, so set it back afterwards.
+              setRequestsView("generate");
             }}
             onRemoveDraft={async (id) => {
               if (window.confirm("Remove this draft?")) {

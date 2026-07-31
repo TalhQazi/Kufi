@@ -44,6 +44,11 @@ const resolveAuthToken = () => {
     return ''
 }
 
+// Exposed so "save before the page goes away" code paths (pagehide /
+// visibilitychange) can build a keepalive fetch, which axios cannot do.
+export const getAuthToken = resolveAuthToken;
+export const getApiBaseUrl = () => String(API_BASE_URL || '').replace(/\/$/, '');
+
 // Add a request interceptor to add the auth token to every request
 api.interceptors.request.use(
     (config) => {

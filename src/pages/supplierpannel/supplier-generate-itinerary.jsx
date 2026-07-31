@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft } from "lucide-react";
-import api from "../../api";
+import api, { getApiBaseUrl, getAuthToken } from "../../api";
 import ItineraryActivityPool from "./components/ItineraryActivityPool";
 import ItineraryControlPanel from "./components/ItineraryControlPanel";
 import {
@@ -125,6 +125,72 @@ function newExtraField() {
     id: `ef-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     label: "",
     value: "",
+  };
+}
+
+// ─── draft persistence helpers ───────────────────────────────────────────────
+
+/** Statuses that mean the itinerary has already left the supplier's draft space. */
+const SENT_TO_TRAVELER_STATUSES = [
+  "Supplier Replied Back",
+  "Ready",
+  "Accepted",
+  "Payment Completed",
+  "Completed",
+];
+
+function isSentToTraveler(status) {
+  return SENT_TO_TRAVELER_STATUSES.includes(String(status || "").trim());
+}
+
+/** Normalize the control panel for transport (hotel may be populated as an object). */
+function serializeControlPanel(itinerary) {
+  const cp = itinerary?.controlPanel;
+  if (!cp || typeof cp !== "object") return undefined;
+  const hotelId = cp.hotelId?._id || cp.hotelId || null;
+  return { ...cp, hotelId: hotelId || null };
+}
+
+/**
+ * Stable fingerprint of everything the builder owns. Used to decide whether there is
+ * unsaved work worth auto-saving when the supplier leaves.
+ */
+function serializeBuilderState(days, extraFields, itinerary) {
+  try {
+    return JSON.stringify({
+      days: days || [],
+      extraFields: extraFields || [],
+      startDate: toDateString(itinerary?.startDate) || null,
+      endDate: toDateString(itinerary?.endDate) || null,
+      controlPanel: serializeControlPanel(itinerary) || null,
+    });
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * In-flight exit auto-saves, keyed by itinerary id. The save is fired from an unmount
+ * cleanup, so a quick Back → forward could otherwise re-read the itinerary before the
+ * write lands and show (then re-save) stale data. Reloads wait on this first.
+ */
+const pendingDraftSaves = new Map();
+
+function awaitPendingDraftSave(itineraryId) {
+  const pending = itineraryId ? pendingDraftSaves.get(String(itineraryId)) : null;
+  return pending ? pending.catch(() => {}) : Promise.resolve();
+}
+
+/** Request body shared by "Save to Draft", "Send to Traveler" and the exit auto-save. */
+function buildPersistBody(days, extraFields, itinerary) {
+  return {
+    days: days || [],
+    extraFields: extraFields || [],
+    startDate: toDateString(itinerary?.startDate) || null,
+    endDate: toDateString(itinerary?.endDate) || null,
+    controlPanel: serializeControlPanel(itinerary),
+    aiGenerated: Boolean(itinerary?.aiGenerated),
+    generationSource: itinerary?.generationSource,
   };
 }
 
@@ -327,6 +393,16 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   const [overDayIndex, setOverDayIndex] = useState(null);
   const generateCalledRef = useRef(false);
 
+  // ── Draft persistence bookkeeping ──────────────────────────────────────────
+  // `savedSnapshotRef` holds a serialized copy of what the server currently has.
+  // Anything different from it is unsaved work that must survive the supplier
+  // leaving the builder. `finalizedRef` is set once the itinerary has been sent to
+  // the traveler — from that point it must never be written back as a draft.
+  const savedSnapshotRef = useRef("");
+  const finalizedRef = useRef(false);
+  const autoSaveInFlightRef = useRef(false);
+  const builderStateRef = useRef(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
@@ -349,34 +425,35 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   const requestKey = request?.id || request?._id;
 
   async function resolveItineraryRecord() {
-    let existingItin = null;
+    // IMPORTANT: `request.itinerary` comes from /supplier/bookings, which only projects a
+    // handful of fields (`days.day` and nothing else). Using it directly used to hand the
+    // builder a shell record with day stubs and no activities/extraFields/controlPanel —
+    // which is why resuming a draft looked like "nothing was restored". Always resolve the
+    // full document by id instead.
+    const itinId =
+      request?.itineraryId ||
+      (typeof request?.itinerary === "string" ? request.itinerary : null) ||
+      (request?.itinerary && typeof request.itinerary === "object" ? request.itinerary._id : null);
 
-    if (request?.itinerary && typeof request.itinerary === 'object' && request.itinerary._id) {
-      existingItin = request.itinerary;
-    }
-
-    const itinId = request?.itineraryId || (typeof request?.itinerary === 'string' ? request.itinerary : null);
-    if (!existingItin && itinId) {
+    if (itinId) {
+      // Never read behind an exit auto-save that has not landed yet.
+      await awaitPendingDraftSave(itinId);
       try {
         const res = await api.get(`/itineraries/${itinId}`);
-        existingItin = res.data;
+        if (res.data?._id) return res.data;
       } catch {
-        // fall through
+        // fall through to the booking lookup
       }
     }
 
     const bookingId = request?.id || request?._id;
-    if (!existingItin && bookingId) {
+    if (bookingId) {
       try {
         const res = await api.get(`/itineraries/booking/${bookingId}`);
-        existingItin = res.data;
+        if (res.data?._id) return res.data;
       } catch {
         // not found yet
       }
-    }
-
-    if (existingItin) {
-      return existingItin;
     }
 
     // Otherwise, create a new one
@@ -385,20 +462,26 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     return res.data;
   }
 
-  async function triggerGenerate(itin, { force = false, genMode = mode } = {}) {
+  async function triggerGenerate(itin, { genMode = mode } = {}) {
     if (!itin?._id) return;
     setGenerating(true);
     setGenerateError("");
     try {
+      // `persist` is intentionally omitted: the server returns the generated plan without
+      // writing it. The itinerary only becomes a draft when the supplier saves it, sends
+      // it, or leaves the builder with unsaved work.
       const res = await api.post(`/itineraries/${itin._id}/generate`, { mode: genMode });
       const updated = res.data.itinerary || res.data;
+      const generatedDays = Array.isArray(updated.days) ? updated.days : [];
       setItinerary(updated);
-      setDaysData(updateDaysData(Array.isArray(updated.days) ? updated.days : []));
+      setDaysData(updateDaysData(generatedDays));
       setExtraFields(Array.isArray(updated.extraFields) ? updated.extraFields : []);
       if (res.data?.warning) {
         setGenerateError(res.data.warning);
-      } else if (!updated?.days?.length) {
+      } else if (generatedDays.length === 0) {
         setGenerateError("AI generation finished but no days were returned. Try again.");
+        // Nothing was produced, so allow another attempt.
+        generateCalledRef.current = false;
       }
     } catch (err) {
       const msg =
@@ -408,7 +491,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         "AI itinerary generation failed.";
       console.error("Generate failed", err);
       setGenerateError(msg);
-      if (force) generateCalledRef.current = false;
+      generateCalledRef.current = false;
     } finally {
       setGenerating(false);
     }
@@ -419,26 +502,40 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     setLoadError("");
     setGenerateError("");
 
+    let cancelled = false;
+
     async function loadOrCreate() {
       if (!requestKey) return;
 
       try {
         const itin = await resolveItineraryRecord();
-        setItinerary(itin);
-        setExtraFields(Array.isArray(itin?.extraFields) ? itin.extraFields : []);
-        setLoadError("");
+        if (cancelled) return;
 
-        if (forceGenerateOnMount && !generateCalledRef.current) {
+        const savedDays = updateDaysData(Array.isArray(itin?.days) ? itin.days : []);
+        const savedExtraFields = Array.isArray(itin?.extraFields) ? itin.extraFields : [];
+
+        setItinerary(itin);
+        setExtraFields(savedExtraFields);
+        setDaysData(savedDays);
+        setLoadError("");
+        // Everything currently on screen came straight from the server, so there is
+        // nothing to auto-save yet.
+        savedSnapshotRef.current = serializeBuilderState(savedDays, savedExtraFields, itin);
+        finalizedRef.current = isSentToTraveler(itin?.status);
+
+        // Only run AI when the supplier explicitly asked for it AND there is nothing to
+        // lose. Re-entering a request that already has days must never regenerate.
+        const alreadyBuilt = savedDays.length > 0;
+        if (alreadyBuilt) {
+          generateCalledRef.current = true;
+          if (forceGenerateOnMount) onClearForceGenerate?.();
+        } else if (forceGenerateOnMount && !generateCalledRef.current) {
           generateCalledRef.current = true;
           onClearForceGenerate?.();
-          await triggerGenerate(itin, { force: true, genMode: mode });
-        } else if (itin?.aiGenerated || (Array.isArray(itin?.days) && itin.days.length > 0)) {
-          setDaysData(updateDaysData(itin?.days || []));
-          generateCalledRef.current = true;
-        } else {
-          setDaysData(updateDaysData(itin?.days || []));
+          await triggerGenerate(itin, { genMode: mode });
         }
       } catch (err) {
+        if (cancelled) return;
         const msg =
           err?.response?.data?.msg ||
           err?.response?.data?.error ||
@@ -450,6 +547,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     }
 
     loadOrCreate();
+    return () => { cancelled = true; };
   }, [requestKey]);
 
   // ── All activityIds already placed in days ──────────────────────────────────
@@ -670,11 +768,13 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     );
     setExtraFields(cleanedExtraFields);
     try {
-      const res = await api.put(`/itineraries/${itinerary._id}/days`, {
-        days: daysData,
-        extraFields: cleanedExtraFields,
-      });
+      const res = await api.put(
+        `/itineraries/${itinerary._id}/days`,
+        buildPersistBody(daysData, cleanedExtraFields, itinerary)
+      );
       setItinerary(res.data);
+      // Saved explicitly — the exit auto-save has nothing left to do.
+      savedSnapshotRef.current = serializeBuilderState(daysData, cleanedExtraFields, res.data);
       setSaveMsg("Draft saved");
       setTimeout(() => setSaveMsg(""), 2500);
     } catch (err) {
@@ -695,11 +795,15 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     );
     setExtraFields(cleanedExtraFields);
     try {
-      const res = await api.post(`/itineraries/${itinerary._id}/submit`, {
-        days: daysData,
-        extraFields: cleanedExtraFields,
-      });
+      const res = await api.post(
+        `/itineraries/${itinerary._id}/submit`,
+        buildPersistBody(daysData, cleanedExtraFields, itinerary)
+      );
       setItinerary(res.data);
+      // Sent to the traveler: it is no longer a draft, and leaving the builder must
+      // not write it back into the draft list.
+      finalizedRef.current = true;
+      savedSnapshotRef.current = serializeBuilderState(daysData, cleanedExtraFields, res.data);
       setSaveMsg("Submitted to traveller");
       setTimeout(() => {
         setSaveMsg("");
@@ -717,6 +821,116 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       setSubmitting(false);
     }
   }
+
+  // ── Auto-save the draft when the supplier leaves without choosing an action ──
+  // The generated itinerary is deliberately not persisted on generation, so this is
+  // the safety net that guarantees no work is lost on refresh / tab close / navigation.
+
+  // Mirror the live state into a ref: the exit handlers below are registered once and
+  // would otherwise capture a stale closure.
+  useEffect(() => {
+    builderStateRef.current = { itinerary, daysData, extraFields };
+  }, [itinerary, daysData, extraFields]);
+
+  const hasUnsavedWork = useCallback(() => {
+    const state = builderStateRef.current;
+    if (!state?.itinerary?._id) return false;
+    // Already sent to the traveler — it must not be written back as a draft.
+    if (finalizedRef.current) return false;
+    const days = Array.isArray(state.daysData) ? state.daysData : [];
+    if (days.length === 0) return false;
+    return (
+      serializeBuilderState(days, state.extraFields, state.itinerary) !== savedSnapshotRef.current
+    );
+  }, []);
+
+  const autoSaveDraft = useCallback(
+    (useKeepalive = false) => {
+      if (!hasUnsavedWork()) return;
+      if (autoSaveInFlightRef.current) return;
+
+      const state = builderStateRef.current;
+      const cleanedExtraFields = (state.extraFields || []).filter(
+        (f) => String(f.label || "").trim() || String(f.value || "").trim()
+      );
+      const body = buildPersistBody(state.daysData, cleanedExtraFields, state.itinerary);
+      const snapshot = serializeBuilderState(state.daysData, cleanedExtraFields, state.itinerary);
+      const path = `/itineraries/${state.itinerary._id}/days`;
+
+      if (useKeepalive) {
+        // The page is going away: axios/XHR would be cancelled, a keepalive fetch is not.
+        const previousSnapshot = savedSnapshotRef.current;
+        try {
+          const token = getAuthToken();
+          savedSnapshotRef.current = snapshot;
+          fetch(`${getApiBaseUrl()}${path}`, {
+            method: "PUT",
+            keepalive: true,
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}`, "x-auth-token": token } : {}),
+            },
+            body: JSON.stringify(body),
+          })
+            .then((res) => {
+              // If the page survived (tab backgrounded rather than closed) and the write
+              // failed, restore the dirty marker so the next exit retries.
+              if (!res.ok && savedSnapshotRef.current === snapshot) {
+                savedSnapshotRef.current = previousSnapshot;
+              }
+            })
+            .catch(() => {
+              if (savedSnapshotRef.current === snapshot) {
+                savedSnapshotRef.current = previousSnapshot;
+              }
+            });
+        } catch {
+          savedSnapshotRef.current = previousSnapshot;
+        }
+        return;
+      }
+
+      const itineraryId = String(state.itinerary._id);
+      autoSaveInFlightRef.current = true;
+      const request = api
+        .put(path, body)
+        .then((res) => {
+          savedSnapshotRef.current = snapshot;
+          return res;
+        })
+        .catch((err) => {
+          console.error("Auto-saving itinerary draft failed", err);
+        })
+        .finally(() => {
+          autoSaveInFlightRef.current = false;
+          if (pendingDraftSaves.get(itineraryId) === request) {
+            pendingDraftSaves.delete(itineraryId);
+          }
+        });
+      // Published so a remount of the builder waits for this write before re-reading.
+      pendingDraftSaves.set(itineraryId, request);
+    },
+    [hasUnsavedWork]
+  );
+
+  useEffect(() => {
+    // Page-level exits: refresh, tab/browser close, backgrounding on mobile.
+    const saveOnExit = () => autoSaveDraft(true);
+    const saveOnHide = () => {
+      if (document.visibilityState === "hidden") autoSaveDraft(true);
+    };
+    window.addEventListener("pagehide", saveOnExit);
+    window.addEventListener("beforeunload", saveOnExit);
+    document.addEventListener("visibilitychange", saveOnHide);
+
+    return () => {
+      window.removeEventListener("pagehide", saveOnExit);
+      window.removeEventListener("beforeunload", saveOnExit);
+      document.removeEventListener("visibilitychange", saveOnHide);
+      // In-app exit: Back button, switching sections, session end.
+      autoSaveDraft(false);
+    };
+  }, [autoSaveDraft]);
 
   // ── Summary calculations ─────────────────────────────────────────────────────
 
@@ -767,6 +981,13 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
 
   const currentDay = daysData[activeDay] || null;
 
+  // Generated itineraries are held in the editor until the supplier picks an action,
+  // so surface whether there is still unsaved work.
+  const hasUnsavedEdits = useMemo(() => {
+    if (daysData.length === 0 || finalizedRef.current) return false;
+    return serializeBuilderState(daysData, extraFields, itinerary) !== savedSnapshotRef.current;
+  }, [daysData, extraFields, itinerary]);
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   const base = darkMode ? "bg-slate-950 text-white" : "bg-gray-50 text-gray-900";
@@ -805,6 +1026,11 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                 {itinerary?.aiGenerated && (
                   <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${darkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700"}`}>
                     AI Generated
+                  </span>
+                )}
+                {hasUnsavedEdits && (
+                  <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${darkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-700"}`}>
+                    Unsaved
                   </span>
                 )}
               </p>
@@ -865,10 +1091,12 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         {generateError && (
           <div className={`rounded-2xl border px-4 py-3 mb-4 text-sm ${darkMode ? "bg-rose-950/40 border-rose-900 text-rose-300" : "bg-rose-50 border-rose-200 text-rose-700"}`}>
             {generateError}
-            {itinerary?._id && (
+            {/* Only offer a retry while there is nothing on screen to lose. Once days
+                exist, regenerating would discard the itinerary under review. */}
+            {itinerary?._id && daysData.length === 0 && !generating && (
               <button
                 type="button"
-                onClick={() => triggerGenerate(itinerary, { force: true, genMode: "ai" })}
+                onClick={() => triggerGenerate(itinerary, { genMode: "ai" })}
                 className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold underline"
               >
                 Retry AI generation
