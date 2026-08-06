@@ -84,6 +84,8 @@ export default function App() {
     if (path.startsWith('country-details')) return 'country-details'
     if (path.startsWith('category-') || path.startsWith('category-page')) return 'category-page'
     if (path.startsWith('blog-detail')) return 'blog-detail'
+    if (path.startsWith('payment-success')) return 'payment-success'
+    if (path.startsWith('payment-failed')) return 'payment-failed'
     return path || 'home'
   }
 
@@ -110,6 +112,8 @@ export default function App() {
     if (path.startsWith('country-details')) return 'country-details'
     if (path.startsWith('category-') || path.startsWith('category-page')) return 'category-page'
     if (path.startsWith('blog-detail')) return 'blog-detail'
+    if (path.startsWith('payment-success')) return 'payment-success'
+    if (path.startsWith('payment-failed')) return 'payment-failed'
     return path
   }
 

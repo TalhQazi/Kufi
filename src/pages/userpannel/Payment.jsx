@@ -5,6 +5,7 @@ import PaymentSuccessModal from './PaymentSuccessModal.jsx'
 import Footer from '../../components/layout/Footer'
 
 export default function Payment({ bookingData, onBack, onForward, canGoBack, canGoForward, onNotificationClick, onHomeClick, hideHeaderFooter = false }) {
+    const [activeBookingData, setActiveBookingData] = useState(bookingData || {})
     const [paymentMethod, setPaymentMethod] = useState('stripe')
     const [cardData, setCardData] = useState({
         cardholderName: '',
@@ -34,14 +35,58 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
     const [sessionEndsAt, setSessionEndsAt] = useState(null)
 
     useEffect(() => {
+        setActiveBookingData(bookingData || {})
+    }, [bookingData])
+
+    useEffect(() => {
+        const id = bookingData?._id || bookingData?.bookingId || bookingData?.itineraryId || bookingData?.id;
+        if (!id) return;
+
+        const hasDetails = Boolean(
+            activeBookingData?.days?.length ||
+            activeBookingData?.items?.length ||
+            activeBookingData?.totalAmount ||
+            activeBookingData?.amount ||
+            activeBookingData?.budget ||
+            activeBookingData?.tripDetails
+        );
+
+        if (!hasDetails) {
+            const fetchDetails = async () => {
+                try {
+                    // Try itinerary endpoint first
+                    let res = await api.get(`/itineraries/${id}`).catch(() => null);
+                    if (res?.data?._id) {
+                        setActiveBookingData(prev => ({ ...prev, ...res.data }));
+                        return;
+                    }
+                    // Try booking endpoint
+                    res = await api.get(`/bookings/${id}`).catch(() => null);
+                    if (res?.data?._id) {
+                        setActiveBookingData(prev => ({ ...prev, ...res.data }));
+                        return;
+                    }
+                    // Try itinerary by booking ID
+                    res = await api.get(`/itineraries/booking/${encodeURIComponent(id)}`).catch(() => null);
+                    if (res?.data?._id) {
+                        setActiveBookingData(prev => ({ ...prev, ...res.data }));
+                    }
+                } catch (err) {
+                    console.error('Error fetching booking details in Payment component:', err);
+                }
+            };
+            fetchDetails();
+        }
+    }, [bookingData]);
+
+    useEffect(() => {
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
         
-        // Try to get name from bookingData or currentUser
+        // Try to get name from activeBookingData or currentUser
         let initialName = ''
-        if (bookingData?.firstName || bookingData?.lastName) {
-            initialName = `${bookingData.firstName || ''} ${bookingData.lastName || ''}`.trim()
-        } else if (bookingData?.title && bookingData?.status) {
-             // This might be an itinerary request object which doesn't have names directly
+        if (activeBookingData?.firstName || activeBookingData?.lastName) {
+            initialName = `${activeBookingData.firstName || ''} ${activeBookingData.lastName || ''}`.trim()
+        } else if (activeBookingData?.title && activeBookingData?.status) {
              initialName = currentUser?.name || currentUser?.fullName || ''
         } else {
             initialName = currentUser?.name || currentUser?.fullName || ''
@@ -49,10 +94,10 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
 
         setTravelerInfo({
             fullName: initialName || '',
-            email: bookingData?.email || bookingData?._email || currentUser?.email || '',
-            phone: bookingData?.phone || bookingData?._phone || currentUser?.phone || ''
+            email: activeBookingData?.email || activeBookingData?._email || currentUser?.email || '',
+            phone: activeBookingData?.phone || activeBookingData?._phone || currentUser?.phone || ''
         })
-    }, [bookingData])
+    }, [activeBookingData])
 
 
     useEffect(() => {
@@ -121,8 +166,8 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
 
     // Calculate total itinerary price from activities + hotel + uplift if available
     const calculateItineraryTotal = () => {
-        const daysData = bookingData?.days || [];
-        const itinerary = bookingData?.tripData;
+        const daysData = activeBookingData?.days || [];
+        const itinerary = activeBookingData?.tripData;
         if (!daysData.length && !itinerary) return 0;
 
         // Calculate activities total
@@ -134,8 +179,8 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         // Calculate hotel cost
         const controlPanel = itinerary?.controlPanel;
         const hotelData = controlPanel?.hotelId;
-        const startDate = itinerary?.startDate || bookingData?.startDate || bookingData?.tripDetails?.arrivalDate;
-        const endDate = itinerary?.endDate || bookingData?.endDate || bookingData?.tripDetails?.departureDate;
+        const startDate = itinerary?.startDate || activeBookingData?.startDate || activeBookingData?.tripDetails?.arrivalDate;
+        const endDate = itinerary?.endDate || activeBookingData?.endDate || activeBookingData?.tripDetails?.departureDate;
 
         let hotelCost = 0;
         let tripDays = 1;
@@ -171,17 +216,17 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
     const calculatedItineraryPrice = calculateItineraryTotal();
 
     const totalAmount = (calculatedItineraryPrice > 0 ? calculatedItineraryPrice : null) || 
-                        bookingData?.totalAmount || 
-                        bookingData?.amount || 
-                        bookingData?.budget ||
-                        bookingData?.tripData?.budget ||
-                        bookingData?.tripData?.amount ||
-                        parseAmount(bookingData?.adjustmentCard?.cost || 
-                                   bookingData?.cost || 
-                                   bookingData?.tripDetails?.budget || 
-                                   bookingData?.budget || 
-                                   bookingData?.price ||
-                                   bookingData?.tripData?.price);
+                        activeBookingData?.totalAmount || 
+                        activeBookingData?.amount || 
+                        activeBookingData?.budget ||
+                        activeBookingData?.tripData?.budget ||
+                        activeBookingData?.tripData?.amount ||
+                        parseAmount(activeBookingData?.adjustmentCard?.cost || 
+                                   activeBookingData?.cost || 
+                                   activeBookingData?.tripDetails?.budget || 
+                                   activeBookingData?.budget || 
+                                   activeBookingData?.price ||
+                                   activeBookingData?.tripData?.price);
     const commissionPercentage = settings.commissionPercentage;
     const commissionAmount = (totalAmount * commissionPercentage) / 100;
     const netAmount = totalAmount - commissionAmount;
@@ -210,7 +255,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                 
                 // 1. Update booking with current traveler info and total amount
                 // This ensures the backend has the final price and info before Stripe session is created
-                const bookingId = bookingData?.bookingId || bookingData?._id || bookingData?.id;
+                const bookingId = activeBookingData?.bookingId || activeBookingData?._id || activeBookingData?.id;
                 const [firstName, ...lastNameParts] = (travelerInfo.fullName || '').split(' ');
                 const lastName = lastNameParts.join(' ');
                 

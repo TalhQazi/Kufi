@@ -148,7 +148,7 @@ export default function NotificationsModal({ onClose, onPaymentClick, onViewItin
                                                             className="px-3 py-1 rounded-lg bg-green-500 text-white text-xs font-medium hover:bg-green-600"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
-                                                                onPaymentClick({ _id: n.itineraryId || n.bookingId })
+                                                                onPaymentClick({ _id: n.itineraryId || n.bookingId, itineraryId: n.itineraryId, bookingId: n.bookingId })
                                                                 onClose()
                                                             }}
                                                         >

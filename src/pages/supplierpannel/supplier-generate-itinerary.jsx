@@ -197,7 +197,7 @@ function buildPersistBody(days, extraFields, itinerary) {
 
 // ─── Sortable activity card inside a day ─────────────────────────────────────
 
-function SortableActivityCard({ activity, dayIndex, darkMode, onRemove, onChange }) {
+function SortableActivityCard({ activity, dayIndex, darkMode, onRemove, onChange, onMoveUp, onMoveDown }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: activity.id, data: { source: "day", dayIndex, activity } });
 
@@ -219,12 +219,30 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove, onChange
       style={style}
       className={`rounded-xl border overflow-hidden flex gap-0 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"}`}
     >
-      <div
-        className={`flex items-center px-1.5 cursor-grab active:cursor-grabbing ${darkMode ? "text-slate-600" : "text-gray-300"}`}
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="h-3.5 w-3.5" />
+      <div className="flex flex-col justify-center items-center px-1 border-r border-slate-100 dark:border-slate-700/60 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onMoveUp?.(activity.id, dayIndex); }}
+          className={`p-0.5 hover:text-amber-600 transition-colors text-[10px] ${darkMode ? "text-slate-400" : "text-gray-400"}`}
+          title="Move activity up in rank"
+        >
+          ▲
+        </button>
+        <div
+          className={`flex items-center cursor-grab active:cursor-grabbing ${darkMode ? "text-slate-600" : "text-gray-300"}`}
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </div>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onMoveDown?.(activity.id, dayIndex); }}
+          className={`p-0.5 hover:text-amber-600 transition-colors text-[10px] ${darkMode ? "text-slate-400" : "text-gray-400"}`}
+          title="Move activity down in rank"
+        >
+          ▼
+        </button>
       </div>
 
       <div className="shrink-0 w-16 h-16">
@@ -297,7 +315,7 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove, onChange
 
 // ─── Droppable day column ─────────────────────────────────────────────────────
 
-function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, onChangeActivity, onUpdateDayNote }) {
+function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, onChangeActivity, onUpdateDayNote, onMoveActivityUp, onMoveActivityDown }) {
   const activities = Array.isArray(day.activities) ? day.activities : [];
   const dayTotal = activities.reduce((sum, a) => sum + (Number(a.price) || 0), 0);
 
@@ -354,6 +372,8 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, on
               darkMode={darkMode}
               onRemove={onRemoveActivity}
               onChange={onChangeActivity}
+              onMoveUp={onMoveActivityUp}
+              onMoveDown={onMoveActivityDown}
             />
           ))}
         </SortableContext>
@@ -651,6 +671,60 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         }));
       }
     }
+  }
+
+  function handleMoveActivityUp(actId, dayIdx) {
+    setDaysData((prev) => {
+      const updated = [...prev];
+      const dayObj = updated[dayIdx];
+      if (!dayObj) return prev;
+      const acts = [...(dayObj.activities || [])];
+      const idx = acts.findIndex((a) => a.id === actId);
+      if (idx <= 0) return prev;
+      const temp = acts[idx];
+      acts[idx] = acts[idx - 1];
+      acts[idx - 1] = temp;
+      updated[dayIdx] = { ...dayObj, activities: acts };
+      return updated;
+    });
+  }
+
+  function handleMoveActivityDown(actId, dayIdx) {
+    setDaysData((prev) => {
+      const updated = [...prev];
+      const dayObj = updated[dayIdx];
+      if (!dayObj) return prev;
+      const acts = [...(dayObj.activities || [])];
+      const idx = acts.findIndex((a) => a.id === actId);
+      if (idx < 0 || idx >= acts.length - 1) return prev;
+      const temp = acts[idx];
+      acts[idx] = acts[idx + 1];
+      acts[idx + 1] = temp;
+      updated[dayIdx] = { ...dayObj, activities: acts };
+      return updated;
+    });
+  }
+
+  function moveDayUp(dayIdx) {
+    if (dayIdx <= 0) return;
+    setDaysData((prev) => {
+      const updated = [...prev];
+      const temp = updated[dayIdx];
+      updated[dayIdx] = updated[dayIdx - 1];
+      updated[dayIdx - 1] = temp;
+      return updated.map((d, i) => ({ ...d, day: i + 1 }));
+    });
+  }
+
+  function moveDayDown(dayIdx) {
+    setDaysData((prev) => {
+      if (dayIdx >= prev.length - 1) return prev;
+      const updated = [...prev];
+      const temp = updated[dayIdx];
+      updated[dayIdx] = updated[dayIdx + 1];
+      updated[dayIdx + 1] = temp;
+      return updated.map((d, i) => ({ ...d, day: i + 1 }));
+    });
   }
 
   function removeActivityFromDay(actId, dayIndex) {
@@ -1141,18 +1215,46 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
               >
                 {/* Day header */}
                 <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className={`text-sm font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
-                      Day {day.day}
-                      {day.dayName && ` — ${day.dayName}`}
-                      {day.isArrivalDay && " ✈"}
-                      {day.isDepartureDay && " 🛫"}
-                    </h2>
-                    {day.date && (
-                      <p className={`text-[11px] mt-0.5 ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
-                        {fmtDate(day.date)}
-                      </p>
+                  <div className="flex items-center gap-2">
+                    {daysData.length > 1 && (
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => moveDayUp(idx)}
+                          className={`px-1.5 py-0.5 rounded text-xs transition-colors ${
+                            darkMode ? "hover:bg-amber-600 hover:text-white text-slate-400 disabled:opacity-20" : "hover:bg-amber-500 hover:text-white text-gray-400 disabled:opacity-20"
+                          }`}
+                          title="Move day up in itinerary"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === daysData.length - 1}
+                          onClick={() => moveDayDown(idx)}
+                          className={`px-1.5 py-0.5 rounded text-xs transition-colors ${
+                            darkMode ? "hover:bg-amber-600 hover:text-white text-slate-400 disabled:opacity-20" : "hover:bg-amber-500 hover:text-white text-gray-400 disabled:opacity-20"
+                          }`}
+                          title="Move day down in itinerary"
+                        >
+                          ▼
+                        </button>
+                      </div>
                     )}
+                    <div>
+                      <h2 className={`text-sm font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                        Day {day.day}
+                        {day.dayName && ` — ${day.dayName}`}
+                        {day.isArrivalDay && " ✈"}
+                        {day.isDepartureDay && " 🛫"}
+                      </h2>
+                      {day.date && (
+                        <p className={`text-[11px] mt-0.5 ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
+                          {fmtDate(day.date)}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   {daysData.length > 1 && (
                     <button
@@ -1172,6 +1274,8 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                   onRemoveActivity={removeActivityFromDay}
                   onChangeActivity={changeActivityField}
                   onUpdateDayNote={updateDayNote}
+                  onMoveActivityUp={handleMoveActivityUp}
+                  onMoveActivityDown={handleMoveActivityDown}
                 />
               </div>
             ))}

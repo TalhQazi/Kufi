@@ -133,50 +133,74 @@ export default function ItineraryView({
         }
     }
 
+    const formatTripData = (data, reqData) => {
+        const raw = data?.tripData && typeof data.tripData === 'object' ? data.tripData : (data || {});
+
+        const title =
+            raw?.title ||
+            data?.title ||
+            (Array.isArray(reqData?.items) && reqData.items.length > 0
+                ? reqData.items.map((i) => i?.activity?.title || i?.title).filter(Boolean).join(', ')
+                : '') ||
+            reqData?.experience ||
+            reqData?.title ||
+            'Trip Itinerary';
+
+        const locationParts = [
+            raw?.city || data?.city,
+            raw?.country || data?.country || raw?.destination || data?.destination || reqData?.tripDetails?.country || reqData?.country || reqData?.destination
+        ].filter(Boolean);
+
+        const location =
+            raw?.location ||
+            data?.location ||
+            (locationParts.length > 0 ? Array.from(new Set(locationParts)).join(', ') : null) ||
+            '—';
+
+        const travelers =
+            raw?.groupSize ||
+            data?.groupSize ||
+            (data?.numberOfTravelers ? `${data.numberOfTravelers} ${data.numberOfTravelers === 1 ? 'Person' : 'People'}` : null) ||
+            (raw?.numberOfTravelers ? `${raw.numberOfTravelers} ${raw.numberOfTravelers === 1 ? 'Person' : 'People'}` : null) ||
+            (reqData?.guests ? `${reqData.guests} ${reqData.guests === 1 ? 'Person' : 'People'}` : null) ||
+            (reqData?.travelers ? `${reqData.travelers} ${reqData.travelers === 1 ? 'Person' : 'People'}` : null) ||
+            '1 Person';
+
+        const sDate = raw?.startDate || data?.startDate || reqData?.tripDetails?.arrivalDate;
+        const eDate = raw?.endDate || data?.endDate || reqData?.tripDetails?.departureDate;
+
+        let dateLabel = raw?.date || data?.date || '';
+        if (!dateLabel && (sDate || eDate)) {
+            const d1 = sDate ? new Date(sDate).toLocaleDateString() : '—';
+            const d2 = eDate ? new Date(eDate).toLocaleDateString() : '—';
+            dateLabel = `${d1} to ${d2}`;
+        }
+        if (!dateLabel) {
+            dateLabel = data?.createdAt ? new Date(data.createdAt).toLocaleDateString() : (reqData?.createdAt ? new Date(reqData.createdAt).toLocaleDateString() : '—');
+        }
+
+        const description =
+            raw?.description ||
+            data?.notes ||
+            reqData?.notes ||
+            reqData?.message ||
+            reqData?.specialRequest ||
+            'Carefully curated itinerary details for your upcoming trip.';
+
+        return {
+            ...raw,
+            title,
+            location,
+            groupSize: travelers,
+            date: dateLabel,
+            description,
+            status: data?.status || reqData?.status || 'Pending',
+        };
+    };
+
     useEffect(() => {
         const loadFromBooking = () => {
-            const title =
-                (Array.isArray(request?.items) && request.items.length > 0
-                    ? request.items
-                        .map((i) => i?.activity?.title || i?.title)
-                        .filter(Boolean)
-                        .join(', ')
-                    : '') ||
-                request?.experience ||
-                request?.title ||
-                'Trip Request'
-
-            const location =
-                request?.tripDetails?.country ||
-                request?.country ||
-                request?.destination ||
-                request?.location ||
-                '—'
-
-            const budget = request?.tripDetails?.budget || request?.amount || request?.price
-            const travelers = request?.guests ?? request?.travelers ?? request?.items?.[0]?.travelers
-            const arrival = request?.tripDetails?.arrivalDate
-            const departure = request?.tripDetails?.departureDate
-
-            const dateLabel =
-                arrival || departure
-                    ? `${arrival ? new Date(arrival).toLocaleDateString() : '—'} - ${departure ? new Date(departure).toLocaleDateString() : '—'}`
-                    : request?.createdAt
-                        ? new Date(request.createdAt).toLocaleDateString()
-                        : '—'
-
-            setTripData({
-                title,
-                duration: request?.duration || '',
-                location,
-                date: dateLabel,
-                description: request?.notes || request?.message || request?.specialRequest || 'Trip request details',
-                adrenalineLevel: '',
-                category: '',
-                groupSize: travelers ? `${travelers} People` : '',
-                budget: budget ? String(budget) : '',
-                status: request?.status || 'pending',
-            })
+            setTripData(formatTripData(null, request))
             setDays([])
             setExtraFields([])
         }
@@ -191,7 +215,7 @@ export default function ItineraryView({
 
                     const match = await findItineraryForBooking()
                     if (match) {
-                        setTripData(match.tripData || match)
+                        setTripData(formatTripData(match, request))
                         setDays(match.days || [])
                         setExtraFields(Array.isArray(match.extraFields) ? match.extraFields : [])
                     }
@@ -206,9 +230,6 @@ export default function ItineraryView({
                 }
 
                 setLoading(true)
-                // The dashboard opens itineraries by booking id (that is what lands in the
-                // #itinerary/<id> URL), so on a refresh/deep-link this id may be a booking
-                // rather than an itinerary. Try the itinerary first, then the booking.
                 let record = null
                 try {
                     const response = await api.get(`/itineraries/${itineraryId}`)
@@ -225,7 +246,7 @@ export default function ItineraryView({
                 }
 
                 if (record) {
-                    setTripData(record.tripData || record)
+                    setTripData(formatTripData(record, request))
                     setDays(record.days || [])
                     setExtraFields(Array.isArray(record.extraFields) ? record.extraFields : [])
                 } else {
