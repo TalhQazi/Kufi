@@ -197,7 +197,7 @@ function buildPersistBody(days, extraFields, itinerary) {
 
 // ─── Sortable activity card inside a day ─────────────────────────────────────
 
-function SortableActivityCard({ activity, dayIndex, darkMode, onRemove, onChange, onMoveUp, onMoveDown }) {
+function SortableActivityCard({ activity, activityIndex, dayIndex, darkMode, onRemove, onChange, onMoveUp, onMoveDown }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: activity.id, data: { source: "day", dayIndex, activity } });
 
@@ -219,38 +219,44 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove, onChange
       style={style}
       className={`rounded-xl border overflow-hidden flex gap-0 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"}`}
     >
-      <div className="flex flex-col justify-center items-center px-1 border-r border-slate-100 dark:border-slate-700/60 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="flex flex-col justify-center items-center px-1.5 py-1 border-r border-slate-100 dark:border-slate-700/60 shrink-0 bg-slate-50/50 dark:bg-slate-900/30" onPointerDown={(e) => e.stopPropagation()}>
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onMoveUp?.(activity.id, dayIndex); }}
-          className={`p-0.5 hover:text-amber-600 transition-colors text-[10px] ${darkMode ? "text-slate-400" : "text-gray-400"}`}
-          title="Move activity up in rank"
+          className={`p-1 rounded hover:bg-amber-500 hover:text-white transition-colors text-xs font-bold ${darkMode ? "text-slate-400" : "text-gray-500"}`}
+          title="Move activity UP in rank position"
         >
           ▲
         </button>
-        <div
-          className={`flex items-center cursor-grab active:cursor-grabbing ${darkMode ? "text-slate-600" : "text-gray-300"}`}
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-3.5 w-3.5" />
-        </div>
+
+        <span className="text-[10px] font-bold px-1.5 py-0.5 my-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+          #{Number.isInteger(activityIndex) ? activityIndex + 1 : 1}
+        </span>
+
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onMoveDown?.(activity.id, dayIndex); }}
-          className={`p-0.5 hover:text-amber-600 transition-colors text-[10px] ${darkMode ? "text-slate-400" : "text-gray-400"}`}
-          title="Move activity down in rank"
+          className={`p-1 rounded hover:bg-amber-500 hover:text-white transition-colors text-xs font-bold ${darkMode ? "text-slate-400" : "text-gray-500"}`}
+          title="Move activity DOWN in rank position"
         >
           ▼
         </button>
       </div>
 
-      <div className="shrink-0 w-16 h-16">
+      <div className="shrink-0 w-16 h-16 relative">
         <img
           src={resolveImageUrl(activity.image) || "/assets/dest-1.jpeg"}
           alt={activity.title}
           className="w-full h-full object-cover"
         />
+        <div
+          className={`absolute bottom-0 inset-x-0 bg-black/40 text-white flex items-center justify-center cursor-grab active:cursor-grabbing py-0.5`}
+          {...attributes}
+          {...listeners}
+          title="Drag to reorder"
+        >
+          <GripVertical className="h-3 w-3" />
+        </div>
       </div>
 
       <div className="flex-1 px-2 py-1.5 min-w-0 space-y-1" onPointerDown={(e) => e.stopPropagation()}>
@@ -274,15 +280,20 @@ function SortableActivityCard({ activity, dayIndex, darkMode, onRemove, onChange
             value={activity.endTime || ""}
             onChange={(e) => setField("endTime", e.target.value)}
           />
-          <input
-            type="number"
-            min="0"
-            step="1"
-            className={`${inputCls} w-16`}
-            value={activity.price ?? ""}
-            onChange={(e) => setField("price", Number(e.target.value) || 0)}
-            placeholder="$"
-          />
+          <div className="relative w-16">
+            <span className="absolute left-1.5 top-1 text-[10px] text-gray-400 pointer-events-none">$</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              className={`${inputCls} pl-4 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+              value={activity.price ?? ""}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^0-9.]/g, '');
+                setField("price", val ? Number(val) : 0);
+              }}
+              placeholder="0"
+            />
+          </div>
         </div>
         <input
           className={inputCls}
@@ -364,10 +375,11 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, on
         }`}
       >
         <SortableContext items={activities.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-          {activities.map((act) => (
+          {activities.map((act, actIdx) => (
             <SortableActivityCard
               key={act.id}
               activity={act}
+              activityIndex={actIdx}
               dayIndex={day.day - 1}
               darkMode={darkMode}
               onRemove={onRemoveActivity}

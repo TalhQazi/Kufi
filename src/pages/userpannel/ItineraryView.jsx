@@ -710,7 +710,8 @@ export default function ItineraryView({
                                                         <div key={act.id || aIdx} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0 space-y-1.5">
                                                             <div className="flex items-center justify-between">
                                                                 <p className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                                                                    <span className="text-[#A67C52]">●</span> {act.title || 'Activity'}
+                                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-[#A67C52]/10 text-[#A67C52]">#{aIdx + 1}</span>
+                                                                    <span>{act.title || 'Activity'}</span>
                                                                 </p>
                                                                 {(act.startTime || act.endTime) && (
                                                                     <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
