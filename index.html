@@ -4,13 +4,70 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/assets/kufi.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      Baseline metadata for crawlers and link previews. src/utils/seo.js replaces these
+      per route once the app boots (title, description, canonical, Open Graph, JSON-LD),
+      so what is here is the correct default for the site rather than a placeholder.
+    -->
+    <title>Kufi Travel — Tailor-made trips, destinations and travel guides</title>
+    <meta
+      name="description"
+      content="Discover destinations, activities and travel guides, and plan a tailor-made trip with Kufi Travel."
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:site_name" content="Kufi Travel" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Kufi Travel — Tailor-made trips, destinations and travel guides" />
+    <meta
+      property="og:description"
+      content="Discover destinations, activities and travel guides, and plan a tailor-made trip with Kufi Travel."
+    />
+    <meta property="og:image" content="/assets/kufi-travel-logo.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&family=Sacramento&display=swap" rel="stylesheet">
-    <title>Kufi Travel</title>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Kufi Travel",
+        "description": "Travel agency offering tailor-made trips, destination guides and bookable activities.",
+        "logo": "/assets/kufi-travel-logo.png"
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+
+    <!--
+      Content for clients that do not execute JavaScript. Search engines render JS, but
+      several AI crawlers do not, and previously they received an empty <div id="root">
+      with nothing to read. These links are the real public entry points and match the
+      sitemap, so a non-rendering crawler can still discover and follow the site.
+      Removed by the app on mount so it never affects what users see.
+    -->
+    <noscript>
+      <h1>Kufi Travel</h1>
+      <p>
+        Kufi Travel plans tailor-made trips. Browse destinations, book activities and read
+        travel guides.
+      </p>
+      <nav>
+        <ul>
+          <li><a href="/explore">Explore activities and experiences</a></li>
+          <li><a href="/destinations">Destinations and country travel guides</a></li>
+          <li><a href="/activities">Top activities</a></li>
+          <li><a href="/blogs">Travel blog</a></li>
+          <li><a href="/about">About Kufi Travel</a></li>
+        </ul>
+      </nav>
+      <p><a href="/sitemap.xml">Sitemap</a></p>
+    </noscript>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

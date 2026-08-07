@@ -8,6 +8,9 @@ const DEFAULT_CUSTOM_COSTS = [
   { id: "food", label: "Food", amount: 0, unit: "per_day" },
 ];
 
+/** Default budget uplift tolerance, in percent. Mirrors the Itinerary schema default. */
+const DEFAULT_UPLIFT = 15;
+
 const DEFAULT_CP = {
   activityStartTime: "09:00",
   activityEndTime: "19:00",
@@ -18,9 +21,25 @@ const DEFAULT_CP = {
   perDayOverrides: [],
   hotelId: "",
   numberOfRooms: 1,
-  budgetUplift: 15,
+  budgetUplift: DEFAULT_UPLIFT,
   customCosts: DEFAULT_CUSTOM_COSTS,
 };
+
+/**
+ * Coerce the uplift field to a number in 0–100.
+ *
+ * `Number(value) || 15` was the bug behind "Uplift = 0 does not stick": 0 is falsy, so
+ * every deliberate zero was silently replaced by the 15% default before it ever left the
+ * component. Only genuinely absent/unparsable values may fall back to the default.
+ */
+function normalizeUplift(value, fallback = DEFAULT_UPLIFT) {
+  if (value === null || value === undefined || value === "") return fallback;
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  // Legacy records stored the uplift as a fraction (0.15) rather than a percentage (15).
+  const asPercent = num > 0 && num < 1 ? Math.round(num * 100) : num;
+  return Math.min(Math.max(asPercent, 0), 100);
+}
 
 function seedCustomCosts(list) {
   if (Array.isArray(list) && list.length > 0) {
@@ -73,11 +92,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
       setCp({
         ...DEFAULT_CP,
         ...itinerary.controlPanel,
-        budgetUplift: itinerary.controlPanel.budgetUplift != null
-          ? (itinerary.controlPanel.budgetUplift < 1 && itinerary.controlPanel.budgetUplift > 0
-              ? Math.round(itinerary.controlPanel.budgetUplift * 100)
-              : Number(itinerary.controlPanel.budgetUplift))
-          : 15,
+        budgetUplift: normalizeUplift(itinerary.controlPanel.budgetUplift),
         hotelId: itinerary.controlPanel.hotelId?._id || itinerary.controlPanel.hotelId || "",
         customCosts: seedCustomCosts(itinerary.controlPanel.customCosts),
       });
@@ -170,7 +185,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
   useEffect(() => {
     const payload = {
       ...cp,
-      budgetUplift: Math.min(Math.max(Number(cp.budgetUplift) || 15, 0), 100),
+      budgetUplift: normalizeUplift(cp.budgetUplift),
       hotelId: cp.hotelId || null,
       startDate: startDate || null,
       endDate: endDate || null,
@@ -184,7 +199,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     setStartDate(val);
     const payload = {
       ...cp,
-      budgetUplift: Math.min(Math.max(Number(cp.budgetUplift) || 15, 0), 100),
+      budgetUplift: normalizeUplift(cp.budgetUplift),
       hotelId: cp.hotelId || null,
       startDate: val || null,
       endDate: endDate || null,
@@ -198,7 +213,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     setEndDate(val);
     const payload = {
       ...cp,
-      budgetUplift: Math.min(Math.max(Number(cp.budgetUplift) || 15, 0), 100),
+      budgetUplift: normalizeUplift(cp.budgetUplift),
       hotelId: cp.hotelId || null,
       startDate: startDate || null,
       endDate: val || null,
@@ -508,13 +523,21 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
             min={0}
             max={100}
             value={cp.budgetUplift}
-            onChange={e => set("budgetUplift", Number(e.target.value))}
+            onChange={e => {
+              // Keep an empty field editable rather than snapping it back to a number,
+              // but never let `NaN` reach the payload.
+              const raw = e.target.value;
+              set("budgetUplift", raw === "" ? "" : normalizeUplift(raw));
+            }}
+            onBlur={e => set("budgetUplift", normalizeUplift(e.target.value))}
             className={`${inputCls} w-24`}
           />
           <span className={darkMode ? "text-slate-400" : "text-gray-500"}>%</span>
         </div>
         <p className={`text-[10px] mt-1 ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
-          Allows system activity selections to go up to +{cp.budgetUplift}% over customer budget as flexibility tolerance (e.g. $1,000 budget allows up to ${(1000 * (1 + (cp.budgetUplift || 15) / 100)).toLocaleString()} total).
+          {normalizeUplift(cp.budgetUplift) === 0
+            ? "No tolerance: activity selections must stay within the customer's base budget."
+            : `Allows system activity selections to go up to +${normalizeUplift(cp.budgetUplift)}% over customer budget as flexibility tolerance (e.g. $1,000 budget allows up to $${(1000 * (1 + normalizeUplift(cp.budgetUplift) / 100)).toLocaleString()} total).`}
         </p>
       </div>
 

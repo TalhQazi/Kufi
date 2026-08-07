@@ -246,7 +246,7 @@ const ExperiencesListing = ({ darkMode, experiences, drafts = [], onAddExperienc
                       e.stopPropagation();
                       {/* We need to pass delete handler down or move it up */ }
                       if (window.confirm("Delete this experience?")) {
-                        api.delete(`/activities/${exp._id || exp.id}`).then(() => window.location.reload());
+                        api.delete(`/supplier/activities/${exp._id || exp.id}`).then(() => window.location.reload());
                       }
                     }}
                     className={`inline-flex items-center justify-center rounded-full border border-rose-200 px-4 py-1.5 text-xs font-semibold text-rose-500 hover:bg-rose-50 transition-colors ${darkMode ? "bg-rose-950/20 border-rose-900/30 hover:bg-rose-900/40" : ""}`}
@@ -512,17 +512,21 @@ const CreateExperienceForm = ({ darkMode, onBack, experience, onSuccess }) => {
         duration: formData.duration || undefined,
         status: 'pending', // Send to admin for approval
       };
+      // Supplier-scoped routes: the backend derives the owning supplier from the auth
+      // token and enforces ownership. The admin `/activities/:id` route rejects
+      // suppliers with a 403, which is why editing used to fail silently.
       if (experience) {
-        await api.put(`/activities/${experience._id || experience.id}`, payload);
-        alert("Experience updated successfully!");
+        await api.put(`/supplier/activities/${experience._id || experience.id}`, payload);
+        alert("Experience updated and resubmitted for review.");
       } else {
         await api.post('/supplier/activities', payload);
-        alert("Experience published successfully!");
+        alert("Experience submitted for review.");
       }
       onSuccess?.();
     } catch (error) {
       console.error("Error saving experience:", error);
-      alert("Failed to save experience");
+      const data = error?.response?.data;
+      alert(data?.msg || data?.message || "Failed to save experience");
     } finally {
       setIsSubmitting(false);
     }
@@ -982,7 +986,7 @@ const SupplierExperience = ({ darkMode, view = 'list', onViewChange, navigateTo 
   const handleDeleteExperience = async (id) => {
     if (!window.confirm("Are you sure you want to delete this experience?")) return;
     try {
-      await api.delete(`/activities/${id}`);
+      await api.delete(`/supplier/activities/${id}`);
       alert("Experience deleted successfully!");
       // Refresh list
       const response = await api.get('/supplier/activities');

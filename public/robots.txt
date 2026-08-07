@@ -1,0 +1,41 @@
+# Kufi Travel — crawler policy
+#
+# Public content (destinations, activities, travel guides, blog) is open to search
+# engines and AI crawlers. Private areas (admin, supplier and traveller panels, auth and
+# checkout flows) are disallowed, and also carry a noindex directive.
+#
+# Nothing here throttles or blocks legitimate crawlers: there is no Crawl-delay and no
+# user-agent allowlist, so any well-behaved bot can read the public site.
+
+User-agent: *
+Allow: /
+
+# Private areas — never index these
+Disallow: /admin
+Disallow: /supplier
+Disallow: /user-profile
+Disallow: /traveler-profile
+Disallow: /user-dashboard
+Disallow: /dashboard
+Disallow: /my-trip-requests
+Disallow: /trip-requests
+Disallow: /notifications
+Disallow: /itinerary
+Disallow: /payment
+Disallow: /checkout
+Disallow: /booking-confirmation
+Disallow: /travel-booking
+Disallow: /login
+Disallow: /register
+Disallow: /reset-password
+Disallow: /forgot-password
+
+# Internal APIs and uploads are not content
+Disallow: /api/
+Disallow: /uploads/
+
+# Avoid indexing tracking/duplicate URL variants
+Disallow: /*?*utm_
+Disallow: /*?*sessionId=
+
+Sitemap: https://kufitravel.com/sitemap.xml

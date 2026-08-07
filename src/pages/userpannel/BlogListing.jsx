@@ -1,27 +1,72 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FiArrowLeft, FiGlobe, FiCalendar, FiUser } from 'react-icons/fi';
 import { Loader2 } from 'lucide-react';
-import api from '../../api';
+import api, { resolveAssetUrl } from '../../api';
+import { readCache, writeCache, rememberScroll } from '../../utils/listCache';
+
+const BLOG_LIST_CACHE_KEY = 'blogs:list';
 
 export default function BlogListing({ onBack, onHomeClick, onBlogClick }) {
-    const [blogs, setBlogs] = useState([]);
-    const [loading, setLoading] = useState(true);
+    // Seed straight from cache so returning from an article paints instantly instead of
+    // showing a spinner while the same payload is downloaded again.
+    const cached = readCache(BLOG_LIST_CACHE_KEY);
+    const [blogs, setBlogs] = useState(() => cached?.data || []);
+    const [loading, setLoading] = useState(() => !cached);
+    const restoredScrollRef = useRef(false);
 
     useEffect(() => {
-        const fetchBlogs = async () => {
+        let cancelled = false;
+
+        const fetchBlogs = async ({ background }) => {
             try {
-                setLoading(true);
+                if (!background) setLoading(true);
                 const response = await api.get('/blogs');
-                setBlogs(Array.isArray(response.data) ? response.data : []);
+                if (cancelled) return;
+                const list = Array.isArray(response.data)
+                    ? response.data
+                    : (Array.isArray(response.data?.blogs) ? response.data.blogs : []);
+                setBlogs(list);
+                writeCache(BLOG_LIST_CACHE_KEY, list, {
+                    scrollY: readCache(BLOG_LIST_CACHE_KEY)?.scrollY || 0,
+                });
             } catch (error) {
+                // A failed background refresh must not blank out what is already shown.
                 console.error('Error fetching blogs:', error);
             } finally {
-                setLoading(false);
+                if (!cancelled && !background) setLoading(false);
             }
         };
 
-        fetchBlogs();
+        // With a warm cache, revalidate quietly in the background.
+        fetchBlogs({ background: Boolean(cached) });
+
+        return () => { cancelled = true; };
+        // Runs once per mount; `cached` is read synchronously above.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Restore the previous scroll position once the cached list is on screen.
+    useEffect(() => {
+        if (restoredScrollRef.current || loading || blogs.length === 0) return;
+        const y = readCache(BLOG_LIST_CACHE_KEY)?.scrollY || 0;
+        restoredScrollRef.current = true;
+        if (y > 0) window.scrollTo(0, y);
+    }, [loading, blogs.length]);
+
+    // Track scroll so Back returns to the same card, not the top of the page.
+    useEffect(() => {
+        const onScroll = () => rememberScroll(BLOG_LIST_CACHE_KEY, window.scrollY);
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => {
+            onScroll();
+            window.removeEventListener('scroll', onScroll);
+        };
+    }, []);
+
+    const openBlog = (id) => {
+        rememberScroll(BLOG_LIST_CACHE_KEY, window.scrollY);
+        onBlogClick(id);
+    };
 
     if (loading) {
         return (
@@ -71,12 +116,14 @@ export default function BlogListing({ onBack, onHomeClick, onBlogClick }) {
                             <article 
                                 key={blog._id} 
                                 className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
-                                onClick={() => onBlogClick(blog._id)}
+                                onClick={() => openBlog(blog._id)}
                             >
                                 <div className="relative h-56 overflow-hidden">
-                                    <img 
-                                        src={blog.image || blog.imageUrl || '/assets/placeholder-blog.jpg'} 
+                                    <img
+                                        src={resolveAssetUrl(blog.image || blog.imageUrl) || '/assets/placeholder-blog.jpg'}
                                         alt={blog.title}
+                                        loading="lazy"
+                                        decoding="async"
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                     />
                                     <div className="absolute top-4 left-4">
@@ -103,7 +150,12 @@ export default function BlogListing({ onBack, onHomeClick, onBlogClick }) {
                                     </h3>
                                     
                                     <p className="text-slate-500 text-sm mb-6 line-clamp-3 flex-1">
-                                        {blog.excerpt || blog.content?.replace(/<[^>]*>/g, '').slice(0, 120) + '...'}
+                                        {/* The API now sends a ready-made excerpt; the local
+                                            derivations remain as a fallback for cached payloads. */}
+                                        {blog.excerpt
+                                            || blog.description?.replace(/<[^>]*>/g, '').slice(0, 120)
+                                            || blog.content?.replace(/<[^>]*>/g, '').slice(0, 120)
+                                            || ''}
                                     </p>
                                     
                                     <div className="pt-4 border-t border-slate-50 flex items-center justify-between">

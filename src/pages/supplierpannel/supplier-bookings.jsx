@@ -540,7 +540,7 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
                   <h4 className="text-xs font-semibold text-[#a26e35] uppercase mb-1">Budget & Uplift</h4>
                   <p className="text-sm font-bold">Total Budget: ${viewItinerary.budget || 'N/A'}</p>
                   <p className={`text-xs ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
-                    Budget Uplift: {viewItinerary.controlPanel?.budgetUplift || 15}%
+                    Budget Uplift: {viewItinerary.controlPanel?.budgetUplift ?? 15}%
                   </p>
                 </div>
               </div>

@@ -21,7 +21,9 @@ const Blogs = ({ onAddNew }) => {
   const fetchBlogs = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/blogs");
+      // The admin table shows the full body and cover image, so it opts into the complete
+      // record. The public listing sends a trimmed payload (excerpt + image URL) instead.
+      const response = await api.get("/blogs?fields=full");
       const data = Array.isArray(response.data)
         ? response.data
         : response.data?.blogs || [];

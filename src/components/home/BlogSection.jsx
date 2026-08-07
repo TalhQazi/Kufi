@@ -1,4 +1,4 @@
-import api from "../../api";
+import api, { resolveAssetUrl } from "../../api";
 import React, { useState, useEffect } from 'react'
 
 export default function BlogSection({ onBlogClick }) {
@@ -7,15 +7,9 @@ export default function BlogSection({ onBlogClick }) {
     const [startIndex, setStartIndex] = useState(0)
     const [isPaused, setIsPaused] = useState(false)
 
-    const resolveBlogImage = (raw) => {
-        const image = raw?.image || raw?.imageUrl || ''
-        if (!image) return ''
-        if (typeof image !== 'string') return ''
-        if (image.startsWith('http://') || image.startsWith('https://')) return image
-        if (image.startsWith('data:')) return image
-        if (image.startsWith('/')) return image
-        return `${import.meta.env.VITE_API_URL?.replace(/\/$/, '') || ''}/${image}`.replace(/([^:]\/)\/+/, '$1')
-    }
+    // `imageUrl` is now a server path (/api/blogs/<id>/image) rather than an inline
+    // base64 blob, so it has to be resolved against the API origin.
+    const resolveBlogImage = (raw) => resolveAssetUrl(raw?.image || raw?.imageUrl)
 
     useEffect(() => {
         const fetchBlogs = async () => {

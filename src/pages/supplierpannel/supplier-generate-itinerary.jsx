@@ -18,6 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft } from "lucide-react";
 import api, { getApiBaseUrl, getAuthToken } from "../../api";
 import { notifyItineraryWorkflowChanged } from "../../constants/itineraryLabels";
+import { countActivities, sumActivityPrices } from "../../utils/activityClassification";
 import ItineraryActivityPool from "./components/ItineraryActivityPool";
 import ItineraryControlPanel from "./components/ItineraryControlPanel";
 import {
@@ -418,6 +419,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   const [submitting, setSubmitting] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [submitError, setSubmitError] = useState("");
+  const [geoNotice, setGeoNotice] = useState("");
   const [extraFields, setExtraFields] = useState([]);
   const [showControlPanel, setShowControlPanel] = useState(true);
   const [showActivitiesPool, setShowActivitiesPool] = useState(true);
@@ -500,15 +502,55 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     setGenerating(true);
     setGenerateError("");
     try {
+      // Send the Control Panel exactly as the supplier has it on screen. Their config may
+      // not be saved yet, and generation must be driven by what they configured — not by
+      // whatever the database still holds.
+      const liveControlPanel = serializeControlPanel(itin);
+
       // `persist` is intentionally omitted: the server returns the generated plan without
       // writing it. The itinerary only becomes a draft when the supplier saves it, sends
       // it, or leaves the builder with unsaved work.
-      const res = await api.post(`/itineraries/${itin._id}/generate`, { mode: genMode });
+      const res = await api.post(`/itineraries/${itin._id}/generate`, {
+        mode: genMode,
+        controlPanel: liveControlPanel,
+        startDate: toDateString(itin?.startDate) || null,
+        endDate: toDateString(itin?.endDate) || null,
+      });
       const updated = res.data.itinerary || res.data;
       const generatedDays = Array.isArray(updated.days) ? updated.days : [];
-      setItinerary(updated);
+
+      // Merge, never replace. Assigning the server document wholesale used to overwrite
+      // the supplier's unsaved Control Panel with the persisted copy — which is why the
+      // panel appeared to "reset" after generating and the summary showed stale values
+      // (a deliberate Uplift = 0 coming back as the 15% default).
+      setItinerary((prev) => ({
+        ...updated,
+        startDate: prev?.startDate ?? updated.startDate,
+        endDate: prev?.endDate ?? updated.endDate,
+        controlPanel: prev?.controlPanel
+          ? {
+              ...prev.controlPanel,
+              // Keep the hotel object the server populated so pricing can still resolve,
+              // but only when the supplier has not picked a different one.
+              hotelId:
+                (prev.controlPanel.hotelId?._id || prev.controlPanel.hotelId) ===
+                (updated.controlPanel?.hotelId?._id || updated.controlPanel?.hotelId)
+                  ? updated.controlPanel?.hotelId ?? prev.controlPanel.hotelId
+                  : prev.controlPanel.hotelId,
+            }
+          : updated.controlPanel,
+      }));
       setDaysData(updateDaysData(generatedDays));
       setExtraFields(Array.isArray(updated.extraFields) ? updated.extraFields : []);
+      // Surface any day the server had to reorganize for geographic feasibility.
+      const geo = res.data?.geography;
+      if (geo?.geographyRepaired) {
+        setGeoNotice("Some days were regrouped so activities in the same day stay in the same area.");
+      } else if (geo?.geographyIssues?.length) {
+        setGeoNotice(geo.geographyIssues[0].message);
+      } else {
+        setGeoNotice("");
+      }
       if (res.data?.warning) {
         setGenerateError(res.data.warning);
       } else if (generatedDays.length === 0) {
@@ -1058,14 +1100,12 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     .filter(Boolean);
   const customCostsTotal = customCostLines.reduce((sum, c) => sum + c.total, 0);
 
-  const activitiesTotal = useMemo(() =>
-    daysData.reduce((sum, d) =>
-      sum + (d.activities || []).reduce((s, a) => s + (Number(a.price) || 0), 0), 0),
-    [daysData]);
+  // Breaks (lunch, rest, free time) are scheduling placeholders, not activities, so they
+  // are excluded from both the count and the price total. A day showing
+  // "Pyramids / Museum / Lunch Break / Nile Cruise" counts as 3 activities, not 4.
+  const activitiesTotal = useMemo(() => sumActivityPrices(daysData), [daysData]);
 
-  const totalActivitiesCount = useMemo(() =>
-    daysData.reduce((sum, d) => sum + (d.activities || []).length, 0),
-    [daysData]);
+  const totalActivitiesCount = useMemo(() => countActivities(daysData), [daysData]);
 
   const baseBudget = itinerary?.budget || parseBudgetValue(request?.tripDetails?.budget || request?.amount) || 0;
   const maxAllowedTotalBudget = baseBudget > 0 ? Math.floor(baseBudget * (1 + upliftPct)) : 0;
@@ -1179,6 +1219,12 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         {loadError && (
           <div className={`rounded-2xl border px-4 py-3 mb-4 text-sm ${darkMode ? "bg-rose-950/40 border-rose-900 text-rose-300" : "bg-rose-50 border-rose-200 text-rose-700"}`}>
             {loadError}
+          </div>
+        )}
+
+        {geoNotice && (
+          <div className={`rounded-2xl border px-4 py-3 mb-4 text-sm ${darkMode ? "bg-amber-950/30 border-amber-900/50 text-amber-300" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+            {geoNotice}
           </div>
         )}
 

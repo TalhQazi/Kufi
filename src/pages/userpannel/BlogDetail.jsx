@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import api from '../../api'
+import api, { resolveAssetUrl } from '../../api'
 
 export default function BlogDetail({ blogId, onBack, onHomeClick, hideHeaderFooter = false }) {
   const [blog, setBlog] = useState(null)
@@ -101,7 +101,7 @@ export default function BlogDetail({ blogId, onBack, onHomeClick, hideHeaderFoot
   }, [blogId])
 
   const title = blog?.title || 'Blog'
-  const image = blog?.image || blog?.imageUrl || blog?.coverImage || blog?.Picture || blog?.images?.[0] || '/assets/blog1.jpeg'
+  const image = resolveAssetUrl(blog?.image || blog?.imageUrl || blog?.coverImage || blog?.Picture || blog?.images?.[0]) || '/assets/blog1.jpeg'
   const subtitle = blog?.subtitle || blog?.category || ''
   const content = blog?.content || blog?.description || blog?.body || blog?.details || ''
 

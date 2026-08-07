@@ -49,6 +49,24 @@ const resolveAuthToken = () => {
 export const getAuthToken = resolveAuthToken;
 export const getApiBaseUrl = () => String(API_BASE_URL || '').replace(/\/$/, '');
 
+/**
+ * Turn a server-relative asset path (e.g. `/api/blogs/<id>/image`, `/uploads/x.jpg`)
+ * into something the browser can load, whether the backend is same-origin behind the
+ * dev proxy or a separate deployment addressed by VITE_API_URL.
+ *
+ * Absolute URLs and data: URIs are returned untouched.
+ */
+export function resolveAssetUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^(https?:)?\/\//i.test(raw) || raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
+    if (!raw.startsWith('/')) return raw;
+
+    // Strip the trailing `/api` so a path that already contains it is not doubled.
+    const origin = getApiBaseUrl().replace(/\/api$/, '');
+    return `${origin}${raw}`;
+}
+
 /** Fired when the backend rejects our token, so the app can drop to a logged-out state. */
 export const SESSION_EXPIRED_EVENT = 'kufi_session_expired';
 

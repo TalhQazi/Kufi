@@ -6,6 +6,11 @@ import { FiMapPin, FiStar } from 'react-icons/fi'
  * TopActivitiesSection - Guaranteed visibility version.
  * Always renders on the main page with API data or high-quality fallbacks.
  */
+/** 2 left tiles + 5 carousel slides. Drives the API page size. */
+const LEFT_TILES = 2
+const CAROUSEL_SLIDES = 5
+const TOTAL_CARDS = LEFT_TILES + CAROUSEL_SLIDES
+
 export default function TopActivitiesSection({ onActivityClick }) {
     const [activeIndex, setActiveIndex] = useState(0)
     const [leftCards, setLeftCards] = useState([]);
@@ -25,17 +30,12 @@ export default function TopActivitiesSection({ onActivityClick }) {
         const fetchTopActivities = async () => {
             try {
                 setIsLoading(true);
-                const response = await api.get('/activities');
-                const rawData = Array.isArray(response.data) ? response.data : [];
-                
-                const allActivities = [...rawData].sort((a, b) => {
-                    const orderA = Number(a.order) || 0;
-                    const orderB = Number(b.order) || 0;
-                    if (orderA > 0 && orderB > 0) return orderA - orderB;
-                    if (orderA > 0 && orderB === 0) return -1;
-                    if (orderA === 0 && orderB > 0) return 1;
-                    return 0;
-                });
+                // This section renders exactly 7 cards (2 tiles + a 5-slide carousel).
+                // It used to request the whole catalogue — 128 activities and ~12MB of
+                // base64 images — to display 7 of them. The endpoint now sorts and
+                // paginates server-side, so ask only for what is shown.
+                const response = await api.get(`/activities?limit=${TOTAL_CARDS}`);
+                const allActivities = Array.isArray(response.data) ? response.data : [];
 
                 const getImage = (act, fallback) => {
                     return (act.images && act.images.length > 0 ? act.images[0] : null)
@@ -43,8 +43,8 @@ export default function TopActivitiesSection({ onActivityClick }) {
                         || fallback;
                 };
 
-                if (allActivities.length >= 2) {
-                    setLeftCards(allActivities.slice(0, 2).map(act => ({
+                if (allActivities.length >= LEFT_TILES) {
+                    setLeftCards(allActivities.slice(0, LEFT_TILES).map(act => ({
                         id: act._id || act.id,
                         badge: act.isInternational ? 'International' : (act.badge || ''),
                         title: act.title || 'Activity',
@@ -52,7 +52,7 @@ export default function TopActivitiesSection({ onActivityClick }) {
                         image: getImage(act, '/assets/activity1.jpeg')
                     })));
                     
-                    const carouselPart = allActivities.slice(2, 7);
+                    const carouselPart = allActivities.slice(LEFT_TILES, TOTAL_CARDS);
                     if (carouselPart.length > 0) {
                         setCarouselItems(carouselPart.map(act => ({
                             id: act._id || act.id,
@@ -62,18 +62,18 @@ export default function TopActivitiesSection({ onActivityClick }) {
                             reviews: `${act.rating || 5} (${act.reviewsCount || 0} Reviews)`
                         })));
                     } else {
-                        setCarouselItems(SAMPLE_ACTIVITIES.slice(2));
+                        setCarouselItems(SAMPLE_ACTIVITIES.slice(LEFT_TILES));
                     }
                 } else {
                     // Fallback to samples if API is empty
-                    setLeftCards(SAMPLE_ACTIVITIES.slice(0, 2));
-                    setCarouselItems(SAMPLE_ACTIVITIES.slice(2));
+                    setLeftCards(SAMPLE_ACTIVITIES.slice(0, LEFT_TILES));
+                    setCarouselItems(SAMPLE_ACTIVITIES.slice(LEFT_TILES));
                 }
             } catch (error) {
                 console.error("Error fetching top activities:", error);
                 // Guaranteed fallback on error
-                setLeftCards(SAMPLE_ACTIVITIES.slice(0, 2));
-                setCarouselItems(SAMPLE_ACTIVITIES.slice(2));
+                setLeftCards(SAMPLE_ACTIVITIES.slice(0, LEFT_TILES));
+                setCarouselItems(SAMPLE_ACTIVITIES.slice(LEFT_TILES));
             } finally {
                 setIsLoading(false);
             }

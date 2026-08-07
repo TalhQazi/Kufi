@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { loadStripe } from '@stripe/stripe-js'
 import api from '../../api'
 import PaymentSuccessModal from './PaymentSuccessModal.jsx'
+import { countableActivities } from '../../utils/activityClassification'
 import Footer from '../../components/layout/Footer'
 
 export default function Payment({ bookingData, onBack, onForward, canGoBack, canGoForward, onNotificationClick, onHomeClick, hideHeaderFooter = false }) {
@@ -170,10 +171,10 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         const itinerary = activeBookingData?.tripData;
         if (!daysData.length && !itinerary) return 0;
 
-        // Calculate activities total
+        // Calculate activities total. Schedule breaks (lunch/rest) are not activities and
+        // are never billable, so they are excluded here as well as from the counts.
         const activitiesTotal = daysData.reduce((sum, d) => {
-            const activities = d.activities || [];
-            return sum + activities.reduce((s, a) => s + (Number(a.price || a.cost || 0) || 0), 0);
+            return sum + countableActivities(d).reduce((s, a) => s + (Number(a.price || a.cost || 0) || 0), 0);
         }, 0);
 
         // Calculate hotel cost

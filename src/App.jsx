@@ -1,6 +1,7 @@
 import * as React from 'react'
 const { useState, useEffect, Suspense, lazy } = React
 import api, { hasValidSession, clearStoredSession, SESSION_EXPIRED_EVENT } from './api'
+import { applySeo } from './utils/seo'
 
 // Lazy load pages for better performance
 const HomePage = lazy(() => import('./pages/userpannel/HomePage.jsx'))
@@ -668,6 +669,67 @@ export default function App() {
     }
     setShowModal(null)
   }
+
+  // ── SEO metadata ────────────────────────────────────────────────────────────
+  // A single static index.html serves every screen, so the head has to be updated as the
+  // route changes. Without this, every public page reported the same title, no
+  // description and no canonical URL, leaving crawlers nothing to distinguish them by.
+  useEffect(() => {
+    const rawHash = window.location.hash.slice(1) || page || 'home'
+
+    const META = {
+      home: {
+        title: null,
+        description: 'Plan tailor-made trips with Kufi Travel. Explore destinations, book activities and read travel guides.',
+      },
+      explore: {
+        title: 'Explore activities and experiences',
+        description: 'Browse activities, tours and experiences by destination, category and season.',
+      },
+      'country-details': {
+        title: selectedCountryName ? `Travel guide to ${selectedCountryName}` : 'Destinations',
+        description: selectedCountryName
+          ? `Things to do, activities and travel information for ${selectedCountryName}.`
+          : 'Browse destinations and country travel guides.',
+      },
+      'category-page': {
+        title: selectedCategoryName || 'Categories',
+        description: selectedCategoryName
+          ? `${selectedCategoryName} activities and experiences.`
+          : 'Browse activities by category.',
+      },
+      blogs: {
+        title: 'Travel blog',
+        description: 'Travel tips, destination guides and stories to inspire your next trip.',
+      },
+      about: {
+        title: 'About us',
+        description: 'Learn about Kufi Travel and how we build tailor-made trips.',
+      },
+    }
+
+    const routeKey = String(rawHash).split('/')[0]
+    const meta = META[routeKey] || META[page] || {}
+
+    // Detail pages set their own richer metadata (with real titles and descriptions)
+    // once their data has loaded; this provides a correct baseline in the meantime.
+    const breadcrumbs = [{ name: 'Home', path: '/' }]
+    if (routeKey === 'country-details' && selectedCountryName) {
+      breadcrumbs.push({ name: 'Destinations', path: '/destinations' })
+      breadcrumbs.push({ name: selectedCountryName, path: `/destinations/${encodeURIComponent(selectedCountryName)}` })
+    } else if (routeKey === 'blogs' || routeKey === 'blog-detail') {
+      breadcrumbs.push({ name: 'Travel blog', path: '/blogs' })
+    } else if (routeKey === 'explore') {
+      breadcrumbs.push({ name: 'Explore', path: '/explore' })
+    }
+
+    applySeo({
+      hash: rawHash,
+      title: meta.title,
+      description: meta.description,
+      breadcrumbs,
+    })
+  }, [page, selectedCountryName, selectedCategoryName, selectedActivityId, selectedBlogId])
 
   const handleCloseModal = () => {
     setShowModal(null)
