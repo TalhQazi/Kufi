@@ -542,14 +542,26 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       }));
       setDaysData(updateDaysData(generatedDays));
       setExtraFields(Array.isArray(updated.extraFields) ? updated.extraFields : []);
-      // Surface any day the server had to reorganize for geographic feasibility.
-      const geo = res.data?.geography;
-      if (geo?.geographyRepaired) {
-        setGeoNotice("Some days were regrouped so activities in the same day stay in the same area.");
-      } else if (geo?.geographyIssues?.length) {
-        setGeoNotice(geo.geographyIssues[0].message);
+      // Explain how the Control Panel constrained the result, so an empty or thin plan
+      // is never a mystery. A zero ceiling is the common case: accommodation and fixed
+      // costs have consumed the traveller's whole budget and the uplift left no headroom.
+      const budgetInfo = res.data?.budget;
+      if (budgetInfo?.exhaustedByFixedCosts) {
+        setGeoNotice(
+          `No activities could be scheduled: hotel ($${budgetInfo.hotelCost.toLocaleString()}) and custom costs ` +
+          `($${budgetInfo.customCostsTotal.toLocaleString()}) already use the whole $${budgetInfo.maxAllowedTotalBudget.toLocaleString()} ` +
+          `ceiling at ${budgetInfo.upliftPercent}% uplift. Raise the uplift, lower the accommodation cost, or reduce custom costs.`
+        );
       } else {
-        setGeoNotice("");
+        // Surface any day the server had to reorganize for geographic feasibility.
+        const geo = res.data?.geography;
+        if (geo?.geographyRepaired) {
+          setGeoNotice("Some days were regrouped so activities in the same day stay in the same area.");
+        } else if (geo?.geographyIssues?.length) {
+          setGeoNotice(geo.geographyIssues[0].message);
+        } else {
+          setGeoNotice("");
+        }
       }
       if (res.data?.warning) {
         setGenerateError(res.data.warning);
@@ -1445,8 +1457,14 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                 <Row label="Travelers" value={itinerary?.numberOfTravelers || "—"} dark={darkMode} />
                 <Row label="Total Activities" value={totalActivitiesCount} dark={darkMode} />
                 <Row label="Base Budget" value={baseBudget ? `$${baseBudget.toLocaleString()}` : "Flexible"} dark={darkMode} />
-                {upliftPct > 0 && baseBudget > 0 && (
-                  <Row label={`Budget Tolerance (+${Math.round(upliftPct * 100)}%)`} value={`Max $${maxAllowedTotalBudget.toLocaleString()}`} dark={darkMode} />
+                {/* Shown even at 0%. Hiding the row when the uplift was zero made a
+                    deliberate "no tolerance" look like the setting had been ignored. */}
+                {baseBudget > 0 && (
+                  <Row
+                    label={upliftPct > 0 ? `Budget Tolerance (+${Math.round(upliftPct * 100)}%)` : "Budget Tolerance (0% — none)"}
+                    value={`Max $${maxAllowedTotalBudget.toLocaleString()}`}
+                    dark={darkMode}
+                  />
                 )}
                 <Row label="Hotel" value={hotelData?.name || "Not selected"} dark={darkMode} />
                 <Row label="Transportation" value="Included in itinerary" dark={darkMode} />
