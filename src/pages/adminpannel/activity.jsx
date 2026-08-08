@@ -54,6 +54,9 @@ const Activity = ({ onAddNew }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [listingData, setListingData] = useState([]);
+  // Guards the reorder arrows while a bulk order write is in flight, so rapid clicks
+  // cannot race each other into an inconsistent sequence.
+  const [reordering, setReordering] = useState(false);
   const [viewingActivity, setViewingActivity] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
   const [countries, setCountries] = useState([]);
@@ -148,6 +151,64 @@ const Activity = ({ onAddNew }) => {
       await api.put(`/activities/${id}`, { order: orderNum });
     } catch (error) {
       console.error("Error updating activity order:", error);
+    }
+  };
+
+  /**
+   * Move an activity one position up or down in the display order.
+   *
+   * `order` is a manual ranking where 0 means "unranked", and most rows start at 0 — so
+   * simply swapping two values would not move anything. The whole list is renumbered
+   * 1..N first, then the pair is swapped, and only the rows whose number actually changed
+   * are sent (as one bulk request rather than one call per row).
+   *
+   * The swap is against the neighbour in the *visible* list, so it behaves as expected
+   * while a filter or search is applied.
+   */
+  const moveActivity = async (id, direction) => {
+    if (reordering) return;
+
+    const visible = filteredListings;
+    const visibleIndex = visible.findIndex((item) => item.id === id);
+    if (visibleIndex === -1) return;
+
+    const targetIndex = direction === "up" ? visibleIndex - 1 : visibleIndex + 1;
+    if (targetIndex < 0 || targetIndex >= visible.length) return;
+
+    const neighbourId = visible[targetIndex].id;
+
+    // Renumber the full list in its current display order, then swap the two rows.
+    const sequence = listingData.map((item) => item.id);
+    const from = sequence.indexOf(id);
+    const to = sequence.indexOf(neighbourId);
+    if (from === -1 || to === -1) return;
+    [sequence[from], sequence[to]] = [sequence[to], sequence[from]];
+
+    const orderById = new Map(sequence.map((itemId, i) => [itemId, i + 1]));
+    const next = listingData
+      .map((item) => ({ ...item, order: orderById.get(item.id) }))
+      .sort((a, b) => a.order - b.order);
+
+    const changed = next
+      .filter((item) => {
+        const previous = listingData.find((p) => p.id === item.id);
+        return previous && previous.order !== item.order;
+      })
+      .map((item) => ({ id: item.id, order: item.order }));
+
+    if (changed.length === 0) return;
+
+    const rollback = listingData;
+    setReordering(true);
+    setListingData(next); // optimistic
+    try {
+      await api.put("/activities/reorder", { items: changed });
+    } catch (error) {
+      console.error("Error reordering activities:", error);
+      setListingData(rollback);
+      alert(error?.response?.data?.msg || "Failed to update the order. Please try again.");
+    } finally {
+      setReordering(false);
     }
   };
 
@@ -283,10 +344,32 @@ const Activity = ({ onAddNew }) => {
               No listings match the selected filter.
             </div>
           ) : (
-            filteredListings.map((item) => (
+            filteredListings.map((item, cardIndex) => (
               <div key={item.id} className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-3">
                 <div className="flex justify-between items-start">
                   <div className="flex items-start gap-3">
+                    {/* Same reorder control as the desktop table. */}
+                    <div className="flex flex-col items-center shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => moveActivity(item.id, "up")}
+                        disabled={reordering || cardIndex === 0}
+                        aria-label={`Move ${item.listing} up`}
+                        className="px-1.5 py-0.5 text-[11px] text-gray-500 rounded hover:bg-[#a26e35] hover:text-white disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                      >
+                        ▲
+                      </button>
+                      <span className="text-[10px] font-bold text-[#a26e35] py-0.5">{item.order || 0}</span>
+                      <button
+                        type="button"
+                        onClick={() => moveActivity(item.id, "down")}
+                        disabled={reordering || cardIndex === filteredListings.length - 1}
+                        aria-label={`Move ${item.listing} down`}
+                        className="px-1.5 py-0.5 text-[11px] text-gray-500 rounded hover:bg-[#a26e35] hover:text-white disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                      >
+                        ▼
+                      </button>
+                    </div>
                     <ListingThumb src={item.image} alt={item.listing} />
                     <div>
                       <p className="font-semibold text-slate-900 text-sm">{item.listing}</p>
@@ -388,17 +471,44 @@ const Activity = ({ onAddNew }) => {
                   </td>
                 </tr>
               ) : (
-                filteredListings.map((item) => (
+                filteredListings.map((item, rowIndex) => (
                   <tr key={item.id} className="hover:bg-gray-50/80">
                     <td className="px-6 py-4 font-bold text-slate-700">
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.order || 0}
-                        onChange={(e) => handleOrderChange(item.id, e.target.value)}
-                        className="w-16 px-2 py-1 text-xs border border-gray-200 rounded-lg text-center font-bold text-[#a26e35] focus:outline-none focus:ring-2 focus:ring-[#a26e35]/30 bg-gray-50 hover:bg-white transition-colors"
-                        title="Edit display order"
-                      />
+                      <div className="flex items-center gap-1.5">
+                        {/* Nudge the activity one place up or down. Disabled at the ends
+                            of the visible list and while a reorder is being saved. */}
+                        <div className="flex flex-col">
+                          <button
+                            type="button"
+                            onClick={() => moveActivity(item.id, "up")}
+                            disabled={reordering || rowIndex === 0}
+                            aria-label={`Move ${item.listing} up`}
+                            title="Move up"
+                            className="px-1 leading-none text-[10px] text-gray-500 rounded hover:bg-[#a26e35] hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-gray-500 disabled:cursor-not-allowed transition-colors"
+                          >
+                            ▲
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveActivity(item.id, "down")}
+                            disabled={reordering || rowIndex === filteredListings.length - 1}
+                            aria-label={`Move ${item.listing} down`}
+                            title="Move down"
+                            className="px-1 leading-none text-[10px] text-gray-500 rounded hover:bg-[#a26e35] hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-gray-500 disabled:cursor-not-allowed transition-colors"
+                          >
+                            ▼
+                          </button>
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          value={item.order || 0}
+                          onChange={(e) => handleOrderChange(item.id, e.target.value)}
+                          disabled={reordering}
+                          className="w-14 px-2 py-1 text-xs border border-gray-200 rounded-lg text-center font-bold text-[#a26e35] focus:outline-none focus:ring-2 focus:ring-[#a26e35]/30 bg-gray-50 hover:bg-white disabled:opacity-50 transition-colors"
+                          title="Edit display order"
+                        />
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">

@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft } from "lucide-react";
+import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Sparkles } from "lucide-react";
 import api, { getApiBaseUrl, getAuthToken } from "../../api";
 import { notifyItineraryWorkflowChanged } from "../../constants/itineraryLabels";
 import { countActivities, sumActivityPrices } from "../../utils/activityClassification";
@@ -572,6 +572,24 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     }
   }
 
+
+  /**
+   * Re-run generation with whatever is currently in the Control Panel.
+   *
+   * Regeneration replaces the day plan, so any manual edits are lost — confirm first
+   * when there is something on screen to lose.
+   */
+  async function handleRegenerate() {
+    if (!itinerary?._id || generating) return;
+    if (daysData.length > 0) {
+      const ok = window.confirm(
+        "Rebuild this itinerary from your current Control Panel settings?\n\n" +
+        "The existing day plan, including any manual edits, will be replaced."
+      );
+      if (!ok) return;
+    }
+    await triggerGenerate(itinerary, { genMode: "ai" });
+  }
 
   useEffect(() => {
     setLoadError("");
@@ -1192,6 +1210,22 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
               }`}
             >
               {showActivitiesPool ? "Hide Activities Pool" : "Show Activities Pool"}
+            </button>
+            {/* Generation otherwise only ever ran once, automatically on mount — before
+                the supplier had touched the Control Panel. Without this button, changing
+                the uplift (or any other setting) could never affect the plan, because
+                nothing re-ran the generator. */}
+            <button
+              type="button"
+              onClick={handleRegenerate}
+              disabled={generating || saving || submitting || !itinerary?._id}
+              title="Rebuild the itinerary using the current Control Panel settings"
+              className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors border flex items-center gap-1.5 ${
+                generating ? "opacity-60 cursor-not-allowed" : ""
+              } ${darkMode ? "border-amber-500/50 text-amber-300 hover:bg-amber-500/10" : "border-[#a26e35] text-[#a26e35] hover:bg-amber-50"}`}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {generating ? "Regenerating…" : "Regenerate with AI"}
             </button>
             <button
               type="button"
