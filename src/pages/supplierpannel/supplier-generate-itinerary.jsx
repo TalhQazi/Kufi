@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Sparkles, Coffee } from "lucide-react";
+import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Coffee } from "lucide-react";
 import api, { getApiBaseUrl, getAuthToken } from "../../api";
 import { notifyItineraryWorkflowChanged } from "../../constants/itineraryLabels";
 import { countActivities, sumActivityPrices, isBreakEntry } from "../../utils/activityClassification";
@@ -549,6 +549,33 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     return res.data;
   }
 
+  /**
+   * Apply the configuration the supplier set on the "Proceed to create itinerary" screen.
+   *
+   * That screen carries its own Control Panel, and its values arrive here on
+   * `overviewItinerary.controlPanel`. They were only used when a brand-new itinerary was
+   * created — for a request that already had one, the stored record won and the
+   * supplier's changes (lunch duration, activity hours, arrival/departure, uplift) were
+   * silently dropped before generation ever ran.
+   */
+  function withOverviewControlPanel(record) {
+    const overviewCp = overviewItinerary?.controlPanel;
+    if (!record || !overviewCp || typeof overviewCp !== "object") return record;
+
+    // Only fields the supplier actually set; `undefined` must not blank stored values.
+    const provided = Object.fromEntries(
+      Object.entries(overviewCp).filter(([, v]) => v !== undefined)
+    );
+    if (Object.keys(provided).length === 0) return record;
+
+    return {
+      ...record,
+      startDate: overviewItinerary?.startDate || record.startDate,
+      endDate: overviewItinerary?.endDate || record.endDate,
+      controlPanel: { ...(record.controlPanel || {}), ...provided },
+    };
+  }
+
   async function triggerGenerate(itin, { genMode = mode } = {}) {
     if (!itin?._id) return;
     setGenerating(true);
@@ -637,24 +664,6 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   }
 
 
-  /**
-   * Re-run generation with whatever is currently in the Control Panel.
-   *
-   * Regeneration replaces the day plan, so any manual edits are lost — confirm first
-   * when there is something on screen to lose.
-   */
-  async function handleRegenerate() {
-    if (!itinerary?._id || generating) return;
-    if (daysData.length > 0) {
-      const ok = window.confirm(
-        "Rebuild this itinerary from your current Control Panel settings?\n\n" +
-        "The existing day plan, including any manual edits, will be replaced."
-      );
-      if (!ok) return;
-    }
-    await triggerGenerate(itinerary, { genMode: "ai" });
-  }
-
   useEffect(() => {
     setLoadError("");
     setGenerateError("");
@@ -665,7 +674,9 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       if (!requestKey) return;
 
       try {
-        const itin = await resolveItineraryRecord();
+        // What the supplier configured on the previous screen takes precedence over the
+        // stored copy, so generation below runs with their settings.
+        const itin = withOverviewControlPanel(await resolveItineraryRecord());
         if (cancelled) return;
 
         const savedDays = updateDaysData(Array.isArray(itin?.days) ? itin.days : []);
@@ -1303,22 +1314,6 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
             >
               {showActivitiesPool ? "Hide Activities Pool" : "Show Activities Pool"}
             </button>
-            {/* Generation otherwise only ever ran once, automatically on mount — before
-                the supplier had touched the Control Panel. Without this button, changing
-                the uplift (or any other setting) could never affect the plan, because
-                nothing re-ran the generator. */}
-            <button
-              type="button"
-              onClick={handleRegenerate}
-              disabled={generating || saving || submitting || !itinerary?._id}
-              title="Rebuild the itinerary using the current Control Panel settings"
-              className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors border flex items-center gap-1.5 ${
-                generating ? "opacity-60 cursor-not-allowed" : ""
-              } ${darkMode ? "border-amber-500/50 text-amber-300 hover:bg-amber-500/10" : "border-[#a26e35] text-[#a26e35] hover:bg-amber-50"}`}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              {generating ? "Regenerating…" : "Regenerate with AI"}
-            </button>
             <button
               type="button"
               onClick={handleSaveDraft}
@@ -1657,21 +1652,6 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                     request={request}
                     onChange={handleControlPanelChange}
                   />
-
-                  {/* Control Panel settings only reach the plan when generation re-runs.
-                      Putting the action next to the settings makes that obvious, instead
-                      of relying on the supplier finding the button up in the header. */}
-                  <button
-                    type="button"
-                    onClick={handleRegenerate}
-                    disabled={generating || saving || submitting || !itinerary?._id}
-                    className={`w-full rounded-2xl px-4 py-3 text-xs font-semibold transition-colors border flex items-center justify-center gap-2 ${
-                      generating ? "opacity-60 cursor-not-allowed" : ""
-                    } ${darkMode ? "border-amber-500/50 text-amber-300 hover:bg-amber-500/10" : "border-[#a26e35] text-[#a26e35] hover:bg-amber-50"}`}
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    {generating ? "Regenerating…" : "Apply settings & regenerate"}
-                  </button>
 
                   <div className={`${cardCls} px-4 py-4 space-y-2`}>
                     <h3 className={`text-sm font-semibold flex items-center gap-1.5 ${darkMode ? "text-white" : "text-slate-900"}`}>
