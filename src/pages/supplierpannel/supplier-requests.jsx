@@ -161,15 +161,37 @@ const SupplierRequests = ({
   // rows are past those decisions.
   const isNewRequestsTab = subTab === "new";
 
-  // Group requests by user email - creates parent-child node structure
+  /**
+   * Group requests into parent/child nodes.
+   *
+   * Grouping used to key on the traveller alone (`email || name`), so two genuinely
+   * separate trips from the same person collapsed into one row: only the newest showed
+   * as the parent, the other became a hidden child, and every action button — Accept,
+   * Build Itinerary, View Adjustment — targeted the parent. The supplier could not see
+   * the second trip, let alone act on it.
+   *
+   * The key is now the traveller AND the trip (destination + arrival + departure), so
+   * distinct trips stay distinct. A genuine duplicate — the same person resubmitting the
+   * same trip — still collapses, which is what the grouping was for.
+   */
   const groupedRequests = useMemo(() => {
     const groups = {};
-    
+
     filteredRequestsByTab.forEach((req) => {
-      // Use email as unique identifier for user, fallback to name
-      const userKey = req.email || req.name || 'unknown';
-      if (!groups[userKey]) {
-        groups[userKey] = {
+      const traveller = String(req.email || req.name || 'unknown').trim().toLowerCase();
+      const destination = String(
+        req.tripDetails?.country ?? req.location ?? req.destination ?? ''
+      ).trim().toLowerCase();
+      // formatTripDate normalizes to YYYY-MM-DD, so a stored time component cannot split
+      // two requests that are actually for the same dates.
+      const arrival = formatTripDate(req.tripDetails?.arrivalDate);
+      const departure = formatTripDate(req.tripDetails?.departureDate);
+
+      const groupKey = [traveller, destination, arrival, departure].join('|');
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          key: groupKey,
           user: {
             name: req.name,
             email: req.email,
@@ -179,9 +201,9 @@ const SupplierRequests = ({
           requests: [],
         };
       }
-      groups[userKey].requests.push(req);
+      groups[groupKey].requests.push(req);
     });
-    
+
     // Convert to array and sort each group's requests by date (newest first)
     return Object.values(groups).map((group) => ({
       ...group,
@@ -546,6 +568,19 @@ const SupplierRequests = ({
 
   const itineraryRequestKey = itineraryRequest?.id || itineraryRequest?._id || null;
   const itineraryRecordId = itineraryRequest?.itineraryId || itineraryRequest?.itinerary?._id || null;
+
+  /**
+   * Drop the previous request's Control Panel edits.
+   *
+   * `localCPData` holds whatever the supplier configured on the "Proceed to create
+   * itinerary" screen, and the builder merges it OVER the stored panel. It is only ever
+   * written by that panel's onChange, so without this it survives a change of request —
+   * and "View Adjustment" opens the builder directly, never mounting the panel. The
+   * result was one request's configuration silently driving another request's itinerary.
+   */
+  useEffect(() => {
+    setLocalCPData(null);
+  }, [itineraryRequestKey]);
 
   useEffect(() => {
     let active = true;
@@ -927,7 +962,11 @@ const SupplierRequests = ({
             </div>
           ) : (
             Object.values(groupedRequests).map((group, groupIndex) => {
-              const userKey = group.user.email || group.user.name || `group-${groupIndex}`;
+              // Must be the GROUP key, not the traveller: one traveller can now have
+              // several groups (one per trip). Keying on the email would give them all
+              // the same React key and make expand/collapse and the child carousel act
+              // on every one of that traveller's trips at once.
+              const userKey = group.key || group.user.email || group.user.name || `group-${groupIndex}`;
               const isExpanded = expandedGroups.has(userKey);
               const parentRequest = group.requests[0];
               const hideChildren = false;
