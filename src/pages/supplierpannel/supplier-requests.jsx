@@ -774,7 +774,11 @@ const SupplierRequests = ({
 
           <div className="mt-5 pt-4 border-t transition-colors" style={{ borderColor: darkMode ? "#1e293b" : "#f1f5f9" }}>
             <ItineraryControlPanel
-              key={overviewItinerary?._id || itineraryRequest.id || itineraryRequest._id}
+              // Keyed on the REQUEST, not the itinerary. `overviewItinerary` starts null
+              // and is filled in by an async fetch, so keying on its id remounted the
+              // panel a second or two after it appeared — throwing away whatever the
+              // supplier had already configured.
+              key={itineraryRequest.id || itineraryRequest._id}
               darkMode={darkMode}
               itinerary={overviewItinerary}
               request={itineraryRequest}

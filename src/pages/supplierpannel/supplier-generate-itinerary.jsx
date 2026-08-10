@@ -15,10 +15,10 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Sparkles } from "lucide-react";
+import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Sparkles, Coffee } from "lucide-react";
 import api, { getApiBaseUrl, getAuthToken } from "../../api";
 import { notifyItineraryWorkflowChanged } from "../../constants/itineraryLabels";
-import { countActivities, sumActivityPrices } from "../../utils/activityClassification";
+import { countActivities, sumActivityPrices, isBreakEntry } from "../../utils/activityClassification";
 import ItineraryActivityPool from "./components/ItineraryActivityPool";
 import ItineraryControlPanel from "./components/ItineraryControlPanel";
 import {
@@ -196,6 +196,45 @@ function buildPersistBody(days, extraFields, itinerary) {
   };
 }
 
+/**
+ * A schedule break (lunch/rest) inside a day.
+ *
+ * Breaks were previously rendered with the full activity card — time inputs, a price
+ * field and a rank badge — which is wrong on every count: a break is not ranked, not
+ * priced, and its window is derived from the Control Panel's duration rather than typed
+ * per day. It is shown read-only, as the duration the supplier configured.
+ */
+function ScheduleBreakRow({ activity, darkMode }) {
+  const minutes = breakMinutes(activity);
+  return (
+    <div
+      className={`rounded-xl border border-dashed px-3 py-2 flex items-center gap-2 text-[11px] ${
+        darkMode ? "bg-slate-800/40 border-slate-700 text-slate-400" : "bg-amber-50/60 border-amber-200 text-amber-800"
+      }`}
+    >
+      <Coffee className="h-3.5 w-3.5 shrink-0" />
+      <span className="font-semibold">{activity.title || "Lunch Break"}</span>
+      <span className="opacity-70">·</span>
+      <span>{minutes} min</span>
+      <span className={`ml-auto text-[10px] ${darkMode ? "text-slate-500" : "text-amber-700/70"}`}>
+        Set by the Control Panel
+      </span>
+    </div>
+  );
+}
+
+/** Break length in minutes, from its window. */
+function breakMinutes(activity) {
+  const toMin = (t) => {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || "").trim());
+    return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+  };
+  const start = toMin(activity?.startTime);
+  const end = toMin(activity?.endTime);
+  if (start === null || end === null || end <= start) return 60;
+  return end - start;
+}
+
 // ─── Sortable activity card inside a day ─────────────────────────────────────
 
 function SortableActivityCard({ activity, activityIndex, dayIndex, darkMode, onRemove, onChange, onMoveUp, onMoveDown }) {
@@ -329,7 +368,15 @@ function SortableActivityCard({ activity, activityIndex, dayIndex, darkMode, onR
 
 function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, onChangeActivity, onUpdateDayNote, onMoveActivityUp, onMoveActivityDown }) {
   const activities = Array.isArray(day.activities) ? day.activities : [];
-  const dayTotal = activities.reduce((sum, a) => sum + (Number(a.price) || 0), 0);
+  // Breaks are never billable, so they must not appear in the day's total.
+  const dayTotal = activities
+    .filter((a) => !isBreakEntry(a))
+    .reduce((sum, a) => sum + (Number(a.price) || 0), 0);
+
+  // Rank badges number the real activities only — a lunch break is not "#3".
+  const activityRanks = new Map(
+    activities.filter((a) => !isBreakEntry(a)).map((a, i) => [a.id, i])
+  );
 
   const { setNodeRef } = useDroppable({
     id: `day-${day.day - 1}`,
@@ -375,20 +422,25 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, on
             : (darkMode ? "border-slate-700" : "border-gray-200")
         }`}
       >
-        <SortableContext items={activities.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-          {activities.map((act, actIdx) => (
-            <SortableActivityCard
-              key={act.id}
-              activity={act}
-              activityIndex={actIdx}
-              dayIndex={day.day - 1}
-              darkMode={darkMode}
-              onRemove={onRemoveActivity}
-              onChange={onChangeActivity}
-              onMoveUp={onMoveActivityUp}
-              onMoveDown={onMoveActivityDown}
-            />
-          ))}
+        <SortableContext items={activities.filter((a) => !isBreakEntry(a)).map((a) => a.id)} strategy={verticalListSortingStrategy}>
+          {activities.map((act) => {
+            if (isBreakEntry(act)) {
+              return <ScheduleBreakRow key={act.id} activity={act} darkMode={darkMode} />;
+            }
+            return (
+              <SortableActivityCard
+                key={act.id}
+                activity={act}
+                activityIndex={activityRanks.get(act.id) ?? 0}
+                dayIndex={day.day - 1}
+                darkMode={darkMode}
+                onRemove={onRemoveActivity}
+                onChange={onChangeActivity}
+                onMoveUp={onMoveActivityUp}
+                onMoveDown={onMoveActivityDown}
+              />
+            );
+          })}
         </SortableContext>
         {activities.length === 0 && (
           <p className={`text-[11px] text-center py-4 ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
@@ -1158,6 +1210,21 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
 
   const currentDay = daysData[activeDay] || null;
 
+  /**
+   * The traveller's adjustment request, if there is one.
+   *
+   * It lives on the booking, which arrives here as the `request` prop. Only surfaced when
+   * the card actually carries content — an empty card is not a request.
+   */
+  const adjustmentRequest = useMemo(() => {
+    const card = request?.adjustmentCard;
+    if (!card || typeof card !== "object") return null;
+    const hasContent = [card.title, card.description, card.location, card.cost, card.imageDataUrl]
+      .some((v) => String(v || "").trim());
+    if (!hasContent) return null;
+    return { card, requestedAt: request?.adjustmentRequestedAt || null };
+  }, [request?.adjustmentCard, request?.adjustmentRequestedAt]);
+
   // Generated itineraries are held in the editor until the supplier picks an action,
   // so surface whether there is still unsaved work.
   const hasUnsavedEdits = useMemo(() => {
@@ -1278,6 +1345,49 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         {loadError && (
           <div className={`rounded-2xl border px-4 py-3 mb-4 text-sm ${darkMode ? "bg-rose-950/40 border-rose-900 text-rose-300" : "bg-rose-50 border-rose-200 text-rose-700"}`}>
             {loadError}
+          </div>
+        )}
+
+        {/* What the traveller actually asked to change. "View Adjustment" navigated here
+            but nothing ever rendered the card, so the supplier arrived at the builder
+            with no idea what had been requested. */}
+        {adjustmentRequest && (
+          <div className={`rounded-2xl border px-4 py-4 mb-4 ${darkMode ? "bg-rose-950/20 border-rose-900/50" : "bg-rose-50 border-rose-200"}`}>
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <h3 className={`text-sm font-semibold ${darkMode ? "text-rose-300" : "text-rose-800"}`}>
+                Adjustment requested by the traveller
+              </h3>
+              {adjustmentRequest.requestedAt && (
+                <span className={`text-[11px] shrink-0 ${darkMode ? "text-rose-400/70" : "text-rose-600"}`}>
+                  {fmtDate(adjustmentRequest.requestedAt) || new Date(adjustmentRequest.requestedAt).toLocaleString()}
+                </span>
+              )}
+            </div>
+            <div className="flex gap-3 flex-col sm:flex-row">
+              {adjustmentRequest.card.imageDataUrl && (
+                <img
+                  src={adjustmentRequest.card.imageDataUrl}
+                  alt="Traveller reference"
+                  className="w-full sm:w-32 h-24 object-cover rounded-lg border border-black/5 shrink-0"
+                />
+              )}
+              <div className="flex-1 space-y-1">
+                {adjustmentRequest.card.title && (
+                  <p className={`text-sm font-semibold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                    {adjustmentRequest.card.title}
+                  </p>
+                )}
+                {adjustmentRequest.card.description && (
+                  <p className={`text-xs whitespace-pre-wrap ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                    {adjustmentRequest.card.description}
+                  </p>
+                )}
+                <div className={`flex flex-wrap gap-x-4 gap-y-1 text-[11px] pt-1 ${darkMode ? "text-slate-400" : "text-slate-600"}`}>
+                  {adjustmentRequest.card.location && <span>Location: <strong>{adjustmentRequest.card.location}</strong></span>}
+                  {adjustmentRequest.card.cost && <span>Budget: <strong>{adjustmentRequest.card.cost}</strong></span>}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1539,7 +1649,9 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
               {showControlPanel && (
                 <>
                   <ItineraryControlPanel
-                    key={itinerary?._id || request?.id || request?._id}
+                    // Keyed on the request: `itinerary` resolves asynchronously, and
+                    // keying on its id remounted the panel mid-edit and reset it.
+                    key={request?.id || request?._id || "control-panel"}
                     darkMode={darkMode}
                     itinerary={itinerary}
                     request={request}

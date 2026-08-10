@@ -86,21 +86,42 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
   const country = itinerary?.country || itinerary?.tripData?.country || "";
   const city = itinerary?.city || itinerary?.tripData?.city || itinerary?.destination || "";
 
-  const isInitializedRef = useRef(false);
+  const seededForRef = useRef(null);
+  // Set the moment the supplier changes anything. Their edits must never be overwritten
+  // by a server payload that arrives later.
+  const isDirtyRef = useRef(false);
 
-  // Populate from existing itinerary controlPanel on load / id change
+  /**
+   * Seed the panel from the itinerary's stored configuration.
+   *
+   * The itinerary is often still loading when this component mounts (`itinerary` is
+   * null), and arrives a second or two later. Re-seeding unconditionally at that point
+   * silently reverted whatever the supplier had already set — flipping "Start activities
+   * on arrival day" to Yes and watching it snap back to No a moment later.
+   *
+   * So: seed once per itinerary record, and never over unsaved edits.
+   */
   useEffect(() => {
-    if (itinerary?.controlPanel && (!isInitializedRef.current || isInitializedRef.current !== (itinerary._id || itinerary.id))) {
-      isInitializedRef.current = itinerary._id || itinerary.id || true;
-      setCp({
-        ...DEFAULT_CP,
-        ...itinerary.controlPanel,
-        budgetUplift: normalizeUplift(itinerary.controlPanel.budgetUplift),
-        hotelId: itinerary.controlPanel.hotelId?._id || itinerary.controlPanel.hotelId || "",
-        customCosts: seedCustomCosts(itinerary.controlPanel.customCosts),
-      });
+    const recordId = itinerary?._id || itinerary?.id || null;
+    if (!itinerary?.controlPanel) return;
+    // Same record we already seeded from — nothing to do.
+    if (seededForRef.current && seededForRef.current === recordId) return;
+    // The supplier has started configuring; adopting the server copy now would discard
+    // their work. Claim the record so a later re-render does not try again.
+    if (isDirtyRef.current) {
+      seededForRef.current = recordId;
+      return;
     }
-  }, [itinerary?._id, itinerary?.id]);
+
+    seededForRef.current = recordId;
+    setCp({
+      ...DEFAULT_CP,
+      ...itinerary.controlPanel,
+      budgetUplift: normalizeUplift(itinerary.controlPanel.budgetUplift),
+      hotelId: itinerary.controlPanel.hotelId?._id || itinerary.controlPanel.hotelId || "",
+      customCosts: seedCustomCosts(itinerary.controlPanel.customCosts),
+    });
+  }, [itinerary?._id, itinerary?.id, itinerary?.controlPanel]);
 
   // Fetch hotels for country/city
   useEffect(() => {
@@ -114,6 +135,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
   }, [country, city]);
 
   const set = (key, value) => {
+    isDirtyRef.current = true;
     setCp(prev => {
       const next = { ...prev, [key]: value };
       const selectedHotel = hotels.find(h => h._id === next.hotelId) || null;
@@ -123,6 +145,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
   };
 
   const updateCustomCost = (id, field, value) => {
+    isDirtyRef.current = true;
     setCp((prev) => {
       const customCosts = (prev.customCosts || []).map((c) =>
         c.id === id ? { ...c, [field]: field === "amount" ? Number(value) || 0 : value } : c
@@ -135,6 +158,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
   };
 
   const addCustomCost = () => {
+    isDirtyRef.current = true;
     setCp((prev) => {
       const next = { ...prev, customCosts: [...(prev.customCosts || []), newCustomCost()] };
       const selectedHotel = hotels.find((h) => h._id === next.hotelId) || null;
@@ -144,6 +168,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
   };
 
   const removeCustomCost = (id) => {
+    isDirtyRef.current = true;
     setCp((prev) => {
       const next = { ...prev, customCosts: (prev.customCosts || []).filter((c) => c.id !== id) };
       const selectedHotel = hotels.find((h) => h._id === next.hotelId) || null;
@@ -160,6 +185,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
   const tripDates = buildTripDates(itinerary, startDate, endDate);
 
   function setOverride(date, field, value) {
+    isDirtyRef.current = true;
     setCp(prev => {
       const overrides = Array.isArray(prev.perDayOverrides) ? [...prev.perDayOverrides] : [];
       const idx = overrides.findIndex(o => o.date === date);
@@ -206,6 +232,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
   }, [cp, startDate, endDate, hotels, onChange]);
 
   const handleStartDateChange = (val) => {
+    isDirtyRef.current = true;
     setStartDate(val);
     const payload = {
       ...cp,
@@ -223,6 +250,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
   };
 
   const handleEndDateChange = (val) => {
+    isDirtyRef.current = true;
     setEndDate(val);
     const payload = {
       ...cp,
@@ -240,6 +268,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
   };
 
   const addPresetCost = (label, unit, defaultAmount = 0) => {
+    isDirtyRef.current = true;
     setCp((prev) => {
       const existing = (prev.customCosts || []).find(c => c.label.toLowerCase() === label.toLowerCase());
       if (existing) return prev;
