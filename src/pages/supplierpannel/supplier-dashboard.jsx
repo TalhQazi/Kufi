@@ -71,6 +71,9 @@ const SupplierDashboard = ({
   const [resumeItineraryDraft, setResumeItineraryDraft] = useState(null);
   const [newRequestsCount, setNewRequestsCount] = useState(0);
   const [unfinishedDraftsCount, setUnfinishedDraftsCount] = useState(0);
+  // Travellers can ask for changes to an itinerary that was already sent. The card was
+  // stored on the booking but nothing surfaced it, so the request effectively vanished.
+  const [adjustmentRequestsCount, setAdjustmentRequestsCount] = useState(0);
 
   useEffect(() => {
     const queued = consumeQueuedItineraryAiGeneration();
@@ -180,6 +183,15 @@ const SupplierDashboard = ({
         // and Booking History always agree on where a booking belongs.
         const draftItineraries = allBookings.filter(b => b.workflowStage === 'draft');
         setUnfinishedDraftsCount(draftItineraries.length);
+
+        // A card only counts when it actually carries something the traveller wrote.
+        const withAdjustments = allBookings.filter((b) => {
+          const card = b?.adjustmentCard;
+          if (!card) return false;
+          return [card.title, card.description, card.location, card.cost, card.imageDataUrl]
+            .some((v) => String(v || '').trim());
+        });
+        setAdjustmentRequestsCount(withAdjustments.length);
 
         const recentList = [...allBookings]
           .sort((a, b) => {
@@ -330,7 +342,7 @@ const SupplierDashboard = ({
               </p>
             </div>
 
-            {(newRequestsCount > 0 || unfinishedDraftsCount > 0) && (
+            {(newRequestsCount > 0 || unfinishedDraftsCount > 0 || adjustmentRequestsCount > 0) && (
               <div className="mb-6 space-y-3">
                 {newRequestsCount > 0 && (
                   <div className={`flex items-start gap-3 p-4 rounded-2xl border transition-all duration-300 ${
@@ -376,6 +388,30 @@ const SupplierDashboard = ({
                       className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors whitespace-nowrap"
                     >
                       Complete
+                    </button>
+                  </div>
+                )}
+
+                {adjustmentRequestsCount > 0 && (
+                  <div className={`flex items-start gap-3 p-4 rounded-2xl border transition-all duration-300 ${
+                    darkMode
+                      ? "bg-rose-950/20 border-rose-800/40 text-rose-200"
+                      : "bg-rose-50 border-rose-200 text-rose-800"
+                  }`}>
+                    <div className="p-1 rounded-lg bg-rose-500/10 text-rose-500 shrink-0">
+                      <Bell className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold">Adjustment Requests</h4>
+                      <p className="text-xs opacity-90 mt-0.5">
+                        {adjustmentRequestsCount} traveler{adjustmentRequestsCount > 1 ? 's have' : ' has'} asked for changes to an itinerary you already sent. Open the request to see what they want adjusted.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => navigateTo("Requests")}
+                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold transition-colors whitespace-nowrap"
+                    >
+                      Review
                     </button>
                   </div>
                 )}

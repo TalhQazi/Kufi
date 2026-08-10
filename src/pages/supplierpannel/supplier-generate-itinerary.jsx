@@ -937,9 +937,22 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       // The request now belongs to Drafts, not New Requests — let the other panels resync.
       notifyItineraryWorkflowChanged();
       setSaveMsg("Draft saved");
-      setTimeout(() => setSaveMsg(""), 2500);
+      // Saving previously left the supplier sitting on the same screen with only a
+      // transient label, so it was impossible to tell whether anything had happened.
+      // Confirm briefly, then return to the requests list where the draft now appears.
+      setTimeout(() => {
+        setSaveMsg("");
+        if (onGoToBookings) onGoToBookings();
+      }, 900);
     } catch (err) {
       console.error("Save failed", err);
+      const msg =
+        err?.response?.data?.msg ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Could not save the draft. Please try again.";
+      // Surface the reason instead of a bare "Save failed" that disappears.
+      setSubmitError(msg);
       setSaveMsg("Save failed");
       setTimeout(() => setSaveMsg(""), 2500);
     } finally {
@@ -1532,6 +1545,21 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                     request={request}
                     onChange={handleControlPanelChange}
                   />
+
+                  {/* Control Panel settings only reach the plan when generation re-runs.
+                      Putting the action next to the settings makes that obvious, instead
+                      of relying on the supplier finding the button up in the header. */}
+                  <button
+                    type="button"
+                    onClick={handleRegenerate}
+                    disabled={generating || saving || submitting || !itinerary?._id}
+                    className={`w-full rounded-2xl px-4 py-3 text-xs font-semibold transition-colors border flex items-center justify-center gap-2 ${
+                      generating ? "opacity-60 cursor-not-allowed" : ""
+                    } ${darkMode ? "border-amber-500/50 text-amber-300 hover:bg-amber-500/10" : "border-[#a26e35] text-[#a26e35] hover:bg-amber-50"}`}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    {generating ? "Regenerating…" : "Apply settings & regenerate"}
+                  </button>
 
                   <div className={`${cardCls} px-4 py-4 space-y-2`}>
                     <h3 className={`text-sm font-semibold flex items-center gap-1.5 ${darkMode ? "text-white" : "text-slate-900"}`}>

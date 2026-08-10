@@ -1021,7 +1021,9 @@ export default function App() {
           setBookingData(itineraryData || selectedItineraryRequest)
           navigateTo('payment')
         }}
-        onRequestAdjustment={() => navigateTo('user-profile')}
+        // After asking for a change, return to the trip list the itinerary was opened
+        // from — not the account profile, which has nothing to do with the request.
+        onRequestAdjustment={() => navigateTo('my-trip-requests')}
         onLogout={handleLogout}
         onNotificationClick={() => setShowNotifications(true)}
         onProfileClick={handleProfileClick}

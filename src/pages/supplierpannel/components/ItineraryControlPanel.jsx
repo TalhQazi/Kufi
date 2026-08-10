@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import api from "../../../api";
 import { toDateString, buildTripDates as buildTripDateRange } from "../../../utils/calendarDate";
+import { resolveLunchWindow } from "../../../utils/lunchWindow";
 
 const DEFAULT_CUSTOM_COSTS = [
   { id: "min-charge", label: "Minimum charge", amount: 0, unit: "flat" },
@@ -14,6 +15,8 @@ const DEFAULT_UPLIFT = 15;
 const DEFAULT_CP = {
   activityStartTime: "09:00",
   activityEndTime: "19:00",
+  // Lunch is configured as a duration; the window below is derived from it.
+  lunchDurationMinutes: 60,
   lunchStart: "13:00",
   lunchEnd: "14:00",
   startOnArrival: false,
@@ -149,6 +152,10 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     });
   };
 
+  // Same derivation the backend applies, so the panel previews exactly what generation
+  // will produce rather than a value that has to be kept in sync by hand.
+  const lunchWindow = resolveLunchWindow(cp);
+
   // Per-day overrides helpers
   const tripDates = buildTripDates(itinerary, startDate, endDate);
 
@@ -186,6 +193,9 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     const payload = {
       ...cp,
       budgetUplift: normalizeUplift(cp.budgetUplift),
+      lunchDurationMinutes: resolveLunchWindow(cp).durationMinutes,
+      lunchStart: resolveLunchWindow(cp).lunchStart,
+      lunchEnd: resolveLunchWindow(cp).lunchEnd,
       hotelId: cp.hotelId || null,
       startDate: startDate || null,
       endDate: endDate || null,
@@ -200,6 +210,9 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     const payload = {
       ...cp,
       budgetUplift: normalizeUplift(cp.budgetUplift),
+      lunchDurationMinutes: resolveLunchWindow(cp).durationMinutes,
+      lunchStart: resolveLunchWindow(cp).lunchStart,
+      lunchEnd: resolveLunchWindow(cp).lunchEnd,
       hotelId: cp.hotelId || null,
       startDate: val || null,
       endDate: endDate || null,
@@ -214,6 +227,9 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     const payload = {
       ...cp,
       budgetUplift: normalizeUplift(cp.budgetUplift),
+      lunchDurationMinutes: resolveLunchWindow(cp).durationMinutes,
+      lunchStart: resolveLunchWindow(cp).lunchStart,
+      lunchEnd: resolveLunchWindow(cp).lunchEnd,
       hotelId: cp.hotelId || null,
       startDate: startDate || null,
       endDate: val || null,
@@ -345,143 +361,59 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
         )}
       </div>
 
-      {/* Lunch time */}
+      {/* Lunch break — duration only, applied to every day */}
       <div className={sectionCls}>
         <div className="flex items-center justify-between mb-1">
-          <span className={labelCls}>Lunch Time</span>
+          <span className={labelCls}>Lunch Break</span>
           <span className={`text-[10px] font-medium ${darkMode ? "text-amber-400" : "text-amber-700"}`}>
-            {cp.lunchStart || '13:00'} – {cp.lunchEnd || '14:00'} ({(function(){
-              if (!cp.lunchStart || !cp.lunchEnd) return 60;
-              const [h1, m1] = cp.lunchStart.split(':').map(Number);
-              const [h2, m2] = cp.lunchEnd.split(':').map(Number);
-              const diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-              return diff > 0 ? diff : 60;
-            })()} mins)
+            {lunchWindow.lunchStart} – {lunchWindow.lunchEnd}
           </span>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className={`text-xs ${darkMode ? "text-slate-400" : "text-gray-600"} w-20 shrink-0`}>Start Time</span>
-            <input
-              type="time"
-              value={cp.lunchStart || "13:00"}
-              onChange={e => {
-                const newStart = e.target.value;
-                const [h1, m1] = (cp.lunchStart || '13:00').split(':').map(Number);
-                const [h2, m2] = (cp.lunchEnd || '14:00').split(':').map(Number);
-                const curMins = Math.max(15, (h2 * 60 + m2) - (h1 * 60 + m1) || 60);
+        <div className="flex items-center gap-2">
+          <span className={`text-xs ${darkMode ? "text-slate-400" : "text-gray-600"} w-20 shrink-0`}>Duration</span>
+          <div className="flex items-center gap-1 flex-1">
+            <button
+              type="button"
+              onClick={() => set("lunchDurationMinutes", Math.max(0, lunchWindow.durationMinutes - 15))}
+              className={`w-8 h-8 rounded border flex items-center justify-center font-bold text-base transition-colors ${
+                darkMode ? "bg-slate-800 border-slate-700 text-slate-200 hover:bg-amber-600 hover:text-white" : "bg-gray-100 border-gray-300 text-slate-800 hover:bg-amber-500 hover:text-white"
+              }`}
+              title="Decrease lunch duration by 15 mins"
+            >
+              -
+            </button>
 
-                const [sH, sM] = (newStart || '13:00').split(':').map(Number);
-                const total = (sH || 0) * 60 + (sM || 0) + curMins;
-                const endH = Math.floor(total / 60) % 24;
-                const endM = total % 60;
-                const newEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-
-                set("lunchStart", newStart);
-                set("lunchEnd", newEnd);
-              }}
-              className={inputCls}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className={`text-xs ${darkMode ? "text-slate-400" : "text-gray-600"} w-20 shrink-0`}>Duration</span>
-            <div className="flex items-center gap-1 flex-1">
-              <button
-                type="button"
-                onClick={() => {
-                  const [h1, m1] = (cp.lunchStart || '13:00').split(':').map(Number);
-                  const [h2, m2] = (cp.lunchEnd || '14:00').split(':').map(Number);
-                  const curMins = Math.max(15, (h2 * 60 + m2) - (h1 * 60 + m1) || 60);
-                  const newMins = Math.max(15, curMins - 15);
-
-                  const [sH, sM] = (cp.lunchStart || '13:00').split(':').map(Number);
-                  const total = (sH || 0) * 60 + (sM || 0) + newMins;
-                  const endH = Math.floor(total / 60) % 24;
-                  const endM = total % 60;
-                  const newEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-
-                  set("lunchEnd", newEnd);
-                }}
-                className={`w-8 h-8 rounded border flex items-center justify-center font-bold text-base transition-colors ${
-                  darkMode ? "bg-slate-800 border-slate-700 text-slate-200 hover:bg-amber-600 hover:text-white" : "bg-gray-100 border-gray-300 text-slate-800 hover:bg-amber-500 hover:text-white"
-                }`}
-                title="Decrease lunch duration by 15 mins"
-              >
-                -
-              </button>
-
-              <div className="relative flex-1">
-                <input
-                  type="number"
-                  min="15"
-                  step="15"
-                  value={(function(){
-                    if (!cp.lunchStart || !cp.lunchEnd) return 60;
-                    const [h1, m1] = cp.lunchStart.split(':').map(Number);
-                    const [h2, m2] = cp.lunchEnd.split(':').map(Number);
-                    const diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-                    return diff > 0 ? diff : 60;
-                  })()}
-                  onChange={e => {
-                    const newMins = Math.max(15, Number(e.target.value) || 15);
-                    const [sH, sM] = (cp.lunchStart || '13:00').split(':').map(Number);
-                    const total = (sH || 0) * 60 + (sM || 0) + newMins;
-                    const endH = Math.floor(total / 60) % 24;
-                    const endM = total % 60;
-                    const newEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-
-                    set("lunchEnd", newEnd);
-                  }}
-                  className={`${inputCls} text-center font-semibold pr-7`}
-                />
-                <span className="absolute right-2 top-1.5 text-[10px] text-gray-400 pointer-events-none">min</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const [h1, m1] = (cp.lunchStart || '13:00').split(':').map(Number);
-                  const [h2, m2] = (cp.lunchEnd || '14:00').split(':').map(Number);
-                  const curMins = Math.max(15, (h2 * 60 + m2) - (h1 * 60 + m1) || 60);
-                  const newMins = curMins + 15;
-
-                  const [sH, sM] = (cp.lunchStart || '13:00').split(':').map(Number);
-                  const total = (sH || 0) * 60 + (sM || 0) + newMins;
-                  const endH = Math.floor(total / 60) % 24;
-                  const endM = total % 60;
-                  const newEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-
-                  set("lunchEnd", newEnd);
-                }}
-                className={`w-8 h-8 rounded border flex items-center justify-center font-bold text-base transition-colors ${
-                  darkMode ? "bg-slate-800 border-slate-700 text-slate-200 hover:bg-amber-600 hover:text-white" : "bg-gray-100 border-gray-300 text-slate-800 hover:bg-amber-500 hover:text-white"
-                }`}
-                title="Increase lunch duration by 15 mins"
-              >
-                +
-              </button>
+            <div className="relative flex-1">
+              <input
+                type="number"
+                min="0"
+                step="15"
+                value={lunchWindow.durationMinutes}
+                onChange={e => set("lunchDurationMinutes", Math.max(0, Number(e.target.value) || 0))}
+                className={`${inputCls} text-center font-semibold pr-7`}
+              />
+              <span className="absolute right-2 top-1.5 text-[10px] text-gray-400 pointer-events-none">min</span>
             </div>
+
+            <button
+              type="button"
+              onClick={() => set("lunchDurationMinutes", lunchWindow.durationMinutes + 15)}
+              className={`w-8 h-8 rounded border flex items-center justify-center font-bold text-base transition-colors ${
+                darkMode ? "bg-slate-800 border-slate-700 text-slate-200 hover:bg-amber-600 hover:text-white" : "bg-gray-100 border-gray-300 text-slate-800 hover:bg-amber-500 hover:text-white"
+              }`}
+              title="Increase lunch duration by 15 mins"
+            >
+              +
+            </button>
           </div>
         </div>
 
-        {tripDates.length > 0 && (
-          <details className="mt-2">
-            <summary className={`cursor-pointer text-[10px] ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
-              Override per day
-            </summary>
-            <div className="mt-2 space-y-1.5">
-              {tripDates.map(date => (
-                <div key={date} className="flex items-center gap-2">
-                  <span className={`w-24 shrink-0 text-[11px] ${darkMode ? "text-slate-400" : "text-gray-500"}`}>{date}</span>
-                  <input type="time" placeholder="start" value={getOverride(date, "lunchStart")} onChange={e => setOverride(date, "lunchStart", e.target.value)} className={inputCls} />
-                  <input type="time" placeholder="end" value={getOverride(date, "lunchEnd")} onChange={e => setOverride(date, "lunchEnd", e.target.value)} className={inputCls} />
-                </div>
-              ))}
-            </div>
-          </details>
-        )}
+        <p className={`text-[10px] mt-1 ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
+          {lunchWindow.durationMinutes === 0
+            ? "No lunch break — activities run straight through the day."
+            : `Applied to every day. The break is centred in the activity window (${cp.activityStartTime || "09:00"}–${cp.activityEndTime || "19:00"}), so it moves with your start and end times.`}
+        </p>
       </div>
 
       {/* Hotel */}

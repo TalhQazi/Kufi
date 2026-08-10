@@ -21,6 +21,10 @@ export default function ItineraryView({
     const [isSavingAdjustment, setIsSavingAdjustment] = useState(false)
     const [loading, setLoading] = useState(true)
     const [loadError, setLoadError] = useState(null)
+    // The booking this itinerary belongs to. Adjustment requests are recorded against the
+    // booking, and when the itinerary is opened from history there is no `request` object
+    // to take the id from — so it is captured here as the record loads.
+    const [resolvedBookingId, setResolvedBookingId] = useState(null)
     const dropdownRef = useRef(null)
 
     const isBookingRequest = Boolean(request && (Array.isArray(request?.items) || request?.tripDetails || request?.contactDetails))
@@ -218,6 +222,7 @@ export default function ItineraryView({
                         setTripData(formatTripData(match, request))
                         setDays(match.days || [])
                         setExtraFields(Array.isArray(match.extraFields) ? match.extraFields : [])
+                        setResolvedBookingId(String(match.bookingId?._id || match.bookingId || ''))
                     }
 
                     setLoading(false)
@@ -249,6 +254,7 @@ export default function ItineraryView({
                     setTripData(formatTripData(record, request))
                     setDays(record.days || [])
                     setExtraFields(Array.isArray(record.extraFields) ? record.extraFields : [])
+                    setResolvedBookingId(String(record.bookingId?._id || record.bookingId || ''))
                 } else {
                     setLoadError(new Error('Itinerary not found'))
                 }
@@ -295,24 +301,44 @@ export default function ItineraryView({
                 },
             }
 
+            // Prefer the booking this itinerary belongs to. `bookingKey` falls back to the
+            // itinerary id when the itinerary was opened from history rather than from the
+            // request list, and that id does not identify a booking.
+            const targetId = String(
+                resolvedBookingId ||
+                request?.id ||
+                request?._id ||
+                bookingKey ||
+                ''
+            )
+
+            if (!targetId) {
+                alert('Could not identify this trip. Please reopen it from My Trips and try again.')
+                return
+            }
+
+            // The server is the source of truth. This used to be wrapped in a catch that
+            // only logged, so a failed request still showed "Adjustment request sent!" and
+            // the supplier never received anything.
+            await api.patch(`/bookings/${encodeURIComponent(targetId)}/adjustment`, {
+                card: record.card,
+            })
+
+            // Only cache locally once the write has actually succeeded.
             const list = readAdjustmentStore()
             const next = [record, ...list.filter((x) => String(x?.bookingId || '') !== bookingKey)]
             writeAdjustmentStore(next)
 
-            try {
-                await api.patch(`/bookings/${encodeURIComponent(String(bookingKey))}/adjustment`, {
-                    card: record.card,
-                })
-            } catch (e) {
-                console.error('Failed to persist adjustment request to backend:', e?.response?.data || e)
-            }
-
-            alert('Adjustment request sent!')
+            alert('Adjustment request sent to your travel partner.')
             setIsAdjusting(false)
             onRequestAdjustment && onRequestAdjustment(record)
         } catch (error) {
             console.error('Error saving adjustment request:', error)
-            alert('Failed to send adjustment request')
+            const msg =
+                error?.response?.data?.message ||
+                error?.response?.data?.msg ||
+                'Could not send the adjustment request. Please try again.'
+            alert(msg)
         } finally {
             setIsSavingAdjustment(false)
         }
