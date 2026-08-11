@@ -83,8 +83,30 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     return toDateString(end) || "";
   });
 
-  const country = itinerary?.country || itinerary?.tripData?.country || "";
-  const city = itinerary?.city || itinerary?.tripData?.city || itinerary?.destination || "";
+  /**
+   * Where to look for hotels.
+   *
+   * Most itineraries store only `destination` — `country` and `city` are usually empty.
+   * The old derivation put `destination` into the CITY slot, so the panel asked for
+   * `?city=Lebanon` and the hotel endpoint, which matches city exactly, returned nothing.
+   * The dropdown looked broken when the hotels were simply filed under real city names
+   * ("Beirut City", "Baalbek", …).
+   *
+   * `destination` is therefore treated as a country hint, and the city is only sent when
+   * it is genuinely a city — i.e. it differs from the country/destination.
+   */
+  const country =
+    itinerary?.country ||
+    itinerary?.tripData?.country ||
+    request?.tripDetails?.country ||
+    itinerary?.destination ||
+    "";
+
+  const cityCandidate = itinerary?.city || itinerary?.tripData?.city || "";
+  const city =
+    cityCandidate && cityCandidate.trim().toLowerCase() !== String(country).trim().toLowerCase()
+      ? cityCandidate
+      : "";
 
   const seededForRef = useRef(null);
   // Set the moment the supplier changes anything. Their edits must never be overwritten

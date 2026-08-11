@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Coffee } from "lucide-react";
+import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Coffee, Car } from "lucide-react";
 import api, { getApiBaseUrl, getAuthToken } from "../../api";
 import { notifyItineraryWorkflowChanged } from "../../constants/itineraryLabels";
 import { countActivities, sumActivityPrices, isBreakEntry } from "../../utils/activityClassification";
@@ -219,6 +219,23 @@ function ScheduleBreakRow({ activity, darkMode }) {
       <span className={`ml-auto text-[10px] ${darkMode ? "text-slate-500" : "text-amber-700/70"}`}>
         Set by the Control Panel
       </span>
+    </div>
+  );
+}
+
+/**
+ * The journey between two consecutive stops.
+ *
+ * Travel time is reserved in the schedule, which leaves a gap between one activity
+ * ending and the next beginning. Unlabelled, that gap just looks like a scheduling bug —
+ * this says what it is.
+ */
+function TravelLegRow({ minutes, darkMode }) {
+  return (
+    <div className={`flex items-center gap-2 px-3 py-1 text-[10px] ${darkMode ? "text-slate-500" : "text-slate-400"}`}>
+      <Car className="h-3 w-3 shrink-0" />
+      <span>{minutes} min travel</span>
+      <span className="flex-1 border-t border-dashed border-current opacity-30" />
     </div>
   );
 }
@@ -427,9 +444,11 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, on
             if (isBreakEntry(act)) {
               return <ScheduleBreakRow key={act.id} activity={act} darkMode={darkMode} />;
             }
+            const travel = Number(act.travelFromPreviousMinutes) || 0;
             return (
+              <Fragment key={act.id}>
+                {travel > 0 && <TravelLegRow minutes={travel} darkMode={darkMode} />}
               <SortableActivityCard
-                key={act.id}
                 activity={act}
                 activityIndex={activityRanks.get(act.id) ?? 0}
                 dayIndex={day.day - 1}
@@ -439,6 +458,7 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, on
                 onMoveUp={onMoveActivityUp}
                 onMoveDown={onMoveActivityDown}
               />
+              </Fragment>
             );
           })}
         </SortableContext>
@@ -448,6 +468,13 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, on
           </p>
         )}
       </div>
+
+      {Number(day.overrunMinutes) > 0 && (
+        <p className={`text-[10px] mt-1 ${darkMode ? "text-amber-400" : "text-amber-700"}`}>
+          Runs {day.overrunMinutes} min past your activity end time — travel between stops
+          does not fit the configured window.
+        </p>
+      )}
 
       {dayTotal > 0 && (
         <p className={`text-[10px] text-right mt-2 font-medium ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
