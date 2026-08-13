@@ -922,6 +922,22 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     );
   }
 
+  /**
+   * Pick the best representation of the chosen hotel.
+   *
+   * Prefers a freshly resolved object, then a previously resolved object for the same id,
+   * and only then the bare id.
+   */
+  function resolveHotelValue(previous, selectedHotel, nextId) {
+    if (selectedHotel) return selectedHotel;
+    if (!nextId) return nextId ?? null;
+    const previousId = previous?._id || previous;
+    if (previous && typeof previous === "object" && String(previousId) === String(nextId)) {
+      return previous;
+    }
+    return nextId;
+  }
+
   const handleControlPanelChange = useCallback((updatedCp, selectedHotel) => {
     setItinerary((prev) => {
       if (!prev) return prev;
@@ -932,7 +948,11 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         controlPanel: {
           ...(prev.controlPanel || {}),
           ...updatedCp,
-          hotelId: selectedHotel || updatedCp.hotelId,
+          // Keep the resolved hotel OBJECT — the summary needs `pricePerNight`. The
+          // lookup can transiently miss (the hotel list loads asynchronously), so fall
+          // back to the object already held for the same id rather than downgrading to a
+          // bare string and silently zeroing the hotel cost.
+          hotelId: resolveHotelValue(prev.controlPanel?.hotelId, selectedHotel, updatedCp.hotelId),
         },
       };
     });

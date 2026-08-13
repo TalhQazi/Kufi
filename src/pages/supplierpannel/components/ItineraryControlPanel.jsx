@@ -160,8 +160,6 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     isDirtyRef.current = true;
     setCp(prev => {
       const next = { ...prev, [key]: value };
-      const selectedHotel = hotels.find(h => h._id === next.hotelId) || null;
-      onChange?.(next, selectedHotel);
       return next;
     });
   };
@@ -173,8 +171,6 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
         c.id === id ? { ...c, [field]: field === "amount" ? Number(value) || 0 : value } : c
       );
       const next = { ...prev, customCosts };
-      const selectedHotel = hotels.find((h) => h._id === next.hotelId) || null;
-      onChange?.(next, selectedHotel);
       return next;
     });
   };
@@ -183,8 +179,6 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     isDirtyRef.current = true;
     setCp((prev) => {
       const next = { ...prev, customCosts: [...(prev.customCosts || []), newCustomCost()] };
-      const selectedHotel = hotels.find((h) => h._id === next.hotelId) || null;
-      onChange?.(next, selectedHotel);
       return next;
     });
   };
@@ -193,8 +187,6 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     isDirtyRef.current = true;
     setCp((prev) => {
       const next = { ...prev, customCosts: (prev.customCosts || []).filter((c) => c.id !== id) };
-      const selectedHotel = hotels.find((h) => h._id === next.hotelId) || null;
-      onChange?.(next, selectedHotel);
       return next;
     });
   };
@@ -217,8 +209,6 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
         overrides.push({ date, [field]: value });
       }
       const next = { ...prev, perDayOverrides: overrides };
-      const selectedHotel = hotels.find(h => h._id === next.hotelId) || null;
-      onChange?.(next, selectedHotel);
       return next;
     });
   }
@@ -236,7 +226,13 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     datesRef.current = { startDate, endDate };
   }, [cp, startDate, endDate]);
 
-  // Pass changes to parent component without saving to backend yet
+  // Single place that pushes state up.
+  //
+  // These updates used to also fire from inside the `setCp` updaters. Calling a parent's
+  // setState from within a state updater is a side effect in what must be a pure
+  // function — React StrictMode invokes updaters twice, so the parent could be updated
+  // from a stale value, or mid-render. The symptom was a selection (the hotel dropdown
+  // most visibly) appearing not to register until something else in the panel changed.
   useEffect(() => {
     const payload = {
       ...cp,
@@ -301,8 +297,6 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
         unit: unit === "per_day" ? "per_day" : "flat",
       };
       const next = { ...prev, customCosts: [...(prev.customCosts || []), newCost] };
-      const selectedHotel = hotels.find((h) => h._id === next.hotelId) || null;
-      onChange?.(next, selectedHotel);
       return next;
     });
   };
