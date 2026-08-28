@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import api from '../../api'
+import api, { resolveActivityImage } from '../../api'
 import Footer from '../../components/layout/Footer'
 import ProfilePic from '../../components/ui/ProfilePic'
 
@@ -29,37 +29,20 @@ export default function ItineraryView({
 
     const isBookingRequest = Boolean(request && (Array.isArray(request?.items) || request?.tripDetails || request?.contactDetails))
 
-    const coverImage =
-        request?.imageUrl ||
-        request?.image ||
-        request?.items?.[0]?.activity?.imageUrl ||
-        request?.items?.[0]?.activity?.images?.[0] ||
-        request?.items?.[0]?.activity?.image ||
-        request?.items?.[0]?.imageUrl ||
-        request?.items?.[0]?.image ||
-        '/assets/itinerary-hero.png'
-
     const [tripData, setTripData] = useState({
-        title: "Dubai Desert Safari & City Exploration",
-        duration: "7 Days / 6 Nights",
-        location: "Dubai, United Arab Emirates",
-        date: "10-15th Oct, 2024",
-        description: "It involves one or various nights of the itinerary and the carefully curated adventures. From the top of Burj Khalifa to the vast dunes of the desert safari, this trip is fully designed around innovative and outstanding and cultural ventures.",
-        adrenalineLevel: "Adrenaline factor",
-        category: "Adventure & Culture",
-        groupSize: "5 People"
+        title: '',
+        duration: '',
+        location: '',
+        date: '',
+        description: '',
+        adrenalineLevel: '',
+        category: '',
+        groupSize: '',
+        imageUrl: '',
+        image: '',
     })
 
-    const [days, setDays] = useState([
-        {
-            day: 1,
-            title: "Arrival & Orientation",
-            image: "/assets/hero-card1.jpeg",
-            morning: { title: "Morning", description: "Arrive at Tribhuvan International Airport..." },
-            afternoon: { title: "Afternoon", description: "Orientation and gears checking..." },
-            evening: { title: "Evening", description: "Welcome dinner..." }
-        }
-    ])
+    const [days, setDays] = useState([])
     const [extraFields, setExtraFields] = useState([])
 
     const bookingKey = String(request?.id || request?._id || itineraryId || '')
@@ -199,8 +182,30 @@ export default function ItineraryView({
             date: dateLabel,
             description,
             status: data?.status || reqData?.status || 'Pending',
+            imageUrl: data?.imageUrl || raw?.imageUrl || '',
+            image: data?.image || raw?.image || '',
         };
     };
+
+    const coverImage = resolveActivityImage(
+        tripData,
+        days[0],
+        days[0]?.activities?.[0],
+        request?.items?.[0]?.activity,
+        request,
+    )
+
+    const dayHeading = (day) => {
+        if (day?.title) return day.title
+        if (day?.dayName) return day.date ? `${day.dayName} — ${day.date}` : day.dayName
+        const first = (Array.isArray(day?.activities) ? day.activities : []).find((a) => a?.title && !a.isBreak)
+        if (first?.title) return first.title
+        if (day?.isArrivalDay) return 'Arrival'
+        if (day?.isDepartureDay) return 'Departure'
+        return `Day ${day?.day || ''}`
+    }
+
+    const dayPhoto = (day) => resolveActivityImage(day, day?.activities?.[0])
 
     useEffect(() => {
         const loadFromBooking = () => {
@@ -377,11 +382,9 @@ export default function ItineraryView({
         const nextDayNumber = days.length + 1
         const newDay = {
             day: nextDayNumber,
-            title: `New Adventure - Day ${nextDayNumber}`,
-            image: "/assets/hero-card1.jpeg",
-            morning: { title: "Description", description: "Describe the morning activities here..." },
-            afternoon: { title: "Location", description: "Add the location details here..." },
-            evening: { title: "Cost", description: "Add the estimated cost here..." }
+            title: `Day ${nextDayNumber}`,
+            image: '',
+            activities: [],
         }
         setDays([...days, newDay])
     }
@@ -547,12 +550,21 @@ export default function ItineraryView({
 
             <main className="pb-24">
                 <div className="max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-20 pt-6 sm:pt-8">
-                    <div className="w-full h-[200px] sm:h-[280px] md:h-[320px] relative rounded-2xl sm:rounded-3xl overflow-hidden">
-                        <img
-                            src={coverImage}
-                            alt="Trip Cover"
-                            className="w-full h-full object-cover"
-                        />
+                    <div className="w-full h-[200px] sm:h-[280px] md:h-[320px] relative rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-200">
+                        {coverImage ? (
+                            <img
+                                src={coverImage}
+                                alt={tripData.title || 'Trip cover'}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none'
+                                }}
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-sm text-slate-500">
+                                {tripData.title || 'Itinerary'}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -713,77 +725,107 @@ export default function ItineraryView({
                     <section className="mb-8 sm:mb-12">
                         <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4 sm:mb-6">Day-by-Day Itinerary</h2>
                         <div className="space-y-4 sm:space-y-6">
-                            {days.map((day, index) => (
-                                <div key={index} className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                            {days.length === 0 ? (
+                                <p className="text-sm text-slate-500">No days have been added to this itinerary yet.</p>
+                            ) : days.map((day, index) => {
+                                const photo = dayPhoto(day)
+                                return (
+                                <div key={day.date || day.day || index} className="bg-white border border-slate-200 rounded-lg overflow-hidden">
                                     <div className="flex flex-col md:flex-row">
-                                        <div className="md:w-1/2 h-48 sm:h-64 md:h-72 relative">
-                                            <img
-                                                src={day.image || "/assets/hero-card1.jpeg"}
-                                                alt={day.title}
-                                                className="w-full h-full object-cover"
-                                            />
+                                        <div className="md:w-1/2 h-48 sm:h-64 md:h-72 relative bg-slate-200">
+                                            {photo ? (
+                                                <img
+                                                    src={photo}
+                                                    alt={dayHeading(day)}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.currentTarget.style.display = 'none'
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-sm text-slate-500 px-4 text-center">
+                                                    {dayHeading(day)}
+                                                </div>
+                                            )}
                                             <div className="absolute top-3 sm:top-4 left-3 sm:left-4 bg-[#A67C52] text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-bold">
                                                 Day {day.day}
                                             </div>
                                         </div>
 
                                         <div className="md:w-1/2 p-4 sm:p-6 relative">
-                                            <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-4 sm:mb-5">{day.title}</h3>
+                                            <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1">{dayHeading(day)}</h3>
+                                            {(day.date || day.dayName) && (
+                                                <p className="text-xs text-slate-500 mb-4">{[day.dayName, day.date].filter(Boolean).join(' · ')}</p>
+                                            )}
 
                                             <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1">
                                                 {Array.isArray(day.activities) && day.activities.length > 0 ? (
-                                                    day.activities.map((act, aIdx) => (
-                                                        <div key={act.id || aIdx} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0 space-y-1.5">
-                                                            <div className="flex items-center justify-between">
-                                                                <p className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-[#A67C52]/10 text-[#A67C52]">#{aIdx + 1}</span>
-                                                                    <span>{act.title || 'Activity'}</span>
-                                                                </p>
-                                                                {(act.startTime || act.endTime) && (
-                                                                    <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                                                                        {act.startTime || ''} {act.endTime ? `– ${act.endTime}` : ''}
-                                                                    </span>
-                                                                )}
-                                                            </div>
+                                                    day.activities.map((act, aIdx) => {
+                                                        const actPhoto = resolveActivityImage(act)
+                                                        return (
+                                                        <div key={act.activityId || act.id || aIdx} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0 space-y-1.5">
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+                                                                    {actPhoto ? (
+                                                                        <img
+                                                                            src={actPhoto}
+                                                                            alt={act.title || 'Activity'}
+                                                                            className="w-full h-full object-cover"
+                                                                            onError={(e) => {
+                                                                                e.currentTarget.style.display = 'none'
+                                                                            }}
+                                                                        />
+                                                                    ) : null}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center justify-between gap-2">
+                                                                        <p className="text-xs font-bold text-slate-900 flex items-center gap-1.5 min-w-0">
+                                                                            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-[#A67C52]/10 text-[#A67C52] shrink-0">#{aIdx + 1}</span>
+                                                                            <span className="truncate">{act.title || 'Activity'}</span>
+                                                                        </p>
+                                                                        {(act.startTime || act.endTime) && (
+                                                                            <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">
+                                                                                {act.startTime || ''} {act.endTime ? `– ${act.endTime}` : ''}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
 
-                                                            <div className="flex items-start gap-2 text-xs">
-                                                                <span className="font-bold text-slate-700 min-w-[75px] shrink-0">Description:</span>
-                                                                <span className="text-slate-600 leading-relaxed">{act.description || 'Included in day itinerary'}</span>
-                                                            </div>
+                                                                    <div className="flex items-start gap-2 text-xs mt-1.5">
+                                                                        <span className="font-bold text-slate-700 min-w-[75px] shrink-0">Description:</span>
+                                                                        <span className="text-slate-600 leading-relaxed">{act.description || '—'}</span>
+                                                                    </div>
 
-                                                            <div className="flex items-start gap-2 text-xs">
-                                                                <span className="font-bold text-slate-700 min-w-[75px] shrink-0">Location:</span>
-                                                                <span className="text-slate-600">{act.location || tripData.location || 'Included in destination'}</span>
-                                                            </div>
+                                                                    <div className="flex items-start gap-2 text-xs">
+                                                                        <span className="font-bold text-slate-700 min-w-[75px] shrink-0">Location:</span>
+                                                                        <span className="text-slate-600">{act.location || tripData.location || '—'}</span>
+                                                                    </div>
 
-                                                            <div className="flex items-start gap-2 text-xs">
-                                                                <span className="font-bold text-slate-700 min-w-[75px] shrink-0">Cost:</span>
-                                                                <span className="text-emerald-700 font-semibold">
-                                                                    {act.price != null && act.price !== '' ? `$${act.price}` : 'Included in Package'}
-                                                                </span>
+                                                                    <div className="flex items-start gap-2 text-xs">
+                                                                        <span className="font-bold text-slate-700 min-w-[75px] shrink-0">Cost:</span>
+                                                                        <span className="text-emerald-700 font-semibold">
+                                                                            {act.price != null && act.price !== '' ? `$${act.price}` : 'Included in Package'}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    ))
+                                                        )
+                                                    })
                                                 ) : (
-                                                    ['morning', 'afternoon', 'evening'].map((time) => (
-                                                        <div key={time} className="flex items-start gap-3">
-                                                            <div className="mt-1">
-                                                                {time === 'morning' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2"><circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>}
-                                                                {time === 'afternoon' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2"><circle cx="12" cy="12" r="5" /><path d="M12 1v2" /></svg>}
-                                                                {time === 'evening' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A67C52" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>}
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <p className="text-xs font-bold text-slate-900 mb-1">{time === 'morning' ? 'Description' : time === 'afternoon' ? 'Location' : 'Cost'}</p>
-                                                                <p className="text-xs text-slate-600 leading-relaxed">{day[time]?.description || 'Included in itinerary'}</p>
-                                                            </div>
-                                                        </div>
-                                                    ))
+                                                    <p className="text-xs text-slate-500">
+                                                        {day.isArrivalDay
+                                                            ? (day.arrivalNote || 'Arrival day — no activities scheduled.')
+                                                            : day.isDepartureDay
+                                                                ? (day.departureNote || 'Departure day — no activities scheduled.')
+                                                                : 'No activities scheduled for this day.'}
+                                                    </p>
                                                 )}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     </section>
 

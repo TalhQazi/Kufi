@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ArrowRight, Search, Eye, Check, X, Trash2, Pencil, MapPin } from "lucide-react";
-import api from "../../api";
+import api, { resolveActivityImage } from "../../api";
 import AddActivity from "./add-activity";
 
 const ListingThumb = ({ src, alt, sizeClass = "w-12 h-12" }) => {
@@ -91,7 +91,7 @@ const Activity = ({ onAddNew }) => {
       const transformedListings = data.map(item => ({
         id: item?._id,
         listing: item?.title || item?.name || 'Untitled activity',
-        image: item?.image || null,
+        image: resolveActivityImage(item) || null,
         provider: item?.supplierName || 'Kufi Partner',
         category: item?.category || 'Activity',
         location: item?.location || 'N/A',

@@ -856,6 +856,7 @@ const SupplierRequests = ({
           ...overviewItinerary, 
           startDate: localCPData?.startDate || overviewItinerary?.startDate,
           endDate: localCPData?.endDate || overviewItinerary?.endDate,
+          numberOfTravelers: localCPData?.numberOfTravelers || overviewItinerary?.numberOfTravelers,
           controlPanel: {
             ...overviewItinerary?.controlPanel,
             ...localCPData

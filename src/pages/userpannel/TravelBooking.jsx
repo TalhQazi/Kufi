@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
-import api from '../../api'
+import api, { resolveActivityImage } from '../../api'
 import Footer from '../../components/layout/Footer'
 import ProfilePic from '../../components/ui/ProfilePic'
 
@@ -494,7 +494,7 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 shadow-sm border border-white">
                                                     <img
-                                                        src={activity.image || activity.imageUrl || activity.images?.[0] || activity.Picture || "/assets/activity1.jpeg"}
+                                                        src={resolveActivityImage(activity) || "/assets/activity1.jpeg"}
                                                         alt={activity.title}
                                                         className="w-full h-full object-cover"
                                                     />

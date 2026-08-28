@@ -529,11 +529,34 @@ const SupplierBookings = ({ darkMode, onResumeDraft, onRemoveDraft }) => {
               <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl border ${darkMode ? "bg-slate-800/50 border-slate-700" : "bg-gray-50 border-gray-200"}`}>
                 <div>
                   <h4 className="text-xs font-semibold text-[#a26e35] uppercase mb-1">Accommodation</h4>
-                  <p className="text-sm font-bold">{viewItinerary.controlPanel?.hotelId?.name || "Not specified"}</p>
-                  {viewItinerary.controlPanel?.hotelId?.pricePerNight && (
-                    <p className={`text-xs ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
-                      ${viewItinerary.controlPanel.hotelId.pricePerNight}/night • {viewItinerary.controlPanel.numberOfRooms || 1} room(s)
-                    </p>
+                  {Array.isArray(viewItinerary.controlPanel?.hotelStays) && viewItinerary.controlPanel.hotelStays.length > 0 ? (
+                    <div className="space-y-1">
+                      {viewItinerary.controlPanel.hotelStays.map((stay, i) => {
+                        const hotel = stay.hotelId?.name ? stay.hotelId : stay.hotelId;
+                        const name = hotel?.name || "Hotel";
+                        const rate = hotel?.pricePerNight;
+                        return (
+                          <p key={stay.id || i} className="text-sm font-bold">
+                            {name}
+                            {stay.area ? ` (${stay.area})` : ""}
+                            {rate ? ` — $${rate}/night` : ""}
+                            {stay.nights ? ` × ${stay.nights}n` : ""}
+                          </p>
+                        );
+                      })}
+                      <p className={`text-xs ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                        {viewItinerary.controlPanel.numberOfRooms || 1} room(s)
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm font-bold">{viewItinerary.controlPanel?.hotelId?.name || "Not specified"}</p>
+                      {viewItinerary.controlPanel?.hotelId?.pricePerNight && (
+                        <p className={`text-xs ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
+                          ${viewItinerary.controlPanel.hotelId.pricePerNight}/night • {viewItinerary.controlPanel.numberOfRooms || 1} room(s)
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
                 <div>

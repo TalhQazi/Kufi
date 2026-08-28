@@ -67,6 +67,60 @@ export function resolveAssetUrl(value) {
     return `${origin}${raw}`;
 }
 
+const STATIC_PLACEHOLDER_RE = /\/assets\/|unsplash\.com|placeholder/i;
+const MONGO_ID_RE = /^[a-f0-9]{24}$/i;
+
+/** Public path for the stored activity photo (binary or redirect). */
+export function activityImagePath(activityId) {
+    const id = String(activityId || '').trim();
+    if (!id || id === 'null' || id === 'undefined' || !MONGO_ID_RE.test(id)) return '';
+    return `/api/activities/${id}/image`;
+}
+
+function firstStoredImage(obj) {
+    if (!obj || typeof obj !== 'object') return '';
+    const candidates = [
+        obj.imageUrl,
+        obj.image,
+        Array.isArray(obj.images) ? obj.images[0] : '',
+        obj.Picture,
+    ];
+    for (const candidate of candidates) {
+        const raw = String(candidate || '').trim();
+        if (raw && !STATIC_PLACEHOLDER_RE.test(raw)) return raw;
+    }
+    return '';
+}
+
+/**
+ * Resolve a picture from an activity, itinerary day, or raw URL.
+ *
+ * List endpoints omit the base64 `image` blob on purpose. When an activity id is
+ * present, this prefers `GET /api/activities/:id/image`, which reads `image` or
+ * `images[0]` from the database. Bundled `/assets/` and Unsplash placeholders
+ * are ignored so a missing DB photo never falls back to a static Dubai shot.
+ */
+export function resolveActivityImage(...sources) {
+    for (const src of sources) {
+        if (!src) continue;
+        if (typeof src === 'string') {
+            const raw = src.trim();
+            if (!raw || STATIC_PLACEHOLDER_RE.test(raw)) continue;
+            const url = resolveAssetUrl(raw);
+            if (url) return url;
+            continue;
+        }
+        const viaApi = activityImagePath(src.activityId || src._id || src.id);
+        if (viaApi) return resolveAssetUrl(viaApi);
+        const direct = firstStoredImage(src);
+        if (direct) {
+            const url = resolveAssetUrl(direct);
+            if (url) return url;
+        }
+    }
+    return '';
+}
+
 /** Fired when the backend rejects our token, so the app can drop to a logged-out state. */
 export const SESSION_EXPIRED_EVENT = 'kufi_session_expired';
 

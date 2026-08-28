@@ -3,6 +3,7 @@ import { loadStripe } from '@stripe/stripe-js'
 import api from '../../api'
 import PaymentSuccessModal from './PaymentSuccessModal.jsx'
 import { countableActivities } from '../../utils/activityClassification'
+import { normalizeHotelStays, hotelCostFromStays } from '../../utils/hotelStays'
 import Footer from '../../components/layout/Footer'
 
 export default function Payment({ bookingData, onBack, onForward, canGoBack, canGoForward, onNotificationClick, onHomeClick, hideHeaderFooter = false }) {
@@ -177,7 +178,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
             return sum + countableActivities(d).reduce((s, a) => s + (Number(a.price || a.cost || 0) || 0), 0);
         }, 0);
 
-        // Calculate hotel cost
+        // Calculate hotel cost (one or more stays for the destination country)
         const controlPanel = itinerary?.controlPanel;
         const hotelData = controlPanel?.hotelId;
         const startDate = itinerary?.startDate || activeBookingData?.startDate || activeBookingData?.tripDetails?.arrivalDate;
@@ -189,8 +190,18 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
             const a = new Date(startDate), b = new Date(endDate);
             const nights = Math.max(0, Math.round((b - a) / (1000 * 60 * 60 * 24)));
             tripDays = Math.max(1, nights + 1);
-            if (hotelData?.pricePerNight) {
-                const rooms = controlPanel?.numberOfRooms || 1;
+            const rooms = controlPanel?.numberOfRooms || 1;
+            const stays = normalizeHotelStays(controlPanel);
+            const hotelsById = {};
+            if (hotelData && typeof hotelData === 'object' && hotelData._id) {
+                hotelsById[String(hotelData._id)] = hotelData;
+            }
+            stays.forEach((stay) => {
+                if (stay.hotel?._id) hotelsById[String(stay.hotel._id)] = stay.hotel;
+            });
+            if (stays.length) {
+                hotelCost = hotelCostFromStays(stays, hotelsById, rooms, nights);
+            } else if (hotelData?.pricePerNight) {
                 hotelCost = hotelData.pricePerNight * nights * rooms;
             }
         }

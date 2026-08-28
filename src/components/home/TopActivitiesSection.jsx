@@ -1,4 +1,4 @@
-import api from "../../api";
+import api, { resolveActivityImage } from "../../api";
 import { useState, useEffect } from 'react'
 import { FiMapPin, FiStar } from 'react-icons/fi'
 
@@ -37,11 +37,7 @@ export default function TopActivitiesSection({ onActivityClick }) {
                 const response = await api.get(`/activities?limit=${TOTAL_CARDS}`);
                 const allActivities = Array.isArray(response.data) ? response.data : [];
 
-                const getImage = (act, fallback) => {
-                    return (act.images && act.images.length > 0 ? act.images[0] : null)
-                        || act.image
-                        || fallback;
-                };
+                const getImage = (act, fallback) => resolveActivityImage(act) || fallback;
 
                 if (allActivities.length >= LEFT_TILES) {
                     setLeftCards(allActivities.slice(0, LEFT_TILES).map(act => ({

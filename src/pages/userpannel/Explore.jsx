@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { FiUser } from 'react-icons/fi'
-import api from '../../api'
+import api, { resolveActivityImage } from '../../api'
 import Footer from '../../components/layout/Footer'
 import ProfilePic from '../../components/ui/ProfilePic'
 import './Explore.css'
@@ -654,7 +654,7 @@ export default function Explore({
                     >
                       <div className="relative explore-card-image-wrapper">
                         <img
-                          src={activity.imageUrl || activity.images?.[0] || activity.image || activity.Picture || "/assets/activity1.jpeg"}
+                          src={resolveActivityImage(activity) || "/assets/activity1.jpeg"}
                           alt={activity.title}
                           className="w-full h-full object-cover"
                         />
@@ -752,7 +752,7 @@ export default function Explore({
                   {selectedActivities.map(activity => (
                     <div key={activity.id} className="pb-3 border-b border-slate-200 last:border-0">
                       <div className="flex items-center gap-3 mb-2">
-                        <img src={activity.image || activity.imageUrl || activity.images?.[0] || activity.Picture || "/assets/activity1.jpeg"} alt={activity.title} className="w-16 h-16 rounded-lg object-cover" />
+                        <img src={resolveActivityImage(activity) || "/assets/activity1.jpeg"} alt={activity.title} className="w-16 h-16 rounded-lg object-cover" />
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm font-semibold text-slate-900 truncate">{activity.title}</h4>
                           <p className="text-xs text-slate-500 truncate">{activity.location}</p>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import api from '../../api'
+import api, { resolveActivityImage } from '../../api'
 import Footer from '../../components/layout/Footer'
 import ProfilePic from '../../components/ui/ProfilePic'
 
@@ -127,7 +127,7 @@ export default function ActivityDetail({
                         .slice(0, 4)
                         .map((a) => {
                             const id = a?._id || a?.id
-                            const image = a?.imageUrl || a?.images?.[0] || a?.image || a?.Picture || '/assets/dest-1.jpeg'
+                            const image = resolveActivityImage(a)
                             const title = a?.title || 'Activity'
                             const badge = a?.category || loadedActivity?.category || ''
                             const location = a?.location || a?.city?.name || a?.country?.name || 'Location'
@@ -222,7 +222,7 @@ export default function ActivityDetail({
 
     const hasAnyAddOns = Array.isArray(availableAddOnLabels) && availableAddOnLabels.length > 0
 
-    const activityImage = activity?.imageUrl || activity?.images?.[0] || activity?.image || "/assets/dest-1.jpeg"
+    const activityImage = resolveActivityImage(activity)
     const activityTitle = activity?.title || "Activity"
     const activityCategoryBadges = Array.isArray(activity?.categories)
         ? activity.categories
@@ -442,7 +442,7 @@ export default function ActivityDetail({
                         <div key={item.id || item._id} className="pb-3 border-b border-slate-200 last:border-0">
                             <div className="flex items-center gap-3">
                                 <img
-                                    src={item.image || item.imageUrl || item.images?.[0] || item.Picture || "/assets/activity1.jpeg"}
+                                    src={resolveActivityImage(item) || "/assets/activity1.jpeg"}
                                     alt={item.title}
                                     className="w-16 h-16 rounded-lg object-cover"
                                 />
@@ -613,12 +613,21 @@ export default function ActivityDetail({
 
                     <div className="order-2 lg:order-none">
                         
-                        <div className="relative rounded-2xl overflow-hidden mb-6">
-                            <img
-                                src={activityImage}
-                                alt={activityTitle}
-                                className="w-full h-[300px] sm:h-[400px] object-cover"
-                            />
+                        <div className="relative rounded-2xl overflow-hidden mb-6 bg-slate-200">
+                            {activityImage ? (
+                                <img
+                                    src={activityImage}
+                                    alt={activityTitle}
+                                    className="w-full h-[300px] sm:h-[400px] object-cover"
+                                    onError={(e) => {
+                                        e.currentTarget.style.display = 'none'
+                                    }}
+                                />
+                            ) : (
+                                <div className="w-full h-[300px] sm:h-[400px] flex items-center justify-center text-slate-500">
+                                    {activityTitle}
+                                </div>
+                            )}
                         </div>
 
                         
@@ -843,12 +852,16 @@ export default function ActivityDetail({
                                                 if (onActivityClick && activity?.id) onActivityClick(activity.id)
                                             }}
                                         >
-                                            <div className="relative">
-                                                <img
-                                                    src={activity.image}
-                                                    alt={activity.title}
-                                                    className="w-full h-40 object-cover"
-                                                />
+                                            <div className="relative bg-slate-200">
+                                                {activity.image ? (
+                                                    <img
+                                                        src={activity.image}
+                                                        alt={activity.title}
+                                                        className="w-full h-40 object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-40" />
+                                                )}
                                                 <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-primary-brown text-white text-xs font-medium">
                                                     {activity.badge}
                                                 </span>

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import api from '../../api'
+import api, { resolveActivityImage } from '../../api'
 import './CategoryPage.css'
 import Footer from '../../components/layout/Footer'
 
@@ -158,7 +158,7 @@ export default function CategoryPage({
                         id: a?._id || a?.id || idx,
                         name: a?.title || 'Activity',
                         location: location || 'Location',
-                        image: a?.imageUrl || a?.images?.[0] || a?.image || a?.Picture || '/assets/activity1.jpeg'
+                        image: resolveActivityImage(a) || '/assets/activity1.jpeg'
                     }
                 })
                 setRecommendedSpots(derivedRecommended)
@@ -174,7 +174,7 @@ export default function CategoryPage({
     }, [categoryName])
 
     const currentCategory = categoryInfo[categoryName] || categoryInfo["Camping Adventures"]
-    const heroImage = experiences?.[0]?.imageUrl || experiences?.[0]?.images?.[0] || experiences?.[0]?.image || experiences?.[0]?.Picture || currentCategory.heroImage
+    const heroImage = resolveActivityImage(experiences?.[0]) || currentCategory.heroImage
 
     return (
         <div className="category-page">
@@ -296,7 +296,7 @@ export default function CategoryPage({
                                             >
                                                 <div className="category-experience-image-wrapper">
                                                     <img
-                                                        src={exp.imageUrl || exp.images?.[0] || exp.image || exp.Picture || "/assets/activity1.jpeg"}
+                                                        src={resolveActivityImage(exp) || "/assets/activity1.jpeg"}
                                                         alt={exp.title}
                                                         className="category-experience-image"
                                                     />

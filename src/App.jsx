@@ -1,6 +1,6 @@
 import * as React from 'react'
 const { useState, useEffect, Suspense, lazy } = React
-import api, { hasValidSession, clearStoredSession, SESSION_EXPIRED_EVENT } from './api'
+import api, { hasValidSession, clearStoredSession, SESSION_EXPIRED_EVENT, resolveActivityImage } from './api'
 import { applySeo } from './utils/seo'
 
 // Lazy load pages for better performance
@@ -749,7 +749,7 @@ export default function App() {
       ? {
         ...activity,
         id: activity.id || activity._id,
-        image: activity.image || activity.imageUrl || activity.images?.[0] || activity.Picture || '/assets/activity1.jpeg',
+        image: resolveActivityImage(activity) || activity.imageUrl || '',
         location: activity.location || [activity.city?.name, activity.country?.name].filter(Boolean).join(', ') || activity.country || activity.city,
       }
       : null

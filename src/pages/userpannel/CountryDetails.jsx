@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import api from '../../api'
+import api, { resolveActivityImage } from '../../api'
 import './CountryDetails.css'
 import Footer from '../../components/layout/Footer'
 import BlogSection from '../../components/home/BlogSection'
@@ -382,7 +382,7 @@ export default function CountryDetails({
                                     className="flex items-center gap-2 mb-1 cursor-pointer hover:opacity-80 transition-opacity"
                                     onClick={() => onActivityClick && onActivityClick(activity?.id || activity?._id)}
                                 >
-                                    <img src={activity?.image || activity?.imageUrl || activity?.images?.[0] || activity?.Picture || "/assets/activity1.jpeg"} alt={activity?.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                                    <img src={resolveActivityImage(activity) || "/assets/activity1.jpeg"} alt={activity?.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <h4 className="text-xs font-semibold text-slate-900 truncate">{activity?.title}</h4>
                                         <p className="text-[11px] text-slate-500 truncate">{activity?.location}</p>
@@ -797,7 +797,7 @@ export default function CountryDetails({
                                                     const expId = exp._id || exp.id
                                                     const selected = isExperienceSelected(exp)
                                                     const location = exp?.location || exp?.city?.name || exp?.country?.name || exp?.country || ''
-                                                    const image = exp.imageUrl || exp.images?.[0] || exp.image || exp.Picture || "/assets/activity1.jpeg"
+                                                    const image = resolveActivityImage(exp) || "/assets/activity1.jpeg"
 
                                                     return (
                                                         <div

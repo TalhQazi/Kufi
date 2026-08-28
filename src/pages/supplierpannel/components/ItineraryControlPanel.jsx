@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import api from "../../../api";
-import { toDateString, buildTripDates as buildTripDateRange } from "../../../utils/calendarDate";
+import { toDateString, buildTripDates as buildTripDateRange, nightsBetween } from "../../../utils/calendarDate";
 import { resolveLunchWindow } from "../../../utils/lunchWindow";
+import { hotelIdOf } from "../../../utils/hotelStays";
 
 const DEFAULT_CUSTOM_COSTS = [
   { id: "min-charge", label: "Minimum charge", amount: 0, unit: "flat" },
@@ -21,8 +22,13 @@ const DEFAULT_CP = {
   lunchEnd: "14:00",
   startOnArrival: false,
   endOnDeparture: true,
+  arrivalTime: "",
+  departureTime: "",
+  guestsPerRoom: 2,
+  hotelBaseArea: "",
   perDayOverrides: [],
   hotelId: "",
+  hotelStays: [],
   numberOfRooms: 1,
   budgetUplift: DEFAULT_UPLIFT,
   customCosts: DEFAULT_CUSTOM_COSTS,
@@ -56,6 +62,38 @@ function seedCustomCosts(list) {
   return DEFAULT_CUSTOM_COSTS.map((c) => ({ ...c }));
 }
 
+function seedHotelStays(cp) {
+  if (Array.isArray(cp?.hotelStays) && cp.hotelStays.length) {
+    return cp.hotelStays.map((s, i) => ({
+      id: s.id || `stay-${i}`,
+      hotelId: hotelIdOf(s.hotelId),
+      area: s.area || "",
+      nights: Math.max(0, Number(s.nights) || 0),
+    }));
+  }
+  const legacy = hotelIdOf(cp?.hotelId);
+  if (!legacy) return [];
+  return [{ id: "stay-legacy", hotelId: legacy, area: cp?.hotelBaseArea || "", nights: 0 }];
+}
+
+function serializePanelStays(stays, hotels) {
+  return (Array.isArray(stays) ? stays : []).map((s) => {
+    const id = hotelIdOf(s.hotelId);
+    const hotel = (hotels || []).find((h) => String(h._id) === String(id));
+    return {
+      id: s.id,
+      hotelId: hotel || id || null,
+      area: s.area || hotel?.city || "",
+      nights: Math.max(0, Number(s.nights) || 0),
+    };
+  });
+}
+
+function primaryStayHotelId(stays) {
+  const first = (stays || []).find((s) => hotelIdOf(s.hotelId));
+  return first ? hotelIdOf(first.hotelId) : "";
+}
+
 function newCustomCost() {
   return {
     id: `cost-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -82,6 +120,10 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     if (!end && request) end = request?.tripDetails?.departureDate || request?.tripDetails?.endDate || request?.departureDate;
     return toDateString(end) || "";
   });
+
+  const [travelers, setTravelers] = useState(() =>
+    Math.max(1, Number(itinerary?.numberOfTravelers || request?.tripDetails?.guests || request?.guests || request?.travelers || 1) || 1)
+  );
 
   /**
    * Where to look for hotels.
@@ -136,25 +178,30 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     }
 
     seededForRef.current = recordId;
+    setTravelers(Math.max(1, Number(itinerary.numberOfTravelers || request?.tripDetails?.guests || request?.guests || request?.travelers || 1) || 1));
     setCp({
       ...DEFAULT_CP,
       ...itinerary.controlPanel,
       budgetUplift: normalizeUplift(itinerary.controlPanel.budgetUplift),
       hotelId: itinerary.controlPanel.hotelId?._id || itinerary.controlPanel.hotelId || "",
+      guestsPerRoom: Number(itinerary.controlPanel.guestsPerRoom) || 2,
+      arrivalTime: itinerary.controlPanel.arrivalTime || "",
+      departureTime: itinerary.controlPanel.departureTime || "",
+      hotelBaseArea: itinerary.controlPanel.hotelBaseArea || "",
+      hotelStays: seedHotelStays(itinerary.controlPanel),
       customCosts: seedCustomCosts(itinerary.controlPanel.customCosts),
     });
-  }, [itinerary?._id, itinerary?.id, itinerary?.controlPanel]);
+  }, [itinerary?._id, itinerary?.id, itinerary?.controlPanel, itinerary?.numberOfTravelers, request]);
 
-  // Fetch hotels for country/city
+  // Fetch every active hotel for this country so stays can cover Cairo + Luxor + Aswan, etc.
   useEffect(() => {
-    if (!country && !city) return;
+    if (!country) return;
     const params = new URLSearchParams();
-    if (country) params.set("country", country);
-    if (city) params.set("city", city);
+    params.set("country", country);
     api.get(`/hotels?${params.toString()}`)
       .then(r => setHotels(r.data || []))
       .catch(() => setHotels([]));
-  }, [country, city]);
+  }, [country]);
 
   const set = (key, value) => {
     isDirtyRef.current = true;
@@ -240,14 +287,17 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
       lunchDurationMinutes: resolveLunchWindow(cp).durationMinutes,
       lunchStart: resolveLunchWindow(cp).lunchStart,
       lunchEnd: resolveLunchWindow(cp).lunchEnd,
-      hotelId: cp.hotelId || null,
+      hotelStays: serializePanelStays(cp.hotelStays, hotels),
+      hotelId: primaryStayHotelId(cp.hotelStays) || cp.hotelId || null,
+      hotelBaseArea: (cp.hotelStays || []).find((s) => hotelIdOf(s.hotelId))?.area || cp.hotelBaseArea || "",
       startDate: startDate || null,
       endDate: endDate || null,
       customCosts: Array.isArray(cp.customCosts) ? cp.customCosts : [],
+      numberOfTravelers: travelers,
     };
-    const selectedHotel = hotels.find(h => h._id === cp.hotelId) || null;
+    const selectedHotel = hotels.find((h) => String(h._id) === String(primaryStayHotelId(cp.hotelStays) || cp.hotelId)) || null;
     onChange?.(payload, selectedHotel);
-  }, [cp, startDate, endDate, hotels, onChange]);
+  }, [cp, startDate, endDate, hotels, travelers, onChange]);
 
   const handleStartDateChange = (val) => {
     isDirtyRef.current = true;
@@ -258,12 +308,15 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
       lunchDurationMinutes: resolveLunchWindow(cp).durationMinutes,
       lunchStart: resolveLunchWindow(cp).lunchStart,
       lunchEnd: resolveLunchWindow(cp).lunchEnd,
-      hotelId: cp.hotelId || null,
+      hotelStays: serializePanelStays(cp.hotelStays, hotels),
+      hotelId: primaryStayHotelId(cp.hotelStays) || cp.hotelId || null,
+      hotelBaseArea: (cp.hotelStays || []).find((s) => hotelIdOf(s.hotelId))?.area || cp.hotelBaseArea || "",
       startDate: val || null,
       endDate: endDate || null,
       customCosts: Array.isArray(cp.customCosts) ? cp.customCosts : [],
+      numberOfTravelers: travelers,
     };
-    const selectedHotel = hotels.find(h => h._id === cp.hotelId) || null;
+    const selectedHotel = hotels.find((h) => String(h._id) === String(primaryStayHotelId(cp.hotelStays) || cp.hotelId)) || null;
     onChange?.(payload, selectedHotel);
   };
 
@@ -276,292 +329,327 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
       lunchDurationMinutes: resolveLunchWindow(cp).durationMinutes,
       lunchStart: resolveLunchWindow(cp).lunchStart,
       lunchEnd: resolveLunchWindow(cp).lunchEnd,
-      hotelId: cp.hotelId || null,
+      hotelStays: serializePanelStays(cp.hotelStays, hotels),
+      hotelId: primaryStayHotelId(cp.hotelStays) || cp.hotelId || null,
+      hotelBaseArea: (cp.hotelStays || []).find((s) => hotelIdOf(s.hotelId))?.area || cp.hotelBaseArea || "",
       startDate: startDate || null,
       endDate: val || null,
       customCosts: Array.isArray(cp.customCosts) ? cp.customCosts : [],
+      numberOfTravelers: travelers,
     };
-    const selectedHotel = hotels.find(h => h._id === cp.hotelId) || null;
+    const selectedHotel = hotels.find((h) => String(h._id) === String(primaryStayHotelId(cp.hotelStays) || cp.hotelId)) || null;
     onChange?.(payload, selectedHotel);
   };
 
-  const addPresetCost = (label, unit, defaultAmount = 0) => {
+  const namedCost = (id, label) =>
+    (cp.customCosts || []).find((c) => c.id === id || String(c.label || "").toLowerCase() === label.toLowerCase());
+
+  const setNamedCost = (id, label, unit, amount) => {
     isDirtyRef.current = true;
     setCp((prev) => {
-      const existing = (prev.customCosts || []).find(c => c.label.toLowerCase() === label.toLowerCase());
-      if (existing) return prev;
-      const newCost = {
-        id: `cost-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        label,
-        amount: defaultAmount,
-        unit: unit === "per_day" ? "per_day" : "flat",
-      };
-      const next = { ...prev, customCosts: [...(prev.customCosts || []), newCost] };
-      return next;
+      const costs = [...(prev.customCosts || [])];
+      const idx = costs.findIndex((c) => c.id === id || String(c.label || "").toLowerCase() === label.toLowerCase());
+      const next = { id, label, amount: Math.max(0, Number(amount) || 0), unit };
+      if (idx >= 0) costs[idx] = { ...costs[idx], ...next };
+      else costs.push(next);
+      return { ...prev, customCosts: costs };
     });
+  };
+
+  const PRESET_COST_KEYS = new Set(["min-charge", "transportation", "food", "minimum charge"]);
+  const extraCosts = (cp.customCosts || []).filter((c) => {
+    const key = String(c.id || "").toLowerCase();
+    const label = String(c.label || "").toLowerCase();
+    return !PRESET_COST_KEYS.has(key) && !PRESET_COST_KEYS.has(label);
+  });
+
+  const hotelAreas = Array.from(new Set((hotels || []).map((h) => h.city).filter(Boolean)));
+  const tripNights = nightsBetween(startDate, endDate);
+  const stays = Array.isArray(cp.hotelStays) ? cp.hotelStays : [];
+  const selectedHotel = hotels.find((h) => String(h._id) === String(primaryStayHotelId(stays) || cp.hotelId));
+  const hotelLat = selectedHotel?.latitude ?? selectedHotel?.coordinates?.lat;
+  const hotelLng = selectedHotel?.longitude ?? selectedHotel?.coordinates?.lng;
+
+  const updateStays = (nextStays) => {
+    isDirtyRef.current = true;
+    const first = (nextStays || []).find((s) => s.hotelId);
+    setCp((prev) => ({
+      ...prev,
+      hotelStays: nextStays,
+      hotelId: first?.hotelId || "",
+      hotelBaseArea: first?.area || prev.hotelBaseArea || "",
+    }));
+  };
+
+  const addStay = () => {
+    const used = stays.reduce((sum, x) => sum + (Number(x.nights) || 0), 0);
+    updateStays([
+      ...stays,
+      { id: `stay-${Date.now()}`, area: hotelAreas[0] || city || "", hotelId: "", nights: Math.max(1, tripNights - used) },
+    ]);
+  };
+
+  const patchStay = (id, patch) => {
+    updateStays(stays.map((s) => {
+      if (s.id !== id) return s;
+      const next = { ...s, ...patch };
+      if (patch.hotelId) {
+        const hotel = hotels.find((h) => String(h._id) === String(patch.hotelId));
+        if (hotel && !patch.area) next.area = hotel.city || s.area;
+      }
+      if (patch.area && !patch.hotelId) {
+        const stillValid = hotels.some((h) =>
+          String(h._id) === String(s.hotelId)
+          && String(h.city || "").toLowerCase() === String(patch.area).toLowerCase()
+        );
+        if (!stillValid) next.hotelId = "";
+      }
+      return next;
+    }));
+  };
+
+  const removeStay = (id) => updateStays(stays.filter((s) => s.id !== id));
+  const budgetDisplay = itinerary?.budget ?? request?.tripDetails?.budget ?? request?.amount ?? "";
+
+  const setTravelersAndRooms = (raw) => {
+    const next = Math.max(1, Number(raw) || 1);
+    isDirtyRef.current = true;
+    setTravelers(next);
+    const guests = Math.max(1, Number(cp.guestsPerRoom) || 2);
+    setCp((prev) => ({ ...prev, numberOfRooms: Math.max(1, Math.ceil(next / guests)) }));
   };
 
   const base = darkMode
     ? "bg-slate-900 border-slate-800 text-slate-300"
-    : "bg-white border-gray-200 text-gray-700";
-  const inputCls = `w-full rounded-lg border px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-gray-50 border-gray-200 text-gray-800"}`;
-  const labelCls = `text-[11px] font-medium mb-0.5 block ${darkMode ? "text-slate-400" : "text-gray-500"}`;
-  const sectionCls = `rounded-xl border px-4 py-3 space-y-3 ${darkMode ? "bg-slate-800/60 border-slate-700" : "bg-gray-50 border-gray-100"}`;
+    : "bg-white border-[#ddd2c5] text-gray-700";
+  const inputCls = `w-full rounded-[10px] border px-2.5 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#b8860b]/30 focus:border-[#b8860b] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-[#faf8f5] border-[#ddd2c5] text-slate-800"}`;
+  const labelCls = `text-[10px] font-semibold uppercase tracking-wide ${darkMode ? "text-slate-400" : "text-[#6b5b49]"}`;
 
   return (
-    <div className={`rounded-2xl border text-xs space-y-4 px-4 py-4 ${base}`}>
-      <h3 className={`text-sm font-semibold flex items-center justify-between ${darkMode ? "text-white" : "text-slate-900"}`}>
-        <span>Control Panel</span>
+    <div className={`rounded-2xl border text-xs px-4 py-4 ${base}`}>
+      <h3 className={`text-sm font-semibold mb-4 flex items-center gap-2 ${darkMode ? "text-white" : "text-[#4a3520]"}`}>
+        Control Panel
       </h3>
 
-      {/* Dates (Editable) */}
-      <div className={sectionCls}>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <div className="flex items-center justify-between mb-0.5">
-              <span className={`text-[11px] font-medium ${darkMode ? "text-slate-400" : "text-gray-500"}`}>Arrival Date</span>
-            </div>
-            <input
-              type="date"
-              value={startDate}
-              onChange={e => handleStartDateChange(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-0.5">
-              <span className={`text-[11px] font-medium ${darkMode ? "text-slate-400" : "text-gray-500"}`}>Departure Date</span>
-            </div>
-            <input
-              type="date"
-              value={endDate}
-              onChange={e => handleEndDateChange(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Arrival / Departure toggles */}
-      <div className={sectionCls}>
-        <Toggle
-          label="Start activities on arrival day"
-          value={cp.startOnArrival}
-          onChange={v => set("startOnArrival", v)}
-          darkMode={darkMode}
-        />
-        <Toggle
-          label="End activities on departure day"
-          value={cp.endOnDeparture}
-          onChange={v => set("endOnDeparture", v)}
-          darkMode={darkMode}
-        />
-      </div>
-
-      {/* Activity start time */}
-      <div className={sectionCls}>
-        <div className="flex items-center justify-between">
-          <span className={labelCls}>Activity Start Time</span>
-          <span className={`text-[10px] ${darkMode ? "text-slate-500" : "text-gray-400"}`}>All Days default</span>
-        </div>
-        <input type="time" value={cp.activityStartTime} onChange={e => set("activityStartTime", e.target.value)} className={inputCls} />
-        {tripDates.length > 0 && (
-          <details>
-            <summary className={`cursor-pointer text-[10px] ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
-              Override per day
-            </summary>
-            <div className="mt-2 space-y-1.5">
-              {tripDates.map(date => (
-                <div key={date} className="flex items-center gap-2">
-                  <span className={`w-24 shrink-0 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>{date}</span>
-                  <input type="time" value={getOverride(date, "startTime")} onChange={e => setOverride(date, "startTime", e.target.value)} className={inputCls} />
-                </div>
-              ))}
-            </div>
-          </details>
-        )}
-      </div>
-
-      {/* Activity end time */}
-      <div className={sectionCls}>
-        <div className="flex items-center justify-between">
-          <span className={labelCls}>Activity End Time</span>
-          <span className={`text-[10px] ${darkMode ? "text-slate-500" : "text-gray-400"}`}>All Days default</span>
-        </div>
-        <input type="time" value={cp.activityEndTime} onChange={e => set("activityEndTime", e.target.value)} className={inputCls} />
-        {tripDates.length > 0 && (
-          <details>
-            <summary className={`cursor-pointer text-[10px] ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
-              Override per day
-            </summary>
-            <div className="mt-2 space-y-1.5">
-              {tripDates.map(date => (
-                <div key={date} className="flex items-center gap-2">
-                  <span className={`w-24 shrink-0 ${darkMode ? "text-slate-400" : "text-gray-500"}`}>{date}</span>
-                  <input type="time" value={getOverride(date, "endTime")} onChange={e => setOverride(date, "endTime", e.target.value)} className={inputCls} />
-                </div>
-              ))}
-            </div>
-          </details>
-        )}
-      </div>
-
-      {/* Lunch break — duration only, applied to every day */}
-      <div className={sectionCls}>
-        <div className="flex items-center justify-between mb-1">
-          <span className={labelCls}>Lunch Break</span>
-          <span className={`text-[10px] font-medium ${darkMode ? "text-amber-400" : "text-amber-700"}`}>
-            {lunchWindow.lunchStart} – {lunchWindow.lunchEnd}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className={`text-xs ${darkMode ? "text-slate-400" : "text-gray-600"} w-20 shrink-0`}>Duration</span>
-          <div className="flex items-center gap-1 flex-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-3">
+        <Field label="Travelers" className={labelCls}>
+          <input type="number" min={1} value={travelers} onChange={(e) => setTravelersAndRooms(e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Arrival Date" className={labelCls}>
+          <input type="date" value={startDate} onChange={(e) => handleStartDateChange(e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Departure Date" className={labelCls}>
+          <input type="date" value={endDate} onChange={(e) => handleEndDateChange(e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Activity Start" className={labelCls}>
+          <input type="time" value={cp.activityStartTime} onChange={(e) => set("activityStartTime", e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Activity End" className={labelCls}>
+          <input type="time" value={cp.activityEndTime} onChange={(e) => set("activityEndTime", e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Arrival Time (optional)" className={labelCls}>
+          <input type="time" value={cp.arrivalTime || ""} onChange={(e) => set("arrivalTime", e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Activities on Arrival Day?" className={labelCls}>
+          <select value={cp.startOnArrival ? "yes" : "no"} onChange={(e) => set("startOnArrival", e.target.value === "yes")} className={inputCls}>
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </Field>
+        <Field label="Departure Time (optional)" className={labelCls}>
+          <input type="time" value={cp.departureTime || ""} onChange={(e) => set("departureTime", e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Activities on Departure Day?" className={labelCls}>
+          <select value={cp.endOnDeparture !== false ? "yes" : "no"} onChange={(e) => set("endOnDeparture", e.target.value === "yes")} className={inputCls}>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </Field>
+        <div className="col-span-full space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className={labelCls}>Hotels{country ? ` — ${country}` : ""}</span>
             <button
               type="button"
-              onClick={() => set("lunchDurationMinutes", Math.max(0, lunchWindow.durationMinutes - 15))}
-              className={`w-8 h-8 rounded border flex items-center justify-center font-bold text-base transition-colors ${
-                darkMode ? "bg-slate-800 border-slate-700 text-slate-200 hover:bg-amber-600 hover:text-white" : "bg-gray-100 border-gray-300 text-slate-800 hover:bg-amber-500 hover:text-white"
-              }`}
-              title="Decrease lunch duration by 15 mins"
+              onClick={addStay}
+              className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${darkMode ? "border-slate-600 text-slate-300 hover:bg-slate-700" : "border-[#ddd2c5] text-[#6b5b49] hover:bg-[#faf8f5]"}`}
             >
-              -
-            </button>
-
-            <div className="relative flex-1">
-              <input
-                type="number"
-                min="0"
-                step="15"
-                value={lunchWindow.durationMinutes}
-                onChange={e => set("lunchDurationMinutes", Math.max(0, Number(e.target.value) || 0))}
-                className={`${inputCls} text-center font-semibold pr-7`}
-              />
-              <span className="absolute right-2 top-1.5 text-[10px] text-gray-400 pointer-events-none">min</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => set("lunchDurationMinutes", lunchWindow.durationMinutes + 15)}
-              className={`w-8 h-8 rounded border flex items-center justify-center font-bold text-base transition-colors ${
-                darkMode ? "bg-slate-800 border-slate-700 text-slate-200 hover:bg-amber-600 hover:text-white" : "bg-gray-100 border-gray-300 text-slate-800 hover:bg-amber-500 hover:text-white"
-              }`}
-              title="Increase lunch duration by 15 mins"
-            >
-              +
+              + Add hotel
             </button>
           </div>
+          {stays.length === 0 && (
+            <p className={`text-[10px] ${darkMode ? "text-slate-500" : "text-[#8a7a66]"}`}>
+              Add one hotel per area for this country (for example Cairo, then Luxor). The first hotel is the trip base for travel times.
+            </p>
+          )}
+          {stays.map((stay) => {
+            const areaHotels = stay.area
+              ? hotels.filter((h) => String(h.city || "").toLowerCase() === String(stay.area).toLowerCase())
+              : hotels;
+            const stayHotel = hotels.find((h) => String(h._id) === String(stay.hotelId));
+            return (
+              <div key={stay.id} className={`grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl border p-2 ${darkMode ? "border-slate-700 bg-slate-800/40" : "border-[#ddd2c5] bg-[#faf8f5]"}`}>
+                <Field label="Area" className={labelCls}>
+                  <select value={stay.area || ""} onChange={(e) => patchStay(stay.id, { area: e.target.value })} className={inputCls}>
+                    <option value="">All areas</option>
+                    {hotelAreas.map((area) => (
+                      <option key={area} value={area}>{area}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Hotel" className={labelCls}>
+                  <select value={stay.hotelId || ""} onChange={(e) => patchStay(stay.id, { hotelId: e.target.value })} className={inputCls}>
+                    <option value="">Select hotel</option>
+                    {areaHotels.map((h) => (
+                      <option key={h._id} value={h._id}>{h.name} — ${h.pricePerNight}/night</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Nights" className={labelCls}>
+                  <input type="number" min={0} value={stay.nights} onChange={(e) => patchStay(stay.id, { nights: Math.max(0, Number(e.target.value) || 0) })} className={inputCls} />
+                </Field>
+                <div className="flex items-end gap-2">
+                  <Field label="$/room/night" className={labelCls}>
+                    <input type="number" readOnly value={stayHotel?.pricePerNight ?? ""} className={inputCls} />
+                  </Field>
+                  <button
+                    type="button"
+                    onClick={() => removeStay(stay.id)}
+                    className={`mb-0.5 shrink-0 text-[10px] px-2 py-2 rounded-lg ${darkMode ? "text-rose-400 hover:bg-slate-700" : "text-rose-500 hover:bg-rose-50"}`}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
-
-        <p className={`text-[10px] mt-1 ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
-          {lunchWindow.durationMinutes === 0
-            ? "No lunch break — activities run straight through the day."
-            : `Applied to every day. The break is centred in the activity window (${cp.activityStartTime || "09:00"}–${cp.activityEndTime || "19:00"}), so it moves with your start and end times.`}
-        </p>
-      </div>
-
-      {/* Hotel */}
-      <div className={sectionCls}>
-        <span className={labelCls}>Hotel</span>
-        <select value={cp.hotelId} onChange={e => set("hotelId", e.target.value)} className={inputCls}>
-          <option value="">No Hotel</option>
-          {hotels.map(h => (
-            <option key={h._id} value={h._id}>
-              {h.name} — ${h.pricePerNight}/night
-            </option>
-          ))}
-        </select>
-        {cp.hotelId && (
-          <div className="mt-2">
-            <span className={labelCls}>Number of Rooms</span>
-            <input
-              type="number"
-              min={1}
-              value={cp.numberOfRooms}
-              onChange={e => set("numberOfRooms", Number(e.target.value))}
-              className={inputCls}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Budget Uplift Tolerance */}
-      <div className={sectionCls}>
-        <div className="flex items-center justify-between">
-          <span className={labelCls}>Budget Uplift Tolerance %</span>
-          <span className={`text-[10px] ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
-            Tolerance allowance above base budget
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
+        <Field label="Guests per Room" className={labelCls}>
+          <input
+            type="number"
+            min={1}
+            value={cp.guestsPerRoom || 2}
+            onChange={(e) => {
+              const guests = Math.max(1, Number(e.target.value) || 2);
+              isDirtyRef.current = true;
+              setCp((prev) => ({
+                ...prev,
+                guestsPerRoom: guests,
+                numberOfRooms: Math.max(1, Math.ceil(travelers / guests)),
+              }));
+            }}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Number of Rooms" className={labelCls}>
+          <input type="number" min={1} value={cp.numberOfRooms} onChange={(e) => set("numberOfRooms", Number(e.target.value))} className={inputCls} />
+        </Field>
+        <Field label="Hotel Latitude" className={labelCls}>
+          <input type="number" readOnly value={hotelLat != null ? Number(hotelLat) : ""} step="0.0001" className={inputCls} />
+        </Field>
+        <Field label="Hotel Longitude" className={labelCls}>
+          <input type="number" readOnly value={hotelLng != null ? Number(hotelLng) : ""} step="0.0001" className={inputCls} />
+        </Field>
+        <Field label="Lunch (hrs)" className={labelCls}>
+          <input
+            type="number"
+            min={0}
+            step={0.5}
+            value={Number((lunchWindow.durationMinutes / 60).toFixed(1))}
+            onChange={(e) => set("lunchDurationMinutes", Math.max(0, Math.round((Number(e.target.value) || 0) * 60)))}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Local Transport ($/day)" className={labelCls}>
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={namedCost("transportation", "Transportation")?.amount ?? 0}
+            onChange={(e) => setNamedCost("transportation", "Transportation", "per_day", e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Food ($/day)" className={labelCls}>
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={namedCost("food", "Food")?.amount ?? 0}
+            onChange={(e) => setNamedCost("food", "Food", "per_day", e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Budget ($)" className={labelCls}>
+          <input type="text" readOnly value={budgetDisplay} className={inputCls} />
+        </Field>
+        <Field label="Min. Charge ($)" className={labelCls}>
+          <input
+            type="number"
+            min={0}
+            step={5}
+            value={namedCost("min-charge", "Minimum charge")?.amount ?? 0}
+            onChange={(e) => setNamedCost("min-charge", "Minimum charge", "flat", e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Budget Tolerance %" className={labelCls}>
           <input
             type="number"
             min={0}
             max={100}
             value={cp.budgetUplift}
-            onChange={e => {
-              // Keep an empty field editable rather than snapping it back to a number,
-              // but never let `NaN` reach the payload.
+            onChange={(e) => {
               const raw = e.target.value;
               set("budgetUplift", raw === "" ? "" : normalizeUplift(raw));
             }}
-            onBlur={e => set("budgetUplift", normalizeUplift(e.target.value))}
-            className={`${inputCls} w-24`}
+            onBlur={(e) => set("budgetUplift", normalizeUplift(e.target.value))}
+            className={inputCls}
           />
-          <span className={darkMode ? "text-slate-400" : "text-gray-500"}>%</span>
-        </div>
-        <p className={`text-[10px] mt-1 ${darkMode ? "text-slate-500" : "text-gray-500"}`}>
-          {normalizeUplift(cp.budgetUplift) === 0
-            ? "No tolerance: activity selections must stay within the customer's base budget."
-            : `Allows system activity selections to go up to +${normalizeUplift(cp.budgetUplift)}% over customer budget as flexibility tolerance (e.g. $1,000 budget allows up to $${(1000 * (1 + normalizeUplift(cp.budgetUplift) / 100)).toLocaleString()} total).`}
-        </p>
+        </Field>
       </div>
 
-      {/* Custom Costs */}
-      <div className={sectionCls}>
-        <div className="flex items-center justify-between">
-          <span className={labelCls}>Custom Costs</span>
+      <p className={`text-[10px] mt-3 ${darkMode ? "text-slate-500" : "text-[#8a7a66]"}`}>
+        {normalizeUplift(cp.budgetUplift) === 0
+          ? "0% tolerance: itinerary total stays within the customer’s budget."
+          : `${normalizeUplift(cp.budgetUplift)}% tolerance: itinerary total can go up to the customer’s budget plus this uplift.`}
+        {lunchWindow.durationMinutes > 0 ? ` Lunch ${lunchWindow.lunchStart}–${lunchWindow.lunchEnd}.` : ""}
+      </p>
+
+      {tripDates.length > 0 && (
+        <details className="mt-3">
+          <summary className={`cursor-pointer text-[10px] ${darkMode ? "text-slate-500" : "text-[#8a7a66]"}`}>
+            Override activity hours per day
+          </summary>
+          <div className="mt-2 space-y-1.5">
+            {tripDates.map((date) => (
+              <div key={date} className="grid grid-cols-[6.5rem_1fr_1fr] gap-2 items-center">
+                <span className={darkMode ? "text-slate-400" : "text-gray-500"}>{date}</span>
+                <input type="time" value={getOverride(date, "startTime")} onChange={(e) => setOverride(date, "startTime", e.target.value)} className={inputCls} />
+                <input type="time" value={getOverride(date, "endTime")} onChange={(e) => setOverride(date, "endTime", e.target.value)} className={inputCls} />
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
+      <div className={`mt-4 pt-3 border-t ${darkMode ? "border-slate-700" : "border-[#f0eae2]"}`}>
+        <div className="flex items-center justify-between mb-2">
+          <span className={labelCls}>Extra custom costs</span>
           <button
             type="button"
             onClick={addCustomCost}
             className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-colors ${
-              darkMode
-                ? "border-slate-600 text-slate-300 hover:bg-slate-700"
-                : "border-gray-200 text-gray-600 hover:bg-white"
+              darkMode ? "border-slate-600 text-slate-300 hover:bg-slate-700" : "border-[#ddd2c5] text-[#6b5b49] hover:bg-[#faf8f5]"
             }`}
           >
             + Add Cost
           </button>
         </div>
-        <div className="flex flex-wrap gap-1">
-          <button
-            type="button"
-            onClick={() => addPresetCost("Minimum charge", "flat")}
-            className={`text-[9px] px-2 py-0.5 rounded-md border transition-colors ${darkMode ? "border-amber-700/50 text-amber-400 bg-amber-950/30 hover:bg-amber-900/50" : "border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100"}`}
-          >
-            + Min Charge (Profit)
-          </button>
-          <button
-            type="button"
-            onClick={() => addPresetCost("Transportation", "per_day")}
-            className={`text-[9px] px-2 py-0.5 rounded-md border transition-colors ${darkMode ? "border-blue-700/50 text-blue-400 bg-blue-950/30 hover:bg-blue-900/50" : "border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"}`}
-          >
-            + Transport/day
-          </button>
-          <button
-            type="button"
-            onClick={() => addPresetCost("Food", "per_day")}
-            className={`text-[9px] px-2 py-0.5 rounded-md border transition-colors ${darkMode ? "border-emerald-700/50 text-emerald-400 bg-emerald-950/30 hover:bg-emerald-900/50" : "border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100"}`}
-          >
-            + Food/day
-          </button>
-        </div>
         <div className="space-y-2">
-          {(cp.customCosts || []).map((cost) => (
+          {extraCosts.map((cost) => (
             <div
               key={cost.id}
-              className={`rounded-lg border p-2 space-y-2 ${darkMode ? "border-slate-700 bg-slate-900/40" : "border-gray-200 bg-white"}`}
+              className={`rounded-lg border p-2 space-y-2 ${darkMode ? "border-slate-700 bg-slate-900/40" : "border-[#ddd2c5] bg-[#faf8f5]"}`}
             >
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <input
@@ -574,9 +662,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
                 <button
                   type="button"
                   onClick={() => removeCustomCost(cost.id)}
-                  className={`px-2 rounded-lg text-[10px] font-medium ${
-                    darkMode ? "text-rose-400 hover:bg-slate-800" : "text-rose-500 hover:bg-rose-50"
-                  }`}
+                  className={`px-2 rounded-lg text-[10px] font-medium ${darkMode ? "text-rose-400 hover:bg-slate-800" : "text-rose-500 hover:bg-rose-50"}`}
                   aria-label={`Remove ${cost.label || "cost"}`}
                 >
                   Remove
@@ -605,38 +691,15 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
           ))}
         </div>
       </div>
-
     </div>
   );
 }
 
-// ── helpers ─────────────────────────────────────────────────────────────────
-
-function Toggle({ label, value, onChange, darkMode }) {
+function Field({ label, className, children }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className={`text-[11px] ${darkMode ? "text-slate-300" : "text-gray-700"}`}>{label}</span>
-      <div className="flex gap-2">
-        {["Yes", "No"].map(opt => {
-          const isActive = opt === "Yes" ? value : !value;
-          return (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => onChange(opt === "Yes")}
-              className={`px-3 py-1 rounded-full text-[10px] font-medium transition-colors border ${
-                isActive
-                  ? "bg-[#a26e35] border-[#a26e35] text-white"
-                  : darkMode
-                    ? "bg-slate-700 border-slate-600 text-slate-400"
-                    : "bg-white border-gray-200 text-gray-500"
-              }`}
-            >
-              {opt}
-            </button>
-          );
-        })}
-      </div>
+    <div className="flex flex-col gap-1 min-w-0">
+      <label className={className}>{label}</label>
+      {children}
     </div>
   );
 }

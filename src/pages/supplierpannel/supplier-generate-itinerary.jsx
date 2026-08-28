@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Coffee, Car } from "lucide-react";
-import api, { getApiBaseUrl, getAuthToken } from "../../api";
+import api, { activityImagePath, getApiBaseUrl, getAuthToken, resolveActivityImage } from "../../api";
 import { notifyItineraryWorkflowChanged } from "../../constants/itineraryLabels";
 import { countActivities, sumActivityPrices, isBreakEntry } from "../../utils/activityClassification";
 import ItineraryActivityPool from "./components/ItineraryActivityPool";
@@ -29,6 +29,7 @@ import {
   toDateString,
   addDays,
 } from "../../utils/calendarDate";
+import { normalizeHotelStays, hotelCostFromStays } from "../../utils/hotelStays";
 
 
 export function resolveTravelerUserId(request) {
@@ -107,21 +108,6 @@ function nightsBetween(start, end) {
   return calendarNightsBetween(start, end);
 }
 
-const resolveImageUrl = (value) => {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  if (/^https?:\/\//i.test(raw)) return raw;
-  if (raw.startsWith("data:")) return raw;
-  if (raw.startsWith("/")) {
-    const base = String(api?.defaults?.baseURL || "")
-      .replace(/\/$/, "")
-      .replace(/\/api$/, "");
-    if (!base) return raw;
-    return `${base}${raw}`;
-  }
-  return raw;
-};
-
 function newExtraField() {
   return {
     id: `ef-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -150,7 +136,15 @@ function serializeControlPanel(itinerary) {
   const cp = itinerary?.controlPanel;
   if (!cp || typeof cp !== "object") return undefined;
   const hotelId = cp.hotelId?._id || cp.hotelId || null;
-  return { ...cp, hotelId: hotelId || null };
+  const hotelStays = (Array.isArray(cp.hotelStays) ? cp.hotelStays : [])
+    .map((s) => ({
+      id: s.id,
+      hotelId: s.hotelId?._id || s.hotelId || null,
+      area: s.area || "",
+      nights: Number(s.nights) || 0,
+    }))
+    .filter((s) => s.hotelId);
+  return { ...cp, hotelId: hotelId || null, hotelStays };
 }
 
 /**
@@ -267,6 +261,7 @@ function SortableActivityCard({ activity, activityIndex, dayIndex, darkMode, onR
   const inputCls = `w-full rounded border px-1.5 py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${
     darkMode ? "bg-slate-900 border-slate-600 text-white" : "bg-white border-gray-200 text-slate-900"
   }`;
+  const photo = resolveActivityImage(activity);
 
   const setField = (field, value) => onChange?.(activity.id, dayIndex, field, value);
 
@@ -274,9 +269,9 @@ function SortableActivityCard({ activity, activityIndex, dayIndex, darkMode, onR
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-xl border overflow-hidden flex gap-0 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"}`}
+      className={`rounded-lg border overflow-hidden flex gap-0 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"}`}
     >
-      <div className="flex flex-col justify-center items-center px-1.5 py-1 border-r border-slate-100 dark:border-slate-700/60 shrink-0 bg-slate-50/50 dark:bg-slate-900/30" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="flex flex-col justify-center items-center px-1 py-0.5 border-r border-slate-100 dark:border-slate-700/60 shrink-0 bg-slate-50/50 dark:bg-slate-900/30" onPointerDown={(e) => e.stopPropagation()}>
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onMoveUp?.(activity.id, dayIndex); }}
@@ -300,12 +295,17 @@ function SortableActivityCard({ activity, activityIndex, dayIndex, darkMode, onR
         </button>
       </div>
 
-      <div className="shrink-0 w-16 h-16 relative">
-        <img
-          src={resolveImageUrl(activity.image) || "/assets/dest-1.jpeg"}
-          alt={activity.title}
-          className="w-full h-full object-cover"
-        />
+      <div className="shrink-0 w-12 h-12 relative bg-slate-200">
+        {photo ? (
+          <img
+            src={photo}
+            alt={activity.title}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        ) : null}
         <div
           className={`absolute bottom-0 inset-x-0 bg-black/40 text-white flex items-center justify-center cursor-grab active:cursor-grabbing py-0.5`}
           {...attributes}
@@ -316,28 +316,28 @@ function SortableActivityCard({ activity, activityIndex, dayIndex, darkMode, onR
         </div>
       </div>
 
-      <div className="flex-1 px-2 py-1.5 min-w-0 space-y-1" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="flex-1 px-1.5 py-1 min-w-0 space-y-0.5" onPointerDown={(e) => e.stopPropagation()}>
         <input
           className={inputCls}
           value={activity.title || ""}
           onChange={(e) => setField("title", e.target.value)}
           placeholder="Activity title"
         />
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-wrap">
           <input
             type="time"
-            className={`${inputCls} w-[5.5rem]`}
+            className={`${inputCls} w-[4.75rem]`}
             value={activity.startTime || ""}
             onChange={(e) => setField("startTime", e.target.value)}
           />
           <span className={`text-[10px] ${darkMode ? "text-slate-500" : "text-gray-400"}`}>–</span>
           <input
             type="time"
-            className={`${inputCls} w-[5.5rem]`}
+            className={`${inputCls} w-[4.75rem]`}
             value={activity.endTime || ""}
             onChange={(e) => setField("endTime", e.target.value)}
           />
-          <div className="relative w-16">
+          <div className="relative w-14">
             <span className="absolute left-1.5 top-1 text-[10px] text-gray-400 pointer-events-none">$</span>
             <input
               type="text"
@@ -356,13 +356,7 @@ function SortableActivityCard({ activity, activityIndex, dayIndex, darkMode, onR
           className={inputCls}
           value={activity.location || ""}
           onChange={(e) => setField("location", e.target.value)}
-          placeholder="Location (e.g. Dubai Marina)"
-        />
-        <input
-          className={inputCls}
-          value={activity.description || ""}
-          onChange={(e) => setField("description", e.target.value)}
-          placeholder="Description (optional)"
+          placeholder="Location"
         />
       </div>
 
@@ -433,7 +427,7 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, on
 
       <div
         ref={setNodeRef}
-        className={`flex-1 rounded-xl border border-dashed p-2 space-y-2 min-h-[80px] transition-colors ${
+        className={`flex-1 rounded-lg border border-dashed p-1.5 space-y-1.5 min-h-[56px] transition-colors ${
           isActiveProp
             ? (darkMode ? "border-amber-500 bg-amber-950/20" : "border-[#a26e35] bg-amber-50/50")
             : (darkMode ? "border-slate-700" : "border-gray-200")
@@ -798,13 +792,14 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
 
       if (targetDayIdx == null) return;
 
+      const activityId = String(activity._id || activity.id || "");
       const newAct = {
         id: `act-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-        activityId: String(activity._id || activity.id),
+        activityId,
         title: activity.title || "",
         description: activity.description || "",
         location: activity.location || activity.country || "",
-        image: activity.image || "",
+        image: activity.imageUrl || activity.image || activityImagePath(activityId) || "",
         price: activity.price || 0,
         category: activity.category || "",
         startTime: activity.startTime || "",
@@ -945,6 +940,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         ...prev,
         startDate: updatedCp.startDate || prev.startDate,
         endDate: updatedCp.endDate || prev.endDate,
+        numberOfTravelers: Number(updatedCp.numberOfTravelers) || prev.numberOfTravelers,
         controlPanel: {
           ...(prev.controlPanel || {}),
           ...updatedCp,
@@ -1227,7 +1223,23 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   const nights = nightsBetween(itinerary?.startDate, itinerary?.endDate);
   const tripDays = calendarDaysBetween(itinerary?.startDate, itinerary?.endDate);
   const rooms = itinerary?.controlPanel?.numberOfRooms || 1;
-  const hotelCost = hotelData?.pricePerNight ? hotelData.pricePerNight * nights * rooms : 0;
+  const hotelStays = normalizeHotelStays(itinerary?.controlPanel);
+  const hotelsById = {};
+  if (hotelData && typeof hotelData === "object" && hotelData._id) {
+    hotelsById[String(hotelData._id)] = hotelData;
+  }
+  hotelStays.forEach((stay) => {
+    if (stay.hotel?._id) hotelsById[String(stay.hotel._id)] = stay.hotel;
+    else if (stay.hotelId && typeof stay.hotelId === "object" && stay.hotelId._id) {
+      hotelsById[String(stay.hotelId._id)] = stay.hotelId;
+    }
+  });
+  const hotelCost = hotelStays.length
+    ? hotelCostFromStays(hotelStays, hotelsById, rooms, nights)
+    : (hotelData?.pricePerNight ? hotelData.pricePerNight * nights * rooms : 0);
+  const hotelLabel = hotelStays.length
+    ? hotelStays.map((s) => s.hotel?.name || hotelsById[s.hotelId]?.name).filter(Boolean).join(" + ") || "Selected"
+    : (hotelData?.name || "Not selected");
   const upliftRaw = itinerary?.controlPanel?.budgetUplift ?? 15;
   const upliftPct = Math.min(Math.max(
     (upliftRaw > 0 && upliftRaw < 1) ? upliftRaw : (Number(upliftRaw) / 100),
@@ -1469,10 +1481,10 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-          {/* ── Left: day view ─────────────────────────────────────────────── */}
-          <div className={`${(showControlPanel || showActivitiesPool) ? "lg:col-span-2" : "lg:col-span-3"} space-y-4`}>
+          {/* ── Left: compact day-by-day itinerary ─────────────────────────── */}
+          <div className={`${(showControlPanel || showActivitiesPool) ? "lg:col-span-8" : "lg:col-span-12"} space-y-3 max-h-[calc(100vh-7rem)] overflow-y-auto pr-1`}>
 
             {/* Vertical Days List View */}
             {daysData.map((day, idx) => (
@@ -1480,10 +1492,10 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                 key={idx}
                 id={`day-${idx}`}
                 data-droppable="true"
-                className={`${cardCls} px-4 py-4`}
+                className={`${cardCls} px-3 py-2.5`}
               >
                 {/* Day header */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     {daysData.length > 1 && (
                       <div className="flex items-center gap-0.5">
@@ -1512,7 +1524,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                       </div>
                     )}
                     <div>
-                      <h2 className={`text-sm font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                      <h2 className={`text-xs font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
                         Day {day.day}
                         {day.dayName && ` — ${day.dayName}`}
                         {day.isArrivalDay && " ✈"}
@@ -1631,7 +1643,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                     dark={darkMode}
                   />
                 )}
-                <Row label="Hotel" value={hotelData?.name || "Not selected"} dark={darkMode} />
+                <Row label="Hotel" value={hotelLabel} dark={darkMode} />
                 <Row label="Transportation" value="Included in itinerary" dark={darkMode} />
                 {hotelCost > 0 && <Row label={`Hotel (${nights} nights × ${rooms} rooms)`} value={`$${hotelCost.toLocaleString()}`} dark={darkMode} />}
                 <Row label="Activities Cost" value={`$${activitiesTotal.toLocaleString()}`} dark={darkMode} />
@@ -1685,9 +1697,9 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
             </div>
           </div>
 
-          {/* ── Right: control panel + original request + activity pool ──────────────────────── */}
+          {/* ── Right: wider control panel + original request + activity pool ── */}
           {(showControlPanel || showActivitiesPool) && (
-            <div className="space-y-4 lg:sticky lg:top-4 self-start">
+            <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-4 self-start min-w-0">
               {showControlPanel && (
                 <>
                   <ItineraryControlPanel
@@ -1738,11 +1750,15 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       <DragOverlay>
         {activeDragData?.activity && (
           <div className={`rounded-xl border shadow-xl overflow-hidden w-36 opacity-90 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
-            <img
-              src={resolveImageUrl(activeDragData.activity.image) || "/assets/dest-1.jpeg"}
-              alt=""
-              className="w-full h-20 object-cover"
-            />
+            {resolveActivityImage(activeDragData.activity) ? (
+              <img
+                src={resolveActivityImage(activeDragData.activity)}
+                alt=""
+                className="w-full h-20 object-cover"
+              />
+            ) : (
+              <div className="w-full h-20 bg-slate-200" />
+            )}
             <p className={`px-2 py-1.5 text-[11px] font-medium truncate ${darkMode ? "text-white" : "text-slate-900"}`}>
               {activeDragData.activity.title}
             </p>
