@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Coffee, Car } from "lucide-react";
-import api, { activityImagePath, getApiBaseUrl, getAuthToken, resolveActivityImage } from "../../api";
+import api, { activityImagePath, AI_GENERATE_TIMEOUT_MS, getApiBaseUrl, getAuthToken, resolveActivityImage } from "../../api";
 import { notifyItineraryWorkflowChanged } from "../../constants/itineraryLabels";
 import { countActivities, sumActivityPrices, isBreakEntry } from "../../utils/activityClassification";
 import ItineraryActivityPool from "./components/ItineraryActivityPool";
@@ -487,6 +487,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   const [activeDay, setActiveDay] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState("");
+  const [budgetBreakdown, setBudgetBreakdown] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -615,7 +616,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         controlPanel: liveControlPanel,
         startDate: toDateString(itin?.startDate) || null,
         endDate: toDateString(itin?.endDate) || null,
-      });
+      }, { timeout: AI_GENERATE_TIMEOUT_MS });
       const updated = res.data.itinerary || res.data;
       const generatedDays = Array.isArray(updated.days) ? updated.days : [];
 
@@ -646,6 +647,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       // is never a mystery. A zero ceiling is the common case: accommodation and fixed
       // costs have consumed the traveller's whole budget and the uplift left no headroom.
       const budgetInfo = res.data?.budget;
+      setBudgetBreakdown(budgetInfo || null);
       if (budgetInfo?.exhaustedByFixedCosts) {
         setGeoNotice(
           `No activities could be scheduled: hotel ($${budgetInfo.hotelCost.toLocaleString()}) and custom costs ` +
@@ -671,11 +673,15 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         generateCalledRef.current = false;
       }
     } catch (err) {
-      const msg =
-        err?.response?.data?.msg ||
-        err?.response?.data?.error ||
-        err?.message ||
-        "AI itinerary generation failed.";
+      const isTimeout = err?.code === "ECONNABORTED" || /timeout/i.test(String(err?.message || ""));
+      const msg = isTimeout
+        ? "AI generation is taking longer than usual. Please wait and try again — the server may still be working."
+        : (
+          err?.response?.data?.msg ||
+          err?.response?.data?.error ||
+          err?.message ||
+          "AI itinerary generation failed."
+        );
       console.error("Generate failed", err);
       setGenerateError(msg);
       generateCalledRef.current = false;
@@ -1274,6 +1280,10 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
 
   const baseBudget = itinerary?.budget || parseBudgetValue(request?.tripDetails?.budget || request?.amount) || 0;
   const maxAllowedTotalBudget = baseBudget > 0 ? Math.floor(baseBudget * (1 + upliftPct)) : 0;
+  const activityBudgetAllowance = Math.max(0, (budgetBreakdown?.activityCeiling ?? (maxAllowedTotalBudget - hotelCost - customCostsTotal)));
+  const activityBudgetUsedPct = activityBudgetAllowance > 0
+    ? Math.round((activitiesTotal / activityBudgetAllowance) * 100)
+    : null;
   const grandTotal = activitiesTotal + hotelCost + customCostsTotal;
   const isWithinBaseBudget = baseBudget > 0 ? grandTotal <= baseBudget : true;
   const isWithinTolerance = baseBudget > 0 ? grandTotal <= maxAllowedTotalBudget : true;
@@ -1647,6 +1657,13 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                 <Row label="Transportation" value="Included in itinerary" dark={darkMode} />
                 {hotelCost > 0 && <Row label={`Hotel (${nights} nights × ${rooms} rooms)`} value={`$${hotelCost.toLocaleString()}`} dark={darkMode} />}
                 <Row label="Activities Cost" value={`$${activitiesTotal.toLocaleString()}`} dark={darkMode} />
+                {baseBudget > 0 && activityBudgetAllowance > 0 && (
+                  <Row
+                    label="Activity Budget Used"
+                    value={`$${activitiesTotal.toLocaleString()} of $${activityBudgetAllowance.toLocaleString()} (${activityBudgetUsedPct ?? 0}%)`}
+                    dark={darkMode}
+                  />
+                )}
                 {customCostLines.map((line) => (
                   <Row key={line.id} label={line.label} value={`$${line.total.toLocaleString()}`} dark={darkMode} />
                 ))}
