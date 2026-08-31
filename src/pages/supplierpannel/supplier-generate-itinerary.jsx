@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Coffee, Car } from "lucide-react";
+import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Coffee, Car, BedDouble } from "lucide-react";
 import api, { activityImagePath, AI_GENERATE_TIMEOUT_MS, getApiBaseUrl, getAuthToken, resolveActivityImage } from "../../api";
 import { notifyItineraryWorkflowChanged } from "../../constants/itineraryLabels";
 import { countActivities, sumActivityPrices, isBreakEntry } from "../../utils/activityClassification";
@@ -30,6 +30,11 @@ import {
   addDays,
 } from "../../utils/calendarDate";
 import { normalizeHotelStays, hotelCostFromStays } from "../../utils/hotelStays";
+import {
+  customCostLines as buildCustomCostLines,
+  partyActivityCost,
+  perTravellerCeiling,
+} from "../../utils/tripCosts";
 
 
 export function resolveTravelerUserId(request) {
@@ -377,12 +382,15 @@ function SortableActivityCard({ activity, activityIndex, dayIndex, darkMode, onR
 
 // ─── Droppable day column ─────────────────────────────────────────────────────
 
-function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, onChangeActivity, onUpdateDayNote, onMoveActivityUp, onMoveActivityDown }) {
+function DayColumn({ day, darkMode, isActive: isActiveProp, travellers = 1, onRemoveActivity, onChangeActivity, onUpdateDayNote, onMoveActivityUp, onMoveActivityDown }) {
   const activities = Array.isArray(day.activities) ? day.activities : [];
   // Breaks are never billable, so they must not appear in the day's total.
-  const dayTotal = activities
+  const dayPerPerson = activities
     .filter((a) => !isBreakEntry(a))
     .reduce((sum, a) => sum + (Number(a.price) || 0), 0);
+  // Catalogue prices are per head, so the day's line is what the whole party pays.
+  const dayTotal = dayPerPerson * Math.max(1, Number(travellers) || 1);
+  const overnight = day.overnightHotel;
 
   // Rank badges number the real activities only — a lunch break is not "#3".
   const activityRanks = new Map(
@@ -470,9 +478,31 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, onRemoveActivity, on
         </p>
       )}
 
+      {/* Where the travellers sleep at the end of this day. The departure day has no
+          night, so the backend leaves `overnightHotel` off it. */}
+      {overnight?.name && (
+        <div
+          className={`mt-2 flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-[10px] ${
+            darkMode
+              ? "border-slate-700 bg-slate-800/60 text-slate-300"
+              : "border-gray-200 bg-gray-50 text-gray-600"
+          }`}
+        >
+          <BedDouble className="w-3 h-3 shrink-0 opacity-70" />
+          <span className="min-w-0">
+            <span className="uppercase tracking-wide opacity-70">Overnight</span>{" "}
+            <span className="font-medium">{overnight.name}</span>
+            {overnight.area ? <span className="opacity-70"> · {overnight.area}</span> : null}
+          </span>
+        </div>
+      )}
+
       {dayTotal > 0 && (
         <p className={`text-[10px] text-right mt-2 font-medium ${darkMode ? "text-slate-400" : "text-gray-500"}`}>
           Day total: ${dayTotal.toLocaleString()}
+          {travellers > 1 ? (
+            <span className="font-normal opacity-70"> (${dayPerPerson.toLocaleString()} × {travellers})</span>
+          ) : null}
         </p>
       )}
     </div>
@@ -1246,47 +1276,52 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   const hotelLabel = hotelStays.length
     ? hotelStays.map((s) => s.hotel?.name || hotelsById[s.hotelId]?.name).filter(Boolean).join(" + ") || "Selected"
     : (hotelData?.name || "Not selected");
-  const upliftRaw = itinerary?.controlPanel?.budgetUplift ?? 15;
+  const upliftRaw = Number(itinerary?.controlPanel?.budgetUplift ?? 15);
+  // A negative tolerance holds the trip below the customer's budget, so the clamp is
+  // symmetric. The legacy fraction test (0.15 = 15%) is read symmetrically too.
+  const upliftMagnitude = Math.abs(upliftRaw);
   const upliftPct = Math.min(Math.max(
-    (upliftRaw > 0 && upliftRaw < 1) ? upliftRaw : (Number(upliftRaw) / 100),
-    0
+    (upliftMagnitude > 0 && upliftMagnitude < 1) ? upliftRaw : (upliftRaw / 100),
+    -1
   ), 1);
+  // The Control Panel can instead set a fixed trip ceiling, which replaces the
+  // customer's budget rather than adjusting it.
+  const isAmountBudget = itinerary?.controlPanel?.budgetMode === "amount";
+  const customBudget = Math.max(0, Math.floor(Number(itinerary?.controlPanel?.budgetAmount) || 0));
+  const useCustomBudget = isAmountBudget && customBudget > 0;
 
   const customCosts = Array.isArray(itinerary?.controlPanel?.customCosts)
     ? itinerary.controlPanel.customCosts
     : [];
-  const customCostLines = customCosts
-    .map((c) => {
-      const amount = Number(c?.amount) || 0;
-      if (!amount) return null;
-      const days = Math.max(1, tripDays || 1);
-      const total = c?.unit === "per_day" ? amount * days : amount;
-      const unitLabel = c?.unit === "per_day" ? ` ($${amount}/day × ${days})` : "";
-      return {
-        id: c?.id || c?.label,
-        label: `${c?.label || "Custom cost"}${unitLabel}`,
-        total,
-      };
-    })
-    .filter(Boolean);
+  // Food and transport are charged per head per day, so party size is part of the total.
+  const travellers = Math.max(1, Number(itinerary?.numberOfTravelers) || 1);
+  const customCostLines = buildCustomCostLines(customCosts, { tripDays, travellers });
   const customCostsTotal = customCostLines.reduce((sum, c) => sum + c.total, 0);
 
   // Breaks (lunch, rest, free time) are scheduling placeholders, not activities, so they
   // are excluded from both the count and the price total. A day showing
   // "Pyramids / Museum / Lunch Break / Nile Cruise" counts as 3 activities, not 4.
-  const activitiesTotal = useMemo(() => sumActivityPrices(daysData), [daysData]);
+  // Per person, as the catalogue stores it...
+  const activitiesPerPerson = useMemo(() => sumActivityPrices(daysData), [daysData]);
+  // ...and what the party pays, which is what has to fit the traveller's budget.
+  const activitiesTotal = partyActivityCost(activitiesPerPerson, travellers);
 
   const totalActivitiesCount = useMemo(() => countActivities(daysData), [daysData]);
 
   const baseBudget = itinerary?.budget || parseBudgetValue(request?.tripDetails?.budget || request?.amount) || 0;
-  const maxAllowedTotalBudget = baseBudget > 0 ? Math.floor(baseBudget * (1 + upliftPct)) : 0;
+  const maxAllowedTotalBudget = useCustomBudget
+    ? customBudget
+    : (baseBudget > 0 ? Math.floor(baseBudget * (1 + upliftPct)) : 0);
   const activityBudgetAllowance = Math.max(0, (budgetBreakdown?.activityCeiling ?? (maxAllowedTotalBudget - hotelCost - customCostsTotal)));
+  const perPersonBudgetAllowance = perTravellerCeiling(activityBudgetAllowance, travellers);
   const activityBudgetUsedPct = activityBudgetAllowance > 0
     ? Math.round((activitiesTotal / activityBudgetAllowance) * 100)
     : null;
   const grandTotal = activitiesTotal + hotelCost + customCostsTotal;
-  const isWithinBaseBudget = baseBudget > 0 ? grandTotal <= baseBudget : true;
-  const isWithinTolerance = baseBudget > 0 ? grandTotal <= maxAllowedTotalBudget : true;
+  const isWithinBaseBudget = useCustomBudget
+    ? grandTotal <= customBudget
+    : (baseBudget > 0 ? grandTotal <= baseBudget : true);
+  const isWithinTolerance = maxAllowedTotalBudget > 0 ? grandTotal <= maxAllowedTotalBudget : true;
 
   const currentDay = daysData[activeDay] || null;
 
@@ -1562,6 +1597,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                   day={day}
                   darkMode={darkMode}
                   isActive={overDayIndex === idx}
+                  travellers={travellers}
                   onRemoveActivity={removeActivityFromDay}
                   onChangeActivity={changeActivityField}
                   onUpdateDayNote={updateDayNote}
@@ -1646,9 +1682,17 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                 <Row label="Base Budget" value={baseBudget ? `$${baseBudget.toLocaleString()}` : "Flexible"} dark={darkMode} />
                 {/* Shown even at 0%. Hiding the row when the uplift was zero made a
                     deliberate "no tolerance" look like the setting had been ignored. */}
-                {baseBudget > 0 && (
+                {(baseBudget > 0 || useCustomBudget) && (
                   <Row
-                    label={upliftPct > 0 ? `Budget Tolerance (+${Math.round(upliftPct * 100)}%)` : "Budget Tolerance (0% — none)"}
+                    label={
+                      useCustomBudget
+                        ? "Custom Budget (set by supplier)"
+                        : upliftPct > 0
+                          ? `Budget Tolerance (+${Math.round(upliftPct * 100)}%)`
+                          : upliftPct < 0
+                            ? `Budget Tolerance (${Math.round(upliftPct * 100)}%)`
+                            : "Budget Tolerance (0% — none)"
+                    }
                     value={`Max $${maxAllowedTotalBudget.toLocaleString()}`}
                     dark={darkMode}
                   />
@@ -1656,11 +1700,27 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                 <Row label="Hotel" value={hotelLabel} dark={darkMode} />
                 <Row label="Transportation" value="Included in itinerary" dark={darkMode} />
                 {hotelCost > 0 && <Row label={`Hotel (${nights} nights × ${rooms} rooms)`} value={`$${hotelCost.toLocaleString()}`} dark={darkMode} />}
-                <Row label="Activities Cost" value={`$${activitiesTotal.toLocaleString()}`} dark={darkMode} />
+                <Row
+                  label={travellers > 1 ? `Activities Cost (${travellers} travellers)` : "Activities Cost"}
+                  value={
+                    travellers > 1
+                      ? `$${activitiesTotal.toLocaleString()} ($${activitiesPerPerson.toLocaleString()} pp)`
+                      : `$${activitiesTotal.toLocaleString()}`
+                  }
+                  dark={darkMode}
+                />
                 {baseBudget > 0 && activityBudgetAllowance > 0 && (
                   <Row
                     label="Activity Budget Used"
                     value={`$${activitiesTotal.toLocaleString()} of $${activityBudgetAllowance.toLocaleString()} (${activityBudgetUsedPct ?? 0}%)`}
+                    dark={darkMode}
+                  />
+                )}
+                {/* The planner buys per head, so show the per-person target it works to. */}
+                {travellers > 1 && perPersonBudgetAllowance > 0 && (
+                  <Row
+                    label="Per-person activity budget"
+                    value={`$${activitiesPerPerson.toLocaleString()} of $${perPersonBudgetAllowance.toLocaleString()}`}
                     dark={darkMode}
                   />
                 )}

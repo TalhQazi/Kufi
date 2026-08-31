@@ -820,6 +820,17 @@ export default function ItineraryView({
                                                                 : 'No activities scheduled for this day.'}
                                                     </p>
                                                 )}
+
+                                                {/* Where the night is spent. Absent on the departure day. */}
+                                                {day.overnightHotel?.name && (
+                                                    <div className="mt-4 flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                                                        <span className="uppercase tracking-wide text-[10px] text-slate-400">Overnight</span>
+                                                        <span className="font-medium text-slate-800">{day.overnightHotel.name}</span>
+                                                        {day.overnightHotel.area && (
+                                                            <span className="text-slate-500">· {day.overnightHotel.area}</span>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

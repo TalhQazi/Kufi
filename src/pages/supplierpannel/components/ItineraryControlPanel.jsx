@@ -4,10 +4,21 @@ import { toDateString, buildTripDates as buildTripDateRange, nightsBetween } fro
 import { resolveLunchWindow } from "../../../utils/lunchWindow";
 import { hotelIdOf } from "../../../utils/hotelStays";
 
+/** Cost units understood by the backend (utils/tripCosts.js). Keep the two in step. */
+const COST_UNITS = ["flat", "per_day", "per_person", "per_person_per_day"];
+const COST_UNIT_LABELS = {
+  flat: "Flat",
+  per_day: "Per day",
+  per_person: "Per person",
+  per_person_per_day: "Per person / day",
+};
+
+// Food and transportation are quoted per head per day; a minimum charge is a flat fee.
+// Saved itineraries keep whatever unit they were costed with — these are seeds only.
 const DEFAULT_CUSTOM_COSTS = [
   { id: "min-charge", label: "Minimum charge", amount: 0, unit: "flat" },
-  { id: "transportation", label: "Transportation", amount: 0, unit: "per_day" },
-  { id: "food", label: "Food", amount: 0, unit: "per_day" },
+  { id: "transportation", label: "Transportation", amount: 0, unit: "per_person_per_day" },
+  { id: "food", label: "Food", amount: 0, unit: "per_person_per_day" },
 ];
 
 /** Default budget uplift tolerance, in percent. Mirrors the Itinerary schema default. */
@@ -31,23 +42,37 @@ const DEFAULT_CP = {
   hotelStays: [],
   numberOfRooms: 1,
   budgetUplift: DEFAULT_UPLIFT,
+  budgetMode: "percent",
+  budgetAmount: 0,
   customCosts: DEFAULT_CUSTOM_COSTS,
 };
 
 /**
- * Coerce the uplift field to a number in 0–100.
+ * Coerce the uplift field to a number in -100–100.
  *
  * `Number(value) || 15` was the bug behind "Uplift = 0 does not stick": 0 is falsy, so
  * every deliberate zero was silently replaced by the 15% default before it ever left the
  * component. Only genuinely absent/unparsable values may fall back to the default.
+ *
+ * Negative values are allowed: they ask for an itinerary that comes in under the
+ * customer's budget rather than up to it.
  */
 function normalizeUplift(value, fallback = DEFAULT_UPLIFT) {
   if (value === null || value === undefined || value === "") return fallback;
   const num = Number(value);
   if (!Number.isFinite(num)) return fallback;
-  // Legacy records stored the uplift as a fraction (0.15) rather than a percentage (15).
-  const asPercent = num > 0 && num < 1 ? Math.round(num * 100) : num;
-  return Math.min(Math.max(asPercent, 0), 100);
+  // Legacy records stored the uplift as a fraction (0.15) rather than a percentage (15),
+  // read symmetrically so -0.15 means -15%.
+  const magnitude = Math.abs(num);
+  const asPercent = magnitude > 0 && magnitude < 1 ? Math.round(num * 100) : num;
+  return Math.min(Math.max(asPercent, -100), 100);
+}
+
+/** A fixed trip ceiling in currency. Zero means "not set" — fall back to the percentage. */
+function normalizeBudgetAmount(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return 0;
+  return Math.floor(num);
 }
 
 function seedCustomCosts(list) {
@@ -56,7 +81,7 @@ function seedCustomCosts(list) {
       id: c.id || `cost-${i}-${Date.now()}`,
       label: c.label || "",
       amount: Number(c.amount) || 0,
-      unit: c.unit === "per_day" ? "per_day" : "flat",
+      unit: COST_UNITS.includes(c.unit) ? c.unit : "flat",
     }));
   }
   return DEFAULT_CUSTOM_COSTS.map((c) => ({ ...c }));
@@ -183,6 +208,8 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
       ...DEFAULT_CP,
       ...itinerary.controlPanel,
       budgetUplift: normalizeUplift(itinerary.controlPanel.budgetUplift),
+      budgetMode: itinerary.controlPanel.budgetMode === "amount" ? "amount" : "percent",
+      budgetAmount: normalizeBudgetAmount(itinerary.controlPanel.budgetAmount),
       hotelId: itinerary.controlPanel.hotelId?._id || itinerary.controlPanel.hotelId || "",
       guestsPerRoom: Number(itinerary.controlPanel.guestsPerRoom) || 2,
       arrivalTime: itinerary.controlPanel.arrivalTime || "",
@@ -284,6 +311,8 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     const payload = {
       ...cp,
       budgetUplift: normalizeUplift(cp.budgetUplift),
+      budgetMode: cp.budgetMode === "amount" ? "amount" : "percent",
+      budgetAmount: normalizeBudgetAmount(cp.budgetAmount),
       lunchDurationMinutes: resolveLunchWindow(cp).durationMinutes,
       lunchStart: resolveLunchWindow(cp).lunchStart,
       lunchEnd: resolveLunchWindow(cp).lunchEnd,
@@ -305,6 +334,8 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     const payload = {
       ...cp,
       budgetUplift: normalizeUplift(cp.budgetUplift),
+      budgetMode: cp.budgetMode === "amount" ? "amount" : "percent",
+      budgetAmount: normalizeBudgetAmount(cp.budgetAmount),
       lunchDurationMinutes: resolveLunchWindow(cp).durationMinutes,
       lunchStart: resolveLunchWindow(cp).lunchStart,
       lunchEnd: resolveLunchWindow(cp).lunchEnd,
@@ -326,6 +357,8 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     const payload = {
       ...cp,
       budgetUplift: normalizeUplift(cp.budgetUplift),
+      budgetMode: cp.budgetMode === "amount" ? "amount" : "percent",
+      budgetAmount: normalizeBudgetAmount(cp.budgetAmount),
       lunchDurationMinutes: resolveLunchWindow(cp).durationMinutes,
       lunchStart: resolveLunchWindow(cp).lunchStart,
       lunchEnd: resolveLunchWindow(cp).lunchEnd,
@@ -344,12 +377,15 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
   const namedCost = (id, label) =>
     (cp.customCosts || []).find((c) => c.id === id || String(c.label || "").toLowerCase() === label.toLowerCase());
 
+  // `unit` is the default for a row that does not exist yet. An existing row keeps the
+  // unit it already carries, so editing the amount never re-prices the line.
   const setNamedCost = (id, label, unit, amount) => {
     isDirtyRef.current = true;
     setCp((prev) => {
       const costs = [...(prev.customCosts || [])];
       const idx = costs.findIndex((c) => c.id === id || String(c.label || "").toLowerCase() === label.toLowerCase());
-      const next = { id, label, amount: Math.max(0, Number(amount) || 0), unit };
+      const keptUnit = idx >= 0 && COST_UNITS.includes(costs[idx]?.unit) ? costs[idx].unit : unit;
+      const next = { id, label, amount: Math.max(0, Number(amount) || 0), unit: keptUnit };
       if (idx >= 0) costs[idx] = { ...costs[idx], ...next };
       else costs.push(next);
       return { ...prev, customCosts: costs };
@@ -362,6 +398,20 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     const label = String(c.label || "").toLowerCase();
     return !PRESET_COST_KEYS.has(key) && !PRESET_COST_KEYS.has(label);
   });
+
+  const isAmountBudget = cp.budgetMode === "amount";
+  const upliftPct = normalizeUplift(cp.budgetUplift);
+  const budgetAmount = normalizeBudgetAmount(cp.budgetAmount);
+  // A fixed budget of 0 is "not set yet", so say so rather than implying a $0 trip.
+  const budgetHint = isAmountBudget
+    ? (budgetAmount > 0
+        ? `Fixed budget: the itinerary is built to a total of $${budgetAmount.toLocaleString()}, ignoring the customer’s stated budget.`
+        : "Enter a fixed trip total, or switch back to % to adjust the customer’s budget.")
+    : upliftPct === 0
+      ? "0% tolerance: itinerary total stays within the customer’s budget."
+      : upliftPct > 0
+        ? `+${upliftPct}% tolerance: itinerary total can go up to the customer’s budget plus this uplift.`
+        : `${upliftPct}%: itinerary total is held ${Math.abs(upliftPct)}% below the customer’s budget.`;
 
   const hotelAreas = Array.from(new Set((hotels || []).map((h) => h.city).filter(Boolean)));
   const tripNights = nightsBetween(startDate, endDate);
@@ -559,23 +609,23 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
             className={inputCls}
           />
         </Field>
-        <Field label="Local Transport ($/day)" className={labelCls}>
+        <Field label="Local Transport ($/person/day)" className={labelCls}>
           <input
             type="number"
             min={0}
             step={1}
             value={namedCost("transportation", "Transportation")?.amount ?? 0}
-            onChange={(e) => setNamedCost("transportation", "Transportation", "per_day", e.target.value)}
+            onChange={(e) => setNamedCost("transportation", "Transportation", "per_person_per_day", e.target.value)}
             className={inputCls}
           />
         </Field>
-        <Field label="Food ($/day)" className={labelCls}>
+        <Field label="Food ($/person/day)" className={labelCls}>
           <input
             type="number"
             min={0}
             step={1}
             value={namedCost("food", "Food")?.amount ?? 0}
-            onChange={(e) => setNamedCost("food", "Food", "per_day", e.target.value)}
+            onChange={(e) => setNamedCost("food", "Food", "per_person_per_day", e.target.value)}
             className={inputCls}
           />
         </Field>
@@ -592,26 +642,55 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
             className={inputCls}
           />
         </Field>
-        <Field label="Budget Tolerance %" className={labelCls}>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={cp.budgetUplift}
-            onChange={(e) => {
-              const raw = e.target.value;
-              set("budgetUplift", raw === "" ? "" : normalizeUplift(raw));
-            }}
-            onBlur={(e) => set("budgetUplift", normalizeUplift(e.target.value))}
-            className={inputCls}
-          />
+        {/* One control, two modes. In % it adjusts the customer's budget (negative
+            builds under it); in $ it sets a fixed trip ceiling outright. The two values
+            are stored separately so switching modes never discards the other. */}
+        <Field label={isAmountBudget ? "Custom Budget $" : "Budget Tolerance %"} className={labelCls}>
+          <div className="flex gap-1">
+            {isAmountBudget ? (
+              <input
+                type="number"
+                min={0}
+                step={50}
+                value={cp.budgetAmount ?? 0}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  set("budgetAmount", raw === "" ? "" : normalizeBudgetAmount(raw));
+                }}
+                onBlur={(e) => set("budgetAmount", normalizeBudgetAmount(e.target.value))}
+                placeholder="e.g. 3500"
+                className={`${inputCls} flex-1 min-w-0`}
+              />
+            ) : (
+              <input
+                type="number"
+                min={-100}
+                max={100}
+                step={5}
+                value={cp.budgetUplift}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  set("budgetUplift", raw === "" || raw === "-" ? raw : normalizeUplift(raw));
+                }}
+                onBlur={(e) => set("budgetUplift", normalizeUplift(e.target.value))}
+                className={`${inputCls} flex-1 min-w-0`}
+              />
+            )}
+            <select
+              value={isAmountBudget ? "amount" : "percent"}
+              onChange={(e) => set("budgetMode", e.target.value === "amount" ? "amount" : "percent")}
+              aria-label="Budget adjustment mode"
+              className={`${inputCls} w-14 px-1 shrink-0`}
+            >
+              <option value="percent">%</option>
+              <option value="amount">$</option>
+            </select>
+          </div>
         </Field>
       </div>
 
       <p className={`text-[10px] mt-3 ${darkMode ? "text-slate-500" : "text-[#8a7a66]"}`}>
-        {normalizeUplift(cp.budgetUplift) === 0
-          ? "0% tolerance: itinerary total stays within the customer’s budget."
-          : `${normalizeUplift(cp.budgetUplift)}% tolerance: itinerary total can go up to the customer’s budget plus this uplift.`}
+        {budgetHint}
         {lunchWindow.durationMinutes > 0 ? ` Lunch ${lunchWindow.lunchStart}–${lunchWindow.lunchEnd}.` : ""}
       </p>
 
@@ -683,8 +762,9 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
                   onChange={(e) => updateCustomCost(cost.id, "unit", e.target.value)}
                   className={inputCls}
                 >
-                  <option value="flat">Flat</option>
-                  <option value="per_day">Per day</option>
+                  {COST_UNITS.map((u) => (
+                    <option key={u} value={u}>{COST_UNIT_LABELS[u]}</option>
+                  ))}
                 </select>
               </div>
             </div>
