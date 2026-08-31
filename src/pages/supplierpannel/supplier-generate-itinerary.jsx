@@ -229,11 +229,30 @@ function ScheduleBreakRow({ activity, darkMode }) {
  * ending and the next beginning. Unlabelled, that gap just looks like a scheduling bug —
  * this says what it is.
  */
-function TravelLegRow({ minutes, darkMode }) {
+/** Which record to point at when a leg cannot be measured. */
+const TRAVEL_UNKNOWN_TEXT = {
+  self: "Travel time unavailable — this activity has no location set",
+  previous: "Travel time unavailable — the previous activity has no location set",
+  origin: "Travel time from the hotel unavailable — the hotel has no location set",
+};
+
+function TravelLegRow({ minutes, fromOrigin, unknownReason, darkMode }) {
+  // An unmeasurable leg is not a zero-minute leg. Naming the record that is actually
+  // missing a position matters: blaming the activity when the HOTEL is unlocated sends
+  // the supplier to edit a row that was never the problem.
+  if (unknownReason) {
+    return (
+      <div className={`flex items-center gap-2 px-3 py-1 text-[10px] ${darkMode ? "text-amber-500/70" : "text-amber-600/80"}`}>
+        <Car className="h-3 w-3 shrink-0" />
+        <span>{TRAVEL_UNKNOWN_TEXT[unknownReason] || TRAVEL_UNKNOWN_TEXT.self}</span>
+        <span className="flex-1 border-t border-dashed border-current opacity-30" />
+      </div>
+    );
+  }
   return (
     <div className={`flex items-center gap-2 px-3 py-1 text-[10px] ${darkMode ? "text-slate-500" : "text-slate-400"}`}>
       <Car className="h-3 w-3 shrink-0" />
-      <span>{minutes} min travel</span>
+      <span>{minutes} min travel{fromOrigin ? " from hotel" : ""}</span>
       <span className="flex-1 border-t border-dashed border-current opacity-30" />
     </div>
   );
@@ -446,10 +465,22 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, travellers = 1, onRe
             if (isBreakEntry(act)) {
               return <ScheduleBreakRow key={act.id} activity={act} darkMode={darkMode} />;
             }
-            const travel = Number(act.travelFromPreviousMinutes) || 0;
+            // null means "could not be measured"; 0 means "same place, no distance".
+            // The backend only sets a reason when there is something to act on, so a
+            // first stop with no hotel selected at all stays quiet.
+            const rawTravel = act.travelFromPreviousMinutes;
+            const unknownReason = act.travelUnknownReason || null;
+            const travel = rawTravel === null || rawTravel === undefined ? 0 : Number(rawTravel) || 0;
             return (
               <Fragment key={act.id}>
-                {travel > 0 && <TravelLegRow minutes={travel} darkMode={darkMode} />}
+                {(travel > 0 || unknownReason) && (
+                  <TravelLegRow
+                    minutes={travel}
+                    fromOrigin={Boolean(act.travelFromOrigin)}
+                    unknownReason={unknownReason}
+                    darkMode={darkMode}
+                  />
+                )}
               <SortableActivityCard
                 activity={act}
                 activityIndex={activityRanks.get(act.id) ?? 0}
@@ -678,11 +709,22 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       // costs have consumed the traveller's whole budget and the uplift left no headroom.
       const budgetInfo = res.data?.budget;
       setBudgetBreakdown(budgetInfo || null);
-      if (budgetInfo?.exhaustedByFixedCosts) {
+      if (budgetInfo?.fixedOverBudget || budgetInfo?.exhaustedByFixedCosts) {
+        // Say which cost overran the budget and by how much. "No activities could be
+        // scheduled" on its own left the supplier staring at empty days with no clue
+        // that food and transport had eaten the entire trip ceiling.
+        const parts = [];
+        if (budgetInfo.hotelCost > 0) parts.push(`hotel $${budgetInfo.hotelCost.toLocaleString()}`);
+        if (budgetInfo.customCostsTotal > 0) parts.push(`per-trip costs $${budgetInfo.customCostsTotal.toLocaleString()}`);
         setGeoNotice(
-          `No activities could be scheduled: hotel ($${budgetInfo.hotelCost.toLocaleString()}) and custom costs ` +
-          `($${budgetInfo.customCostsTotal.toLocaleString()}) already use the whole $${budgetInfo.maxAllowedTotalBudget.toLocaleString()} ` +
-          `ceiling at ${budgetInfo.upliftPercent}% uplift. Raise the uplift, lower the accommodation cost, or reduce custom costs.`
+          `Fixed costs (${parts.join(" + ") || "hotel and per-trip costs"}) come to ` +
+          `$${(budgetInfo.fixedCostsTotal ?? 0).toLocaleString()}, which is ` +
+          `$${(budgetInfo.overBudgetBy ?? 0).toLocaleString()} over the ` +
+          `$${budgetInfo.maxAllowedTotalBudget.toLocaleString()} trip ceiling. ` +
+          (budgetInfo.exhaustedByFixedCosts
+            ? "No activities could be scheduled. "
+            : `Activities were limited to $${budgetInfo.activityCeiling.toLocaleString()} so the trip is still usable. `) +
+          "Check the per-day costs and their units, the trip length, and the number of travellers."
         );
       } else {
         // Surface any day the server had to reorganize for geographic feasibility.

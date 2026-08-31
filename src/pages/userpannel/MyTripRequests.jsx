@@ -330,10 +330,10 @@ export default function MyTripRequests({
                                             <td className="px-4 py-3 text-sm font-mono font-semibold text-slate-800">
                                                 {row.requestNumber}
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-slate-700">
-                                                <span className="inline-flex items-center gap-1.5">
-                                                    <FiMapPin className="text-slate-400 shrink-0" />
-                                                    {row.destination}
+                                            <td className="px-4 py-3 text-sm text-slate-700 max-w-[220px]">
+                                                <span className="flex items-start gap-1.5">
+                                                    <FiMapPin className="text-slate-400 shrink-0 mt-0.5" />
+                                                    <span className="min-w-0 break-words">{row.destination}</span>
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-slate-600">
@@ -342,7 +342,7 @@ export default function MyTripRequests({
                                                     {formatDate(row.submissionDate)}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-slate-700">{row.supplierName}</td>
+                                            <td className="px-4 py-3 text-sm text-slate-700 max-w-[200px] break-words">{row.supplierName}</td>
                                             <td className="px-4 py-3">
                                                 <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold ${customerStatusColor(row.status)}`}>
                                                     {row.status}
@@ -419,7 +419,7 @@ export default function MyTripRequests({
             {selectedDetails && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setSelectedDetails(null)}>
                     <div
-                        className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6"
+                        className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-start justify-between gap-3 mb-4">
@@ -431,28 +431,28 @@ export default function MyTripRequests({
                         </div>
                         <dl className="space-y-3 text-sm">
                             <div className="flex justify-between gap-4">
-                                <dt className="text-slate-500">Destination</dt>
-                                <dd className="font-semibold text-slate-900 text-right">{selectedDetails.destination}</dd>
+                                <dt className="text-slate-500 shrink-0">Destination</dt>
+                                <dd className="font-semibold text-slate-900 text-right min-w-0 break-words">{selectedDetails.destination}</dd>
                             </div>
                             <div className="flex justify-between gap-4">
-                                <dt className="text-slate-500">Supplier</dt>
-                                <dd className="font-semibold text-slate-900 text-right">{selectedDetails.supplierName}</dd>
+                                <dt className="text-slate-500 shrink-0">Supplier</dt>
+                                <dd className="font-semibold text-slate-900 text-right min-w-0 break-words">{selectedDetails.supplierName}</dd>
                             </div>
                             <div className="flex justify-between gap-4">
-                                <dt className="text-slate-500">Status</dt>
-                                <dd>
+                                <dt className="text-slate-500 shrink-0">Status</dt>
+                                <dd className="min-w-0 text-right">
                                     <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold ${customerStatusColor(selectedDetails.status)}`}>
                                         {selectedDetails.status}
                                     </span>
                                 </dd>
                             </div>
                             <div className="flex justify-between gap-4">
-                                <dt className="text-slate-500">Submitted</dt>
-                                <dd className="font-semibold text-slate-900">{formatDate(selectedDetails.submissionDate)}</dd>
+                                <dt className="text-slate-500 shrink-0">Submitted</dt>
+                                <dd className="font-semibold text-slate-900 text-right min-w-0 break-words">{formatDate(selectedDetails.submissionDate)}</dd>
                             </div>
                             <div className="flex justify-between gap-4">
-                                <dt className="text-slate-500">Last Updated</dt>
-                                <dd className="font-semibold text-slate-900">{formatDate(selectedDetails.lastUpdated)}</dd>
+                                <dt className="text-slate-500 shrink-0">Last Updated</dt>
+                                <dd className="font-semibold text-slate-900 text-right min-w-0 break-words">{formatDate(selectedDetails.lastUpdated)}</dd>
                             </div>
                         </dl>
                         <div className="mt-6 flex flex-wrap gap-2 justify-end">

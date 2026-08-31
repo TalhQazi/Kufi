@@ -688,15 +688,35 @@ export default function TravelBooking({ onLogout, onBack, onForward, canGoBack, 
                                         type="button"
                                         onClick={() => {
                                             const current = Number(formData.budget) || 500
-                                            const nextVal = Math.max(500, current - 500)
+                                            const nextVal = Math.max(0, current - 500)
                                             handleChange('budget', String(nextVal))
                                         }}
                                         className="w-12 h-11 flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-bold hover:bg-slate-100 text-lg transition-colors"
                                     >
                                         -
                                     </button>
-                                    <div className="flex-1 border border-slate-200 rounded-lg px-4 py-2.5 bg-white text-center font-bold text-slate-800 text-base shadow-sm">
-                                        {formData.budget ? `$${Number(formData.budget).toLocaleString()}` : '$500'}
+                                    {/* Typeable, not just steppable: the -/+ buttons move in
+                                        $500 jumps, which cannot express a real budget like
+                                        $1,750. Digits only — the field is submitted as a
+                                        plain number string. */}
+                                    <div className="flex-1 relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-800 text-base pointer-events-none">$</span>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={formData.budget ? Number(formData.budget).toLocaleString() : ''}
+                                            onChange={(e) => {
+                                                const digits = e.target.value.replace(/[^\d]/g, '')
+                                                handleChange('budget', digits)
+                                            }}
+                                            onBlur={() => {
+                                                const n = Number(formData.budget) || 0
+                                                handleChange('budget', String(Math.max(0, n)))
+                                            }}
+                                            placeholder="500"
+                                            aria-label="Budget in US dollars"
+                                            className="w-full border border-slate-200 rounded-lg pl-8 pr-4 py-2.5 bg-white text-center font-bold text-slate-800 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-brown/40"
+                                        />
                                     </div>
                                     <button
                                         type="button"

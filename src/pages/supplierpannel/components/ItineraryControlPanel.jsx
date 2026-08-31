@@ -10,7 +10,7 @@ const COST_UNIT_LABELS = {
   flat: "Flat",
   per_day: "Per day",
   per_person: "Per person",
-  per_person_per_day: "Per person / day",
+  per_person_per_day: "Per person/day",
 };
 
 // Food and transportation are quoted per head per day; a minimum charge is a flat fee.
@@ -474,6 +474,10 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
     : "bg-white border-[#ddd2c5] text-gray-700";
   const inputCls = `w-full rounded-[10px] border px-2.5 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#b8860b]/30 focus:border-[#b8860b] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-[#faf8f5] border-[#ddd2c5] text-slate-800"}`;
   const labelCls = `text-[10px] font-semibold uppercase tracking-wide ${darkMode ? "text-slate-400" : "text-[#6b5b49]"}`;
+  // Same chrome as inputCls but WITHOUT `w-full`, so a narrow unit picker can sit beside
+  // an input. Appending a width to inputCls does not work — Tailwind emits `.w-full`
+  // after the numeric widths, so `w-full` always wins the cascade.
+  const unitSelectCls = `rounded-[10px] border px-1 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#b8860b]/30 focus:border-[#b8860b] ${darkMode ? "bg-slate-800 border-slate-700 text-white" : "bg-[#faf8f5] border-[#ddd2c5] text-slate-800"}`;
 
   return (
     <div className={`rounded-2xl border text-xs px-4 py-4 ${base}`}>
@@ -680,7 +684,7 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
               value={isAmountBudget ? "amount" : "percent"}
               onChange={(e) => set("budgetMode", e.target.value === "amount" ? "amount" : "percent")}
               aria-label="Budget adjustment mode"
-              className={`${inputCls} w-14 px-1 shrink-0`}
+              className={`${unitSelectCls} w-[3.25rem] shrink-0`}
             >
               <option value="percent">%</option>
               <option value="amount">$</option>

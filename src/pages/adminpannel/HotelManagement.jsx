@@ -5,6 +5,8 @@ const EMPTY = {
   name: "",
   country: "",
   city: "",
+  latitude: "",
+  longitude: "",
   pricePerNight: "",
   rooms: 1,
   rating: 4.0,
@@ -14,6 +16,22 @@ const EMPTY = {
   images: [],
   sortOrder: 0,
 };
+
+/**
+ * Latitude/longitude for the payload, omitted entirely when either is blank.
+ *
+ * Sending `Number("")` would store 0/0 — a point in the Atlantic that the planner would
+ * happily measure travel time against. An absent position is the honest value.
+ */
+function coordinatePayload(form) {
+  const lat = String(form.latitude ?? "").trim();
+  const lng = String(form.longitude ?? "").trim();
+  if (lat === "" || lng === "") return {};
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return {};
+  return { latitude: latNum, longitude: lngNum, coordinates: { lat: latNum, lng: lngNum } };
+}
 
 export default function HotelManagement({ darkMode }) {
   const [hotels, setHotels] = useState([]);
@@ -103,6 +121,8 @@ export default function HotelManagement({ darkMode }) {
       name: hotel.name || "",
       country: hotel.country || "",
       city: hotel.city || "",
+      latitude: hotel.latitude ?? hotel.coordinates?.lat ?? "",
+      longitude: hotel.longitude ?? hotel.coordinates?.lng ?? "",
       pricePerNight: hotel.pricePerNight ?? "",
       rooms: hotel.rooms ?? 1,
       rating: hotel.rating ?? 4.0,
@@ -164,6 +184,7 @@ export default function HotelManagement({ darkMode }) {
         name: form.name,
         country: form.country,
         city: form.city,
+        ...coordinatePayload(form),
         pricePerNight: Number(form.pricePerNight),
         rooms: Number(form.rooms),
         rating: Number(form.rating),
@@ -267,6 +288,7 @@ export default function HotelManagement({ darkMode }) {
         name: form.name,
         country: form.country,
         city: form.city,
+        ...coordinatePayload(form),
         pricePerNight: Number(form.pricePerNight),
         rooms: Number(form.rooms),
         rating: Number(form.rating),
@@ -448,6 +470,17 @@ export default function HotelManagement({ darkMode }) {
                       <option value={form.city}>{form.city}</option>
                     )}
                   </select>
+                </div>
+                {/* The planner measures travel from the hotel to the first stop of each
+                    day. Without a position that leg cannot be computed, and the itinerary
+                    shows no travel time for the first activity. */}
+                <div>
+                  <label className={labelCls}>Latitude</label>
+                  <input type="number" step="0.000001" value={form.latitude} onChange={(e) => setForm((p) => ({ ...p, latitude: e.target.value }))} className={inputCls} placeholder="30.0444" />
+                </div>
+                <div>
+                  <label className={labelCls}>Longitude</label>
+                  <input type="number" step="0.000001" value={form.longitude} onChange={(e) => setForm((p) => ({ ...p, longitude: e.target.value }))} className={inputCls} placeholder="31.2357" />
                 </div>
                 <div>
                   <label className={labelCls}>Price Per Night ($) *</label>
