@@ -106,6 +106,27 @@ export function assessActivityAgainstDay(
     return true;
   });
 
+  // How far the incoming activity sits from the stops already on this day. This is the
+  // signal for "you are mixing two different areas on the same day" — independent of
+  // whether the day still has spare hours, which is why a far move can otherwise slip
+  // through with no warning at all.
+  let nearestKm = null;
+  let nearestTitle = "";
+  const movedCoords = getCoordinates(activity);
+  if (movedCoords) {
+    others.forEach((o) => {
+      const c = getCoordinates(o);
+      if (!c) return;
+      const km = haversineKm(movedCoords, c);
+      if (km == null) return;
+      if (nearestKm == null || km < nearestKm) {
+        nearestKm = km;
+        nearestTitle = o.title || "another activity";
+      }
+    });
+  }
+  const farFromDay = nearestKm != null && nearestKm > SAME_AREA_RADIUS_KM;
+
   const proposed = [...others, activity].filter(Boolean);
   let used = 0;
   let prev = null;
@@ -140,26 +161,46 @@ export function assessActivityAgainstDay(
     travelMinutes: travelTotal,
     farthestKm: Math.round(farthestKm),
     otherTitle: farthestTitle,
+    nearestKm: nearestKm == null ? null : Math.round(nearestKm),
+    nearestTitle,
+    farFromDay,
     startLabel,
     endLabel,
     fitsInDayHours,
     overrunMinutes,
-    /** Warn when the move does not fit the Control Panel activity window. */
-    exceedsSameArea: !fitsInDayHours,
+    /** Warn when the move breaks activity hours OR mixes a far-away area into the day. */
+    exceedsSameArea: !fitsInDayHours || farFromDay,
   };
 }
 
 export function formatTravelWarning(assessment, { dayLabel = "this day" } = {}) {
-  if (!assessment || assessment.fitsInDayHours) return "";
-  const travelBit = assessment.farthestKm > 0
-    ? ` Travel between stops is about ${assessment.farthestKm} km` +
-      (assessment.travelMinutes ? ` (~${assessment.travelMinutes} min)` : "") +
-      "."
-    : "";
-  return (
-    `This does not fit ${dayLabel}'s activity hours (${assessment.startLabel}–${assessment.endLabel}). ` +
-    `Needed ~${assessment.usedMinutes} min, available ${assessment.capacityMinutes} min` +
-    (assessment.overrunMinutes ? ` (over by ${assessment.overrunMinutes} min)` : "") +
-    `.${travelBit} Move anyway?`
-  );
+  if (!assessment) return "";
+
+  // Case 1: the day physically runs out of hours once this stop (and its travel) is added.
+  if (!assessment.fitsInDayHours) {
+    const travelBit = assessment.farthestKm > 0
+      ? ` Travel between stops is about ${assessment.farthestKm} km` +
+        (assessment.travelMinutes ? ` (~${assessment.travelMinutes} min)` : "") +
+        "."
+      : "";
+    return (
+      `This does not fit ${dayLabel}'s activity hours (${assessment.startLabel}–${assessment.endLabel}). ` +
+      `Needed ~${assessment.usedMinutes} min, available ${assessment.capacityMinutes} min` +
+      (assessment.overrunMinutes ? ` (over by ${assessment.overrunMinutes} min)` : "") +
+      `.${travelBit} Move anyway?`
+    );
+  }
+
+  // Case 2: it fits in hours, but the stop is in a different area from the rest of the day
+  // — a long transfer that hurts the route even though the clock allows it.
+  if (assessment.farFromDay && assessment.nearestKm != null) {
+    const mins = travelMinutesForKm(assessment.nearestKm);
+    return (
+      `This stop is about ${assessment.nearestKm} km from the nearest activity on ${dayLabel}` +
+      (mins ? ` (~${mins} min travel each way)` : "") +
+      `. That is a long transfer for one day. Move anyway?`
+    );
+  }
+
+  return "";
 }

@@ -21,6 +21,7 @@ import { notifyItineraryWorkflowChanged } from "../../constants/itineraryLabels"
 import { countActivities, sumActivityPrices, isBreakEntry } from "../../utils/activityClassification";
 import {
   assessActivityAgainstDay,
+  formatTravelWarning,
   getCoordinates,
 } from "../../utils/itineraryGeo";
 import ItineraryActivityPool from "./components/ItineraryActivityPool";
@@ -256,7 +257,11 @@ function TravelLegRow({ minutes, fromOrigin, unknownReason, darkMode }) {
   return (
     <div className={`flex items-center gap-2 px-3 py-1 text-[10px] ${darkMode ? "text-slate-500" : "text-slate-400"}`}>
       <Car className="h-3 w-3 shrink-0" />
-      <span>{minutes} min travel{fromOrigin ? " from hotel" : ""}</span>
+      <span>
+        {minutes > 0
+          ? `${minutes} min travel${fromOrigin ? " from hotel" : ""}`
+          : `Same location · 0 min travel${fromOrigin ? " from hotel" : ""}`}
+      </span>
       <span className="flex-1 border-t border-dashed border-current opacity-30" />
     </div>
   );
@@ -299,36 +304,12 @@ function SortableActivityCard({ activity, activityIndex, dayIndex, darkMode, onR
       style={style}
       className={`rounded-lg border overflow-hidden flex gap-0 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"}`}
     >
-      <div className="flex flex-col justify-center items-center px-1 py-0.5 border-r border-slate-100 dark:border-slate-700/60 shrink-0 bg-slate-50/50 dark:bg-slate-900/30" onPointerDown={(e) => e.stopPropagation()}>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onMoveUp?.(activity.id, dayIndex); }}
-          className={`p-1 rounded hover:bg-amber-500 hover:text-white transition-colors text-xs font-bold ${darkMode ? "text-slate-400" : "text-gray-500"}`}
-          title="Move activity UP in rank position"
-        >
-          ▲
-        </button>
-
-        <span className="text-[10px] font-bold px-1.5 py-0.5 my-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-          #{Number.isInteger(activityIndex) ? activityIndex + 1 : 1}
-        </span>
-
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onMoveDown?.(activity.id, dayIndex); }}
-          className={`p-1 rounded hover:bg-amber-500 hover:text-white transition-colors text-xs font-bold ${darkMode ? "text-slate-400" : "text-gray-500"}`}
-          title="Move activity DOWN in rank position"
-        >
-          ▼
-        </button>
-      </div>
-
-      <div className="shrink-0 w-12 h-12 relative bg-slate-200">
+      <div className="shrink-0 w-28 self-stretch min-h-[3rem] relative bg-slate-200 overflow-hidden">
         {photo ? (
           <img
             src={photo}
             alt={activity.title}
-            className="w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
             onError={(e) => {
               e.currentTarget.style.display = "none";
             }}
@@ -474,10 +455,14 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, travellers = 1, onRe
             // first stop with no hotel selected at all stays quiet.
             const rawTravel = act.travelFromPreviousMinutes;
             const unknownReason = act.travelUnknownReason || null;
-            const travel = rawTravel === null || rawTravel === undefined ? 0 : Number(rawTravel) || 0;
+            // `null`/`undefined` = the leg could not be measured (a missing coordinate);
+            // a number (including 0) = it WAS measured. Show every measured leg, so two
+            // stops at the same spot still render an explicit "0 min" row instead of a gap.
+            const measured = rawTravel !== null && rawTravel !== undefined;
+            const travel = measured ? Number(rawTravel) || 0 : 0;
             return (
               <Fragment key={act.id}>
-                {(travel > 0 || unknownReason) && (
+                {(measured || unknownReason) && (
                   <TravelLegRow
                     minutes={travel}
                     fromOrigin={Boolean(act.travelFromOrigin)}
@@ -559,6 +544,8 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   const [saveMsg, setSaveMsg] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [geoNotice, setGeoNotice] = useState("");
+  // Staged cross-day move awaiting confirmation, shown as a card instead of window.confirm.
+  const [pendingMove, setPendingMove] = useState(null);
   const [extraFields, setExtraFields] = useState([]);
   const [showControlPanel, setShowControlPanel] = useState(true);
   const [showActivitiesPool, setShowActivitiesPool] = useState(true);
@@ -974,49 +961,57 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
             ? { ...d, activities: (d.activities || []).filter((a) => a.id !== active.id) }
             : d
         ));
-        const placed = resolveDayForActivity(movedAct, overDayIdx);
-        // Resolve against the day as it will be after removal from the source day.
+
+        // Assess the drop target as it will look after the activity leaves its old day.
+        // This surfaces BOTH problems: the day running out of hours, and the stop being a
+        // long transfer from everything else already on that day (the distance the user
+        // was not being warned about before).
+        const targetLabel = daysData[overDayIdx]?.dayName || `Day ${overDayIdx + 1}`;
         const assessmentOnTarget = assessActivityAgainstDay(
           movedAct,
-          (without[placed.dayIdx]?.activities || []),
+          (without[overDayIdx]?.activities || []),
           {
             controlPanel: itinerary?.controlPanel || {},
-            isArrival: placed.dayIdx === 0,
-            isDeparture: placed.dayIdx === without.length - 1,
+            isArrival: overDayIdx === 0,
+            isDeparture: overDayIdx === without.length - 1,
           }
         );
-        let finalDayIdx = placed.dayIdx;
-        if (assessmentOnTarget && !assessmentOnTarget.fitsInDayHours) {
-          const retry = (() => {
-            for (let idx = overDayIdx; idx < without.length; idx++) {
-              if (idx === 0 && itinerary?.controlPanel?.startOnArrival === false) continue;
-              if (idx === without.length - 1 && itinerary?.controlPanel?.endOnDeparture === false) continue;
-              const a = assessActivityAgainstDay(movedAct, without[idx]?.activities || [], {
-                controlPanel: itinerary?.controlPanel || {},
-                isArrival: idx === 0,
-                isDeparture: idx === without.length - 1,
-              });
-              if (!a || a.fitsInDayHours) return idx;
-            }
-            return overDayIdx;
-          })();
-          finalDayIdx = retry;
-        }
+        const warning = formatTravelWarning(assessmentOnTarget, { dayLabel: targetLabel });
 
-        setDaysData(
-          without.map((d, i) => (
-            i === finalDayIdx
-              ? { ...d, activities: [...(d.activities || []), { ...movedAct }] }
-              : d
-          ))
-        );
-        if (finalDayIdx !== overDayIdx) {
-          const label = daysData[finalDayIdx]?.dayName || `Day ${finalDayIdx + 1}`;
-          setGeoNotice(
-            `"${movedAct.title}" did not fit activity hours on Day ${overDayIdx + 1}, so it was moved to ${label}.`
+        // Commits the move to the target day and records a follow-up notice.
+        const commitMove = () => {
+          setDaysData(
+            without.map((d, i) => (
+              i === overDayIdx
+                ? { ...d, activities: [...(d.activities || []), { ...movedAct }] }
+                : d
+            ))
           );
+          if (warning) {
+            setGeoNotice(
+              assessmentOnTarget?.fitsInDayHours
+                ? `Heads up: "${movedAct.title}" is ~${assessmentOnTarget.nearestKm} km from the other stops on ${targetLabel}.`
+                : `"${movedAct.title}" may overrun ${targetLabel}'s activity hours (${assessmentOnTarget?.startLabel}–${assessmentOnTarget?.endLabel}).`
+            );
+          } else {
+            setGeoNotice("");
+          }
+        };
+
+        // A far move or an over-hours move now asks first — in a styled card, not a
+        // browser confirm(). If there is nothing to warn about, move immediately.
+        if (warning) {
+          setPendingMove({
+            title: movedAct.title || "this activity",
+            fromLabel: daysData[fromDayIdx]?.dayName || `Day ${fromDayIdx + 1}`,
+            toLabel: targetLabel,
+            warning,
+            assessment: assessmentOnTarget,
+            fits: Boolean(assessmentOnTarget?.fitsInDayHours),
+            onConfirm: commitMove,
+          });
         } else {
-          setGeoNotice("");
+          commitMove();
         }
       }
     }
@@ -1688,6 +1683,72 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
         {geoNotice && (
           <div className={`rounded-2xl border px-4 py-3 mb-4 text-sm ${darkMode ? "bg-amber-950/30 border-amber-900/50 text-amber-300" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
             {geoNotice}
+          </div>
+        )}
+
+        {pendingMove && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={() => setPendingMove(null)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className={`w-full max-w-md rounded-2xl border shadow-2xl overflow-hidden ${darkMode ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"}`}
+            >
+              <div className={`flex items-start gap-3 px-5 py-4 border-b ${pendingMove.fits ? (darkMode ? "border-amber-900/50 bg-amber-950/20" : "border-amber-100 bg-amber-50") : (darkMode ? "border-rose-900/50 bg-rose-950/20" : "border-rose-100 bg-rose-50")}`}>
+                <div className={`shrink-0 h-9 w-9 rounded-full flex items-center justify-center text-lg ${pendingMove.fits ? "bg-amber-500/15 text-amber-500" : "bg-rose-500/15 text-rose-500"}`}>
+                  {pendingMove.fits ? "🚗" : "⏰"}
+                </div>
+                <div className="min-w-0">
+                  <h3 className={`text-sm font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                    {pendingMove.fits ? "Long travel distance" : "Day runs out of time"}
+                  </h3>
+                  <p className={`text-xs mt-0.5 ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+                    Moving <span className="font-semibold">{pendingMove.title}</span> from {pendingMove.fromLabel} to {pendingMove.toLabel}
+                  </p>
+                </div>
+              </div>
+
+              <div className="px-5 py-4">
+                <p className={`text-sm leading-relaxed ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                  {pendingMove.warning}
+                </p>
+
+                {pendingMove.assessment && (
+                  <div className={`mt-3 grid grid-cols-2 gap-2 text-[11px] ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+                    {pendingMove.assessment.nearestKm != null && (
+                      <div className={`rounded-lg px-3 py-2 ${darkMode ? "bg-slate-800" : "bg-slate-50"}`}>
+                        <div className="font-semibold text-[10px] uppercase tracking-wide opacity-70">Distance</div>
+                        <div className={`text-sm font-bold ${darkMode ? "text-slate-200" : "text-slate-800"}`}>{pendingMove.assessment.nearestKm} km</div>
+                      </div>
+                    )}
+                    {!pendingMove.fits && (
+                      <div className={`rounded-lg px-3 py-2 ${darkMode ? "bg-slate-800" : "bg-slate-50"}`}>
+                        <div className="font-semibold text-[10px] uppercase tracking-wide opacity-70">Over by</div>
+                        <div className={`text-sm font-bold ${darkMode ? "text-slate-200" : "text-slate-800"}`}>{pendingMove.assessment.overrunMinutes} min</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className={`flex items-center justify-end gap-2 px-5 py-3 border-t ${darkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-100 bg-slate-50/60"}`}>
+                <button
+                  type="button"
+                  onClick={() => setPendingMove(null)}
+                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${darkMode ? "text-slate-300 hover:bg-slate-800" : "text-slate-600 hover:bg-slate-100"}`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { pendingMove.onConfirm?.(); setPendingMove(null); }}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-[#a26e35] hover:bg-[#8a5c2b] transition-colors"
+                >
+                  Move anyway
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

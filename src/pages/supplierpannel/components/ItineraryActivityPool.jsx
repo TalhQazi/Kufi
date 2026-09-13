@@ -98,12 +98,25 @@ export default function ItineraryActivityPool({ darkMode, itinerary, assignedAct
         setCategories(catRes.data || []);
 
         const all = (actRes.data?.activities || actRes.data || []);
+
+        // Destinations look like "Beirut City, Lebanon" while activities carry a bare
+        // country ("Lebanon") and a location ("Beirut"). A naive `country.includes(...)`
+        // never matches, so the pool collapses to nothing / one row and everything reads
+        // as "assigned". Tokenise the destination and match any part against the activity's
+        // country / location / city fields.
+        const tokens = [country, city]
+          .filter(Boolean)
+          .flatMap(s => String(s).split(/[,/|]+/))
+          .map(s => s.trim().toLowerCase())
+          .filter(s => s.length >= 2);
+
         const filtered = all.filter(a => {
           if (a.status && a.status !== "approved") return false;
-          if (!country && !city) return true;
-          const matchCountry = !country || (a.country || "").toLowerCase().includes(country.toLowerCase());
-          const matchCity = !city || (a.location || "").toLowerCase().includes(city.toLowerCase());
-          return matchCountry || matchCity;
+          if (tokens.length === 0) return true;
+          const haystack = [a.country, a.location, a.city]
+            .filter(Boolean)
+            .map(s => String(s).toLowerCase());
+          return tokens.some(t => haystack.some(h => h.includes(t) || t.includes(h)));
         });
 
         setActivities(filtered);
