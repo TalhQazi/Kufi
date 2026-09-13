@@ -19,6 +19,10 @@ import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Coffee, Car, BedDo
 import api, { activityImagePath, AI_GENERATE_TIMEOUT_MS, getApiBaseUrl, getAuthToken, resolveActivityImage } from "../../api";
 import { notifyItineraryWorkflowChanged } from "../../constants/itineraryLabels";
 import { countActivities, sumActivityPrices, isBreakEntry } from "../../utils/activityClassification";
+import {
+  assessActivityAgainstDay,
+  getCoordinates,
+} from "../../utils/itineraryGeo";
 import ItineraryActivityPool from "./components/ItineraryActivityPool";
 import ItineraryControlPanel from "./components/ItineraryControlPanel";
 import {
@@ -729,7 +733,13 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       } else {
         // Surface any day the server had to reorganize for geographic feasibility.
         const geo = res.data?.geography;
-        if (geo?.geographyRepaired) {
+        if (geo?.activitiesSpilledToNextDay > 0) {
+          setGeoNotice(
+            `${geo.activitiesSpilledToNextDay} activit${geo.activitiesSpilledToNextDay === 1 ? "y" : "ies"} did not fit the activity hours and ${geo.activitiesSpilledToNextDay === 1 ? "was" : "were"} moved to the next day.`
+          );
+        } else if (geo?.areasDiversified) {
+          setGeoNotice("Activities were spread across different areas using coordinates so the trip is not stuck in one city.");
+        } else if (geo?.geographyRepaired) {
           setGeoNotice("Some days were regrouped so activities in the same day stay in the same area.");
         } else if (geo?.geographyIssues?.length) {
           setGeoNotice(geo.geographyIssues[0].message);
@@ -856,6 +866,36 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
     const activeData = active.data.current;
     const overData = over.data?.current;
 
+    const resolveDayForActivity = (activity, preferredDayIdx) => {
+      const cp = itinerary?.controlPanel || {};
+      // Prefer the drop target; if it does not fit activity hours, walk forward to the next day.
+      for (let idx = preferredDayIdx; idx < daysData.length; idx++) {
+        const day = daysData[idx];
+        // Skip locked empty arrival day when startOnArrival is off.
+        if (idx === 0 && cp.startOnArrival === false) continue;
+        if (idx === daysData.length - 1 && cp.endOnDeparture === false) continue;
+        const assessment = assessActivityAgainstDay(activity, day?.activities || [], {
+          controlPanel: cp,
+          isArrival: idx === 0,
+          isDeparture: idx === daysData.length - 1,
+        });
+        if (!assessment || assessment.fitsInDayHours) {
+          return { dayIdx: idx, spilled: idx !== preferredDayIdx, assessment };
+        }
+      }
+      // Nowhere else fits — keep preferred day and let the supplier decide.
+      return {
+        dayIdx: preferredDayIdx,
+        spilled: false,
+        assessment: assessActivityAgainstDay(activity, daysData[preferredDayIdx]?.activities || [], {
+          controlPanel: cp,
+          isArrival: preferredDayIdx === 0,
+          isDeparture: preferredDayIdx === daysData.length - 1,
+        }),
+        overflow: true,
+      };
+    };
+
     // ── Pool card dropped onto a day ──────────────────────────────────────────
     if (activeData?.source === "pool") {
       const activity = activeData.activity;
@@ -871,24 +911,40 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       if (targetDayIdx == null) return;
 
       const activityId = String(activity._id || activity.id || "");
-      const newAct = {
+      const coords = getCoordinates(activity);
+      const candidate = {
         id: `act-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
         activityId,
         title: activity.title || "",
         description: activity.description || "",
-        location: activity.location || activity.country || "",
-        image: activity.imageUrl || activity.image || activityImagePath(activityId) || "",
+        location: activity.city || activity.location || activity.country || "",
+        image: activityImagePath(activityId) || activity.imageUrl || activity.image || "",
         price: activity.price || 0,
         category: activity.category || "",
+        duration: activity.duration || "",
         startTime: activity.startTime || "",
         endTime: activity.endTime || "",
+        coordinates: coords || undefined,
         isSupplierOnly: true,
       };
 
-      setDaysData(prev => prev.map((d, i) => {
-        if (i !== targetDayIdx) return d;
-        return { ...d, activities: [...(d.activities || []), newAct] };
+      const placed = resolveDayForActivity(candidate, targetDayIdx);
+      setDaysData((prev) => prev.map((d, i) => {
+        if (i !== placed.dayIdx) return d;
+        return { ...d, activities: [...(d.activities || []), candidate] };
       }));
+      if (placed.spilled) {
+        const label = daysData[placed.dayIdx]?.dayName || `Day ${placed.dayIdx + 1}`;
+        setGeoNotice(
+          `"${candidate.title}" did not fit the activity hours on Day ${targetDayIdx + 1}, so it was added to ${label}.`
+        );
+      } else if (placed.overflow) {
+        setGeoNotice(
+          `"${candidate.title}" may overrun activity hours (${placed.assessment?.startLabel}–${placed.assessment?.endLabel}) — no later day had room.`
+        );
+      } else {
+        setGeoNotice("");
+      }
       return;
     }
 
@@ -898,26 +954,123 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       const overDayIdx = overData?.source === "day" ? overData.dayIndex : fromDayIdx;
 
       if (fromDayIdx === overDayIdx) {
-        // Reorder within same day
-        setDaysData(prev => prev.map((d, i) => {
-          if (i !== fromDayIdx) return d;
-          const acts = [...(d.activities || [])];
-          const oldIdx = acts.findIndex(a => a.id === active.id);
-          const newIdx = acts.findIndex(a => a.id === over.id);
-          if (oldIdx < 0 || newIdx < 0) return d;
-          return { ...d, activities: arrayMove(acts, oldIdx, newIdx) };
-        }));
+        // Reorder within same day — if the order no longer fits hours, spill overflow forward.
+        setDaysData((prev) => {
+          const next = prev.map((d, i) => {
+            if (i !== fromDayIdx) return d;
+            const acts = [...(d.activities || [])];
+            const oldIdx = acts.findIndex((a) => a.id === active.id);
+            const newIdx = acts.findIndex((a) => a.id === over.id);
+            if (oldIdx < 0 || newIdx < 0) return d;
+            return { ...d, activities: arrayMove(acts, oldIdx, newIdx) };
+          });
+          return spillOverflowInEditor(next, itinerary?.controlPanel || {});
+        });
       } else {
-        // Move to different day
-        const movedAct = daysData[fromDayIdx]?.activities?.find(a => a.id === active.id);
+        const movedAct = daysData[fromDayIdx]?.activities?.find((a) => a.id === active.id);
         if (!movedAct) return;
-        setDaysData(prev => prev.map((d, i) => {
-          if (i === fromDayIdx) return { ...d, activities: (d.activities || []).filter(a => a.id !== active.id) };
-          if (i === overDayIdx) return { ...d, activities: [...(d.activities || []), { ...movedAct }] };
-          return d;
-        }));
+        const without = daysData.map((d, i) => (
+          i === fromDayIdx
+            ? { ...d, activities: (d.activities || []).filter((a) => a.id !== active.id) }
+            : d
+        ));
+        const placed = resolveDayForActivity(movedAct, overDayIdx);
+        // Resolve against the day as it will be after removal from the source day.
+        const assessmentOnTarget = assessActivityAgainstDay(
+          movedAct,
+          (without[placed.dayIdx]?.activities || []),
+          {
+            controlPanel: itinerary?.controlPanel || {},
+            isArrival: placed.dayIdx === 0,
+            isDeparture: placed.dayIdx === without.length - 1,
+          }
+        );
+        let finalDayIdx = placed.dayIdx;
+        if (assessmentOnTarget && !assessmentOnTarget.fitsInDayHours) {
+          const retry = (() => {
+            for (let idx = overDayIdx; idx < without.length; idx++) {
+              if (idx === 0 && itinerary?.controlPanel?.startOnArrival === false) continue;
+              if (idx === without.length - 1 && itinerary?.controlPanel?.endOnDeparture === false) continue;
+              const a = assessActivityAgainstDay(movedAct, without[idx]?.activities || [], {
+                controlPanel: itinerary?.controlPanel || {},
+                isArrival: idx === 0,
+                isDeparture: idx === without.length - 1,
+              });
+              if (!a || a.fitsInDayHours) return idx;
+            }
+            return overDayIdx;
+          })();
+          finalDayIdx = retry;
+        }
+
+        setDaysData(
+          without.map((d, i) => (
+            i === finalDayIdx
+              ? { ...d, activities: [...(d.activities || []), { ...movedAct }] }
+              : d
+          ))
+        );
+        if (finalDayIdx !== overDayIdx) {
+          const label = daysData[finalDayIdx]?.dayName || `Day ${finalDayIdx + 1}`;
+          setGeoNotice(
+            `"${movedAct.title}" did not fit activity hours on Day ${overDayIdx + 1}, so it was moved to ${label}.`
+          );
+        } else {
+          setGeoNotice("");
+        }
       }
     }
+  }
+
+  /** After a same-day reorder, push activities that no longer fit hours onto later days. */
+  function spillOverflowInEditor(days, controlPanel = {}) {
+    const list = Array.isArray(days) ? days.map((d) => ({ ...d, activities: [...(d.activities || [])] })) : [];
+    let carry = [];
+    let moved = 0;
+    for (let i = 0; i < list.length; i++) {
+      const breaks = (list[i].activities || []).filter((a) => a?.isBreak || isBreakEntry(a));
+      const real = [
+        ...carry,
+        ...(list[i].activities || []).filter((a) => !(a?.isBreak || isBreakEntry(a))),
+      ];
+      carry = [];
+      if (i === 0 && controlPanel.startOnArrival === false) {
+        carry = real;
+        list[i] = { ...list[i], activities: [...breaks] };
+        continue;
+      }
+      if (i === list.length - 1 && controlPanel.endOnDeparture === false) {
+        carry = real;
+        list[i] = { ...list[i], activities: [...breaks] };
+        continue;
+      }
+      const kept = [];
+      for (const act of real) {
+        const assessment = assessActivityAgainstDay(act, kept, {
+          controlPanel,
+          isArrival: i === 0,
+          isDeparture: i === list.length - 1,
+        });
+        if (!assessment || assessment.fitsInDayHours) kept.push(act);
+        else {
+          carry.push(act);
+          moved += 1;
+        }
+      }
+      list[i] = { ...list[i], activities: [...kept, ...breaks] };
+    }
+    if (carry.length) {
+      const last = list.length - 1;
+      const breaks = (list[last].activities || []).filter((a) => a?.isBreak || isBreakEntry(a));
+      const real = (list[last].activities || []).filter((a) => !(a?.isBreak || isBreakEntry(a)));
+      list[last] = { ...list[last], activities: [...real, ...carry, ...breaks] };
+    }
+    if (moved > 0) {
+      setGeoNotice(
+        `${moved} activit${moved === 1 ? "y" : "ies"} did not fit the activity hours and ${moved === 1 ? "was" : "were"} moved to the next day.`
+      );
+    }
+    return list;
   }
 
   function handleMoveActivityUp(actId, dayIdx) {
