@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { loadStripe } from '@stripe/stripe-js'
 import api from '../../api'
 import PaymentSuccessModal from './PaymentSuccessModal.jsx'
-import { countableActivities } from '../../utils/activityClassification'
+import { sumActivityPrices } from '../../utils/activityClassification'
 import { normalizeHotelStays, hotelCostFromStays } from '../../utils/hotelStays'
+import { partyActivityCost, customCostsTotal as sumCustomCosts } from '../../utils/tripCosts'
+import { daysBetween, nightsBetween } from '../../utils/calendarDate'
 import Footer from '../../components/layout/Footer'
 
 export default function Payment({ bookingData, onBack, onForward, canGoBack, canGoForward, onNotificationClick, onHomeClick, hideHeaderFooter = false }) {
@@ -166,63 +168,57 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         return Math.max(...numbers);
     };
 
-    // Calculate total itinerary price from activities + hotel + uplift if available
+    // The traveller must pay EXACTLY what the supplier quoted. This mirrors the supplier
+    // builder's `grandTotal` (supplier-generate-itinerary.jsx) line-for-line using the same
+    // shared helpers so the two numbers can never drift:
+    //   grandTotal = partyActivityCost + hotelCost + customCostsTotal
+    // Notably there is NO budget-uplift multiplier here — the uplift only sets the supplier's
+    // spending ceiling while planning; it is never added onto the bill. Activity prices are
+    // per person and are multiplied by the party size, and custom costs honour their unit
+    // (flat / per_day / per_person / per_person_per_day).
     const calculateItineraryTotal = () => {
         const daysData = activeBookingData?.days || [];
         const itinerary = activeBookingData?.tripData;
         if (!daysData.length && !itinerary) return 0;
 
-        // Calculate activities total. Schedule breaks (lunch/rest) are not activities and
-        // are never billable, so they are excluded here as well as from the counts.
-        const activitiesTotal = daysData.reduce((sum, d) => {
-            return sum + countableActivities(d).reduce((s, a) => s + (Number(a.price || a.cost || 0) || 0), 0);
-        }, 0);
-
-        // Calculate hotel cost (one or more stays for the destination country)
         const controlPanel = itinerary?.controlPanel;
         const hotelData = controlPanel?.hotelId;
         const startDate = itinerary?.startDate || activeBookingData?.startDate || activeBookingData?.tripDetails?.arrivalDate;
         const endDate = itinerary?.endDate || activeBookingData?.endDate || activeBookingData?.tripDetails?.departureDate;
 
+        const travellers = Math.max(1, Number(itinerary?.numberOfTravelers) || 1);
+        const nights = (startDate && endDate) ? nightsBetween(startDate, endDate) : 0;
+        const tripDays = (startDate && endDate) ? daysBetween(startDate, endDate) : 1;
+
+        // Activities: catalogue prices are per person; the party pays per-person × travellers.
+        // Schedule breaks (lunch/rest) are excluded by sumActivityPrices.
+        const activitiesPerPerson = sumActivityPrices(daysData);
+        const activitiesTotal = partyActivityCost(activitiesPerPerson, travellers);
+
+        // Hotel (one or more stays for the destination country).
         let hotelCost = 0;
-        let tripDays = 1;
-        if (startDate && endDate) {
-            const a = new Date(startDate), b = new Date(endDate);
-            const nights = Math.max(0, Math.round((b - a) / (1000 * 60 * 60 * 24)));
-            tripDays = Math.max(1, nights + 1);
-            const rooms = controlPanel?.numberOfRooms || 1;
-            const stays = normalizeHotelStays(controlPanel);
-            const hotelsById = {};
-            if (hotelData && typeof hotelData === 'object' && hotelData._id) {
-                hotelsById[String(hotelData._id)] = hotelData;
+        const rooms = controlPanel?.numberOfRooms || 1;
+        const stays = normalizeHotelStays(controlPanel);
+        const hotelsById = {};
+        if (hotelData && typeof hotelData === 'object' && hotelData._id) {
+            hotelsById[String(hotelData._id)] = hotelData;
+        }
+        stays.forEach((stay) => {
+            if (stay.hotel?._id) hotelsById[String(stay.hotel._id)] = stay.hotel;
+            else if (stay.hotelId && typeof stay.hotelId === 'object' && stay.hotelId._id) {
+                hotelsById[String(stay.hotelId._id)] = stay.hotelId;
             }
-            stays.forEach((stay) => {
-                if (stay.hotel?._id) hotelsById[String(stay.hotel._id)] = stay.hotel;
-            });
-            if (stays.length) {
-                hotelCost = hotelCostFromStays(stays, hotelsById, rooms, nights);
-            } else if (hotelData?.pricePerNight) {
-                hotelCost = hotelData.pricePerNight * nights * rooms;
-            }
+        });
+        if (stays.length) {
+            hotelCost = hotelCostFromStays(stays, hotelsById, rooms, nights);
+        } else if (hotelData?.pricePerNight) {
+            hotelCost = hotelData.pricePerNight * nights * rooms;
         }
 
-        const customCostsTotal = (Array.isArray(controlPanel?.customCosts) ? controlPanel.customCosts : []).reduce((sum, cost) => {
-            const amount = Number(cost?.amount) || 0;
-            if (!amount) return sum;
-            if (cost?.unit === 'per_day') return sum + (amount * tripDays);
-            return sum + amount;
-        }, 0);
+        // Custom (per-trip) costs, honouring their unit and party size.
+        const customCostsTotal = sumCustomCosts(controlPanel?.customCosts, { tripDays, travellers });
 
-        // Calculate budget uplift (support legacy 0.15 and percent 15)
-        const upliftRaw = controlPanel?.budgetUplift != null ? Number(controlPanel.budgetUplift) : 0.15;
-        const upliftPct = Math.min(Math.max(
-            (upliftRaw > 0 && upliftRaw < 1) ? upliftRaw : (upliftRaw / 100),
-            0
-        ), 1);
-
-        // Grand Total
-        const calculatedTotal = Math.round((activitiesTotal + hotelCost + customCostsTotal) * (1 + upliftPct));
-        return calculatedTotal;
+        return activitiesTotal + hotelCost + customCostsTotal;
     };
 
     const calculatedItineraryPrice = calculateItineraryTotal();
