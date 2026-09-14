@@ -46,32 +46,26 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         const id = bookingData?._id || bookingData?.bookingId || bookingData?.itineraryId || bookingData?.id;
         if (!id) return;
 
-        const hasDetails = Boolean(
-            activeBookingData?.days?.length ||
-            activeBookingData?.items?.length ||
-            activeBookingData?.totalAmount ||
-            activeBookingData?.amount ||
-            activeBookingData?.budget ||
-            activeBookingData?.tripDetails
-        );
+        // Fetch full itinerary if controlPanel or days are missing on activeBookingData
+        const needsItineraryFetch = !activeBookingData?.controlPanel || !activeBookingData?.days?.length;
 
-        if (!hasDetails) {
+        if (needsItineraryFetch) {
             const fetchDetails = async () => {
                 try {
                     // Try itinerary endpoint first
                     let res = await api.get(`/itineraries/${id}`).catch(() => null);
                     if (res?.data?._id) {
-                        setActiveBookingData(prev => ({ ...prev, ...res.data }));
-                        return;
-                    }
-                    // Try booking endpoint
-                    res = await api.get(`/bookings/${id}`).catch(() => null);
-                    if (res?.data?._id) {
-                        setActiveBookingData(prev => ({ ...prev, ...res.data }));
+                        setActiveBookingData(prev => ({ ...prev, ...res.data, itinerary: res.data }));
                         return;
                     }
                     // Try itinerary by booking ID
                     res = await api.get(`/itineraries/booking/${encodeURIComponent(id)}`).catch(() => null);
+                    if (res?.data?._id) {
+                        setActiveBookingData(prev => ({ ...prev, ...res.data, itinerary: res.data }));
+                        return;
+                    }
+                    // Try booking endpoint
+                    res = await api.get(`/bookings/${id}`).catch(() => null);
                     if (res?.data?._id) {
                         setActiveBookingData(prev => ({ ...prev, ...res.data }));
                     }
@@ -168,6 +162,41 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
         return Math.max(...numbers);
     };
 
+    const parseTravelersCount = (data) => {
+        if (!data) return 1;
+        const candidates = [
+            data?.numberOfTravelers,
+            data?.itinerary?.numberOfTravelers,
+            data?.tripData?.numberOfTravelers,
+            data?.travelers,
+            data?.guests,
+            data?.tripDetails?.travelers,
+            data?.tripDetails?.numberOfTravelers,
+            data?.tripDetails?.guests,
+            data?.items?.[0]?.travelers,
+            data?.items?.[0]?.guests,
+        ];
+        for (const c of candidates) {
+            const n = Number(c);
+            if (Number.isFinite(n) && n > 0) return Math.floor(n);
+        }
+        const strCandidates = [
+            data?.groupSize,
+            data?.tripData?.groupSize,
+            data?.tripDetails?.groupSize,
+        ];
+        for (const s of strCandidates) {
+            if (typeof s === 'string') {
+                const match = s.match(/(\d+)/);
+                if (match) {
+                    const n = Number(match[1]);
+                    if (Number.isFinite(n) && n > 0) return Math.floor(n);
+                }
+            }
+        }
+        return 1;
+    };
+
     // The traveller must pay EXACTLY what the supplier quoted. This mirrors the supplier
     // builder's `grandTotal` (supplier-generate-itinerary.jsx) line-for-line using the same
     // shared helpers so the two numbers can never drift:
@@ -177,16 +206,27 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
     // per person and are multiplied by the party size, and custom costs honour their unit
     // (flat / per_day / per_person / per_person_per_day).
     const calculateItineraryTotal = () => {
-        const daysData = activeBookingData?.days || [];
-        const itinerary = activeBookingData?.tripData;
-        if (!daysData.length && !itinerary) return 0;
+        const daysData = activeBookingData?.days || activeBookingData?.itinerary?.days || [];
+        if (!daysData.length && !activeBookingData) return 0;
 
-        const controlPanel = itinerary?.controlPanel;
-        const hotelData = controlPanel?.hotelId;
-        const startDate = itinerary?.startDate || activeBookingData?.startDate || activeBookingData?.tripDetails?.arrivalDate;
-        const endDate = itinerary?.endDate || activeBookingData?.endDate || activeBookingData?.tripDetails?.departureDate;
+        const controlPanel = activeBookingData?.controlPanel 
+            || activeBookingData?.itinerary?.controlPanel 
+            || activeBookingData?.tripData?.controlPanel 
+            || {};
 
-        const travellers = Math.max(1, Number(itinerary?.numberOfTravelers) || 1);
+        const hotelData = controlPanel?.hotelId || activeBookingData?.hotelId || activeBookingData?.hotel;
+
+        const startDate = activeBookingData?.startDate 
+            || activeBookingData?.itinerary?.startDate 
+            || activeBookingData?.tripData?.startDate 
+            || activeBookingData?.tripDetails?.arrivalDate;
+
+        const endDate = activeBookingData?.endDate 
+            || activeBookingData?.itinerary?.endDate 
+            || activeBookingData?.tripData?.endDate 
+            || activeBookingData?.tripDetails?.departureDate;
+
+        const travellers = parseTravelersCount(activeBookingData);
         const nights = (startDate && endDate) ? nightsBetween(startDate, endDate) : 0;
         const tripDays = (startDate && endDate) ? daysBetween(startDate, endDate) : 1;
 
@@ -197,7 +237,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
 
         // Hotel (one or more stays for the destination country).
         let hotelCost = 0;
-        const rooms = controlPanel?.numberOfRooms || 1;
+        const rooms = controlPanel?.numberOfRooms || activeBookingData?.numberOfRooms || 1;
         const stays = normalizeHotelStays(controlPanel);
         const hotelsById = {};
         if (hotelData && typeof hotelData === 'object' && hotelData._id) {
@@ -619,7 +659,7 @@ export default function Payment({ bookingData, onBack, onForward, canGoBack, can
                                         ) : bookingData?.date || bookingData?.tripData?.date || 'Date TBD'}
                                     </p>
                                     <p className="text-xs text-slate-500">
-                                        {bookingData?.guests || bookingData?.travelers || bookingData?.numberOfTravelers || bookingData?.tripData?.guests || bookingData?.tripData?.travelers || '—'} Travelers 
+                                        {parseTravelersCount(activeBookingData)} {parseTravelersCount(activeBookingData) === 1 ? 'Traveler' : 'Travelers'}
                                         {bookingData?.duration || bookingData?.tripData?.duration ? ` • ${bookingData.duration || bookingData.tripData.duration}` : ''}
                                     </p>
                                 </div>

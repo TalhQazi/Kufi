@@ -44,6 +44,7 @@ export default function ItineraryView({
 
     const [days, setDays] = useState([])
     const [extraFields, setExtraFields] = useState([])
+    const [itineraryRecord, setItineraryRecord] = useState(null)
 
     const bookingKey = String(request?.id || request?._id || itineraryId || '')
 
@@ -224,6 +225,7 @@ export default function ItineraryView({
 
                     const match = await findItineraryForBooking()
                     if (match) {
+                        setItineraryRecord(match)
                         setTripData(formatTripData(match, request))
                         setDays(match.days || [])
                         setExtraFields(Array.isArray(match.extraFields) ? match.extraFields : [])
@@ -256,6 +258,7 @@ export default function ItineraryView({
                 }
 
                 if (record) {
+                    setItineraryRecord(record)
                     setTripData(formatTripData(record, request))
                     setDays(record.days || [])
                     setExtraFields(Array.isArray(record.extraFields) ? record.extraFields : [])
@@ -875,7 +878,14 @@ export default function ItineraryView({
                                     Request Adjustment
                                 </button>
                                 <button
-                                    onClick={() => onPaymentClick && onPaymentClick({ ...request, days, tripData })}
+                                    onClick={() => onPaymentClick && onPaymentClick({
+                                        ...request,
+                                        ...(itineraryRecord || {}),
+                                        days,
+                                        tripData,
+                                        itinerary: itineraryRecord,
+                                        numberOfTravelers: itineraryRecord?.numberOfTravelers || request?.items?.[0]?.travelers || 1,
+                                    })}
                                     className="px-8 py-3 rounded-lg bg-[#A67C52] text-white font-semibold hover:bg-[#8e6a45] shadow-lg transition-all"
                                 >
                                     Accept Itinerary
