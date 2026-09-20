@@ -10,6 +10,8 @@ export const ITINERARY_WORKFLOW_EVENT = "kufi_itinerary_drafts_updated";
 export function notifyItineraryWorkflowChanged() {
   try {
     window.dispatchEvent(new Event(ITINERARY_WORKFLOW_EVENT));
+
+    
   } catch {
     // no-op outside the browser
   }
