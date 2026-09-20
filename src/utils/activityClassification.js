@@ -95,3 +95,24 @@ export function sumActivityPrices(days) {
     0
   );
 }
+
+/**
+ * Order a day's entries by clock time so lunch sits between activities, not at the end.
+ */
+export function sortDayActivitiesByTime(entries = []) {
+  const toMinutes = (value) => {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(value || '').trim());
+    if (!m) return Number.MAX_SAFE_INTEGER;
+    return Number(m[1]) * 60 + Number(m[2]);
+  };
+  return [...entries].sort((a, b) => {
+    const diff = toMinutes(a?.startTime) - toMinutes(b?.startTime);
+    if (diff !== 0) return diff;
+    return (isBreakEntry(a) ? 0 : 1) - (isBreakEntry(b) ? 0 : 1);
+  });
+}
+
+/** Merge real activities with break placeholders in chronological order. */
+export function mergeActivitiesWithBreaks(activities = [], breaks = []) {
+  return sortDayActivitiesByTime([...(activities || []), ...(breaks || [])]);
+}

@@ -18,7 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Coffee, Car, BedDouble } from "lucide-react";
 import api, { activityImagePath, AI_GENERATE_TIMEOUT_MS, getApiBaseUrl, getAuthToken, resolveActivityImage } from "../../api";
 import { notifyItineraryWorkflowChanged } from "../../constants/itineraryLabels";
-import { countActivities, sumActivityPrices, isBreakEntry } from "../../utils/activityClassification";
+import { countActivities, sumActivityPrices, isBreakEntry, mergeActivitiesWithBreaks, sortDayActivitiesByTime } from "../../utils/activityClassification";
 import {
   assessActivityAgainstDay,
   formatTravelWarning,
@@ -210,6 +210,10 @@ function buildPersistBody(days, extraFields, itinerary) {
  */
 function ScheduleBreakRow({ activity, darkMode }) {
   const minutes = breakMinutes(activity);
+  const windowLabel =
+    activity?.startTime && activity?.endTime
+      ? `${fmtTime(activity.startTime)} – ${fmtTime(activity.endTime)}`
+      : null;
   return (
     <div
       className={`rounded-xl border border-dashed px-3 py-2 flex items-center gap-2 text-[11px] ${
@@ -219,7 +223,7 @@ function ScheduleBreakRow({ activity, darkMode }) {
       <Coffee className="h-3.5 w-3.5 shrink-0" />
       <span className="font-semibold">{activity.title || "Lunch Break"}</span>
       <span className="opacity-70">·</span>
-      <span>{minutes} min</span>
+      <span>{minutes} min{windowLabel ? ` · ${windowLabel}` : ""}</span>
       <span className={`ml-auto text-[10px] ${darkMode ? "text-slate-500" : "text-amber-700/70"}`}>
         Set by the Control Panel
       </span>
@@ -446,7 +450,7 @@ function DayColumn({ day, darkMode, isActive: isActiveProp, travellers = 1, onRe
         }`}
       >
         <SortableContext items={activities.filter((a) => !isBreakEntry(a)).map((a) => a.id)} strategy={verticalListSortingStrategy}>
-          {activities.map((act) => {
+          {sortDayActivitiesByTime(activities).map((act) => {
             if (isBreakEntry(act)) {
               return <ScheduleBreakRow key={act.id} activity={act} darkMode={darkMode} />;
             }
@@ -1052,13 +1056,13 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
           moved += 1;
         }
       }
-      list[i] = { ...list[i], activities: [...kept, ...breaks] };
+      list[i] = { ...list[i], activities: mergeActivitiesWithBreaks(kept, breaks) };
     }
     if (carry.length) {
       const last = list.length - 1;
       const breaks = (list[last].activities || []).filter((a) => a?.isBreak || isBreakEntry(a));
       const real = (list[last].activities || []).filter((a) => !(a?.isBreak || isBreakEntry(a)));
-      list[last] = { ...list[last], activities: [...real, ...carry, ...breaks] };
+      list[last] = { ...list[last], activities: mergeActivitiesWithBreaks([...real, ...carry], breaks) };
     }
     if (moved > 0) {
       setGeoNotice(

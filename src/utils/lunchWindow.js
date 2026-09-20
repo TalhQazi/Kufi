@@ -1,20 +1,24 @@
 /**
  * Where the lunch break falls on a day.
  *
- * The supplier configures a *duration* only. A start time was a second thing to keep
- * consistent with the activity window, and getting it wrong silently produced days where
- * lunch sat outside working hours. The break is instead centred in the day's activity
- * window, so the one setting applies sensibly to every day of the trip.
+ * The supplier configures a *duration* only. The break is placed inside the fixed
+ * 13:00–15:00 lunch band, centred in the overlap between that band and the day's
+ * activity hours. If the day does not overlap 13:00–15:00 (e.g. activities start at
+ * 16:00), no lunch break is scheduled.
  *
  *   09:00–19:00, 60 min  ->  13:30–14:30
- *   08:00–18:00, 60 min  ->  12:30–13:30
+ *   08:00–18:00, 60 min  ->  13:30–14:30
  *   09:00–19:00, 90 min  ->  13:15–14:45
+ *   16:00–19:00, 60 min  ->  none (duration 0)
  *
  * Browser mirror of `resolveLunchWindow` in the backend's `utils/geo.js` — keep the two
  * in sync so the panel always previews exactly what generation will do.
  */
 
 export const DEFAULT_LUNCH_MINUTES = 60;
+/** Lunch may only fall inside this band (1:00 PM – 3:00 PM). */
+export const LUNCH_BAND_START = 13 * 60;
+export const LUNCH_BAND_END = 15 * 60;
 
 export function parseTimeToMinutes(value, fallback = null) {
   const m = /^(\d{1,2}):(\d{2})$/.exec(String(value || '').trim());
@@ -42,12 +46,23 @@ export function resolveLunchWindow(controlPanel = {}) {
       : DEFAULT_LUNCH_MINUTES;
   }
 
-  const window = Math.max(0, dayEnd - dayStart);
-  duration = Math.max(0, Math.min(duration, window));
+  const bandStart = Math.max(dayStart, LUNCH_BAND_START);
+  const bandEnd = Math.min(dayEnd, LUNCH_BAND_END);
+  const available = Math.max(0, bandEnd - bandStart);
 
-  const midpoint = dayStart + Math.floor(window / 2);
+  if (duration <= 0 || available <= 0) {
+    return {
+      lunchStart: minutesToTime(LUNCH_BAND_START),
+      lunchEnd: minutesToTime(LUNCH_BAND_START),
+      durationMinutes: 0,
+    };
+  }
+
+  duration = Math.min(duration, available);
+
+  const midpoint = bandStart + Math.floor(available / 2);
   let startMinutes = Math.floor((midpoint - Math.floor(duration / 2)) / 15) * 15;
-  startMinutes = Math.max(dayStart, Math.min(startMinutes, dayEnd - duration));
+  startMinutes = Math.max(bandStart, Math.min(startMinutes, bandEnd - duration));
 
   return {
     lunchStart: minutesToTime(startMinutes),

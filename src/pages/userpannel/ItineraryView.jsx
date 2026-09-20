@@ -763,7 +763,15 @@ export default function ItineraryView({
 
                                             <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1">
                                                 {Array.isArray(day.activities) && day.activities.length > 0 ? (
-                                                    day.activities.map((act, aIdx) => {
+                                                    [...day.activities]
+                                                      .sort((a, b) => {
+                                                        const toMin = (t) => {
+                                                          const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '').trim())
+                                                          return m ? Number(m[1]) * 60 + Number(m[2]) : Number.MAX_SAFE_INTEGER
+                                                        }
+                                                        return toMin(a?.startTime) - toMin(b?.startTime)
+                                                      })
+                                                      .map((act, aIdx) => {
                                                         const actPhoto = resolveActivityImage(act)
                                                         return (
                                                         <div key={act.activityId || act.id || aIdx} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0 space-y-1.5">
