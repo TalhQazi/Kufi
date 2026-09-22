@@ -696,6 +696,9 @@ export default function ItineraryControlPanel({ darkMode, itinerary, request, on
       <p className={`text-[10px] mt-3 ${darkMode ? "text-slate-500" : "text-[#8a7a66]"}`}>
         {budgetHint}
         {lunchWindow.durationMinutes > 0 ? ` Lunch ${lunchWindow.lunchStart}–${lunchWindow.lunchEnd}.` : ""}
+        {cp.startOnArrival && cp.arrivalTime
+          ? ` Arrival-day activities start ~1.5h after ${cp.arrivalTime} (transfer + check-in).`
+          : ""}
       </p>
 
       {tripDates.length > 0 && (

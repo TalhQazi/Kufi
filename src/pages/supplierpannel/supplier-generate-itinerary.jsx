@@ -15,8 +15,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Coffee, Car, BedDouble } from "lucide-react";
-import api, { activityImagePath, AI_GENERATE_TIMEOUT_MS, getApiBaseUrl, getAuthToken, resolveActivityImage } from "../../api";
+import { CalendarDays, GripVertical, Plus, Trash2, ArrowLeft, Coffee, Car, BedDouble, Sparkles } from "lucide-react";
+import api, { activityImagePath, AI_GENERATE_TIMEOUT_MS, getApiBaseUrl, getAuthToken } from "../../api";
+import ActivityThumb from "../../components/ActivityThumb";
 import { notifyItineraryWorkflowChanged } from "../../constants/itineraryLabels";
 import { countActivities, sumActivityPrices, isBreakEntry, mergeActivitiesWithBreaks, sortDayActivitiesByTime } from "../../utils/activityClassification";
 import {
@@ -155,6 +156,20 @@ function serializeControlPanel(itinerary) {
     }))
     .filter((s) => s.hotelId);
   return { ...cp, hotelId: hotelId || null, hotelStays };
+}
+
+/** Fingerprint of Control Panel inputs that drive AI generation. */
+function controlPanelFingerprint(itinerary) {
+  try {
+    return JSON.stringify({
+      startDate: toDateString(itinerary?.startDate) || null,
+      endDate: toDateString(itinerary?.endDate) || null,
+      numberOfTravelers: Number(itinerary?.numberOfTravelers) || 1,
+      controlPanel: serializeControlPanel(itinerary) || null,
+    });
+  } catch {
+    return "";
+  }
 }
 
 /**
@@ -298,8 +313,6 @@ function SortableActivityCard({ activity, activityIndex, dayIndex, darkMode, onR
   const inputCls = `w-full rounded border px-1.5 py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-[#a26e35] ${
     darkMode ? "bg-slate-900 border-slate-600 text-white" : "bg-white border-gray-200 text-slate-900"
   }`;
-  const photo = resolveActivityImage(activity);
-
   const setField = (field, value) => onChange?.(activity.id, dayIndex, field, value);
 
   return (
@@ -308,17 +321,14 @@ function SortableActivityCard({ activity, activityIndex, dayIndex, darkMode, onR
       style={style}
       className={`rounded-lg border overflow-hidden flex gap-0 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"}`}
     >
-      <div className="shrink-0 w-28 self-stretch min-h-[3rem] relative bg-slate-200 overflow-hidden">
-        {photo ? (
-          <img
-            src={photo}
-            alt={activity.title}
-            className="absolute inset-0 w-full h-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-          />
-        ) : null}
+      <div className={`shrink-0 w-28 self-stretch min-h-[3rem] relative overflow-hidden ${darkMode ? "bg-slate-700" : "bg-slate-200"}`}>
+        <ActivityThumb
+          activity={activity}
+          alt={activity.title || ""}
+          darkMode={darkMode}
+          className="absolute inset-0 w-full h-full object-cover"
+          placeholderClassName="absolute inset-0 w-full h-full"
+        />
         <div
           className={`absolute bottom-0 inset-x-0 bg-black/40 text-white flex items-center justify-center cursor-grab active:cursor-grabbing py-0.5`}
           {...attributes}
@@ -541,6 +551,9 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   const [activeDay, setActiveDay] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState("");
+  const [controlPanelDirty, setControlPanelDirty] = useState(false);
+  const [confirmRegenerateOpen, setConfirmRegenerateOpen] = useState(false);
+  const generationFingerprintRef = useRef("");
   const [budgetBreakdown, setBudgetBreakdown] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -699,6 +712,11 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       }));
       setDaysData(updateDaysData(generatedDays));
       setExtraFields(Array.isArray(updated.extraFields) ? updated.extraFields : []);
+      generationFingerprintRef.current = controlPanelFingerprint({
+        ...itin,
+        controlPanel: liveControlPanel,
+      });
+      setControlPanelDirty(false);
       // Explain how the Control Panel constrained the result, so an empty or thin plan
       // is never a mystery. A zero ceiling is the common case: accommodation and fixed
       // costs have consumed the traveller's whole budget and the uplift left no headroom.
@@ -1166,7 +1184,7 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
   const handleControlPanelChange = useCallback((updatedCp, selectedHotel) => {
     setItinerary((prev) => {
       if (!prev) return prev;
-      return {
+      const next = {
         ...prev,
         startDate: updatedCp.startDate || prev.startDate,
         endDate: updatedCp.endDate || prev.endDate,
@@ -1181,6 +1199,11 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
           hotelId: resolveHotelValue(prev.controlPanel?.hotelId, selectedHotel, updatedCp.hotelId),
         },
       };
+      const baseline = generationFingerprintRef.current;
+      const dirty = Boolean(baseline) && controlPanelFingerprint(next) !== baseline;
+      // Do not call setState synchronously inside another updater (StrictMode-safe).
+      queueMicrotask(() => setControlPanelDirty(dirty));
+      return next;
     });
 
     if (updatedCp.startDate) {
@@ -1199,6 +1222,26 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       }
     }
   }, []);
+
+  // Baseline the Control Panel once a plan is on screen so later edits can offer regenerate.
+  useEffect(() => {
+    if (generating) return;
+    if (!itinerary || daysData.length === 0) return;
+    if (generationFingerprintRef.current) return;
+    generationFingerprintRef.current = controlPanelFingerprint(itinerary);
+    setControlPanelDirty(false);
+  }, [itinerary, daysData.length, generating]);
+
+  function requestRegenerateWithAi() {
+    if (!itinerary?._id || generating) return;
+    setConfirmRegenerateOpen(true);
+  }
+
+  function confirmRegenerateWithAi() {
+    setConfirmRegenerateOpen(false);
+    if (!itinerary?._id || generating) return;
+    triggerGenerate(itinerary, { genMode: "ai" });
+  }
 
   function changeActivityField(actId, dayIndex, field, value) {
     setDaysData((prev) =>
@@ -1554,9 +1597,9 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className={`min-h-screen px-4 py-6 ${base}`}>
+      <div className={`min-h-0 px-1 py-2 sm:px-0 sm:py-0 ${base}`}>
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             {onBack && (
               <button
@@ -1690,6 +1733,56 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
           </div>
         )}
 
+        {confirmRegenerateOpen && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={() => setConfirmRegenerateOpen(false)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className={`w-full max-w-md rounded-2xl border shadow-2xl overflow-hidden ${darkMode ? "bg-slate-900 border-slate-700" : "bg-white border-slate-200"}`}
+            >
+              <div className={`flex items-start gap-3 px-5 py-4 border-b ${darkMode ? "border-amber-900/50 bg-amber-950/20" : "border-amber-100 bg-amber-50"}`}>
+                <div className="shrink-0 h-9 w-9 rounded-full flex items-center justify-center bg-[#a26e35]/15 text-[#a26e35]">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className={`text-sm font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                    Regenerate itinerary with AI?
+                  </h3>
+                  <p className={`text-xs mt-0.5 ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+                    Uses your current Control Panel settings
+                  </p>
+                </div>
+              </div>
+
+              <div className="px-5 py-4">
+                <p className={`text-sm leading-relaxed ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                  This will rebuild the itinerary and replace the days currently on screen. Unsaved edits to activities will be lost.
+                </p>
+              </div>
+
+              <div className={`flex items-center justify-end gap-2 px-5 py-3 border-t ${darkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-100 bg-slate-50/60"}`}>
+                <button
+                  type="button"
+                  onClick={() => setConfirmRegenerateOpen(false)}
+                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${darkMode ? "text-slate-300 hover:bg-slate-800" : "text-slate-600 hover:bg-slate-100"}`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmRegenerateWithAi}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-[#a26e35] hover:bg-[#8a5c2b] transition-colors"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Regenerate
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {pendingMove && (
           <div
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
@@ -1786,10 +1879,12 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:items-start">
 
-          {/* ── Left: compact day-by-day itinerary ─────────────────────────── */}
-          <div className={`${(showControlPanel || showActivitiesPool) ? "lg:col-span-8" : "lg:col-span-12"} space-y-3 max-h-[calc(100vh-7rem)] overflow-y-auto pr-1`}>
+          {/* ── Left: stays pinned while the Control Panel column scrolls ── */}
+          <div
+            className={`${(showControlPanel || showActivitiesPool) ? "lg:col-span-8" : "lg:col-span-12"} space-y-3 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1 lg:sticky lg:top-4 lg:self-start`}
+          >
 
             {/* Vertical Days List View */}
             {daysData.map((day, idx) => (
@@ -2034,9 +2129,9 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
             </div>
           </div>
 
-          {/* ── Right: wider control panel + original request + activity pool ── */}
+          {/* ── Right: control panel scrolls with the page; center stays sticky ── */}
           {(showControlPanel || showActivitiesPool) && (
-            <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-4 self-start min-w-0">
+            <div className="lg:col-span-4 space-y-4 self-start min-w-0">
               {showControlPanel && (
                 <>
                   <ItineraryControlPanel
@@ -2048,6 +2143,35 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
                     request={request}
                     onChange={handleControlPanelChange}
                   />
+
+                  {daysData.length > 0 && (
+                    <div className={`${cardCls} px-4 py-3 space-y-2`}>
+                      {controlPanelDirty ? (
+                        <p className={`text-[11px] ${darkMode ? "text-amber-300" : "text-amber-800"}`}>
+                          Control Panel changed. Regenerate to rebuild the itinerary with these settings.
+                        </p>
+                      ) : (
+                        <p className={`text-[11px] ${darkMode ? "text-slate-500" : "text-slate-500"}`}>
+                          Adjust the Control Panel, then regenerate if you want AI to rebuild the plan.
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        disabled={generating || !itinerary?._id}
+                        onClick={requestRegenerateWithAi}
+                        className={`w-full inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
+                          controlPanelDirty
+                            ? "bg-[#a26e35] hover:bg-[#8b5e2d] text-white shadow-sm"
+                            : darkMode
+                              ? "bg-slate-800 border border-slate-600 text-slate-200 hover:bg-slate-700"
+                              : "bg-white border border-[#ddd2c5] text-[#6b5b49] hover:bg-[#faf8f5]"
+                        }`}
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        {generating ? "Generating…" : "Regenerate Itinerary with AI"}
+                      </button>
+                    </div>
+                  )}
 
                   <div className={`${cardCls} px-4 py-4 space-y-2`}>
                     <h3 className={`text-sm font-semibold flex items-center gap-1.5 ${darkMode ? "text-white" : "text-slate-900"}`}>
@@ -2087,15 +2211,15 @@ export default function SupplierGenerateItinerary({ darkMode, request, overviewI
       <DragOverlay>
         {activeDragData?.activity && (
           <div className={`rounded-xl border shadow-xl overflow-hidden w-36 opacity-90 ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
-            {resolveActivityImage(activeDragData.activity) ? (
-              <img
-                src={resolveActivityImage(activeDragData.activity)}
+            <div className={`relative w-full h-20 overflow-hidden ${darkMode ? "bg-slate-700" : "bg-slate-200"}`}>
+              <ActivityThumb
+                activity={activeDragData.activity}
                 alt=""
-                className="w-full h-20 object-cover"
+                darkMode={darkMode}
+                className="w-full h-full object-cover"
+                placeholderClassName="w-full h-full"
               />
-            ) : (
-              <div className="w-full h-20 bg-slate-200" />
-            )}
+            </div>
             <p className={`px-2 py-1.5 text-[11px] font-medium truncate ${darkMode ? "text-white" : "text-slate-900"}`}>
               {activeDragData.activity.title}
             </p>
