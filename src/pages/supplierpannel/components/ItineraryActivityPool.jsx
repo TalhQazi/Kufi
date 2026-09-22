@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
-import api, { resolveActivityImage } from "../../../api";
+import api from "../../../api";
+import ActivityThumb from "../../../components/ActivityThumb";
 
 // ─── Draggable activity card ─────────────────────────────────────────────────
 
@@ -15,7 +16,6 @@ function DraggableCard({ activity, darkMode }) {
     : undefined;
 
   const activityUrl = `/activities/${activity._id || activity.id}`;
-  const displayImage = resolveActivityImage(activity);
 
   return (
     <div
@@ -27,21 +27,14 @@ function DraggableCard({ activity, darkMode }) {
         isDragging ? "opacity-50 shadow-xl" : ""
       } ${darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-100 shadow-sm"}`}
     >
-      <div className="relative h-24 bg-gray-200 overflow-hidden">
-        {displayImage ? (
-          <img
-            src={displayImage}
-            alt={activity.title}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-          />
-        ) : (
-          <div className={`w-full h-full flex items-center justify-center text-xs ${darkMode ? "text-slate-500" : "text-gray-400"}`}>
-            No image
-          </div>
-        )}
+      <div className={`relative h-24 overflow-hidden ${darkMode ? "bg-slate-700" : "bg-gray-200"}`}>
+        <ActivityThumb
+          activity={activity}
+          alt={activity.title || ""}
+          darkMode={darkMode}
+          className="w-full h-full object-cover"
+          placeholderClassName="w-full h-full"
+        />
         {activity.category && (
           <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full text-[9px] font-medium bg-black/40 text-white">
             {activity.category}

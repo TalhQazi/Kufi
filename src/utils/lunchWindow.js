@@ -3,8 +3,9 @@
  *
  * The supplier configures a *duration* only. The break is placed inside the fixed
  * 13:00–15:00 lunch band, centred in the overlap between that band and the day's
- * activity hours. If the day does not overlap 13:00–15:00 (e.g. activities start at
- * 16:00), no lunch break is scheduled.
+ * activity hours. If the day cannot hold the FULL configured duration inside that
+ * band (e.g. activities start at 16:00, or only 10 minutes of the band remain), no
+ * lunch break is scheduled.
  *
  *   09:00–19:00, 60 min  ->  13:30–14:30
  *   08:00–18:00, 60 min  ->  13:30–14:30
@@ -50,15 +51,14 @@ export function resolveLunchWindow(controlPanel = {}) {
   const bandEnd = Math.min(dayEnd, LUNCH_BAND_END);
   const available = Math.max(0, bandEnd - bandStart);
 
-  if (duration <= 0 || available <= 0) {
+  // Skip rather than shrink — a 10-minute leftover is not a lunch break.
+  if (duration <= 0 || available < duration) {
     return {
       lunchStart: minutesToTime(LUNCH_BAND_START),
       lunchEnd: minutesToTime(LUNCH_BAND_START),
       durationMinutes: 0,
     };
   }
-
-  duration = Math.min(duration, available);
 
   const midpoint = bandStart + Math.floor(available / 2);
   let startMinutes = Math.floor((midpoint - Math.floor(duration / 2)) / 15) * 15;
