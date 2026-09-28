@@ -450,8 +450,9 @@ export default function App() {
   }
 
   const handleCategoryClick = (name) => {
-    setSelectedCategoryName(name)
-    navigateTo('category-page')
+    // Open Explore with that category pre-selected (not the separate Category page).
+    setExploreInitialCategory(name || null)
+    navigateTo('explore')
   }
 
   const handleItineraryClick = (payload) => {

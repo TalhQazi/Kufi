@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { FiUser } from 'react-icons/fi'
-import api, { resolveActivityImage } from '../../api'
+import api from '../../api'
 import Footer from '../../components/layout/Footer'
 import ProfilePic from '../../components/ui/ProfilePic'
+import ActivityThumb from '../../components/ActivityThumb'
+import { activityMatchesCategory } from '../../utils/categoryMatch'
 import './Explore.css'
 
 export default function Explore({
@@ -86,53 +88,10 @@ export default function Explore({
     }
   }, [updateScrollArrows])
 
-  const normalizeCategory = (value) => {
-    return String(value || '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '')
-      .trim()
-  }
-
-  const backendCategoryAliases = {
-    foodtour: 'foodtour',
-    daytour: 'daytour',
-    summervisit: 'summervisit',
-    memorabletour: 'memorabletour',
-    shipcurise: 'shipcurise',
-    whenvisiting: 'whenvisiting'
-  }
-
-  const exploreToBackendCategories = {
-    culture: ['whenvisiting'],
-    sightseeing: ['memorabletour'],
-    families: ['daytour'],
-    foodanddrink: ['foodtour'],
-    adventure: ['memorabletour'],
-    intheair: ['summervisit'],
-    onthewater: ['shipcurise'],
-    entertainment: ['whenvisiting'],
-    seasonal: ['summervisit'],
-    wellness: ['memorabletour'],
-    learning: ['daytour', 'shipcurise'],
-    luxury: ['memorabletour', 'shipcurise'],
-    dates: ['whenvisiting', 'daytour']
-  }
-
-  const getBackendCategoryKeysForFilter = (filterName) => {
-    if (!filterName) return null
-    const normalizedFilter = normalizeCategory(filterName)
-    const mapped = exploreToBackendCategories[normalizedFilter]
-
-    const keys = [normalizedFilter]
-    if (Array.isArray(mapped) && mapped.length > 0) {
-      keys.push(...mapped)
-    }
-    const maybeBackend = backendCategoryAliases[normalizedFilter]
-    if (maybeBackend) {
-      keys.push(maybeBackend)
-    }
-    return [...new Set(keys)]
-  }
+  // Keep filter in sync when navigated here from home category icons.
+  useEffect(() => {
+    if (initialCategory) setSelectedCategory(initialCategory)
+  }, [initialCategory])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -161,9 +120,8 @@ export default function Explore({
         const activeOnly = data.filter((a) => a?.status !== 'draft')
         setAllActivities(activeOnly)
 
-        const keys = getBackendCategoryKeysForFilter(selectedCategory)
-        if (keys && keys.length > 0) {
-          setFilteredActivities(activeOnly.filter(a => keys.includes(normalizeCategory(a?.category))))
+        if (selectedCategory) {
+          setFilteredActivities(activeOnly.filter((a) => activityMatchesCategory(a, selectedCategory)))
           return
         }
 
@@ -195,9 +153,8 @@ export default function Explore({
   }, [updateScrollArrows])
 
   useEffect(() => {
-    const keys = getBackendCategoryKeysForFilter(selectedCategory)
-    if (keys && keys.length > 0) {
-      setFilteredActivities(allActivities.filter(a => keys.includes(normalizeCategory(a?.category))))
+    if (selectedCategory) {
+      setFilteredActivities(allActivities.filter((a) => activityMatchesCategory(a, selectedCategory)))
       return
     }
 
@@ -652,11 +609,13 @@ export default function Explore({
                       className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer explore-card group"
                       onClick={() => onActivityClick && onActivityClick(activityId)}
                     >
-                      <div className="relative explore-card-image-wrapper">
-                        <img
-                          src={resolveActivityImage(activity) || "/assets/activity1.jpeg"}
-                          alt={activity.title}
+                      <div className="relative explore-card-image-wrapper bg-slate-200">
+                        <ActivityThumb
+                          activity={activity}
+                          alt={activity.title || ""}
+                          placeholderLabel="No photo"
                           className="w-full h-full object-cover"
+                          placeholderClassName="w-full h-full text-sm"
                         />
                         <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-primary-brown text-white text-xs font-medium">
                           {activity.category || activity.badge || "Trekking"}
@@ -720,7 +679,9 @@ export default function Explore({
                 })
               ) : (
                 <div className="col-span-full py-20 text-center text-slate-500">
-                  No activities found.
+                  {selectedCategory
+                    ? `No activities match “${selectedCategory}”. Try All, or check that activities in Admin use this category name.`
+                    : 'No activities found.'}
                 </div>
               )}
             </div>
@@ -752,7 +713,15 @@ export default function Explore({
                   {selectedActivities.map(activity => (
                     <div key={activity.id} className="pb-3 border-b border-slate-200 last:border-0">
                       <div className="flex items-center gap-3 mb-2">
-                        <img src={resolveActivityImage(activity) || "/assets/activity1.jpeg"} alt={activity.title} className="w-16 h-16 rounded-lg object-cover" />
+                        <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-slate-200">
+                          <ActivityThumb
+                            activity={activity}
+                            alt={activity.title || ""}
+                            placeholderLabel="No photo"
+                            className="w-full h-full object-cover"
+                            placeholderClassName="w-full h-full text-[9px]"
+                          />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm font-semibold text-slate-900 truncate">{activity.title}</h4>
                           <p className="text-xs text-slate-500 truncate">{activity.location}</p>

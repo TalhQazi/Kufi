@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react'
-import { FaTwitter, FaInstagram, FaYoutube, FaEye, FaEyeSlash, FaCheck, FaTimes } from 'react-icons/fa'
+import { FaTwitter, FaInstagram, FaYoutube, FaFacebook, FaEye, FaEyeSlash, FaCheck, FaTimes } from 'react-icons/fa'
 import { FcGoogle } from 'react-icons/fc'
 import { useGoogleLogin } from '@react-oauth/google'
 import { FiMail, FiLock, FiGlobe, FiX } from 'react-icons/fi'
 import { Loader2 } from 'lucide-react'
 import api from '../../api'
 import { cacheDarkModeForUser } from '../../hooks/usePersistedDarkMode'
+
+const LOGIN_PASSWORD_MIN = 8
+
+const SocialIconForName = ({ name }) => {
+    const n = String(name || '').toLowerCase()
+    if (n.includes('facebook')) return <FaFacebook size={18} />
+    if (n.includes('twitter') || n.includes('x.com') || n === 'x') return <FaTwitter size={18} />
+    if (n.includes('instagram')) return <FaInstagram size={18} />
+    if (n.includes('youtube')) return <FaYoutube size={18} />
+    return <FiGlobe size={18} />
+}
 
 
 const LegalModal = ({ isOpen, onClose, title, content, loading }) => {
@@ -44,6 +55,7 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
     const [rememberMe, setRememberMe] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [legalModal, setLegalModal] = useState({ isOpen: false, title: '', content: '', loading: false })
+    const [socialIcons, setSocialIcons] = useState([])
 
     // Load remembered credentials on mount
     useEffect(() => {
@@ -58,6 +70,28 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
         } catch {
             // ignore parse errors
         }
+    }, [])
+
+    // Same social links as the site footer (Admin → Footer).
+    useEffect(() => {
+        let cancelled = false
+        ;(async () => {
+            try {
+                const res = await api.get('/footer')
+                const list = Array.isArray(res?.data?.socialIcons) ? res.data.socialIcons : []
+                const active = list.filter((s) => s?.isActive !== false && (s?.url || s?.name))
+                if (!cancelled) setSocialIcons(active)
+            } catch {
+                if (!cancelled) {
+                    setSocialIcons([
+                        { name: 'Facebook', url: '#', isActive: true },
+                        { name: 'Instagram', url: '#', isActive: true },
+                        { name: 'YouTube', url: '#', isActive: true },
+                    ])
+                }
+            }
+        })()
+        return () => { cancelled = true }
     }, [])
 
     const openLegalModal = async (type, title) => {
@@ -102,6 +136,10 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
 
     const handleSubmit = async (event) => {
         event.preventDefault()
+        if (String(password || '').length < LOGIN_PASSWORD_MIN) {
+            alert(`Password must be at least ${LOGIN_PASSWORD_MIN} characters`)
+            return
+        }
         setIsLoading(true)
 
         try {
@@ -170,18 +208,31 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                 </div>
 
                 <div className="flex flex-col gap-6 max-w-md">
-                    {/* Social Icons */}
-                    <div className="flex gap-4">
-
-                        <a href="#" className="w-10 h-10 rounded-full bg-[#A67C52] text-white flex items-center justify-center hover:bg-[#8e6a45] transition-colors">
-                            <FaTwitter size={18} />
-                        </a>
-                        <a href="#" className="w-10 h-10 rounded-full bg-[#A67C52] text-white flex items-center justify-center hover:bg-[#8e6a45] transition-colors">
-                            <FaInstagram size={18} />
-                        </a>
-                        <a href="#" className="w-10 h-10 rounded-full bg-[#A67C52] text-white flex items-center justify-center hover:bg-[#8e6a45] transition-colors">
-                            <FaYoutube size={18} />
-                        </a>
+                    {/* Social Icons — same URLs as footer (Admin → Footer) */}
+                    <div className="flex gap-4 flex-wrap">
+                        {(socialIcons.length
+                            ? socialIcons
+                            : [
+                                { name: 'Facebook', url: '#' },
+                                { name: 'Instagram', url: '#' },
+                                { name: 'YouTube', url: '#' },
+                            ]
+                        ).map((social, idx) => (
+                            <a
+                                key={`${social.name || 'social'}-${idx}`}
+                                href={social.url || '#'}
+                                target={social.url && social.url !== '#' ? '_blank' : undefined}
+                                rel={social.url && social.url !== '#' ? 'noopener noreferrer' : undefined}
+                                title={social.name || 'Social'}
+                                className="w-10 h-10 rounded-full bg-[#A67C52] text-white flex items-center justify-center hover:bg-[#8e6a45] transition-colors"
+                            >
+                                {social.iconImage ? (
+                                    <img src={social.iconImage} alt={social.name || ''} className="w-4 h-4 object-contain" />
+                                ) : (
+                                    <SocialIconForName name={social.name} />
+                                )}
+                            </a>
+                        ))}
                     </div>
 
                     {/* Logo */}
@@ -284,6 +335,7 @@ export default function Login({ onRegisterClick, onLoginSuccess, onClose }) {
                                             className="w-full py-3 pl-8 pr-10 border-0 border-b border-slate-300 bg-transparent focus:outline-none focus:border-[#A67C52] transition-colors text-slate-900 placeholder:text-slate-400 text-sm md:text-base"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
+                                            minLength={LOGIN_PASSWORD_MIN}
                                             required
                                         />
                                         <button

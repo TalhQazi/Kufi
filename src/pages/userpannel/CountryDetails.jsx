@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import api, { resolveActivityImage } from '../../api'
+import { activityMatchesCategory, normalizeCategoryKey } from '../../utils/categoryMatch'
 import './CountryDetails.css'
 import Footer from '../../components/layout/Footer'
 import BlogSection from '../../components/home/BlogSection'
@@ -72,26 +73,6 @@ export default function CountryDetails({
 
     const brownColor = "#9B6F40"
 
-    const normalizeCategory = (value) => {
-        const raw = String(value || '')
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, '')
-            .trim()
-
-        const aliases = {
-            shipcrusie: 'shipcruise',
-            shipcrusiee: 'shipcruise',
-            whenvisting: 'whenvisiting',
-            whenvisiting: 'whenvisiting',
-            daytour: 'daytour',
-            foodtour: 'foodtour',
-            memorabletour: 'memorabletour',
-            summervisit: 'summervisit'
-        }
-
-        return aliases[raw] || raw
-    }
-
     const defaultCategoryIcon = (
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={brownColor} strokeWidth="1.5">
             <rect x="4" y="4" width="16" height="16" rx="3" />
@@ -99,13 +80,6 @@ export default function CountryDetails({
             <path d="M12 8v8" />
         </svg>
     )
-
-    const normalizeCategoryKey = (value) => {
-        return String(value || '')
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, '')
-            .trim()
-    }
 
     const isIconUrl = (value) => {
         const raw = String(value || '').trim()
@@ -327,13 +301,7 @@ export default function CountryDetails({
     }, [categories])
 
     const displayedExperiences = selectedCategory
-        ? experiences.filter((exp) => {
-            const expCat = normalizeCategory(exp?.category)
-            const target = normalizeCategory(selectedCategory)
-            if (!target) return true
-            if (!expCat) return false
-            return expCat === target || expCat.includes(target)
-        })
+        ? experiences.filter((exp) => activityMatchesCategory(exp, selectedCategory))
         : experiences
 
     // Reset show count when filter changes
@@ -857,7 +825,9 @@ export default function CountryDetails({
                                                 })
                                             ) : (
                                                 <div className="col-span-full py-20 text-center text-slate-500">
-                                                    No experiences found in {countryName} yet.
+                                                    {selectedCategory
+                                                        ? `No “${selectedCategory}” experiences in ${countryName} yet. Try All, or check activity categories in Admin.`
+                                                        : `No experiences found in ${countryName} yet.`}
                                                 </div>
                                             )}
                                         </div>

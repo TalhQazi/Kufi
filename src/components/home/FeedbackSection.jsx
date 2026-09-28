@@ -103,9 +103,9 @@ export default function FeedbackSection() {
     }
 
     return (
-        <section className="bg-white py-20 px-4 sm:px-8 lg:px-20 2xl:px-8 min-[2560px]:px-4 relative overflow-hidden">
-            {/* Background Organic Blob */}
-            <div className="absolute right-[-5%] bottom-[-5%] w-[60%] h-[80%] pointer-events-none z-0">
+        <section className="bg-white py-20 px-4 sm:px-8 lg:px-20 2xl:px-8 min-[2560px]:px-4 relative overflow-x-clip">
+            {/* Background Organic Blob — clipped here so carousel arrows are not cut off */}
+            <div className="absolute right-[-5%] bottom-[-5%] w-[60%] h-[80%] pointer-events-none z-0 overflow-hidden">
                 <svg
                     viewBox="0 0 800 600"
                     fill="none"
@@ -166,7 +166,7 @@ export default function FeedbackSection() {
                                 <button
                                     type="button"
                                     onClick={() => scrollByAmount(-360)}
-                                    className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white border border-slate-200 shadow-sm flex items-center justify-center"
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white border border-slate-200 shadow-sm flex items-center justify-center"
                                 >
                                     <span className="sr-only">Previous</span>
                                     <FiChevronLeft size={18} className="text-slate-700" />
@@ -174,7 +174,7 @@ export default function FeedbackSection() {
                                 <button
                                     type="button"
                                     onClick={() => scrollByAmount(360)}
-                                    className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white border border-slate-200 shadow-sm flex items-center justify-center"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white border border-slate-200 shadow-sm flex items-center justify-center"
                                 >
                                     <span className="sr-only">Next</span>
                                     <FiChevronRight size={18} className="text-slate-700" />

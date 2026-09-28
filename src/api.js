@@ -100,10 +100,10 @@ function firstStoredImage(obj) {
 /**
  * Resolve a picture from an activity, itinerary day, or raw URL.
  *
- * List endpoints omit the base64 `image` blob on purpose. When an activity id is
- * present, this prefers `GET /api/activities/:id/image`, which reads `image` or
- * `images[0]` from the database. Bundled `/assets/` and Unsplash placeholders
- * are ignored so a missing DB photo never falls back to a static Dubai shot.
+ * List endpoints omit the base64 `image` blob and set `imageUrl` only when a
+ * photo exists. Prefer that field — inventing `/api/activities/:id/image` from
+ * `_id` alone caused 404s (and blank tiles) for the majority of catalogue rows
+ * that have no uploaded image.
  */
 export function resolveActivityImage(...sources) {
     for (const src of sources) {
@@ -115,13 +115,21 @@ export function resolveActivityImage(...sources) {
             if (url) return url;
             continue;
         }
-        const viaApi = activityImagePath(src.activityId || src._id || src.id);
-        if (viaApi) return resolveAssetUrl(viaApi);
+
         const direct = firstStoredImage(src);
         if (direct) {
             const url = resolveAssetUrl(direct);
             if (url) return url;
         }
+
+        // List API sets imageUrl to '' when the DB has no photo — do not 404.
+        if (Object.prototype.hasOwnProperty.call(src, 'imageUrl') && !String(src.imageUrl || '').trim()) {
+            continue;
+        }
+
+        // Itinerary day rows often only carry activityId + stamped image path.
+        const viaApi = activityImagePath(src.activityId || src._id || src.id);
+        if (viaApi) return resolveAssetUrl(viaApi);
     }
     return '';
 }
