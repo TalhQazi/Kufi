@@ -151,7 +151,32 @@ export default function Footer({ onLegalClick }) {
                                 </a>
                             </li>
                             <li>
-                                <a href="#explore" className="hover:text-white transition-colors">Destinations</a>
+                                <a
+                                    href="#destinations"
+                                    onClick={(e) => {
+                                        if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey && e.button === 0) {
+                                            e.preventDefault()
+                                            const goHomeThenScroll = () => {
+                                                const el = document.getElementById('destinations')
+                                                if (el) {
+                                                    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                                    return
+                                                }
+                                                window.location.hash = '#home'
+                                                window.setTimeout(() => {
+                                                    document.getElementById('destinations')?.scrollIntoView({
+                                                        behavior: 'smooth',
+                                                        block: 'start',
+                                                    })
+                                                }, 250)
+                                            }
+                                            goHomeThenScroll()
+                                        }
+                                    }}
+                                    className="hover:text-white transition-colors"
+                                >
+                                    Destinations
+                                </a>
                             </li>
                             <li>
                                 <a href="#blogs" className="hover:text-white transition-colors">Blog</a>

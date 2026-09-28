@@ -11,6 +11,7 @@ export default function ActivityThumb({
   alt = "",
   className = "absolute inset-0 w-full h-full object-cover",
   placeholderClassName = "",
+  placeholderLabel = "No photo",
   darkMode = false,
 }) {
   const photo = resolveActivityImage(activity);
@@ -23,12 +24,12 @@ export default function ActivityThumb({
   if (!photo || failed) {
     return (
       <div
-        className={`flex items-center justify-center text-[10px] ${
-          darkMode ? "bg-slate-700 text-slate-400" : "bg-slate-200 text-slate-400"
+        className={`flex items-center justify-center text-[10px] font-medium ${
+          darkMode ? "bg-slate-700 text-slate-400" : "bg-slate-200 text-slate-500"
         } ${placeholderClassName || className}`}
         aria-hidden={!alt}
       >
-        No image
+        {placeholderLabel}
       </div>
     );
   }
